@@ -55,6 +55,62 @@
     display: none !important;
 }
 
+#new-debug-bar [hidden] {
+    display: none !important;
+}
+
+#new-debug-bar .ndb-code {
+    background: #09090b;
+    border-radius: 0.75rem;
+    color: #d4d4d8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    line-height: 1.65;
+    margin: 0;
+    overflow-x: auto;
+    padding: 0.875rem 1rem;
+    tab-size: 2;
+    white-space: pre;
+}
+
+#new-debug-bar .ndb-code code {
+    background: transparent;
+    color: inherit;
+    display: block;
+    font: inherit;
+    padding: 0;
+}
+
+#new-debug-bar .hljs-keyword,
+#new-debug-bar .hljs-literal,
+#new-debug-bar .hljs-selector-tag {
+    color: #c4b5fd;
+}
+
+#new-debug-bar .hljs-string,
+#new-debug-bar .hljs-attr,
+#new-debug-bar .hljs-template-variable {
+    color: #86efac;
+}
+
+#new-debug-bar .hljs-number,
+#new-debug-bar .hljs-built_in,
+#new-debug-bar .hljs-type {
+    color: #fcd34d;
+}
+
+#new-debug-bar .hljs-title,
+#new-debug-bar .hljs-property,
+#new-debug-bar .hljs-variable {
+    color: #7dd3fc;
+}
+
+#new-debug-bar .hljs-comment,
+#new-debug-bar .hljs-meta {
+    color: #71717a;
+    font-style: italic;
+}
+
 #new-debug-bar .ndb-scrollbar {
     scrollbar-color: #d4d4d8 transparent;
     scrollbar-width: thin;

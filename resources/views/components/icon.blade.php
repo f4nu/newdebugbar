@@ -2,10 +2,6 @@
 
 <svg {{ $attributes->class('ndb:size-5 ndb:shrink-0') }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     @switch($name)
-        @case('sparkles')
-            <path d="m12 3-1.1 3.2a5.5 5.5 0 0 1-3.4 3.4L4.3 10.7l3.2 1.1a5.5 5.5 0 0 1 3.4 3.4l1.1 3.2 1.1-3.2a5.5 5.5 0 0 1 3.4-3.4l3.2-1.1-3.2-1.1a5.5 5.5 0 0 1-3.4-3.4L12 3Z" />
-            <path d="m5 3 .4 1.1A2 2 0 0 0 6.6 5.3l1.1.4-1.1.4a2 2 0 0 0-1.2 1.2L5 8.4l-.4-1.1a2 2 0 0 0-1.2-1.2l-1.1-.4 1.1-.4a2 2 0 0 0 1.2-1.2L5 3Z" />
-            @break
         @case('search')
             <circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
             @break
@@ -44,6 +40,9 @@
             @break
         @case('code')
             <path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14" />
+            @break
+        @case('copy')
+            <rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
             @break
         @default
             <rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8 9h8M8 13h8M8 17h5" />

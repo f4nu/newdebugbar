@@ -14,6 +14,7 @@ function runtime(saved = null) {
     },
     matchMedia: () => ({ matches: true, addEventListener() {} }),
     activeElement: () => null,
+    highlight: () => {},
   };
 }
 
@@ -47,24 +48,44 @@ test('favorites can be pinned and reordered', () => {
   state.moveFavorite('logs', -1);
 
   assert.deepEqual(state.favorites, ['logs', 'queries']);
-
-  state.startFavoriteDrag('queries');
-  state.dropFavorite('logs');
-  assert.deepEqual(state.favorites, ['queries', 'logs']);
-
-  assert.deepEqual(state.orderedSections.map((section) => section.key), ['queries', 'logs']);
+  assert.deepEqual(state.orderedSections.map((section) => section.key), ['logs', 'queries']);
+  assert.deepEqual(state.allSections.map((section) => section.key), ['overview', 'queries', 'logs']);
   assert.equal(browser.values.has(STORAGE_KEY), true);
+
+  state.toggleFavorite('logs');
+  assert.deepEqual(state.favorites, ['queries']);
 });
 
-test('the command palette jumps to sections and changes settings', () => {
-  const state = createNewDebugBar(summary, runtime());
+test('selecting a section resets content and highlights its code', async () => {
+  let highlighted = 0;
+  const browser = runtime();
+  browser.highlight = () => highlighted++;
+  const state = createNewDebugBar(summary, browser);
+  state.$refs = { content: { scrollTop: 60 } };
+  state.$nextTick = (callback) => callback();
+
+  state.selectSection('queries');
+
+  assert.equal(state.selected, 'queries');
+  assert.equal(state.$refs.content.scrollTop, 0);
+  assert.equal(highlighted, 1);
+});
+
+test('the command palette jumps to sections and changes settings', async () => {
+  let highlighted = 0;
+  const browser = runtime();
+  browser.highlight = () => highlighted++;
+  const state = createNewDebugBar(summary, browser);
   let detailsLoaded = 0;
-  state.$wire = { loadDetails: () => detailsLoaded++ };
+  state.$wire = { loadDetails: async () => detailsLoaded++ };
+  state.$nextTick = (callback) => callback();
 
   state.runCommand('section:queries');
+  await Promise.resolve();
   assert.equal(state.inspectorOpen, true);
   assert.equal(state.selected, 'queries');
   assert.equal(detailsLoaded, 1);
+  assert.equal(highlighted, 2);
 
   state.runCommand('theme:light');
   assert.equal(state.resolvedTheme, 'light');

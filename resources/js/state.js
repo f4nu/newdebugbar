@@ -4,6 +4,7 @@ const defaultRuntime = () => ({
   storage: window.localStorage,
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
+  highlight: () => window.newDebugBarHighlight?.(document.getElementById('new-debug-bar')),
 });
 
 export function createNewDebugBar(summary = {}, runtime = null) {
@@ -16,7 +17,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
     favorites: [],
-    favoriteDrag: null,
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
@@ -98,17 +98,29 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         ?? { key: 'overview', label: 'Overview', count: null };
     },
 
-    get remainingSections() {
-      return (this.summary.sections ?? []).filter((section) => !this.favorites.includes(section.key));
+    get allSections() {
+      return this.summary.sections ?? [];
+    },
+
+    selectSection(section) {
+      this.selected = this.sectionKeys.includes(section) ? section : 'overview';
+      this.$nextTick?.(() => {
+        if (this.$refs?.content) this.$refs.content.scrollTop = 0;
+        browser.highlight?.();
+      });
     },
 
     openInspector(section = this.selected) {
-      this.selected = this.sectionKeys.includes(section) ? section : 'overview';
+      this.selectSection(section);
       this.inspectorOpen = true;
 
       if (!this.detailsRequested) {
         this.detailsRequested = true;
-        this.$wire?.loadDetails();
+        Promise.resolve(this.$wire?.loadDetails())
+          .then(() => this.$nextTick?.(() => browser.highlight?.()))
+          .catch(() => {
+            this.detailsRequested = false;
+          });
       }
     },
 
@@ -133,22 +145,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       const reordered = [...this.favorites];
       [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-      this.favorites = reordered;
-      this.persist();
-    },
-
-    startFavoriteDrag(key) {
-      if (this.favorites.includes(key)) this.favoriteDrag = key;
-    },
-
-    dropFavorite(target) {
-      const source = this.favoriteDrag;
-      this.favoriteDrag = null;
-
-      if (!source || source === target || !this.favorites.includes(target)) return;
-
-      const reordered = this.favorites.filter((key) => key !== source);
-      reordered.splice(reordered.indexOf(target), 0, source);
       this.favorites = reordered;
       this.persist();
     },

@@ -107,7 +107,7 @@ final class ProfileManager
                     'php' => PHP_VERSION,
                     'laravel' => app()->version(),
                     'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
-                    'new_debug_bar' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
+                    'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
                 ],
             ],
             'request' => [
