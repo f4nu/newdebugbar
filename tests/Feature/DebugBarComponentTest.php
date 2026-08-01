@@ -17,6 +17,23 @@ it('loads full profile details only after the inspector asks', function () {
         ->assertSee('Profiled request completed');
 });
 
+it('keeps every section panel mounted for client side navigation', function () {
+    $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
+
+    $file = File::files(config('new-debug-bar.storage.path'))[0];
+    $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
+
+    $html = Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
+        ->call('loadDetails')
+        ->html();
+
+    expect($html)
+        ->toContain('data-ndb-section-panel="overview"')
+        ->toContain('data-ndb-section-panel="request"')
+        ->toContain('data-ndb-section-panel="queries"')
+        ->not->toContain('<template x-if="selected ===');
+});
+
 it('locks the server profile identifier', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
 

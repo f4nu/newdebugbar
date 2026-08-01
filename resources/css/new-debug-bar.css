@@ -55,6 +55,10 @@
     display: none !important;
 }
 
+#new-debug-bar [data-ndb-section-panel][hidden] {
+    display: none !important;
+}
+
 #new-debug-bar .ndb-code {
     background: #f4f4f5;
     border-radius: 0.75rem;

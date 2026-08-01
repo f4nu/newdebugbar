@@ -83,12 +83,19 @@ test('selecting a section resets content and highlights its code', async () => {
   const browser = runtime();
   browser.highlight = () => highlighted++;
   const state = createNewDebugBar(summary, browser);
+  const panels = [
+    { dataset: { ndbSectionPanel: 'overview' }, hidden: false },
+    { dataset: { ndbSectionPanel: 'queries' }, hidden: true },
+  ];
+  state.$root = { querySelectorAll: () => panels };
   state.$refs = { content: { scrollTop: 60 } };
   state.$nextTick = (callback) => callback();
 
   state.selectSection('queries');
 
   assert.equal(state.selected, 'queries');
+  assert.equal(panels[0].hidden, true);
+  assert.equal(panels[1].hidden, false);
   assert.equal(state.$refs.content.scrollTop, 0);
   assert.equal(highlighted, 1);
 });

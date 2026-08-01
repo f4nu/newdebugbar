@@ -132,8 +132,12 @@
                     @if ($detailsLoaded && $profile !== [])
                         <div wire:loading.remove wire:target="loadDetails" class="ndb:p-4 ndb:sm:p-6">
                             @foreach ($profile['sections'] as $sectionKey => $section)
-                                <template x-if="selected === @js($sectionKey)">
-                                <section wire:key="section-{{ $sectionKey }}" class="ndb:space-y-4">
+                                <section
+                                    data-ndb-section-panel="{{ $sectionKey }}"
+                                    @if ($sectionKey !== 'overview') hidden @endif
+                                    wire:key="section-{{ $sectionKey }}"
+                                    class="ndb:space-y-4"
+                                >
                                     @if ($sectionKey === 'overview')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach ([['Duration', $profile['metrics']['duration_ms'].' ms', 'clock'], ['Peak memory', $profile['metrics']['peak_memory_mb'].' MB', 'memory'], ['Queries', $profile['sections']['queries']['summary']['count'], 'database'], ['Status', $profile['sections']['request']['summary']['status'], 'check']] as [$label, $value, $icon])
@@ -199,7 +203,6 @@
                                         @endforelse
                                     @endif
                                 </section>
-                                </template>
                             @endforeach
                         </div>
                     @elseif ($detailsLoaded)

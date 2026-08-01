@@ -29,6 +29,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     init() {
       this.restore();
       this.applyTheme();
+      this.$nextTick?.(() => this.syncSectionPanels());
 
       const scheme = browser.matchMedia?.('(prefers-color-scheme: dark)');
       scheme?.addEventListener?.('change', () => {
@@ -108,8 +109,17 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     selectSection(section) {
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
       this.$nextTick?.(() => {
+        this.syncSectionPanels();
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         browser.highlight?.();
+      });
+    },
+
+    syncSectionPanels() {
+      const panels = this.$root?.querySelectorAll?.('[data-ndb-section-panel]') ?? [];
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.ndbSectionPanel !== this.selected;
       });
     },
 
@@ -120,7 +130,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       if (!this.detailsRequested) {
         this.detailsRequested = true;
         Promise.resolve(this.$wire?.loadDetails())
-          .then(() => this.$nextTick?.(() => browser.highlight?.()))
+          .then(() => this.$nextTick?.(() => {
+            this.syncSectionPanels();
+            browser.highlight?.();
+          }))
           .catch(() => {
             this.detailsRequested = false;
           });
