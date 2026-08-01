@@ -57,6 +57,27 @@ test('favorites can be pinned and reordered', () => {
   assert.deepEqual(state.unpinnedSections.map((section) => section.key), ['overview', 'logs']);
 });
 
+test('favorites can be reordered by dragging', () => {
+  const state = createNewDebugBar(summary, runtime({ favorites: ['overview', 'queries', 'logs'] }));
+  const transfer = {
+    effectAllowed: null,
+    value: null,
+    setData: (_type, value) => { transfer.value = value; },
+  };
+
+  state.init();
+  state.startFavoriteDrag('overview', { dataTransfer: transfer });
+  state.hoverFavorite('logs', true);
+  state.dropFavorite('logs', true);
+
+  assert.equal(transfer.value, 'overview');
+  assert.equal(transfer.effectAllowed, 'move');
+  assert.deepEqual(state.favorites, ['queries', 'logs', 'overview']);
+  assert.equal(state.favoriteDrag, null);
+  assert.equal(state.favoriteDrop, null);
+  assert.equal(state.favoriteDropAfter, false);
+});
+
 test('selecting a section resets content and highlights its code', async () => {
   let highlighted = 0;
   const browser = runtime();
@@ -70,6 +91,17 @@ test('selecting a section resets content and highlights its code', async () => {
   assert.equal(state.selected, 'queries');
   assert.equal(state.$refs.content.scrollTop, 0);
   assert.equal(highlighted, 1);
+});
+
+test('the theme toggle shows the opposite resolved theme', () => {
+  const state = createNewDebugBar(summary, runtime());
+  state.init();
+
+  assert.equal(state.resolvedTheme, 'dark');
+  state.toggleTheme();
+  assert.equal(state.resolvedTheme, 'light');
+  state.toggleTheme();
+  assert.equal(state.resolvedTheme, 'dark');
 });
 
 test('the command palette jumps to sections and changes settings', async () => {

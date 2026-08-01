@@ -29,6 +29,7 @@ it('captures a local web request and its Laravel activity', function () {
         ->assertSee('id="new-debug-bar"', false)
         ->assertSee('/__new-debug-bar/assets/new-debug-bar.css', false)
         ->assertSee('/__new-debug-bar/assets/new-debug-bar.js', false)
+        ->assertSee('data-navigate-track="reload"', false)
         ->assertSee('data-update-uri', false);
 
     $files = File::files(config('new-debug-bar.storage.path'));

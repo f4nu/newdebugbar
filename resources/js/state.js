@@ -17,6 +17,9 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
     favorites: [],
+    favoriteDrag: null,
+    favoriteDrop: null,
+    favoriteDropAfter: false,
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
@@ -149,9 +152,49 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.persist();
     },
 
-    cycleTheme() {
-      const themes = ['system', 'light', 'dark'];
-      this.setTheme(themes[(themes.indexOf(this.theme) + 1) % themes.length]);
+    startFavoriteDrag(key, event = null) {
+      if (!this.favorites.includes(key)) return;
+
+      this.favoriteDrag = key;
+      event?.dataTransfer?.setData?.('text/plain', key);
+      if (event?.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    },
+
+    hoverFavorite(key, after = false) {
+      if (!this.favoriteDrag || this.favoriteDrag === key) return;
+
+      this.favoriteDrop = key;
+      this.favoriteDropAfter = after;
+    },
+
+    leaveFavorite(key) {
+      if (this.favoriteDrop !== key) return;
+
+      this.favoriteDrop = null;
+      this.favoriteDropAfter = false;
+    },
+
+    dropFavorite(target, after = false) {
+      const source = this.favoriteDrag;
+      this.endFavoriteDrag();
+
+      if (!source || source === target || !this.favorites.includes(target)) return;
+
+      const reordered = this.favorites.filter((key) => key !== source);
+      const targetIndex = reordered.indexOf(target);
+      reordered.splice(targetIndex + (after ? 1 : 0), 0, source);
+      this.favorites = reordered;
+      this.persist();
+    },
+
+    endFavoriteDrag() {
+      this.favoriteDrag = null;
+      this.favoriteDrop = null;
+      this.favoriteDropAfter = false;
+    },
+
+    toggleTheme() {
+      this.setTheme(this.resolvedTheme === 'dark' ? 'light' : 'dark');
     },
 
     setTheme(theme) {

@@ -32,8 +32,8 @@ final class BarInjector
 
         $this->livewire->forceAssetInjection();
 
-        $head = '<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true">';
-        $body = '<script src="'.$script.'" data-navigate-once="true"></script>'.$component;
+        $head = '<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true" data-navigate-track="reload">';
+        $body = '<script src="'.$script.'" data-navigate-once="true" data-navigate-track="reload"></script>'.$component;
         if (preg_match('/<\/head\s*>/i', $html) === 1) {
             $html = preg_replace('/<\/head\s*>/i', $head.'$0', $html, 1) ?? $html;
         } elseif (preg_match('/<html(?:\s[^>]*)?>/i', $html) === 1) {
