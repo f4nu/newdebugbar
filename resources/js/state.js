@@ -2,9 +2,7 @@ const STORAGE_KEY = 'new-debug-bar.preferences.v1';
 
 const defaultRuntime = () => ({
   storage: window.localStorage,
-  viewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
   matchMedia: (query) => window.matchMedia(query),
-  addWindowListener: (event, callback) => window.addEventListener(event, callback),
   activeElement: () => document.activeElement,
 });
 
@@ -12,7 +10,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
   const browser = runtime ?? defaultRuntime();
 
   return {
-    mode: ['bar', 'floating'].includes(summary.default_mode) ? summary.default_mode : 'bar',
     inspectorOpen: false,
     detailsRequested: false,
     selected: 'overview',
@@ -24,18 +21,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     paletteSearch: '',
     paletteIndex: 0,
     paletteReturnFocus: null,
-    bubble: { x: null, y: null },
-    dragOrigin: null,
-    dragging: false,
-    moved: false,
     summary,
 
     init() {
       this.restore();
       this.applyTheme();
-      this.clampBubble();
-
-      browser.addWindowListener?.('resize', () => this.clampBubble());
 
       const scheme = browser.matchMedia?.('(prefers-color-scheme: dark)');
       scheme?.addEventListener?.('change', () => {
@@ -47,14 +37,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       try {
         const saved = JSON.parse(browser.storage?.getItem(STORAGE_KEY) ?? '{}');
 
-        if (['bar', 'floating'].includes(saved.mode)) this.mode = saved.mode;
         if (['system', 'light', 'dark'].includes(saved.theme)) this.theme = saved.theme;
         if (Array.isArray(saved.favorites)) {
           const allowed = this.sectionKeys;
           this.favorites = [...new Set(saved.favorites)].filter((key) => allowed.includes(key));
-        }
-        if (Number.isFinite(saved.bubble?.x) && Number.isFinite(saved.bubble?.y)) {
-          this.bubble = { x: saved.bubble.x, y: saved.bubble.y };
         }
       } catch {
         // A broken preference must never break the host page.
@@ -64,10 +50,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     persist() {
       try {
         browser.storage?.setItem(STORAGE_KEY, JSON.stringify({
-          mode: this.mode,
           theme: this.theme,
           favorites: this.favorites,
-          bubble: this.bubble,
         }));
       } catch {
         // Private browsing and strict storage policies are allowed.
@@ -87,8 +71,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       return [
         ...sections,
-        { id: 'mode:bar', label: 'Use bottom bar', hint: 'Mode' },
-        { id: 'mode:floating', label: 'Use floating bubble', hint: 'Mode' },
         { id: 'theme:system', label: 'Use system theme', hint: 'Theme' },
         { id: 'theme:light', label: 'Use light theme', hint: 'Theme' },
         { id: 'theme:dark', label: 'Use dark theme', hint: 'Theme' },
@@ -120,10 +102,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       return (this.summary.sections ?? []).filter((section) => !this.favorites.includes(section.key));
     },
 
-    get bubbleStyle() {
-      return `transform: translate3d(${Math.round(this.bubble.x ?? 0)}px, ${Math.round(this.bubble.y ?? 0)}px, 0)`;
-    },
-
     openInspector(section = this.selected) {
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
       this.inspectorOpen = true;
@@ -136,16 +114,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
     closeInspector() {
       this.inspectorOpen = false;
-      this.mode = 'floating';
-      this.persist();
-    },
-
-    useMode(mode) {
-      if (!['bar', 'floating'].includes(mode)) return;
-
-      this.mode = mode;
-      this.inspectorOpen = false;
-      this.persist();
     },
 
     toggleFavorite(key) {
@@ -239,7 +207,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       const [kind, value] = id.split(':');
 
       if (kind === 'section') this.openInspector(value);
-      if (kind === 'mode') this.useMode(value);
       if (kind === 'theme') this.setTheme(value);
 
       this.closePalette();
@@ -255,59 +222,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         if (this.paletteOpen) this.closePalette();
         else if (this.inspectorOpen) this.closeInspector();
       }
-    },
-
-    startDrag(event) {
-      if (event.button !== undefined && event.button !== 0) return;
-
-      this.dragging = true;
-      this.moved = false;
-      this.dragOrigin = {
-        pointerX: event.clientX,
-        pointerY: event.clientY,
-        bubbleX: this.bubble.x,
-        bubbleY: this.bubble.y,
-      };
-      event.currentTarget?.setPointerCapture?.(event.pointerId);
-    },
-
-    drag(event) {
-      if (!this.dragging || !this.dragOrigin) return;
-
-      const deltaX = event.clientX - this.dragOrigin.pointerX;
-      const deltaY = event.clientY - this.dragOrigin.pointerY;
-      this.moved = this.moved || Math.abs(deltaX) + Math.abs(deltaY) > 5;
-      this.bubble = {
-        x: this.dragOrigin.bubbleX + deltaX,
-        y: this.dragOrigin.bubbleY + deltaY,
-      };
-      this.clampBubble();
-    },
-
-    finishDrag() {
-      if (!this.dragging) return;
-
-      this.dragging = false;
-      this.dragOrigin = null;
-      this.clampBubble();
-      this.persist();
-
-      if (!this.moved) this.openInspector();
-    },
-
-    clampBubble() {
-      const viewport = browser.viewport?.() ?? { width: 1024, height: 768 };
-      const width = Math.min(236, Math.max(180, viewport.width - 24));
-      const height = 64;
-      const inset = 12;
-
-      const initialX = Math.max(inset, viewport.width - width - 24);
-      const initialY = Math.max(inset, viewport.height - height - 24);
-
-      this.bubble = {
-        x: Math.min(Math.max(this.bubble.x ?? initialX, inset), Math.max(inset, viewport.width - width - inset)),
-        y: Math.min(Math.max(this.bubble.y ?? initialY, inset), Math.max(inset, viewport.height - height - inset)),
-      };
     },
   };
 }

@@ -14,7 +14,7 @@
 >
     <div
         x-cloak
-        x-show.important="mode === 'bar' && ! inspectorOpen"
+        x-show.important="! inspectorOpen"
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="New Debug Bar"
@@ -63,43 +63,6 @@
         <button type="button" @click="openInspector()" class="{{ $button }} ndb:size-9" aria-label="Expand New Debug Bar">
             <x-new-debug-bar::icon name="expand" class="ndb:size-4" />
         </button>
-        <button type="button" @click="useMode('floating')" class="{{ $button }} ndb:size-9" aria-label="Minimize to floating bubble">
-            <x-new-debug-bar::icon name="minimize" class="ndb:size-4" />
-        </button>
-    </div>
-
-    <div
-        x-cloak
-        x-show.important="mode === 'floating' && ! inspectorOpen"
-        :style="bubbleStyle"
-        @pointerdown="startDrag($event)"
-        @pointermove.window="drag($event)"
-        @pointerup.window="finishDrag()"
-        @pointercancel.window="finishDrag()"
-        class="ndb:pointer-events-auto ndb:fixed ndb:left-0 ndb:top-0 ndb:flex ndb:h-16 ndb:w-[min(236px,calc(100vw-24px))] ndb:touch-none ndb:select-none ndb:items-center ndb:gap-3 ndb:rounded-2xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:shadow-[0_18px_55px_-16px_rgba(24,24,27,0.48)] ndb:backdrop-blur-xl ndb:transition-shadow ndb:hover:shadow-[0_20px_60px_-14px_rgba(79,70,229,0.35)] ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/95"
-        role="button"
-        tabindex="0"
-        aria-label="Open New Debug Bar. Drag to move."
-        @keydown.enter.prevent="openInspector()"
-        @keydown.space.prevent="openInspector()"
-    >
-        <span class="ndb:grid ndb:size-10 ndb:shrink-0 ndb:place-items-center ndb:rounded-xl ndb:bg-indigo-600 ndb:text-white ndb:shadow-md ndb:shadow-indigo-600/30 ndb:dark:bg-indigo-500">
-            <x-new-debug-bar::icon name="sparkles" class="ndb:size-5" />
-        </span>
-        <span class="ndb:min-w-0 ndb:flex-1">
-            <span class="ndb:flex ndb:items-center ndb:gap-1.5">
-                <span class="ndb:size-1.5 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
-                <span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.12em]" x-text="summary.environment"></span>
-            </span>
-            <span class="ndb:mt-0.5 ndb:flex ndb:items-baseline ndb:gap-2 ndb:whitespace-nowrap">
-                <span class="ndb:text-sm ndb:font-bold" x-text="summary.duration_ms + ' ms'"></span>
-                <span class="ndb:text-xs ndb:font-medium ndb:text-zinc-400" x-text="summary.memory_mb + ' MB'"></span>
-            </span>
-        </span>
-        <x-new-debug-bar::icon name="grip" class="ndb:size-5 ndb:text-zinc-300 ndb:dark:text-zinc-600" />
-        <button type="button" @pointerdown.stop @click.stop="useMode('bar')" class="{{ $button }} ndb:absolute ndb:-right-2 ndb:-top-2 ndb:size-7 ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-sm ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900" aria-label="Return to bottom bar">
-            <x-new-debug-bar::icon name="arrow-left" class="ndb:size-3.5" />
-        </button>
     </div>
 
     <div x-cloak x-show.important="inspectorOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0" role="presentation">
@@ -131,7 +94,6 @@
                 </div>
                 <button type="button" @click="openPalette()" class="{{ $button }} ndb:size-9" aria-label="Open command palette"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
                 <button type="button" @click="cycleTheme()" class="{{ $button }} ndb:size-9" :aria-label="'Theme: ' + theme"><x-new-debug-bar::icon name="theme" class="ndb:size-4" /></button>
-                <button type="button" @click="useMode('bar')" class="{{ $button }} ndb:hidden ndb:size-9 ndb:sm:inline-flex" aria-label="Return to bottom bar"><x-new-debug-bar::icon name="minimize" class="ndb:size-4" /></button>
                 <button type="button" @click="closeInspector()" class="{{ $button }} ndb:size-9" aria-label="Close inspector"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></button>
             </header>
 

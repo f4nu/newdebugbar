@@ -79,7 +79,6 @@ final class DebugBar extends Component
         $slowQueries = count(array_filter($queries, fn (array $query): bool => ($query['duration_ms'] ?? 0) >= $slowThreshold));
 
         return [
-            'default_mode' => config('new-debug-bar.default_mode', 'bar'),
             'theme' => config('new-debug-bar.theme', 'system'),
             'environment' => strtoupper((string) ($profile['environment'] ?? app()->environment())),
             'method' => $sections['request']['summary']['method'] ?? 'GET',

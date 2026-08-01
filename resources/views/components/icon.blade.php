@@ -12,9 +12,6 @@
         @case('expand')
             <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
             @break
-        @case('minimize')
-            <path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5" />
-            @break
         @case('close')
             <path d="m6 6 12 12M18 6 6 18" />
             @break
@@ -24,17 +21,11 @@
         @case('pin')
             <path d="m15 4 5 5-3 1-4 4-1 5-2-2-3-3-2-2 5-1 4-4 1-3Z" />
             @break
-        @case('grip')
-            <circle cx="9" cy="7" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="7" r="1" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="9" cy="17" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="17" r="1" fill="currentColor" stroke="none" />
-            @break
         @case('chevron-up')
             <path d="m6 15 6-6 6 6" />
             @break
         @case('chevron-down')
             <path d="m6 9 6 6 6-6" />
-            @break
-        @case('arrow-left')
-            <path d="m15 18-6-6 6-6" />
             @break
         @case('warning')
             <path d="M10.3 4.1 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4.1a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" />

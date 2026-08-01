@@ -2,7 +2,7 @@
 
 New Debug Bar is a modern, Laravel-only debug bar built with Livewire 4 and Tailwind CSS 4.
 
-It profiles local Laravel requests and presents the results as a bottom bar, a draggable floating bubble, and a responsive inspector. The inspector includes request, query, model, cache, view, event, log, and exception data.
+It profiles local Laravel requests and presents the results as a bottom bar and responsive inspector. The inspector includes request, query, model, cache, view, event, log, and exception data.
 
 ## Requirements
 

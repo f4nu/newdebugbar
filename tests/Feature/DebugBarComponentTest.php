@@ -36,8 +36,7 @@ it('keeps Alpine visibility stronger than isolated Tailwind utilities', function
     $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
 
     Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
-        ->assertSee('x-show.important="mode === \'bar\' && ! inspectorOpen"', false)
-        ->assertSee('x-show.important="mode === \'floating\' && ! inspectorOpen"', false)
+        ->assertSee('x-show.important="! inspectorOpen"', false)
         ->assertSee('x-show.important="inspectorOpen"', false)
         ->assertSee('x-show.important="paletteOpen"', false);
 });
