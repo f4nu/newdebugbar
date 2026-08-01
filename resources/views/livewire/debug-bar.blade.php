@@ -1,5 +1,5 @@
 @php
-    $iconButton = 'ndb:inline-flex ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:pointer-events-none ndb:disabled:opacity-25 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white';
+    $iconButton = 'ndb:inline-flex ndb:items-center ndb:justify-center ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:pointer-events-none ndb:disabled:opacity-25 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white';
     $starButton = 'ndb-star-button ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-400 ndb:transition ndb:hover:scale-105 ndb:hover:text-blue-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-blue-500 ndb:dark:text-zinc-500 ndb:dark:hover:text-blue-300';
     $profile = $detailsLoaded ? $this->profile : [];
 @endphp
@@ -19,7 +19,7 @@
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="Debug toolbar"
-        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-2xl ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:p-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-2xl ndb:dark:border-zinc-700/70 ndb:dark:bg-zinc-900/80"
+        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/70 ndb:p-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-2xl ndb:backdrop-brightness-150 ndb:backdrop-saturate-150 ndb:dark:border-zinc-700/70 ndb:dark:bg-zinc-900/70"
     >
         <button type="button" data-ndb-toolbar="request" @click="openInspector('request')" class="ndb:flex ndb:min-w-0 ndb:max-w-52 ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-800" aria-label="Open request details">
             <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
@@ -42,20 +42,20 @@
         </button>
 
         <button type="button" data-ndb-toolbar="memory" @click="openInspector('overview')" class="ndb:hidden ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:flex ndb:dark:hover:bg-zinc-800">
-            <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:text-violet-500" />
+            <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:text-indigo-500" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
         </button>
 
         <button type="button" data-ndb-toolbar="queries" @click="openInspector('queries')" class="ndb:hidden ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:flex ndb:dark:hover:bg-zinc-800">
-            <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:text-cyan-500" />
-            <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-2 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span x-text="summary.query_count"></span><span class="ndb:rounded ndb:bg-zinc-100/80 ndb:px-1 ndb:font-medium ndb:text-zinc-400 ndb:dark:bg-zinc-800/80" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
+            <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:text-indigo-500" />
+            <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span x-text="summary.query_count"></span><span class="ndb:font-medium ndb:text-zinc-400" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
         </button>
 
         <span class="ndb:my-1 ndb:w-px ndb:bg-zinc-200 ndb:dark:bg-zinc-700"></span>
 
         <div class="ndb:flex ndb:items-center ndb:gap-0.5">
-            <button type="button" data-ndb-toolbar="palette" @click="openPalette()" class="{{ $iconButton }} ndb:size-9" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
-            <button type="button" data-ndb-toolbar="expand" @click="openInspector()" class="{{ $iconButton }} ndb:size-9" aria-label="Expand inspector" title="Expand inspector"><x-new-debug-bar::icon name="expand" class="ndb:size-4" /></button>
+            <button type="button" data-ndb-toolbar="palette" @click="openPalette()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
+            <button type="button" data-ndb-toolbar="expand" @click="openInspector()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector"><x-new-debug-bar::icon name="expand" class="ndb:size-4" /></button>
         </div>
     </div>
 
@@ -79,12 +79,12 @@
                 <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
                 <div class="ndb:min-w-0 ndb:flex-1">
                     <p class="ndb:truncate ndb:text-sm ndb:font-semibold" x-text="summary.path"></p>
-                    <p class="ndb:flex ndb:items-center ndb:gap-1 ndb:text-[9px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"><span class="ndb:rounded ndb:bg-zinc-100/75 ndb:px-1.5 ndb:py-px ndb:dark:bg-zinc-800/75" x-text="summary.status"></span><span class="ndb:rounded ndb:bg-zinc-100/75 ndb:px-1.5 ndb:py-px ndb:dark:bg-zinc-800/75" x-text="summary.environment"></span><span class="ndb:rounded ndb:bg-zinc-100/75 ndb:px-1.5 ndb:py-px ndb:tabular-nums ndb:dark:bg-zinc-800/75" x-text="summary.duration_ms + ' ms'"></span></p>
+                    <p class="ndb:flex ndb:items-center ndb:gap-2.5 ndb:text-[9px] ndb:text-zinc-500 ndb:dark:text-zinc-400"><span class="ndb:font-bold" x-text="summary.status"></span><span class="ndb:font-semibold ndb:uppercase ndb:tracking-wider" x-text="summary.environment"></span><span class="ndb:font-semibold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></p>
                 </div>
                 <div class="ndb:flex ndb:items-center ndb:gap-0.5">
-                    <button type="button" data-ndb-inspector-action="palette" @click="openPalette()" class="{{ $iconButton }} ndb:size-9" aria-label="Open command palette"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
-                    <button type="button" data-ndb-inspector-action="theme" @click="toggleTheme()" class="{{ $iconButton }} ndb:size-9" :aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" :title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-new-debug-bar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-new-debug-bar::icon name="sun" class="ndb:size-4" /></span></button>
-                    <button type="button" data-ndb-inspector-action="close" @click="closeInspector()" class="{{ $iconButton }} ndb:size-9" aria-label="Close inspector"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></button>
+                    <button type="button" data-ndb-inspector-action="palette" @click="openPalette()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-lg" aria-label="Open command palette"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
+                    <button type="button" data-ndb-inspector-action="theme" @click="toggleTheme()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-lg" :aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" :title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-new-debug-bar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-new-debug-bar::icon name="sun" class="ndb:size-4" /></span></button>
+                    <button type="button" data-ndb-inspector-action="close" @click="closeInspector()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-lg" aria-label="Close inspector"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></button>
                 </div>
             </header>
 
@@ -193,13 +193,13 @@
                                             <article wire:key="query-{{ $index }}" class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
                                                 <div class="ndb:flex ndb:items-center ndb:gap-2 ndb:border-b ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-3 ndb:py-2 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900">
                                                     <span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $query['connection'] }}</span>
-                                                    @if ($query['duration_ms'] >= config('new-debug-bar.slow_query_ms', 100))<span class="ndb:rounded-md ndb:bg-amber-100 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300">Slow</span>@endif
+                                                    @if ($query['duration_ms'] >= config('new-debug-bar.slow_query_ms', 100))<span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-amber-700 ndb:dark:text-amber-300">Slow</span>@endif
                                                     <span class="ndb:ml-auto ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $query['duration_ms'] }} ms</span>
-                                                    <button type="button" @click="navigator.clipboard?.writeText(@js($query['sql']))" class="{{ $iconButton }} ndb:size-7" aria-label="Copy query {{ $index + 1 }}" title="Copy query"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button>
+                                                    <button type="button" @click="navigator.clipboard?.writeText(@js($query['sql']))" class="{{ $iconButton }} ndb:size-7 ndb:rounded-lg" aria-label="Copy query {{ $index + 1 }}" title="Copy query"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button>
                                                 </div>
                                                 <pre class="ndb-code ndb-scrollbar ndb:rounded-none"><code data-ndb-language="sql">{{ $query['sql'] }}</code></pre>
                                                 @if ($query['bindings'] !== [])
-                                                    <details data-ndb-query-bindings="{{ $index }}" class="ndb:group ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-100 ndb:text-zinc-700 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400"><span>Bindings</span><span class="ndb:rounded ndb:bg-zinc-200 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:tabular-nums ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300">{{ count($query['bindings']) }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:ml-auto ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($query['bindings'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
+                                                    <details data-ndb-query-bindings="{{ $index }}" class="ndb:group ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-100 ndb:text-zinc-700 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400"><span>Bindings</span><span class="ndb:text-[9px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ count($query['bindings']) }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:ml-auto ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($query['bindings'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
                                                 @endif
                                             </article>
                                         @empty

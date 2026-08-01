@@ -45,6 +45,35 @@ it('opens every compact toolbar destination and closes cleanly', function () {
     $page->assertNoJavaScriptErrors();
 });
 
+it('uses one metric color and concentric glass toolbar corners', function () {
+    visit('/profiled')
+        ->assertScript(<<<'JS'
+            getComputedStyle(document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]')).borderRadius
+            JS, '18px')
+        ->assertScript(<<<'JS'
+            getComputedStyle(document.querySelector('[data-ndb-toolbar="expand"]')).borderRadius
+            JS, '12px')
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const filter = getComputedStyle(toolbar).backdropFilter;
+
+                return filter.includes('brightness(1.5)') && filter.includes('saturate(1.5)');
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const metricColors = ['duration', 'memory', 'queries'].map((name) =>
+                    getComputedStyle(document.querySelector(`[data-ndb-toolbar="${name}"] svg`)).color
+                );
+                const utilityColor = getComputedStyle(document.querySelector('[data-ndb-toolbar="expand"] svg')).color;
+
+                return new Set(metricColors).size === 1 && metricColors[0] !== utilityColor;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('switches every section after Livewire navigation with one active state', function () {
     $page = visit('/profiled')
         ->click('[data-testid="host-navigation"]')
