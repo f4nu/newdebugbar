@@ -59,6 +59,11 @@ abstract class TestCase extends Orchestra
 
             return response('<!doctype html><html><body>Partial model</body></html>');
         });
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-collector-failure',
+            fn () => response('<!doctype html><html><body>Application response</body></html>'),
+        );
     }
 
     protected function setUp(): void

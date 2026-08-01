@@ -2,7 +2,10 @@
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File;
+use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Middleware\ProfileRequest;
+use NewDebugBar\ProfileManager;
+use NewDebugBar\Support\Redactor;
 use NewDebugBar\Tests\ProfiledModel;
 
 it('captures a local web request and its Laravel activity', function () {
@@ -93,3 +96,42 @@ it('profiles partial models without requiring their primary key', function () {
         ->and($partialModel['event'])->toBe('retrieved')
         ->and($partialModel['key'])->toBeNull();
 });
+
+it('returns the application response when a collector fails', function () {
+    $this->app->instance(ProfileManager::class, new ProfileManager(
+        [new CollectorThatFailsDuringSummary],
+        $this->app->make(Redactor::class),
+    ));
+
+    $this->get('/profiled-collector-failure')
+        ->assertOk()
+        ->assertSee('Application response')
+        ->assertHeaderMissing('X-New-Debug-Bar-Profile');
+});
+
+final class CollectorThatFailsDuringSummary implements Collector
+{
+    public function key(): string
+    {
+        return 'failing';
+    }
+
+    public function label(): string
+    {
+        return 'Failing';
+    }
+
+    public function reset(): void {}
+
+    public function record(array $item): void {}
+
+    public function summary(): array
+    {
+        throw new RuntimeException('Collector failed.');
+    }
+
+    public function payload(): array
+    {
+        return ['items' => [], 'dropped' => 0];
+    }
+}
