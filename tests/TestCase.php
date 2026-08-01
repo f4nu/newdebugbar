@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Livewire\LivewireServiceProvider;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -15,7 +16,10 @@ abstract class TestCase extends Orchestra
 {
     protected function getPackageProviders($app): array
     {
-        return [NewDebugBarServiceProvider::class];
+        return [
+            LivewireServiceProvider::class,
+            NewDebugBarServiceProvider::class,
+        ];
     }
 
     protected function defineEnvironment($app): void

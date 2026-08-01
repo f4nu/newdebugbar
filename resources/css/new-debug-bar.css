@@ -15,11 +15,25 @@
 }
 
 #new-debug-bar {
+    --ndb-accent: #4f46e5;
     color: #18181b;
     font-family: "Outfit Variable", Outfit, ui-sans-serif, system-ui, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
+}
+
+#new-debug-bar[data-theme="dark"] {
+    --ndb-accent: #818cf8;
+    color: #f4f4f5;
+}
+
+#new-debug-bar :where(h1, h2, h3, p, pre, dl, dd, dt) {
+    margin: 0;
+}
+
+#new-debug-bar :where(button, input) {
+    letter-spacing: inherit;
 }
 
 #new-debug-bar button,
@@ -30,6 +44,49 @@
 
 #new-debug-bar button {
     appearance: none;
+    background: transparent;
     border: 0;
     cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+
+#new-debug-bar [x-cloak] {
+    display: none !important;
+}
+
+#new-debug-bar .ndb-scrollbar {
+    scrollbar-color: #d4d4d8 transparent;
+    scrollbar-width: thin;
+}
+
+#new-debug-bar[data-theme="dark"] .ndb-scrollbar {
+    scrollbar-color: #3f3f46 transparent;
+}
+
+#new-debug-bar .ndb-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+#new-debug-bar .ndb-scrollbar::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+
+#new-debug-bar[data-theme="dark"] .ndb-scrollbar::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    background-clip: padding-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #new-debug-bar,
+    #new-debug-bar * {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+    }
 }

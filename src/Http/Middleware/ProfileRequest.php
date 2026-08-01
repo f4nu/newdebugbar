@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Support\BarInjector;
 use NewDebugBar\Support\RequestEligibility;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -16,6 +17,7 @@ final class ProfileRequest
         private readonly ProfileManager $manager,
         private readonly ProfileStore $store,
         private readonly RequestEligibility $eligibility,
+        private readonly BarInjector $injector,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -38,6 +40,8 @@ final class ProfileRequest
 
         if ($id = $this->storeSafely($profile)) {
             $request->attributes->set('new-debug-bar.profile-id', $id);
+
+            return $this->injector->inject($response, $id);
         }
 
         return $response;

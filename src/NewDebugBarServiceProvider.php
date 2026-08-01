@@ -6,6 +6,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\EventCollector;
 use NewDebugBar\Collectors\ExceptionCollector;
@@ -13,7 +14,9 @@ use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\ModelCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\ViewCollector;
+use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
+use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\Redactor;
@@ -55,6 +58,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
     public function boot(Router $router, Dispatcher $events): void
     {
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'new-debug-bar');
+
         $this->publishes([
             __DIR__.'/../config/new-debug-bar.php' => config_path('new-debug-bar.php'),
         ], 'new-debug-bar-config');
@@ -64,6 +69,10 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         }
 
         (new EventRegistrar($events, $this->app->make(ProfileManager::class)))->register();
+        Livewire::component('new-debug-bar.toolbar', DebugBar::class);
+        $router->get('/__new-debug-bar/assets/{path}', AssetController::class)
+            ->where('path', '.*')
+            ->name('new-debug-bar.asset');
         $router->pushMiddlewareToGroup('web', ProfileRequest::class);
     }
 

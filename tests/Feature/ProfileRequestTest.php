@@ -12,12 +12,19 @@ it('captures a local web request and its Laravel activity', function () {
         ->and(app('router')->getMiddlewareGroups()['web'])->toContain(ProfileRequest::class)
         ->and(app('router')->gatherRouteMiddleware($route))->toContain(ProfileRequest::class);
 
-    $this->get('/profiled?token=visible', [
+    $response = $this->get('/profiled?token=visible', [
         'Accept' => 'text/html',
         'Authorization' => 'Bearer visible',
-    ])
+    ]);
+
+    $response
         ->assertOk()
-        ->assertSee('Ready');
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertSee('Ready')
+        ->assertSee('id="new-debug-bar"', false)
+        ->assertSee('/__new-debug-bar/assets/new-debug-bar.css', false)
+        ->assertSee('/__new-debug-bar/assets/new-debug-bar.js', false)
+        ->assertSee('data-update-uri', false);
 
     $files = File::files(config('new-debug-bar.storage.path'));
 
@@ -40,6 +47,13 @@ it('captures a local web request and its Laravel activity', function () {
 
     expect(array_column($profile['sections']['models']['payload']['items'], 'event'))
         ->toContain('retrieved');
+});
+
+it('serves its compiled assets through local package routes', function () {
+    $this->get('/__new-debug-bar/assets/new-debug-bar.css')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/css; charset=UTF-8')
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
 });
 
 it('does not profile non html traffic', function () {

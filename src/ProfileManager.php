@@ -87,7 +87,9 @@ final class ProfileManager
             'parameters' => is_object($route) && method_exists($route, 'parameters')
                 ? $this->redactor->clean($this->normalizeRouteParameters($route->parameters()))
                 : [],
+            'middleware' => is_object($route) ? app('router')->gatherRouteMiddleware($route) : [],
             'status' => $response?->getStatusCode() ?? 500,
+            'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
         ];
 
         $metrics = [
@@ -105,6 +107,7 @@ final class ProfileManager
                     'php' => PHP_VERSION,
                     'laravel' => app()->version(),
                     'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
+                    'new_debug_bar' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
                 ],
             ],
             'request' => [

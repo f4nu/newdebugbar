@@ -5,6 +5,12 @@ return [
 
     'environments' => ['local'],
 
+    'default_mode' => 'bar',
+
+    'theme' => 'system',
+
+    'slow_query_ms' => 100,
+
     'storage' => [
         'path' => null,
         'max_profiles' => 20,

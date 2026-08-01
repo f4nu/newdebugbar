@@ -64,9 +64,14 @@ final class EventRegistrar
         $this->listenForCacheEvent(KeyWritten::class, 'write');
         $this->listenForCacheEvent(KeyForgotten::class, 'forget');
 
-        $this->events->listen('composing: *', function (string $name): void {
+        $this->events->listen('composing: *', function (string $name, array $payload): void {
+            $view = $payload[0] ?? null;
+
             $this->manager->record('views', [
                 'name' => str($name)->after('composing: ')->toString(),
+                'data_keys' => is_object($view) && method_exists($view, 'getData')
+                    ? array_keys($view->getData())
+                    : [],
             ]);
         });
 
@@ -105,7 +110,7 @@ final class EventRegistrar
         $this->events->listen($eventClass, function (CacheEvent $event) use ($operation): void {
             $this->manager->record('cache', [
                 'operation' => $operation,
-                'key' => $event->key,
+                'key_hash' => substr(hash('sha256', $event->key), 0, 16),
                 'store' => $event->storeName,
                 'tags' => $event->tags,
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
