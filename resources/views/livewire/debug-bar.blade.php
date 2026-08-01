@@ -14,7 +14,7 @@
 >
     <div
         x-cloak
-        x-show="mode === 'bar' && ! inspectorOpen"
+        x-show.important="mode === 'bar' && ! inspectorOpen"
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="New Debug Bar"
@@ -70,7 +70,7 @@
 
     <div
         x-cloak
-        x-show="mode === 'floating' && ! inspectorOpen"
+        x-show.important="mode === 'floating' && ! inspectorOpen"
         :style="bubbleStyle"
         @pointerdown="startDrag($event)"
         @pointermove.window="drag($event)"
@@ -102,11 +102,11 @@
         </button>
     </div>
 
-    <div x-cloak x-show="inspectorOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0" role="presentation">
-        <div x-show="inspectorOpen" x-transition.opacity.duration.150ms @click="closeInspector()" class="ndb:absolute ndb:inset-0 ndb:bg-zinc-950/35 ndb:backdrop-blur-[2px] ndb:dark:bg-black/60"></div>
+    <div x-cloak x-show.important="inspectorOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0" role="presentation">
+        <div x-show.important="inspectorOpen" x-transition.opacity.duration.150ms @click="closeInspector()" class="ndb:absolute ndb:inset-0 ndb:bg-zinc-950/35 ndb:backdrop-blur-[2px] ndb:dark:bg-black/60"></div>
 
         <aside
-            x-show="inspectorOpen"
+            x-show.important="inspectorOpen"
             x-transition:enter="ndb:transition ndb:duration-200 ndb:ease-out"
             x-transition:enter-start="ndb:translate-x-full"
             x-transition:enter-end="ndb:translate-x-0"
@@ -145,7 +145,7 @@
                                     <button type="button" @click="openInspector(section.key)" class="ndb:flex ndb:h-10 ndb:w-full ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:text-left ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="selected === section.key ? 'ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:ring-1 ndb:ring-zinc-200 ndb:dark:bg-zinc-800 ndb:dark:text-indigo-300 ndb:dark:ring-zinc-700' : 'ndb:text-zinc-600 ndb:hover:bg-white/70 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800/70 ndb:dark:hover:text-white'">
                                         <span class="ndb:grid ndb:size-6 ndb:place-items-center ndb:rounded-lg ndb:bg-indigo-50 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="section.label.slice(0, 1)"></span>
                                         <span class="ndb:truncate" x-text="section.label"></span>
-                                        <span x-show="section.count !== null" class="ndb:ml-auto ndb:text-[10px] ndb:tabular-nums ndb:text-zinc-400" x-text="section.count"></span>
+                                        <span x-show.important="section.count !== null" class="ndb:ml-auto ndb:text-[10px] ndb:tabular-nums ndb:text-zinc-400" x-text="section.count"></span>
                                     </button>
                                     <span class="ndb:absolute ndb:right-1 ndb:hidden ndb:items-center ndb:rounded-md ndb:bg-white ndb:shadow-sm ndb:group-hover:flex ndb:group-focus-within:flex ndb:dark:bg-zinc-800">
                                         <button type="button" @click.stop="moveFavorite(section.key, -1)" class="{{ $button }} ndb:size-6" :aria-label="'Move ' + section.label + ' up'"><x-new-debug-bar::icon name="chevron-up" class="ndb:size-3" /></button>
@@ -162,7 +162,7 @@
                         <button type="button" @click="openInspector(section.key)" class="ndb:flex ndb:h-10 ndb:w-auto ndb:shrink-0 ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:text-left ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:w-full" :class="selected === section.key ? 'ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:ring-1 ndb:ring-zinc-200 ndb:dark:bg-zinc-800 ndb:dark:text-indigo-300 ndb:dark:ring-zinc-700' : 'ndb:text-zinc-600 ndb:hover:bg-white/70 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800/70 ndb:dark:hover:text-white'">
                             <span class="ndb:grid ndb:size-6 ndb:place-items-center ndb:rounded-lg ndb:bg-zinc-100 ndb:text-[10px] ndb:font-bold ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400" x-text="section.label.slice(0, 1)"></span>
                             <span class="ndb:truncate" x-text="section.label"></span>
-                            <span x-show="section.count !== null" class="ndb:ml-auto ndb:text-[10px] ndb:tabular-nums ndb:text-zinc-400" x-text="section.count"></span>
+                            <span x-show.important="section.count !== null" class="ndb:ml-auto ndb:text-[10px] ndb:tabular-nums ndb:text-zinc-400" x-text="section.count"></span>
                         </button>
                     </template>
                 </nav>
@@ -189,7 +189,7 @@
                     @if ($detailsLoaded && $profile !== [])
                         <div wire:loading.remove wire:target="loadDetails" class="ndb:p-4 ndb:sm:p-6">
                             @foreach ($profile['sections'] as $sectionKey => $section)
-                                <section x-show="selected === @js($sectionKey)" wire:key="section-{{ $sectionKey }}" class="ndb:space-y-4">
+                                <section x-show.important="selected === @js($sectionKey)" wire:key="section-{{ $sectionKey }}" class="ndb:space-y-4">
                                     @if ($sectionKey === 'overview')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach ([['Duration', $profile['metrics']['duration_ms'].' ms', 'clock'], ['Peak memory', $profile['metrics']['peak_memory_mb'].' MB', 'memory'], ['Queries', $profile['sections']['queries']['summary']['count'], 'database'], ['Status', $profile['sections']['request']['summary']['status'], 'check']] as [$label, $value, $icon])
@@ -268,8 +268,8 @@
         </aside>
     </div>
 
-    <div x-cloak x-show="paletteOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0 ndb:z-50 ndb:grid ndb:place-items-start ndb:bg-zinc-950/45 ndb:px-3 ndb:pt-[12vh] ndb:backdrop-blur-sm" @click.self="closePalette()">
-        <div x-show="paletteOpen" x-transition class="ndb:w-full ndb:max-w-xl ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-2xl ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900" role="dialog" aria-modal="true" aria-label="New Debug Bar command palette">
+    <div x-cloak x-show.important="paletteOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0 ndb:z-50 ndb:grid ndb:place-items-start ndb:bg-zinc-950/45 ndb:px-3 ndb:pt-[12vh] ndb:backdrop-blur-sm" @click.self="closePalette()">
+        <div x-show.important="paletteOpen" x-transition class="ndb:w-full ndb:max-w-xl ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-2xl ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900" role="dialog" aria-modal="true" aria-label="New Debug Bar command palette">
             <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:dark:border-zinc-800">
                 <x-new-debug-bar::icon name="search" class="ndb:size-5 ndb:text-zinc-400" />
                 <input x-ref="paletteSearch" x-model="paletteSearch" @input="paletteIndex = 0" @keydown.down.prevent="movePalette(1)" @keydown.up.prevent="movePalette(-1)" @keydown.enter.prevent="runActiveCommand()" type="search" placeholder="Jump to a section or change a setting…" class="ndb:h-14 ndb:min-w-0 ndb:flex-1 ndb:border-0 ndb:bg-transparent ndb:text-sm ndb:font-medium ndb:outline-none ndb:placeholder:text-zinc-400" />
@@ -283,7 +283,7 @@
                         <span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400" x-text="command.hint"></span>
                     </button>
                 </template>
-                <p x-show="filteredCommands.length === 0" class="ndb:px-3 ndb:py-8 ndb:text-center ndb:text-sm ndb:text-zinc-500">No matching commands.</p>
+                <p x-show.important="filteredCommands.length === 0" class="ndb:px-3 ndb:py-8 ndb:text-center ndb:text-sm ndb:text-zinc-500">No matching commands.</p>
             </div>
             <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-4 ndb:py-2 ndb:text-[10px] ndb:font-medium ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"><span>↑↓ Navigate</span><span>↵ Select</span><span class="ndb:ml-auto">⌘/Ctrl ⇧ P</span></div>
         </div>

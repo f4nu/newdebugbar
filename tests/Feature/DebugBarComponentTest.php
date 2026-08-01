@@ -28,3 +28,16 @@ it('locks the server profile identifier', function () {
         ->set('profileId', 'changed'))
         ->toThrow(Exception::class);
 });
+
+it('keeps Alpine visibility stronger than isolated Tailwind utilities', function () {
+    $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
+
+    $file = File::files(config('new-debug-bar.storage.path'))[0];
+    $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
+
+    Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
+        ->assertSee('x-show.important="mode === \'bar\' && ! inspectorOpen"', false)
+        ->assertSee('x-show.important="mode === \'floating\' && ! inspectorOpen"', false)
+        ->assertSee('x-show.important="inspectorOpen"', false)
+        ->assertSee('x-show.important="paletteOpen"', false);
+});
