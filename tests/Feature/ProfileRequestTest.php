@@ -3,10 +3,12 @@
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File;
 use NewDebugBar\Contracts\Collector;
+use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Tests\ProfiledModel;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 it('captures a local web request and its Laravel activity', function () {
     $route = app('router')->getRoutes()->match(request()->create('/profiled'));
@@ -66,6 +68,33 @@ it('serves its compiled assets through local package routes', function () {
     expect($stylesheet)
         ->not->toContain('@layer theme')
         ->not->toContain('@layer utilities');
+});
+
+it('injects assets into an html document that has no head', function () {
+    $this->get('/html-without-head', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertSee('<html><head><link', false)
+        ->assertSee('id="new-debug-bar"', false);
+});
+
+it('leaves response types that cannot host the bar untouched', function (string $path, int $status) {
+    $this->get($path, ['Accept' => 'text/html'])
+        ->assertStatus($status)
+        ->assertHeaderMissing('X-New-Debug-Bar-Profile')
+        ->assertDontSee('id="new-debug-bar"', false);
+})->with([
+    'html without a body' => ['/html-without-body', 200],
+    'plain text' => ['/plain-text', 200],
+    'download' => ['/download', 200],
+    'failed response' => ['/failed-html', 422],
+]);
+
+it('rejects unknown and unsafe package assets', function () {
+    $this->get('/__new-debug-bar/assets/unknown.txt')->assertNotFound();
+
+    expect(fn () => app(AssetController::class)('../composer.json'))
+        ->toThrow(NotFoundHttpException::class);
 });
 
 it('does not profile non html traffic', function () {

@@ -31,3 +31,43 @@ it('rejects unsafe profile identifiers', function () {
 
     $store->get('../secrets');
 })->throws(InvalidArgumentException::class);
+
+it('returns null for missing and malformed profiles', function () {
+    $store = new ProfileStore($this->files, $this->profilePath);
+    $missing = (string) Str::uuid();
+    $malformed = (string) Str::uuid();
+
+    $this->files->ensureDirectoryExists($this->profilePath);
+    $this->files->put($this->profilePath.'/'.$malformed.'.json', '{broken');
+
+    expect($store->get($missing))->toBeNull()
+        ->and($store->get($malformed))->toBeNull();
+});
+
+it('prunes old and excess profiles', function () {
+    $store = new ProfileStore($this->files, $this->profilePath, maxProfiles: 2, maxAgeMinutes: 1);
+    $old = (string) Str::uuid();
+    $first = (string) Str::uuid();
+    $latest = (string) Str::uuid();
+
+    $store->put(['id' => $old]);
+    touch($this->profilePath.'/'.$old.'.json', now()->subMinutes(2)->getTimestamp());
+    $store->put(['id' => $first]);
+    touch($this->profilePath.'/'.$first.'.json', now()->subSeconds(10)->getTimestamp());
+    $store->put(['id' => $latest]);
+
+    expect($store->get($old))->toBeNull()
+        ->and($store->get($first))->not->toBeNull()
+        ->and($store->get($latest))->not->toBeNull();
+});
+
+it('reports profiles that cannot be encoded', function () {
+    $store = new ProfileStore($this->files, $this->profilePath);
+    $resource = fopen('php://memory', 'rb');
+
+    try {
+        $store->put(['id' => (string) Str::uuid(), 'resource' => $resource]);
+    } finally {
+        fclose($resource);
+    }
+})->throws(RuntimeException::class, 'The debug profile could not be encoded.');

@@ -72,6 +72,33 @@ abstract class TestCase extends Orchestra
 
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 
+        $router->middleware(ProfileRequest::class)->get(
+            '/html-without-head',
+            fn () => response('<html><body>Headless page</body></html>'),
+        );
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/html-without-body',
+            fn () => response('<html><head><title>No body</title></head><main>No body</main></html>'),
+        );
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/plain-text',
+            fn () => response('Plain text', 200, ['Content-Type' => 'text/plain']),
+        );
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/download',
+            fn () => response('<html><body>Download</body></html>', 200, [
+                'Content-Disposition' => 'attachment; filename="debug.html"',
+            ]),
+        );
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/failed-html',
+            fn () => response('<html><body>Failed</body></html>', 422),
+        );
+
         $router->middleware(ProfileRequest::class)->get('/profiled-partial-model', function () {
             $model = new ProfiledModel;
             $model->setRawAttributes(['name' => 'Partial model']);

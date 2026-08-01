@@ -129,3 +129,129 @@ test('the command palette jumps to sections and changes settings', async () => {
   state.runCommand('theme:light');
   assert.equal(state.resolvedTheme, 'light');
 });
+
+test('broken browser preferences never break initialization or persistence', () => {
+  const browser = runtime();
+  browser.storage = {
+    getItem: () => { throw new Error('blocked'); },
+    setItem: () => { throw new Error('blocked'); },
+  };
+  const state = createNewDebugBar(summary, browser);
+
+  assert.doesNotThrow(() => state.init());
+  assert.doesNotThrow(() => state.toggleFavorite('queries'));
+  assert.deepEqual(state.favorites, ['queries']);
+});
+
+test('section selection falls back safely and profile details retry after failure', async () => {
+  const state = createNewDebugBar(summary, runtime());
+  let attempts = 0;
+  state.$wire = {
+    loadDetails: () => {
+      attempts++;
+      return attempts === 1 ? Promise.reject(new Error('expired')) : Promise.resolve();
+    },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.selectSection('missing');
+  assert.equal(state.selected, 'overview');
+
+  state.openInspector('queries');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(state.detailsRequested, false);
+
+  state.openInspector('logs');
+  await new Promise((resolve) => setImmediate(resolve));
+  state.openInspector('queries');
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(attempts, 2);
+  assert.equal(state.detailsRequested, true);
+  assert.equal(state.selected, 'queries');
+});
+
+test('favorite guards and drop positions preserve a valid order', () => {
+  const state = createNewDebugBar(summary, runtime({ favorites: ['overview', 'queries', 'logs'] }));
+  state.init();
+
+  state.toggleFavorite('missing');
+  state.moveFavorite('overview', -1);
+  state.startFavoriteDrag('missing');
+  state.hoverFavorite('missing');
+  assert.deepEqual(state.favorites, ['overview', 'queries', 'logs']);
+  assert.equal(state.favoriteDrag, null);
+
+  state.startFavoriteDrag('logs');
+  state.hoverFavorite('overview');
+  assert.equal(state.favoriteDrop, 'overview');
+  state.leaveFavorite('queries');
+  assert.equal(state.favoriteDrop, 'overview');
+  state.dropFavorite('overview');
+  assert.deepEqual(state.favorites, ['logs', 'overview', 'queries']);
+
+  state.startFavoriteDrag('logs');
+  state.dropFavorite('logs');
+  assert.deepEqual(state.favorites, ['logs', 'overview', 'queries']);
+});
+
+test('system theme changes only update a system preference', () => {
+  let dark = false;
+  let listener = null;
+  const browser = runtime();
+  browser.matchMedia = () => ({
+    get matches() { return dark; },
+    addEventListener: (_name, callback) => { listener = callback; },
+  });
+  const state = createNewDebugBar(summary, browser);
+
+  state.init();
+  assert.equal(state.resolvedTheme, 'light');
+
+  dark = true;
+  listener();
+  assert.equal(state.resolvedTheme, 'dark');
+
+  state.setTheme('light');
+  dark = false;
+  listener();
+  assert.equal(state.resolvedTheme, 'light');
+
+  state.setTheme('invalid');
+  assert.equal(state.theme, 'light');
+});
+
+test('the palette filters, wraps, restores focus, and handles layered shortcuts', () => {
+  let focused = 0;
+  const returnTarget = { focus: () => focused++ };
+  const browser = runtime();
+  browser.activeElement = () => returnTarget;
+  const state = createNewDebugBar(summary, browser);
+  state.$refs = { paletteSearch: { focus: () => focused++ } };
+  state.$nextTick = (callback) => callback();
+
+  state.openPalette();
+  assert.equal(state.paletteOpen, true);
+  assert.equal(focused, 1);
+
+  state.paletteSearch = 'dark theme';
+  assert.deepEqual(state.filteredCommands.map((command) => command.id), ['theme:dark']);
+  state.paletteIndex = 0;
+  state.movePalette(-1);
+  assert.equal(state.paletteIndex, 0);
+
+  state.paletteSearch = '';
+  state.paletteIndex = 0;
+  state.movePalette(-1);
+  assert.equal(state.paletteIndex, state.allCommands.length - 1);
+
+  let prevented = 0;
+  state.handleShortcut({ metaKey: true, ctrlKey: false, shiftKey: true, key: 'P', preventDefault: () => prevented++ });
+  assert.equal(state.paletteOpen, false);
+  assert.equal(prevented, 1);
+  assert.equal(focused, 2);
+
+  state.openInspector();
+  state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
+  assert.equal(state.inspectorOpen, false);
+});
