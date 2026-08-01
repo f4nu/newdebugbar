@@ -13,6 +13,7 @@
         "laravel/pint": "^1.27",
         "orchestra/testbench": "^11.1",
         "pestphp/pest": "^4.4",
+        "pestphp/pest-plugin-browser": "^4.3",
         "pestphp/pest-plugin-laravel": "^4.1"
     },
     "autoload": {
@@ -28,7 +29,16 @@
     "scripts": {
         "lint": "pint",
         "lint:check": "pint --test",
-        "test": "pest"
+        "test": [
+            "@test:php",
+            "npm test",
+            "@test:browser"
+        ],
+        "test:browser": [
+            "npm run build",
+            "pest --testsuite=Browser"
+        ],
+        "test:php": "pest --testsuite=Package"
     },
     "extra": {
         "laravel": {
