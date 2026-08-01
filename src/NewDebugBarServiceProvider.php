@@ -50,7 +50,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
         $this->app->singleton(ProfileStore::class, fn ($app): ProfileStore => new ProfileStore(
             files: $app->make(Filesystem::class),
-            path: config('new-debug-bar.storage.path') ?: storage_path('framework/new-debug-bar'),
+            path: config('new-debug-bar.storage.path') ?: storage_path('framework/cache/new-debug-bar'),
             maxProfiles: (int) config('new-debug-bar.storage.max_profiles', 20),
             maxAgeMinutes: (int) config('new-debug-bar.storage.max_age_minutes', 60),
         ));
