@@ -50,10 +50,16 @@ it('captures a local web request and its Laravel activity', function () {
 });
 
 it('serves its compiled assets through local package routes', function () {
-    $this->get('/__new-debug-bar/assets/new-debug-bar.css')
+    $response = $this->get('/__new-debug-bar/assets/new-debug-bar.css')
         ->assertOk()
         ->assertHeader('Content-Type', 'text/css; charset=UTF-8')
         ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+    $stylesheet = File::get($response->baseResponse->getFile()->getPathname());
+
+    expect($stylesheet)
+        ->not->toContain('@layer theme')
+        ->not->toContain('@layer utilities');
 });
 
 it('does not profile non html traffic', function () {

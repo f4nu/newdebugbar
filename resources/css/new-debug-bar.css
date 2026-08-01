@@ -1,6 +1,6 @@
 @import "@fontsource-variable/outfit";
-@import "tailwindcss/theme.css" layer(theme) prefix(ndb);
-@import "tailwindcss/utilities.css" layer(utilities) prefix(ndb) important;
+@import "tailwindcss/theme.css" prefix(ndb);
+@import "tailwindcss/utilities.css" prefix(ndb) important;
 
 @source "../views/**/*.blade.php";
 @source "../js/**/*.js";
