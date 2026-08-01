@@ -50,6 +50,15 @@ abstract class TestCase extends Orchestra
         });
 
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-partial-model', function () {
+            $model = new ProfiledModel;
+            $model->setRawAttributes(['name' => 'Partial model']);
+
+            Event::dispatch('eloquent.retrieved: '.ProfiledModel::class, [$model]);
+
+            return response('<!doctype html><html><body>Partial model</body></html>');
+        });
     }
 
     protected function setUp(): void

@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Support;
 
+use Closure;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
@@ -33,7 +34,7 @@ final class EventRegistrar
 
     public function register(): void
     {
-        $this->events->listen(QueryExecuted::class, function (QueryExecuted $event): void {
+        $this->listen(QueryExecuted::class, function (QueryExecuted $event): void {
             $this->manager->record('queries', [
                 'sql' => $event->sql,
                 'bindings' => $event->bindings,
@@ -43,7 +44,7 @@ final class EventRegistrar
             ]);
         });
 
-        $this->events->listen('eloquent.*', function (string $name, array $payload): void {
+        $this->listen('eloquent.*', function (string $name, array $payload): void {
             $model = $payload[0] ?? null;
 
             if (! $model instanceof Model) {
@@ -55,7 +56,7 @@ final class EventRegistrar
                 'model' => $model::class,
                 'connection' => $model->getConnectionName(),
                 'table' => $model->getTable(),
-                'key' => $model->getKey(),
+                'key' => $this->modelKey($model),
             ]);
         });
 
@@ -64,7 +65,7 @@ final class EventRegistrar
         $this->listenForCacheEvent(KeyWritten::class, 'write');
         $this->listenForCacheEvent(KeyForgotten::class, 'forget');
 
-        $this->events->listen('composing: *', function (string $name, array $payload): void {
+        $this->listen('composing: *', function (string $name, array $payload): void {
             $view = $payload[0] ?? null;
 
             $this->manager->record('views', [
@@ -75,7 +76,7 @@ final class EventRegistrar
             ]);
         });
 
-        $this->events->listen(MessageLogged::class, function (MessageLogged $event): void {
+        $this->listen(MessageLogged::class, function (MessageLogged $event): void {
             $this->manager->record('logs', [
                 'level' => $event->level,
                 'message' => $event->message,
@@ -89,7 +90,7 @@ final class EventRegistrar
             }
         });
 
-        $this->events->listen('*', function (string $name, array $payload): void {
+        $this->listen('*', function (string $name, array $payload): void {
             if ($this->shouldIgnoreGeneralEvent($name)) {
                 return;
             }
@@ -107,7 +108,7 @@ final class EventRegistrar
     /** @param class-string<CacheEvent> $eventClass */
     private function listenForCacheEvent(string $eventClass, string $operation): void
     {
-        $this->events->listen($eventClass, function (CacheEvent $event) use ($operation): void {
+        $this->listen($eventClass, function (CacheEvent $event) use ($operation): void {
             $this->manager->record('cache', [
                 'operation' => $operation,
                 'key_hash' => substr(hash('sha256', $event->key), 0, 16),
@@ -116,6 +117,26 @@ final class EventRegistrar
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
             ]);
         });
+    }
+
+    /** @param class-string|string $event */
+    private function listen(string $event, Closure $listener): void
+    {
+        $this->events->listen($event, function (...$arguments) use ($listener): void {
+            try {
+                $listener(...$arguments);
+            } catch (Throwable) {
+                // Debug collection must never interrupt the host application.
+            }
+        });
+    }
+
+    private function modelKey(Model $model): mixed
+    {
+        $attributes = $model->getAttributes();
+        $key = $model->getKeyName();
+
+        return array_key_exists($key, $attributes) ? $attributes[$key] : null;
     }
 
     private function shouldIgnoreGeneralEvent(string $name): bool

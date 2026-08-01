@@ -1,7 +1,9 @@
 <?php
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File;
 use NewDebugBar\Http\Middleware\ProfileRequest;
+use NewDebugBar\Tests\ProfiledModel;
 
 it('captures a local web request and its Laravel activity', function () {
     $route = app('router')->getRoutes()->match(request()->create('/profiled'));
@@ -66,4 +68,28 @@ it('does not profile non html traffic', function () {
     $this->getJson('/plain-json')->assertOk();
 
     expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse();
+});
+
+it('profiles partial models without requiring their primary key', function () {
+    Model::preventAccessingMissingAttributes();
+
+    try {
+        $this->get('/profiled-partial-model')
+            ->assertOk()
+            ->assertSee('Partial model');
+    } finally {
+        Model::preventAccessingMissingAttributes(false);
+    }
+
+    $files = File::files(config('new-debug-bar.storage.path'));
+    $profile = json_decode(File::get($files[0]->getPathname()), true, flags: JSON_THROW_ON_ERROR);
+    $models = $profile['sections']['models']['payload']['items'];
+    $partialModel = collect($models)->first(
+        fn (array $model): bool => $model['model'] === ProfiledModel::class
+            && $model['event'] === 'retrieved',
+    );
+
+    expect($partialModel)->not->toBeNull()
+        ->and($partialModel['event'])->toBe('retrieved')
+        ->and($partialModel['key'])->toBeNull();
 });
