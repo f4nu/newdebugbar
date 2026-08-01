@@ -1,0 +1,35 @@
+@import "@fontsource-variable/outfit";
+@import "tailwindcss/theme.css" layer(theme) prefix(ndb);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(ndb) important;
+
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+#new-debug-bar,
+#new-debug-bar *,
+#new-debug-bar *::before,
+#new-debug-bar *::after {
+    box-sizing: border-box;
+}
+
+#new-debug-bar {
+    color: #18181b;
+    font-family: "Outfit Variable", Outfit, ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+}
+
+#new-debug-bar button,
+#new-debug-bar input {
+    color: inherit;
+    font: inherit;
+}
+
+#new-debug-bar button {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+}

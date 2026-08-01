@@ -1,0 +1,48 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "newdebugbar/new-debug-bar",
+    "description": "A modern Laravel debug bar built with Livewire.",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.0",
+        "livewire/livewire": "^4.1"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "orchestra/testbench": "^11.1",
+        "pestphp/pest": "^4.4",
+        "pestphp/pest-plugin-laravel": "^4.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "NewDebugBar\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "NewDebugBar\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": "pint",
+        "lint:check": "pint --test",
+        "test": "pest"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "NewDebugBar\\NewDebugBarServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
