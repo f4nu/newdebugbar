@@ -1,0 +1,49 @@
+<?php
+
+use Illuminate\Support\Facades\File;
+use NewDebugBar\Http\Middleware\ProfileRequest;
+
+it('captures a local web request and its Laravel activity', function () {
+    $route = app('router')->getRoutes()->match(request()->create('/profiled'));
+
+    expect(app()->environment())->toBe('testing')
+        ->and(app()->bound('middleware.disable'))->toBeFalse()
+        ->and(config('new-debug-bar.environments'))->toBe(['testing'])
+        ->and(app('router')->getMiddlewareGroups()['web'])->toContain(ProfileRequest::class)
+        ->and(app('router')->gatherRouteMiddleware($route))->toContain(ProfileRequest::class);
+
+    $this->get('/profiled?token=visible', [
+        'Accept' => 'text/html',
+        'Authorization' => 'Bearer visible',
+    ])
+        ->assertOk()
+        ->assertSee('Ready');
+
+    $files = File::files(config('new-debug-bar.storage.path'));
+
+    expect($files)->toHaveCount(1);
+
+    $profile = json_decode(File::get($files[0]->getPathname()), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($profile)
+        ->environment->toBe('testing')
+        ->sections->request->summary->method->toBe('GET')
+        ->sections->request->summary->status->toBe(200)
+        ->sections->request->payload->query->token->toBe('[redacted]')
+        ->sections->request->payload->headers->authorization->toBe('[redacted]')
+        ->sections->queries->summary->count->toBeGreaterThanOrEqual(1)
+        ->sections->models->summary->count->toBeGreaterThanOrEqual(1)
+        ->sections->cache->summary->hits->toBe(1)
+        ->sections->cache->summary->misses->toBe(1)
+        ->sections->logs->summary->count->toBe(1)
+        ->sections->events->summary->count->toBeGreaterThanOrEqual(1);
+
+    expect(array_column($profile['sections']['models']['payload']['items'], 'event'))
+        ->toContain('retrieved');
+});
+
+it('does not profile non html traffic', function () {
+    $this->getJson('/plain-json')->assertOk();
+
+    expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse();
+});
