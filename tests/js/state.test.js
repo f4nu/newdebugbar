@@ -48,13 +48,12 @@ test('favorites can be pinned and reordered', () => {
   state.moveFavorite('logs', -1);
 
   assert.deepEqual(state.favorites, ['logs', 'queries']);
-  assert.deepEqual(state.orderedSections.map((section) => section.key), ['logs', 'queries']);
-  assert.deepEqual(state.unpinnedSections.map((section) => section.key), ['overview']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['logs', 'queries', 'overview']);
   assert.equal(browser.values.has(STORAGE_KEY), true);
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
-  assert.deepEqual(state.unpinnedSections.map((section) => section.key), ['overview', 'logs']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'overview', 'logs']);
 });
 
 test('favorites can be reordered by dragging', () => {

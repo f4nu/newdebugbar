@@ -25,7 +25,7 @@ it('captures a local web request and its Laravel activity', function () {
     $response
         ->assertOk()
         ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertSee('Ready')
+        ->assertSee('data-testid="host-page"', false)
         ->assertSee('id="new-debug-bar"', false)
         ->assertSee('/__new-debug-bar/assets/new-debug-bar.css', false)
         ->assertSee('/__new-debug-bar/assets/new-debug-bar.js', false)

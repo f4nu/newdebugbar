@@ -92,9 +92,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
     },
 
-    get orderedSections() {
+    get sidebarSections() {
       const byKey = new Map((this.summary.sections ?? []).map((section) => [section.key, section]));
-      return this.favorites.map((key) => byKey.get(key)).filter(Boolean);
+      const favorites = this.favorites.map((key) => byKey.get(key)).filter(Boolean);
+      const sections = (this.summary.sections ?? []).filter((section) => !this.isFavorite(section.key));
+
+      return [...favorites, ...sections];
     },
 
     get selectedSection() {
@@ -102,8 +105,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         ?? { key: 'overview', label: 'Overview', count: null };
     },
 
-    get unpinnedSections() {
-      return (this.summary.sections ?? []).filter((section) => !this.favorites.includes(section.key));
+    isFavorite(key) {
+      return this.favorites.includes(key);
     },
 
     selectSection(section) {
@@ -174,7 +177,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     hoverFavorite(key, after = false) {
-      if (!this.favoriteDrag || this.favoriteDrag === key) return;
+      if (!this.favoriteDrag || this.favoriteDrag === key || !this.isFavorite(key)) return;
 
       this.favoriteDrop = key;
       this.favoriteDropAfter = after;

@@ -37,8 +37,8 @@ abstract class TestCase extends Orchestra
 
     protected function defineRoutes($router): void
     {
-        $router->middleware(ProfileRequest::class)->get('/profiled', function () {
-            DB::select('select 1');
+        $profiledPage = function (string $title, string $nextPath, string $nextLabel) {
+            DB::select('select ? as number', [1]);
             Cache::put('dashboard', 'ready', 60);
             Cache::get('dashboard');
             Cache::get('missing');
@@ -46,8 +46,29 @@ abstract class TestCase extends Orchestra
             Event::dispatch('eloquent.retrieved: '.ProfiledModel::class, [new ProfiledModel]);
             Log::info('Profiled request completed', ['authorization' => 'hidden']);
 
-            return response('<!doctype html><html><body>Ready</body></html>');
-        });
+            return response(<<<HTML
+                <!doctype html>
+                <html>
+                    <head><title>{$title}</title></head>
+                    <body>
+                        <main>
+                            <h1 data-testid="host-page">{$title}</h1>
+                            <a href="{$nextPath}" wire:navigate data-testid="host-navigation">{$nextLabel}</a>
+                        </main>
+                    </body>
+                </html>
+                HTML);
+        };
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled',
+            fn () => $profiledPage('First request', '/profiled-next', 'Next request'),
+        );
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-next',
+            fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
+        );
 
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 
