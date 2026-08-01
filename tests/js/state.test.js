@@ -49,11 +49,12 @@ test('favorites can be pinned and reordered', () => {
 
   assert.deepEqual(state.favorites, ['logs', 'queries']);
   assert.deepEqual(state.orderedSections.map((section) => section.key), ['logs', 'queries']);
-  assert.deepEqual(state.allSections.map((section) => section.key), ['overview', 'queries', 'logs']);
+  assert.deepEqual(state.unpinnedSections.map((section) => section.key), ['overview']);
   assert.equal(browser.values.has(STORAGE_KEY), true);
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
+  assert.deepEqual(state.unpinnedSections.map((section) => section.key), ['overview', 'logs']);
 });
 
 test('selecting a section resets content and highlights its code', async () => {

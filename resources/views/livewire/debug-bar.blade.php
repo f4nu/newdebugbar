@@ -107,7 +107,7 @@
                     </template>
 
                     <p class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">All sections</p>
-                    <template x-for="section in allSections" :key="section.key">
+                    <template x-for="section in unpinnedSections" :key="section.key">
                         <button type="button" @click="selectSection(section.key)" class="ndb:flex ndb:h-9 ndb:w-auto ndb:shrink-0 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:px-2.5 ndb:text-left ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:w-full" :class="selected === section.key ? 'ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:ring-1 ndb:ring-zinc-200 ndb:dark:bg-zinc-800 ndb:dark:text-indigo-300 ndb:dark:ring-zinc-700' : 'ndb:text-zinc-600 ndb:hover:bg-white/70 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800/70 ndb:dark:hover:text-white'">
                             <span class="ndb:truncate" x-text="section.label"></span>
                             <span x-show.important="section.count !== null" class="ndb:ml-auto ndb:text-[10px] ndb:tabular-nums ndb:text-zinc-400" x-text="section.count"></span>

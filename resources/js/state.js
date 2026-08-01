@@ -98,8 +98,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         ?? { key: 'overview', label: 'Overview', count: null };
     },
 
-    get allSections() {
-      return this.summary.sections ?? [];
+    get unpinnedSections() {
+      return (this.summary.sections ?? []).filter((section) => !this.favorites.includes(section.key));
     },
 
     selectSection(section) {
