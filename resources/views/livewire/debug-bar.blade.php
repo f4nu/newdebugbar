@@ -1,6 +1,4 @@
 @php
-    $iconButton = 'ndb:inline-flex ndb:items-center ndb:justify-center ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:pointer-events-none ndb:disabled:opacity-25 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white';
-    $starButton = 'ndb-star-button ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-400 ndb:transition ndb:hover:scale-105 ndb:hover:text-blue-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-blue-500 ndb:dark:text-zinc-500 ndb:dark:hover:text-blue-300';
     $profile = $detailsLoaded ? $this->profile : [];
 @endphp
 
@@ -20,41 +18,41 @@
         aria-label="Debug toolbar"
         class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/70 ndb:p-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-2xl ndb:backdrop-brightness-150 ndb:backdrop-saturate-150 ndb:dark:border-zinc-700/70 ndb:dark:bg-zinc-900/70"
     >
-        <button type="button" data-ndb-toolbar="request" @click="openInspector('request')" class="ndb:flex ndb:min-w-0 ndb:max-w-52 ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-800" aria-label="Open request details">
+        <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="request" class="ndb:flex ndb:min-w-0 ndb:max-w-52" aria-label="Open request details">
             <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
             <span class="ndb:min-w-0">
                 <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
                 <span class="ndb:block ndb:text-[10px] ndb:font-medium ndb:text-zinc-400" x-text="summary.status"></span>
             </span>
-        </button>
+        </x-new-debug-bar::toolbar-button>
 
         <span class="ndb:my-1 ndb:w-px ndb:bg-zinc-200 ndb:dark:bg-zinc-700"></span>
 
-        <button type="button" data-ndb-toolbar="environment" @click="openInspector('overview')" class="ndb:flex ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-800">
+        <x-new-debug-bar::toolbar-button section="overview" data-ndb-toolbar="environment" class="ndb:flex">
             <span class="ndb:size-2 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
             <span><span class="ndb:hidden ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:block">Environment</span><span class="ndb:block ndb:max-w-24 ndb:truncate ndb:text-[10px] ndb:font-bold ndb:sm:text-xs" x-text="summary.environment"></span></span>
-        </button>
+        </x-new-debug-bar::toolbar-button>
 
-        <button type="button" data-ndb-toolbar="duration" @click="openInspector('request')" class="ndb:hidden ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:md:flex ndb:dark:hover:bg-zinc-800">
+        <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="duration" class="ndb:hidden ndb:md:flex">
             <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:text-indigo-500" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></span>
-        </button>
+        </x-new-debug-bar::toolbar-button>
 
-        <button type="button" data-ndb-toolbar="memory" @click="openInspector('overview')" class="ndb:hidden ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:flex ndb:dark:hover:bg-zinc-800">
+        <x-new-debug-bar::toolbar-button section="overview" data-ndb-toolbar="memory" class="ndb:hidden ndb:lg:flex">
             <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:text-indigo-500" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
-        </button>
+        </x-new-debug-bar::toolbar-button>
 
-        <button type="button" data-ndb-toolbar="queries" @click="openInspector('queries')" class="ndb:hidden ndb:self-stretch ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:px-2.5 ndb:py-1.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:flex ndb:dark:hover:bg-zinc-800">
+        <x-new-debug-bar::toolbar-button section="queries" data-ndb-toolbar="queries" class="ndb:hidden ndb:sm:flex">
             <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:text-indigo-500" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span x-text="summary.query_count"></span><span class="ndb:font-medium ndb:text-zinc-400" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
-        </button>
+        </x-new-debug-bar::toolbar-button>
 
         <span class="ndb:my-1 ndb:w-px ndb:bg-zinc-200 ndb:dark:bg-zinc-700"></span>
 
         <div class="ndb:flex ndb:items-center ndb:gap-0.5">
-            <button type="button" data-ndb-toolbar="palette" @click="openPalette()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
-            <button type="button" data-ndb-toolbar="expand" @click="openInspector()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector"><x-new-debug-bar::icon name="expand" class="ndb:size-4" /></button>
+            <x-new-debug-bar::icon-button name="search" data-ndb-toolbar="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)" />
+            <x-new-debug-bar::icon-button name="expand" data-ndb-toolbar="expand" @click="openInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector" />
         </div>
     </div>
 
@@ -81,9 +79,9 @@
                     <p class="ndb:flex ndb:items-center ndb:gap-2.5 ndb:text-[9px] ndb:text-zinc-500 ndb:dark:text-zinc-400"><span class="ndb:font-bold" x-text="summary.status"></span><span class="ndb:font-semibold ndb:uppercase ndb:tracking-wider" x-text="summary.environment"></span><span class="ndb:font-semibold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></p>
                 </div>
                 <div class="ndb:flex ndb:items-center ndb:gap-0.5">
-                    <button type="button" data-ndb-inspector-action="palette" @click="openPalette()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-lg" aria-label="Open command palette"><x-new-debug-bar::icon name="search" class="ndb:size-4" /></button>
-                    <button type="button" data-ndb-inspector-action="theme" @click="toggleTheme()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-lg" :aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" :title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-new-debug-bar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-new-debug-bar::icon name="sun" class="ndb:size-4" /></span></button>
-                    <button type="button" data-ndb-inspector-action="close" @click="closeInspector()" class="{{ $iconButton }} ndb:size-9 ndb:rounded-lg" aria-label="Close inspector"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></button>
+                    <x-new-debug-bar::icon-button name="search" data-ndb-inspector-action="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-lg" aria-label="Open command palette" />
+                    <x-new-debug-bar::icon-button data-ndb-inspector-action="theme" @click="toggleTheme()" class="ndb:size-9 ndb:rounded-lg" ::aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" ::title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-new-debug-bar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-new-debug-bar::icon name="sun" class="ndb:size-4" /></span></x-new-debug-bar::icon-button>
+                    <x-new-debug-bar::icon-button name="close" data-ndb-inspector-action="close" @click="closeInspector()" class="ndb:size-9 ndb:rounded-lg" aria-label="Close inspector" />
                 </div>
             </header>
 
@@ -131,7 +129,7 @@
                                     :title="isFavorite(section.key) ? 'Remove from favorites' : 'Add to favorites'"
                                     @dragstart.prevent
                                     @click.stop="toggleFavorite(section.key)"
-                                    class="{{ $starButton }}"
+                                    class="ndb-star-button ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-400 ndb:transition ndb:hover:scale-105 ndb:hover:text-blue-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-blue-500 ndb:dark:text-zinc-500 ndb:dark:hover:text-blue-300"
                                 >
                                     <span x-show.important="! isFavorite(section.key)" class="ndb-section-star-outline"><x-new-debug-bar::icon name="star" class="ndb:size-3.5" /></span>
                                     <span x-show.important="isFavorite(section.key)"><x-new-debug-bar::icon name="star-filled" class="ndb-favorite-star ndb:size-3.5" /></span>
@@ -194,7 +192,7 @@
                                                     <span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $query['connection'] }}</span>
                                                     @if ($query['duration_ms'] >= config('new-debug-bar.slow_query_ms', 100))<span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-amber-700 ndb:dark:text-amber-300">Slow</span>@endif
                                                     <span class="ndb:ml-auto ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $query['duration_ms'] }} ms</span>
-                                                    <button type="button" @click="navigator.clipboard?.writeText(@js($query['sql']))" class="{{ $iconButton }} ndb:size-7 ndb:rounded-lg" aria-label="Copy query {{ $index + 1 }}" title="Copy query"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button>
+                                                    <button type="button" @click="navigator.clipboard?.writeText(@js($query['sql']))" class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white" aria-label="Copy query {{ $index + 1 }}" title="Copy query"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button>
                                                 </div>
                                                 <pre class="ndb-code ndb-scrollbar ndb:rounded-none"><code data-ndb-language="sql">{{ $query['sql'] }}</code></pre>
                                                 @if ($query['bindings'] !== [])
