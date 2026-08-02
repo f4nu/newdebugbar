@@ -215,9 +215,38 @@ it('highlights query code and expands custom binding details', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
         ->waitForText('Bindings')
+        ->assertSee('Repeated 3×')
         ->assertScript('document.querySelectorAll("#new-debug-bar code[data-ndb-language=sql][data-highlighted]").length > 0')
-        ->click('[data-ndb-query-bindings="0"] summary')
-        ->assertAttribute('[data-ndb-query-bindings="0"]', 'open', '')
+        ->click('[data-ndb-query-bindings="item-1"] summary')
+        ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '')
+        ->assertNoJavaScriptErrors();
+});
+
+it('filters searches sorts and expands repeated query evidence', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="queries"]')
+        ->waitForText('Extra runs')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
+        ->click('[data-ndb-query-filter="repeated"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
+        ->click('[data-ndb-query-group] > summary')
+        ->assertAttribute('[data-ndb-query-group]', 'open', '')
+        ->assertSee('Likely N+1')
+        ->click('[data-ndb-query-filter="read"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
+        ->click('[data-ndb-query-sort="duration"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const durations = Array.from(document.querySelectorAll('[data-ndb-query-item]:not([hidden])'))
+                    .map((query) => Number(query.dataset.duration));
+
+                return durations.every((duration, index) => index === 0 || durations[index - 1] >= duration);
+            })()
+            JS)
+        ->type('[data-ndb-query-search]', 'no query can match this')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
+        ->assertSee('No queries match these filters.')
         ->assertNoJavaScriptErrors();
 });
 

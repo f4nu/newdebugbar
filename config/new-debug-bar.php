@@ -24,6 +24,7 @@ return [
     ],
 
     'collection' => [
+        'application_path' => null,
         'max_items_per_section' => 100,
         'max_depth' => 5,
         'max_string_length' => 2_000,

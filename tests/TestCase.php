@@ -27,6 +27,7 @@ abstract class TestCase extends Orchestra
     {
         $app['config']->set('new-debug-bar.environments', ['testing']);
         $app['config']->set('new-debug-bar.storage.path', storage_path('framework/testing-new-debug-bar'));
+        $app['config']->set('new-debug-bar.collection.application_path', dirname(__DIR__));
         $app['config']->set('cache.default', 'array');
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
@@ -39,7 +40,9 @@ abstract class TestCase extends Orchestra
     protected function defineRoutes($router): void
     {
         $profiledPage = function (string $title, string $nextPath, string $nextLabel) {
-            DB::select('select ? as number', [1]);
+            foreach ([1, 2, 3] as $number) {
+                DB::select('select ? as number', [$number]);
+            }
             Cache::put('dashboard', 'ready', 60);
             Cache::get('dashboard');
             Cache::get('missing');

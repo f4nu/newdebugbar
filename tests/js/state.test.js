@@ -170,6 +170,74 @@ test('the theme toggle shows the opposite resolved theme', () => {
   assert.equal(state.resolvedTheme, 'dark');
 });
 
+test('query controls filter search and sort captured evidence', () => {
+  const state = createNewDebugBar({ ...summary, query_count: 3 }, runtime());
+  const appended = [];
+  const item = (execution, duration, type, slow, search) => ({
+    dataset: {
+      execution: String(execution),
+      duration: String(duration),
+      type,
+      slow: String(slow),
+      search,
+    },
+    hidden: false,
+  });
+  const first = item(1, 4, 'read', false, 'select users [string]');
+  const second = item(2, 20, 'write', true, 'update clinics 42');
+  const third = item(3, 10, 'read', false, 'select clinics 42');
+  const group = item(1, 34, 'read', false, 'select repeated users');
+  state.$refs = {
+    queryItems: {
+      children: [first, second, third],
+      appendChild: (child) => appended.push(child),
+    },
+    queryGroups: {
+      children: [group],
+      appendChild: (child) => appended.push(child),
+    },
+  };
+
+  state.setQueryFilter('read');
+  assert.equal(first.hidden, false);
+  assert.equal(second.hidden, true);
+  assert.equal(third.hidden, false);
+  assert.equal(group.hidden, true);
+  assert.equal(state.visibleQueryCount, 2);
+
+  state.setQueryFilter('slow');
+  assert.equal(first.hidden, true);
+  assert.equal(second.hidden, false);
+  assert.equal(state.visibleQueryCount, 1);
+
+  state.setQueryFilter('write');
+  assert.equal(second.hidden, false);
+  assert.equal(third.hidden, true);
+
+  state.setQueryFilter('read');
+  state.querySearch = 'users';
+  state.applyQueryView();
+  assert.equal(first.hidden, false);
+  assert.equal(third.hidden, true);
+  assert.equal(state.visibleQueryCount, 1);
+
+  state.querySearch = '';
+  state.setQueryFilter('repeated');
+  assert.equal(first.hidden, true);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 1);
+
+  appended.length = 0;
+  state.queryFilter = 'all';
+  state.setQuerySort('duration');
+  assert.deepEqual(appended.slice(0, 3), [second, third, first]);
+
+  state.setQueryFilter('invalid');
+  state.setQuerySort('invalid');
+  assert.equal(state.queryFilter, 'all');
+  assert.equal(state.querySort, 'duration');
+});
+
 test('the command palette jumps to sections and changes settings', async () => {
   let highlighted = 0;
   const browser = runtime();

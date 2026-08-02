@@ -25,6 +25,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     favoriteDrag: null,
     favoriteDrop: null,
     favoriteDropAfter: false,
+    queryFilter: 'all',
+    querySearch: '',
+    querySort: 'execution',
+    visibleQueryCount: summary.query_count ?? 0,
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
@@ -126,6 +130,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
       this.$nextTick?.(() => {
         this.syncSectionPanels();
+        if (this.selected === 'queries') this.applyQueryView();
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         browser.highlight?.();
       });
@@ -153,6 +158,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         Promise.resolve(this.$wire?.loadDetails())
           .then(() => this.$nextTick?.(() => {
             this.syncSectionPanels();
+            this.applyQueryView();
             browser.highlight?.();
           }))
           .catch(() => {
@@ -174,6 +180,68 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       } catch {
         // Clipboard policies must never break the host page.
       }
+    },
+
+    setQueryFilter(filter) {
+      if (!['all', 'repeated', 'slow', 'read', 'write'].includes(filter)) return;
+
+      this.queryFilter = filter;
+      this.applyQueryView();
+    },
+
+    setQuerySort(sort) {
+      if (!['execution', 'duration'].includes(sort)) return;
+
+      this.querySort = sort;
+      this.applyQueryView();
+    },
+
+    applyQueryView() {
+      const itemList = this.$refs?.queryItems;
+      const groupList = this.$refs?.queryGroups;
+      const search = this.querySearch.toLowerCase().trim();
+      let visible = 0;
+
+      if (itemList?.children) {
+        const items = [...itemList.children];
+
+        items
+          .sort((left, right) => this.compareQueries(left, right))
+          .forEach((item) => {
+            const matchesFilter = this.queryFilter === 'all'
+              || (this.queryFilter === 'slow' && item.dataset.slow === 'true')
+              || (this.queryFilter === 'read' && item.dataset.type === 'read')
+              || (this.queryFilter === 'write' && item.dataset.type === 'write');
+            const matchesSearch = search === '' || item.dataset.search?.includes(search);
+            item.hidden = this.queryFilter === 'repeated' || !matchesFilter || !matchesSearch;
+            if (!item.hidden) visible++;
+            itemList.appendChild?.(item);
+          });
+      }
+
+      if (groupList?.children) {
+        const groups = [...groupList.children];
+
+        groups
+          .sort((left, right) => this.compareQueries(left, right))
+          .forEach((group) => {
+            const matchesSearch = search === '' || group.dataset.search?.includes(search);
+            group.hidden = this.queryFilter !== 'repeated' || !matchesSearch;
+            if (!group.hidden) visible++;
+            groupList.appendChild?.(group);
+          });
+      }
+
+      this.visibleQueryCount = visible;
+    },
+
+    compareQueries(left, right) {
+      if (this.querySort === 'duration') {
+        return Number(right.dataset.duration ?? 0) - Number(left.dataset.duration ?? 0)
+          || Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+      }
+
+      return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
     },
 
     keepFocusWithin(event, container) {

@@ -187,22 +187,79 @@
                                         </div>
                                         <pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json">{{ json_encode($section['payload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
                                     @elseif ($sectionKey === 'queries')
-                                        @forelse ($section['payload']['items'] as $index => $query)
-                                            <article wire:key="query-{{ $index }}" class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                                <div class="ndb:flex ndb:items-center ndb:gap-2 ndb:border-b ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-3 ndb:py-2 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900">
-                                                    <span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $query['connection'] }}</span>
-                                                    @if ($query['duration_ms'] >= config('new-debug-bar.slow_query_ms', 100))<span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-amber-700 ndb:dark:text-amber-300">Slow</span>@endif
-                                                    <span class="ndb:ml-auto ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $query['duration_ms'] }} ms</span>
-                                                    <button type="button" @click="copyText(@js($query['sql']))" class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white" aria-label="Copy query {{ $index + 1 }}" title="Copy query"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button>
+                                        @php($querySummary = $section['summary'])
+                                        <div class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
+                                            <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-zinc-200/80 ndb:sm:grid-cols-5 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800">
+                                                @foreach ([
+                                                    ['Queries', $querySummary['total_count']],
+                                                    ['Query time', $querySummary['total_time_ms'].' ms'],
+                                                    ['Request share', $querySummary['request_time_percent'].'%'],
+                                                    ['Repeated', $querySummary['repeated_pattern_count']],
+                                                    ['Extra runs', $querySummary['extra_execution_count']],
+                                                ] as [$label, $value])
+                                                    <div class="ndb:px-3 ndb:py-2.5"><dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-bold ndb:tabular-nums">{{ $value }}</dd></div>
+                                                @endforeach
+                                            </dl>
+                                        </div>
+
+                                        <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:pb-3 ndb:lg:flex-row ndb:lg:items-end ndb:dark:border-zinc-800">
+                                            <div class="ndb:min-w-0 ndb:flex-1">
+                                                <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Filter</p>
+                                                <div class="ndb:flex ndb:overflow-x-auto" role="group" aria-label="Filter queries">
+                                                    @foreach (['all' => 'All', 'repeated' => 'Repeated', 'slow' => 'Slow', 'read' => 'Read', 'write' => 'Write'] as $filter => $label)
+                                                        <button type="button" data-ndb-query-filter="{{ $filter }}" @click="setQueryFilter(@js($filter))" :aria-pressed="queryFilter === @js($filter)" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="queryFilter === @js($filter) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:text-white'">{{ $label }}</button>
+                                                    @endforeach
                                                 </div>
-                                                <pre class="ndb-code ndb-scrollbar ndb:rounded-none"><code data-ndb-language="sql">{{ $query['sql'] }}</code></pre>
-                                                @if ($query['bindings'] !== [])
-                                                    <details data-ndb-query-bindings="{{ $index }}" class="ndb:group ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-100 ndb:text-zinc-700 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400"><span>Bindings</span><span class="ndb:text-[9px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ count($query['bindings']) }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:ml-auto ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($query['bindings'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
-                                                @endif
-                                            </article>
-                                        @empty
-                                            <x-new-debug-bar::empty-state label="No queries ran during this request." />
-                                        @endforelse
+                                            </div>
+                                            <label class="ndb:min-w-0 ndb:lg:w-64"><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Search</span><input data-ndb-query-search x-model="querySearch" @input.debounce.100ms="applyQueryView()" type="search" placeholder="SQL or redacted binding" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
+                                            <div>
+                                                <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Sort</p>
+                                                <div class="ndb:flex ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:p-0.5 ndb:dark:border-zinc-700" role="group" aria-label="Sort queries">
+                                                    @foreach (['execution' => 'Execution', 'duration' => 'Slowest'] as $sort => $label)
+                                                        <button type="button" data-ndb-query-sort="{{ $sort }}" @click="setQuerySort(@js($sort))" :aria-pressed="querySort === @js($sort)" class="ndb:rounded-md ndb:px-2.5 ndb:py-1.5 ndb:text-[10px] ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="querySort === @js($sort) ? 'ndb:bg-zinc-100 ndb:text-zinc-950 ndb:dark:bg-zinc-800 ndb:dark:text-white' : 'ndb:text-zinc-500 ndb:dark:text-zinc-400'">{{ $label }}</button>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleQueryCount"></span> results</p>
+
+                                        <div x-ref="queryItems" class="ndb:space-y-3">
+                                            @foreach ($section['payload']['items'] as $query)
+                                                <x-new-debug-bar::query-execution :query="$query" :identity="'item-'.$query['execution']" filterable />
+                                            @endforeach
+                                        </div>
+
+                                        <div x-ref="queryGroups" class="ndb:space-y-3">
+                                            @foreach ($section['payload']['repeated_groups'] as $group)
+                                                @php($groupSearch = mb_strtolower($group['sql'].' '.json_encode(array_column($group['executions'], 'bindings'), JSON_UNESCAPED_SLASHES)))
+                                                <details
+                                                    data-ndb-query-group="{{ $group['fingerprint'] }}"
+                                                    data-execution="{{ $group['executions'][0]['execution'] }}"
+                                                    data-duration="{{ $group['duration_ms'] }}"
+                                                    data-search="{{ $groupSearch }}"
+                                                    hidden
+                                                    class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-indigo-200/90 ndb:bg-indigo-50/30 ndb:dark:border-indigo-950 ndb:dark:bg-indigo-950/20"
+                                                >
+                                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:px-4 ndb:py-3 ndb:text-xs">
+                                                        <span class="ndb:font-bold ndb:text-indigo-700 ndb:dark:text-indigo-300">Repeated {{ $group['count'] }}×</span>
+                                                        @if ($group['likely_n_plus_one'])<span class="ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300">Likely N+1</span>@endif
+                                                        <span class="ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $group['extra_executions'] }} extra executions</span>
+                                                        <span class="ndb:ml-auto ndb:font-bold ndb:tabular-nums">{{ $group['duration_ms'] }} ms</span>
+                                                        <x-new-debug-bar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition" />
+                                                    </summary>
+                                                    <div class="ndb:space-y-3 ndb:border-t ndb:border-indigo-200/70 ndb:p-3 ndb:dark:border-indigo-950">
+                                                        @foreach ($group['executions'] as $execution)
+                                                            <x-new-debug-bar::query-execution :query="$execution" :identity="'group-'.$group['fingerprint'].'-'.$execution['execution']" />
+                                                        @endforeach
+                                                    </div>
+                                                </details>
+                                            @endforeach
+                                        </div>
+
+                                        <div x-show.important="visibleQueryCount === 0">
+                                            <x-new-debug-bar::empty-state label="No queries match these filters." />
+                                        </div>
                                     @elseif ($sectionKey === 'exceptions')
                                         @forelse ($section['payload']['items'] as $index => $exception)
                                             <article wire:key="exception-{{ $index }}" class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-red-200 ndb:dark:border-red-950">

@@ -47,7 +47,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxFindings: (int) config('new-debug-bar.findings.max_findings', 50),
         ));
         $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(
-            projectPath: base_path(),
+            projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
             packagePath: dirname(__DIR__),
             enabled: (bool) config('new-debug-bar.collection.query_call_sites', true),
             maxFrames: (int) config('new-debug-bar.collection.query_call_site_frames', 5),

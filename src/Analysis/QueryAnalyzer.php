@@ -122,12 +122,6 @@ final class QueryAnalyzer
     /** @param array<string, mixed> $query */
     private function queryType(array $query, string $sql): string
     {
-        $reported = strtolower((string) ($query['type'] ?? ''));
-
-        if (in_array($reported, ['read', 'write'], true)) {
-            return $reported;
-        }
-
         preg_match('/^(?:\/\*.*?\*\/\s*)*([a-z]+)/is', $sql, $matches);
         $verb = strtolower($matches[1] ?? '');
 
@@ -135,9 +129,15 @@ final class QueryAnalyzer
             return preg_match('/\b(insert|update|delete|merge)\b/i', $sql) === 1 ? 'write' : 'read';
         }
 
-        return in_array($verb, ['select', 'show', 'describe', 'desc', 'explain', 'pragma'], true)
-            ? 'read'
-            : 'write';
+        if ($verb !== '') {
+            return in_array($verb, ['select', 'show', 'describe', 'desc', 'explain', 'pragma'], true)
+                ? 'read'
+                : 'write';
+        }
+
+        $reported = strtolower((string) ($query['type'] ?? ''));
+
+        return in_array($reported, ['read', 'write'], true) ? $reported : 'write';
     }
 
     private function percent(float $part, float $whole): float
