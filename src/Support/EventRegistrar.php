@@ -407,6 +407,8 @@ final class EventRegistrar
     {
         return in_array($command, [
             'horizon',
+            'mcp:inspector',
+            'mcp:start',
             'octane:start',
             'queue:listen',
             'queue:work',

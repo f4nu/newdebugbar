@@ -95,17 +95,21 @@ it('stores successful and failed queue worker jobs as separate profiles', functi
         ->and(json_encode($profiles))->not->toContain('private successful payload', 'private failed payload', 'private failure message');
 });
 
-it('does not wrap long running workers in one unbounded command profile', function () {
+it('does not wrap long running commands in one unbounded profile', function (string $command) {
     $definition = new InputDefinition([new InputArgument('command', InputArgument::REQUIRED)]);
-    $input = new ArrayInput(['command' => 'queue:work'], $definition);
+    $input = new ArrayInput(['command' => $command], $definition);
     $output = new BufferedOutput;
 
-    Event::dispatch(new CommandStarting('queue:work', $input, $output));
-    Event::dispatch(new CommandFinished('queue:work', $input, $output, 0));
+    Event::dispatch(new CommandStarting($command, $input, $output));
+    Event::dispatch(new CommandFinished($command, $input, $output, 0));
 
     expect(app(ProfileStore::class)->recent())->toBe([])
         ->and(app(ProfileManager::class)->isCollecting())->toBeFalse();
-});
+})->with([
+    'queue worker' => 'queue:work',
+    'MCP server' => 'mcp:start',
+    'MCP Inspector' => 'mcp:inspector',
+]);
 
 it('does not let a nested runtime event finish its parent profile', function () {
     $runtime = app(RuntimeProfiler::class);
