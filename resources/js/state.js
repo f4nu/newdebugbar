@@ -1,7 +1,10 @@
 const STORAGE_KEY = 'new-debug-bar.preferences.v1';
 
 const defaultRuntime = () => ({
-  storage: window.localStorage,
+  storage: {
+    getItem: (key) => window.localStorage.getItem(key),
+    setItem: (key, value) => window.localStorage.setItem(key, value),
+  },
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
@@ -166,7 +169,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     copyText(value) {
-      Promise.resolve(browser.writeClipboard?.(value)).catch(() => {});
+      try {
+        Promise.resolve(browser.writeClipboard?.(value)).catch(() => {});
+      } catch {
+        // Clipboard policies must never break the host page.
+      }
     },
 
     keepFocusWithin(event, container) {

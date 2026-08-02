@@ -152,6 +152,11 @@ test('clipboard failures stay inside the debug bar', async () => {
 
   await new Promise((resolve) => setTimeout(resolve));
   assert.equal(copied, 'select 1');
+
+  browser.writeClipboard = () => {
+    throw new Error('Clipboard is unavailable');
+  };
+  state.copyText('select 2');
 });
 
 test('the theme toggle shows the opposite resolved theme', () => {
