@@ -141,7 +141,7 @@ composer test:browser
 composer benchmark -- 2000
 ```
 
-The benchmark compares a disabled baseline with a warmed collector-core profile. It is synthetic, so run it inside the target application when host-specific numbers matter. Compiled `dist` assets and visual snapshots are committed so each installation receives and verifies the same interface.
+Refresh intentional visual changes with `UPDATE_VISUAL_BASELINES=1 composer test:browser`, review every changed PNG, and then rerun the normal browser command. The benchmark compares a disabled baseline with a warmed collector-core profile. It is synthetic, so run it inside the target application when host-specific numbers matter. Compiled `dist` assets and visual snapshots are committed so each installation receives and verifies the same interface.
 
 ## License
 

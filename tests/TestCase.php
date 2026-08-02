@@ -96,6 +96,25 @@ abstract class TestCase extends Orchestra
             fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
         );
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-rich', function () use ($profiledPage) {
+            Http::fake(['api.example.test/*' => Http::response(['private' => 'body'], 202)]);
+            Http::get('https://api.example.test/v1/status?token=private&limit=5');
+            Event::dispatch(new JobQueued('redis', 'emails', 'job-visual', new ProfiledJob('private'), '{}', 5));
+            Bus::dispatchSync(new ProfiledJob('private'));
+            Mail::raw('private body', fn ($message) => $message
+                ->from('sender@example.test')
+                ->to('recipient@example.test')
+                ->subject('private subject'));
+            Event::dispatch(new NotificationSent(
+                new ProfiledNotifiable('private@example.test'),
+                new ProfiledNotification('private'),
+                'mail',
+            ));
+            Event::dispatch(new CommandExecuted('get', ['private-direct-key'], 1.25, new ProfiledRedisConnection));
+
+            return $profiledPage('Rich request', '/profiled', 'First request');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
             $component = app('livewire')->mount('profiled-counter');
 
