@@ -67,10 +67,15 @@ final class McpProfilePresenter
             }
         }
 
-        return $this->response([
-            'profiles' => $summaries,
-            'count' => count($summaries),
-        ]);
+        $total = count($summaries);
+        $response = $this->profileListResponse($summaries, $total, false);
+
+        while ($this->byteLength($response) > $this->maxBytes && $summaries !== []) {
+            array_pop($summaries);
+            $response = $this->profileListResponse($summaries, $total, true);
+        }
+
+        return $response;
     }
 
     /** @return array<string, mixed> */
@@ -243,6 +248,8 @@ final class McpProfilePresenter
     private function safeSectionPayload(string $section, array $payload): array
     {
         if ($section !== 'request') {
+            unset($payload['items'], $payload['groups'], $payload['repeated_groups'], $payload['repeated_misses']);
+
             return $this->clean($payload);
         }
 
@@ -310,6 +317,17 @@ final class McpProfilePresenter
     private function executionNumber(array $item): int
     {
         return (int) ($item['execution'] ?? $item['executions'][0]['execution'] ?? 0);
+    }
+
+    /** @param list<array<string, mixed>> $profiles @return array<string, mixed> */
+    private function profileListResponse(array $profiles, int $total, bool $truncated): array
+    {
+        return $this->response([
+            'profiles' => $profiles,
+            'count' => count($profiles),
+            'total' => $total,
+            'truncated' => $truncated,
+        ]);
     }
 
     /**

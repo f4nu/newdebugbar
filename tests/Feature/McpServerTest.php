@@ -88,6 +88,10 @@ it('lists and filters bounded profile summaries', function () {
     ])->assertOk());
 
     expect($all['data']['profiles'])->toHaveCount(1)
+        ->and($all['data'])
+        ->count->toBe(1)
+        ->total->toBe(1)
+        ->truncated->toBeFalse()
         ->and($failed['data']['profiles'])->toHaveCount(1)
         ->and($failed['data']['profiles'][0])
         ->path->toBe('/failed-html')
@@ -173,6 +177,7 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
 
     $response = $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
     $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $this->get('/failed-html', ['Accept' => 'text/html'])->assertUnprocessable();
     $corruptId = (string) Str::uuid();
     File::put(config('new-debug-bar.storage.path').'/'.$corruptId.'.json', '{broken');
 
@@ -182,10 +187,19 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
         'limit' => 2,
     ])->assertOk());
     $profiles = captureStructuredContent(NewDebugBarServer::tool(ListDebugProfiles::class)->assertOk());
+    $models = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'models',
+        'limit' => 2,
+    ])->assertOk());
 
     expect(strlen(json_encode($events)))->toBeLessThanOrEqual(700)
+        ->and(strlen(json_encode($profiles)))->toBeLessThanOrEqual(700)
+        ->and(strlen(json_encode($models)))->toBeLessThanOrEqual(700)
         ->and($events['data']['pagination']['returned'])->toBeLessThanOrEqual(2)
         ->and($events['data']['pagination']['truncated'])->toBeTrue()
+        ->and($profiles['data']['truncated'])->toBeTrue()
+        ->and($models['data']['payload'])->not->toHaveKeys(['groups', 'repeated_groups', 'repeated_misses'])
         ->and(array_column($profiles['data']['profiles'], 'id'))->not->toContain($corruptId);
 });
 
