@@ -15,6 +15,7 @@ final class McpProfilePresenter
     private const SECTION_NAMES = [
         'overview',
         'request',
+        'timeline',
         'queries',
         'models',
         'cache',

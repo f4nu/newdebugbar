@@ -50,6 +50,7 @@ final class DebugBar extends Component
 
         $this->detailsLoaded = true;
         $this->refreshHistory($store, $presenter, $summaries);
+        $this->dispatch('new-debug-bar-content-updated');
     }
 
     public function compareWith(
@@ -167,7 +168,12 @@ final class DebugBar extends Component
 
             $summary['is_current'] = ($summary['id'] ?? null) === $this->profileId;
             $summary['comparable'] = ! $summary['is_current'] && ($summary['path'] ?? null) === $currentPath;
-            $history[] = $summary;
+
+            if ($summary['is_current']) {
+                array_unshift($history, $summary);
+            } else {
+                $history[] = $summary;
+            }
         }
 
         $this->history = $history;

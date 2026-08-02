@@ -12,6 +12,8 @@ use Livewire\Livewire;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Analysis\QueryAnalyzer;
+use NewDebugBar\Analysis\SectionAnalyzer;
+use NewDebugBar\Analysis\TimelineBuilder;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LogCollector;
@@ -54,6 +56,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         ));
         $this->app->singleton(ProfileSummaryPresenter::class);
         $this->app->singleton(ProfileComparator::class);
+        $this->app->singleton(SectionAnalyzer::class);
+        $this->app->singleton(TimelineBuilder::class);
         $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(
             projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
             packagePath: dirname(__DIR__),

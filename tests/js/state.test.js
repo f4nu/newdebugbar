@@ -277,6 +277,82 @@ test('history controls combine path method status and warning filters', () => {
   assert.equal(state.visibleHistoryCount, 0);
 });
 
+test('timeline controls filter sections and search labels', () => {
+  const state = createNewDebugBar({
+    ...summary,
+    sections: [...summary.sections, { key: 'timeline', label: 'Timeline' }, { key: 'events', label: 'Events' }],
+  }, runtime());
+  const item = (section, search) => ({ dataset: { section, search }, hidden: false });
+  const query = item('queries', 'select users');
+  const event = item('events', 'clinic ready');
+  state.$refs = { timelineList: { children: [query, event] } };
+
+  state.setTimelineFilter('queries');
+  assert.equal(query.hidden, false);
+  assert.equal(event.hidden, true);
+  assert.equal(state.visibleTimelineCount, 1);
+
+  state.timelineSearch = 'MISSING';
+  state.applyTimelineFilters();
+  assert.equal(query.hidden, true);
+  assert.equal(state.visibleTimelineCount, 0);
+
+  state.setTimelineFilter('unknown');
+  assert.equal(state.timelineFilter, 'queries');
+
+  state.$refs = {};
+  state.applyTimelineFilters();
+  assert.equal(state.visibleTimelineCount, 0);
+});
+
+test('event controls separate framework noise from application events', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const item = (source, search) => ({ dataset: { source, search }, hidden: false });
+  const framework = item('framework', 'illuminate auth login');
+  const application = item('application', 'clinic ready');
+  state.$refs = { eventList: { children: [framework, application] } };
+
+  state.setEventSource('application');
+  assert.equal(framework.hidden, true);
+  assert.equal(application.hidden, false);
+  assert.equal(state.visibleEventCount, 1);
+
+  state.eventSearch = 'READY';
+  state.applyEventFilters();
+  assert.equal(application.hidden, false);
+
+  state.setEventSource('invalid');
+  assert.equal(state.eventSource, 'application');
+
+  state.$refs = {};
+  state.applyEventFilters();
+  assert.equal(state.visibleEventCount, 0);
+});
+
+test('log controls filter available levels and messages', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const item = (level, search) => ({ dataset: { level, search }, hidden: false });
+  const info = item('info', 'request ready');
+  const error = item('error', 'database unavailable');
+  state.$refs = { logList: { children: [info, error] } };
+
+  state.setLogLevel('error');
+  assert.equal(info.hidden, true);
+  assert.equal(error.hidden, false);
+  assert.equal(state.visibleLogCount, 1);
+
+  state.logSearch = 'UNAVAILABLE';
+  state.applyLogFilters();
+  assert.equal(error.hidden, false);
+
+  state.setLogLevel('debug');
+  assert.equal(state.logLevel, 'error');
+
+  state.$refs = {};
+  state.setLogLevel('all');
+  assert.equal(state.visibleLogCount, 0);
+});
+
 test('the command palette jumps to sections and changes settings', async () => {
   let highlighted = 0;
   const browser = runtime();

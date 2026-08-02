@@ -34,6 +34,15 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     historyStatus: '',
     historyWarning: 'all',
     visibleHistoryCount: 0,
+    timelineFilter: 'all',
+    timelineSearch: '',
+    visibleTimelineCount: summary.section_counts?.timeline ?? 0,
+    eventSource: 'all',
+    eventSearch: '',
+    visibleEventCount: summary.section_counts?.events ?? 0,
+    logLevel: 'all',
+    logSearch: '',
+    visibleLogCount: summary.section_counts?.logs ?? 0,
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
@@ -137,6 +146,9 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         this.syncSectionPanels();
         if (this.selected === 'queries') this.applyQueryView();
         if (this.selected === 'history') this.applyHistoryFilters();
+        if (this.selected === 'timeline') this.applyTimelineFilters();
+        if (this.selected === 'events') this.applyEventFilters();
+        if (this.selected === 'logs') this.applyLogFilters();
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         browser.highlight?.();
       });
@@ -166,6 +178,9 @@ export function createNewDebugBar(summary = {}, runtime = null) {
             this.syncSectionPanels();
             this.applyQueryView();
             this.applyHistoryFilters();
+            this.applyTimelineFilters();
+            this.applyEventFilters();
+            this.applyLogFilters();
             browser.highlight?.();
           }))
           .catch(() => {
@@ -284,6 +299,81 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
 
       this.visibleHistoryCount = visible;
+    },
+
+    setTimelineFilter(filter) {
+      if (!this.sectionKeys.includes(filter) && filter !== 'all') return;
+
+      this.timelineFilter = filter;
+      this.applyTimelineFilters();
+    },
+
+    applyTimelineFilters() {
+      const list = this.$refs?.timelineList ?? this.$root?.querySelector?.('[x-ref="timelineList"]');
+
+      if (!list?.children) {
+        this.visibleTimelineCount = 0;
+
+        return;
+      }
+
+      const search = this.timelineSearch.toLowerCase().trim();
+      let visible = 0;
+
+      [...list.children].forEach((item) => {
+        const matches = (this.timelineFilter === 'all' || item.dataset.section === this.timelineFilter)
+          && (search === '' || item.dataset.search?.includes(search));
+        item.hidden = !matches;
+        if (matches) visible++;
+      });
+
+      this.visibleTimelineCount = visible;
+    },
+
+    setEventSource(source) {
+      if (!['all', 'application', 'framework'].includes(source)) return;
+
+      this.eventSource = source;
+      this.applyEventFilters();
+    },
+
+    applyEventFilters() {
+      const list = this.$refs?.eventList ?? this.$root?.querySelector?.('[x-ref="eventList"]');
+      const search = this.eventSearch.toLowerCase().trim();
+      let visible = 0;
+
+      [...(list?.children ?? [])].forEach((item) => {
+        const matches = (this.eventSource === 'all' || item.dataset.source === this.eventSource)
+          && (search === '' || item.dataset.search?.includes(search));
+        item.hidden = !matches;
+        if (matches) visible++;
+      });
+
+      this.visibleEventCount = visible;
+    },
+
+    setLogLevel(level) {
+      const list = this.$refs?.logList ?? this.$root?.querySelector?.('[x-ref="logList"]');
+      const available = [...(list?.children ?? [])].map((item) => item.dataset.level);
+      if (level !== 'all' && !available.includes(level)) return;
+
+      this.logLevel = level;
+      this.applyLogFilters();
+    },
+
+    applyLogFilters() {
+      const list = this.$refs?.logList ?? this.$root?.querySelector?.('[x-ref="logList"]');
+      const search = this.logSearch.toLowerCase().trim();
+      let visible = 0;
+
+      [...(list?.children ?? [])].forEach((item) => {
+        const matches = (this.logLevel === 'all' || item.dataset.level === this.logLevel)
+          && (search === '' || item.dataset.search?.includes(search));
+        item.hidden = !matches;
+        if (matches) visible++;
+      });
+
+      this.visibleLogCount = visible;
     },
 
     keepFocusWithin(event, container) {

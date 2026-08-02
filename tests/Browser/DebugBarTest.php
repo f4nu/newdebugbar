@@ -103,13 +103,78 @@ it('switches every section after Livewire navigation with one active state', fun
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2);
 
-    foreach (['request', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'overview', 'models'] as $section) {
+    foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'history', 'overview', 'models'] as $section) {
         $page->click("[data-ndb-select-section=\"{$section}\"]");
 
         assertDebugSectionSelected($page, $section);
     }
 
     $page->assertNoJavaScriptErrors();
+});
+
+it('filters the timeline without inventing spans for point events', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="timeline"]')
+        ->wait(0.2);
+
+    assertDebugSectionSelected($page, 'timeline');
+
+    $page
+        ->assertPresent('[data-ndb-timeline-item="request-start"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
+        ->assertScript(<<<'JS'
+            Number(document.querySelector('[data-ndb-section-panel="timeline"] [x-text="visibleTimelineCount"]').textContent)
+                === document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])').length
+            JS)
+        ->click('[data-ndb-timeline-filter="queries"]')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
+                .every((item) => item.dataset.section === 'queries')
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item][data-section="queries"]'))
+                .every((item) => item.textContent.includes('span') && item.textContent.includes('→'))
+            JS)
+        ->click('[data-ndb-timeline-filter="events"]')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
+                .every((item) => item.textContent.includes('point') && !item.textContent.includes('→'))
+            JS)
+        ->type('[data-ndb-timeline-search]', 'nothing can match this')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length', 0)
+        ->assertSee('No timeline events match these filters.')
+        ->assertNoJavaScriptErrors();
+});
+
+it('presents grouped Laravel activity with useful controls', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="models"]')
+        ->assertSee('Model classes')
+        ->assertSee('Lifecycle events')
+        ->click('[data-ndb-select-section="cache"]')
+        ->assertSee('Hit rate')
+        ->assertSee('Misses')
+        ->click('[data-ndb-select-section="events"]')
+        ->click('[data-ndb-event-source="application"]')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-event-item]:not([hidden])'))
+                .every((item) => item.dataset.source === 'application')
+            JS)
+        ->type('[data-ndb-event-search]', 'application.ready')
+        ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length', 1)
+        ->click('[data-ndb-select-section="logs"]')
+        ->click('[data-ndb-log-level="info"]')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-log-item]:not([hidden])'))
+                .every((item) => item.dataset.level === 'info')
+            JS)
+        ->type('[data-ndb-log-search]', 'profiled request')
+        ->assertScript('document.querySelectorAll("[data-ndb-log-item]:not([hidden])").length', 1)
+        ->assertNoJavaScriptErrors();
 });
 
 it('keeps favoriting active and repeatable after Livewire navigation', function () {

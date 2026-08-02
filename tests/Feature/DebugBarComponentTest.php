@@ -16,6 +16,7 @@ it('loads full profile details only after the inspector asks', function () {
         ->assertSet('detailsLoaded', false)
         ->call('loadDetails')
         ->assertSet('detailsLoaded', true)
+        ->assertDispatched('new-debug-bar-content-updated')
         ->assertSee('Profiled request completed');
 });
 
@@ -121,7 +122,12 @@ it('loads retained history and compares requests from the same path', function (
         ->headers->get('X-New-Debug-Bar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $currentId])
-        ->assertSet('summary.sections.9.key', 'history')
+        ->assertSet('summary.sections', function (array $sections): bool {
+            $keys = collect($sections)->pluck('key');
+
+            return $keys->filter(fn (string $key): bool => $key === 'history')->count() === 1
+                && $keys->contains('timeline');
+        })
         ->call('loadDetails')
         ->assertSet('history.0.is_current', true)
         ->assertSet('history.1.comparable', true)
