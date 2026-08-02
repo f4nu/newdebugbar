@@ -108,6 +108,9 @@ it('keeps keyboard focus inside the command palette', function () {
 it('uses one metric color and concentric glass toolbar corners', function () {
     visit('/profiled')
         ->assertScript(<<<'JS'
+            getComputedStyle(document.getElementById('new-debug-bar')).fontFamily.includes('Outfit Variable')
+            JS)
+        ->assertScript(<<<'JS'
             getComputedStyle(document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]')).borderRadius
             JS, '18px')
         ->assertScript(<<<'JS'
@@ -318,6 +321,46 @@ it('reorders favorites with the keyboard and drag and drop', function () {
     assertFavoriteOrder($page, 'queries,overview,request');
 
     $page->assertNoJavaScriptErrors();
+});
+
+it('shows the favorite source and insertion point while dragging', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2);
+
+    foreach (['request', 'overview', 'queries'] as $section) {
+        $page->click("[data-ndb-toggle-favorite=\"{$section}\"]");
+    }
+
+    $page
+        ->wait(0.5)
+        ->assertAttribute('[data-ndb-toggle-favorite="request"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-toggle-favorite="overview"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-toggle-favorite="queries"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const source = document.querySelector('[data-ndb-section="queries"]');
+                const target = document.querySelector('[data-ndb-section="overview"]');
+                const state = Alpine.$data(source);
+                state.startFavoriteDrag('queries');
+                Alpine.$data(target).hoverFavorite('overview');
+
+                return state.favoriteDrag === 'queries' && state.favoriteDrop === 'overview';
+            })()
+            JS)
+        ->assertAttribute('[data-ndb-section="queries"]', 'data-ndb-dragging', 'true')
+        ->assertVisible('[data-ndb-favorite-drop-before="overview"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.querySelector('[data-ndb-section="queries"]'));
+                state.endFavoriteDrag();
+
+                return state.favoriteDrag === null && state.favoriteDrop === null;
+            })()
+            JS)
+        ->assertAttribute('[data-ndb-section="queries"]', 'data-ndb-dragging', 'false')
+        ->assertAttribute('[data-ndb-favorite-drop-before="overview"]', 'hidden', '')
+        ->assertNoJavaScriptErrors();
 });
 
 it('uses the command palette, theme preference, and escape layers', function () {

@@ -99,16 +99,17 @@
                                 :draggable="isFavorite(section.key)"
                                 :data-ndb-section="section.key"
                                 :data-ndb-favorite="isFavorite(section.key) ? 'true' : 'false'"
+                                data-ndb-dragging="false"
                                 @dragstart="startFavoriteDrag(section.key, $event)"
                                 @dragover.prevent="hoverFavorite(section.key, $event.clientY > $event.currentTarget.getBoundingClientRect().top + ($event.currentTarget.offsetHeight / 2))"
                                 @dragleave="leaveFavorite(section.key)"
                                 @drop.prevent="dropFavorite(section.key, favoriteDropAfter)"
                                 @dragend="endFavoriteDrag()"
                                 class="ndb:relative ndb:flex ndb:w-auto ndb:shrink-0 ndb:items-center ndb:rounded-lg ndb:pr-1 ndb:transition ndb:hover:bg-zinc-200/60 ndb:sm:w-full ndb:dark:hover:bg-zinc-800/60"
-                                :class="(selected === section.key ? 'ndb-section-active' : '') + (favoriteDrag === section.key ? ' ndb:opacity-40' : '')"
+                                :class="selected === section.key ? 'ndb-section-active' : ''"
                             >
-                                <span x-show.important="favoriteDrop === section.key && ! favoriteDropAfter" class="ndb:absolute ndb:inset-x-1 ndb:-top-0.5 ndb:z-10 ndb:h-0.5 ndb:rounded-full ndb:bg-indigo-500"></span>
-                                <span x-show.important="favoriteDrop === section.key && favoriteDropAfter" class="ndb:absolute ndb:inset-x-1 ndb:-bottom-0.5 ndb:z-10 ndb:h-0.5 ndb:rounded-full ndb:bg-indigo-500"></span>
+                                <span :data-ndb-favorite-drop-before="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:top-0 ndb:z-20 ndb:h-1 ndb:-translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
+                                <span :data-ndb-favorite-drop-after="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:bottom-0 ndb:z-20 ndb:h-1 ndb:translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
                                 <button
                                     type="button"
                                     :data-ndb-select-section="section.key"

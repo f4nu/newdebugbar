@@ -437,6 +437,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.favoriteDrag = key;
       event?.dataTransfer?.setData?.('text/plain', key);
       if (event?.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      this.syncFavoriteDragVisuals();
     },
 
     hoverFavorite(key, after = false) {
@@ -444,6 +445,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       this.favoriteDrop = key;
       this.favoriteDropAfter = after;
+      this.syncFavoriteDragVisuals();
     },
 
     leaveFavorite(key) {
@@ -451,6 +453,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       this.favoriteDrop = null;
       this.favoriteDropAfter = false;
+      this.syncFavoriteDragVisuals();
     },
 
     dropFavorite(target, after = false) {
@@ -470,6 +473,23 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.favoriteDrag = null;
       this.favoriteDrop = null;
       this.favoriteDropAfter = false;
+      this.syncFavoriteDragVisuals();
+    },
+
+    syncFavoriteDragVisuals() {
+      const rows = this.$root?.querySelectorAll?.('[data-ndb-section]') ?? [];
+
+      rows.forEach((row) => {
+        const key = row.dataset.ndbSection;
+        const dragging = this.favoriteDrag === key;
+        const dropBefore = this.favoriteDrop === key && !this.favoriteDropAfter;
+        const dropAfter = this.favoriteDrop === key && this.favoriteDropAfter;
+
+        row.dataset.ndbDragging = dragging ? 'true' : 'false';
+        row.classList.toggle('ndb-favorite-dragging', dragging);
+        row.querySelector('[data-ndb-favorite-drop-before]')?.toggleAttribute('hidden', !dropBefore);
+        row.querySelector('[data-ndb-favorite-drop-after]')?.toggleAttribute('hidden', !dropAfter);
+      });
     },
 
     toggleTheme() {
