@@ -137,6 +137,31 @@ it('uses one metric color and concentric glass toolbar corners', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('keeps host styles and package styles isolated', function () {
+    visit('/hostile-styles')
+        ->assertScript(<<<'JS'
+            (() => {
+                const style = getComputedStyle(document.querySelector('[data-testid="host-button"]'));
+
+                return style.backgroundColor === 'rgb(255, 0, 0)'
+                    && style.borderRadius === '0px'
+                    && style.color === 'rgb(0, 128, 0)'
+                    && style.height === '91px';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const style = getComputedStyle(document.querySelector('[data-ndb-toolbar="expand"]'));
+
+                return style.backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && style.borderRadius === '12px'
+                    && style.height === '36px';
+            })()
+            JS)
+        ->assertScript("getComputedStyle(document.getElementById('new-debug-bar')).fontFamily.includes('Outfit Variable')")
+        ->assertNoJavaScriptErrors();
+});
+
 it('switches every section after Livewire navigation with one active state', function () {
     $page = visit('/profiled')
         ->click('[data-testid="host-navigation"]')

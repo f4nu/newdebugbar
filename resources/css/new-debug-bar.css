@@ -5,6 +5,10 @@
 @source "../views/**/*.blade.php";
 @source "../js/**/*.js";
 
+@theme {
+    --animate-pulse: initial;
+}
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 #new-debug-bar,
@@ -27,6 +31,16 @@
     opacity: 0.4;
     transform: scale(0.98);
     box-shadow: inset 0 0 0 1px rgb(129 140 248 / 70%);
+}
+
+#new-debug-bar .ndb-loading-pulse {
+    animation: ndb-debug-bar-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes ndb-debug-bar-pulse {
+    50% {
+        opacity: 0.5;
+    }
 }
 
 #new-debug-bar[data-theme="dark"] {

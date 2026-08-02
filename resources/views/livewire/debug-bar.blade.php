@@ -149,7 +149,7 @@
                     </div>
 
                     <div wire:loading.flex wire:target="loadDetails" class="ndb:min-h-64 ndb:items-center ndb:justify-center ndb:p-8">
-                        <div class="ndb:text-center"><span class="ndb:mx-auto ndb:grid ndb:size-10 ndb:animate-pulse ndb:place-items-center ndb:rounded-xl ndb:bg-indigo-50 ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"><x-new-debug-bar::icon name="clock" class="ndb:size-4" /></span><p class="ndb:mt-3 ndb:text-sm ndb:font-semibold">Loading request details…</p></div>
+                        <div class="ndb:text-center"><span class="ndb-loading-pulse ndb:mx-auto ndb:grid ndb:size-10 ndb:place-items-center ndb:rounded-xl ndb:bg-indigo-50 ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"><x-new-debug-bar::icon name="clock" class="ndb:size-4" /></span><p class="ndb:mt-3 ndb:text-sm ndb:font-semibold">Loading request details…</p></div>
                     </div>
 
                     @if ($detailsLoaded && $profile !== [])

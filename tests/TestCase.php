@@ -121,6 +121,21 @@ abstract class TestCase extends Orchestra
             return response('<!doctype html><html><head><title>Livewire request</title></head><body><h1 data-testid="host-page">Livewire request</h1>'.$component.'</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/hostile-styles', fn () => response(<<<'HTML'
+            <!doctype html>
+            <html>
+                <head>
+                    <style>
+                        body { font-family: serif; }
+                        button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                    </style>
+                </head>
+                <body>
+                    <button data-testid="host-button">Host button</button>
+                </body>
+            </html>
+            HTML));
+
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 
         $router->middleware(ProfileRequest::class)->get(

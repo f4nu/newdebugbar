@@ -246,7 +246,8 @@ it('serves its compiled assets through local package routes', function () {
 
     expect($stylesheet)
         ->not->toContain('@layer theme')
-        ->not->toContain('@layer utilities');
+        ->not->toContain('@layer utilities', '@keyframes pulse{')
+        ->toContain('@keyframes ndb-debug-bar-pulse{');
 });
 
 it('injects assets into an html document that has no head', function () {
