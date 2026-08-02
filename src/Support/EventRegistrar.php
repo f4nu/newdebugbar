@@ -8,6 +8,7 @@ use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
 use Illuminate\Cache\Events\KeyForgotten;
 use Illuminate\Cache\Events\KeyWritten;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
@@ -30,13 +31,13 @@ final class EventRegistrar
 
     public function __construct(
         private readonly Dispatcher $events,
-        private readonly ProfileManager $manager,
+        private readonly Container $container,
     ) {}
 
     public function register(): void
     {
         $this->listen(QueryExecuted::class, function (QueryExecuted $event): void {
-            $this->manager->record('queries', [
+            $this->manager()->record('queries', [
                 'sql' => $event->sql,
                 'bindings' => $event->bindings,
                 'duration_ms' => round((float) $event->time, 2),
@@ -52,7 +53,7 @@ final class EventRegistrar
                 return;
             }
 
-            $this->manager->record('models', [
+            $this->manager()->record('models', [
                 'event' => str($name)->between('eloquent.', ':')->toString(),
                 'model' => $model::class,
                 'connection' => $model->getConnectionName(),
@@ -69,7 +70,7 @@ final class EventRegistrar
         $this->listen('composing: *', function (string $name, array $payload): void {
             $view = $payload[0] ?? null;
 
-            $this->manager->record('views', [
+            $this->manager()->record('views', [
                 'name' => str($name)->after('composing: ')->toString(),
                 'data_keys' => is_object($view) && method_exists($view, 'getData')
                     ? array_keys($view->getData())
@@ -78,7 +79,7 @@ final class EventRegistrar
         });
 
         $this->listen(MessageLogged::class, function (MessageLogged $event): void {
-            $this->manager->record('logs', [
+            $this->manager()->record('logs', [
                 'level' => $event->level,
                 'message' => $event->message,
                 'context' => $event->context,
@@ -87,7 +88,7 @@ final class EventRegistrar
             $exception = $event->context['exception'] ?? null;
 
             if ($exception instanceof Throwable) {
-                $this->manager->recordException($exception);
+                $this->manager()->recordException($exception);
             }
         });
 
@@ -96,7 +97,7 @@ final class EventRegistrar
                 return;
             }
 
-            $this->manager->record('events', [
+            $this->manager()->record('events', [
                 'name' => $name,
                 'payload_types' => array_map(
                     fn (mixed $item): string => is_object($item) ? $item::class : get_debug_type($item),
@@ -110,7 +111,7 @@ final class EventRegistrar
     private function listenForCacheEvent(string $eventClass, string $operation): void
     {
         $this->listen($eventClass, function (CacheEvent $event) use ($operation): void {
-            $this->manager->record('cache', [
+            $this->manager()->record('cache', [
                 'operation' => $operation,
                 'key_hash' => substr(hash('sha256', $event->key), 0, 16),
                 'store' => $event->storeName,
@@ -138,6 +139,11 @@ final class EventRegistrar
         $key = $model->getKeyName();
 
         return array_key_exists($key, $attributes) ? $attributes[$key] : null;
+    }
+
+    private function manager(): ProfileManager
+    {
+        return $this->container->make(ProfileManager::class);
     }
 
     private function shouldIgnoreGeneralEvent(string $name): bool

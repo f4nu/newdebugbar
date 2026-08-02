@@ -15,6 +15,11 @@ final class BarInjector
         private readonly AssetUrl $assets,
     ) {}
 
+    public function prepareAssets(): void
+    {
+        $this->livewire->forceAssetInjection();
+    }
+
     public function inject(Response $response, string $profileId): Response
     {
         if (! $this->supports($response)) {
@@ -26,8 +31,6 @@ final class BarInjector
         $stylesheet = e($this->assets->for('new-debug-bar.css'));
         $script = e($this->assets->for('new-debug-bar.js'));
         $component = $this->livewire->mount('new-debug-bar.toolbar', ['profileId' => $profileId], 'new-debug-bar-'.$profileId);
-
-        $this->livewire->forceAssetInjection();
 
         $head = '<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true" data-navigate-track="reload">';
         $body = '<script src="'.$script.'" data-navigate-once="true" data-navigate-track="reload"></script>'.$component;
@@ -49,10 +52,6 @@ final class BarInjector
     public function supports(Response $response): bool
     {
         if ($response instanceof BinaryFileResponse || $response instanceof StreamedResponse) {
-            return false;
-        }
-
-        if ($response->getStatusCode() !== 200) {
             return false;
         }
 

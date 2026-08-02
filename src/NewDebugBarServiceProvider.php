@@ -4,6 +4,7 @@ namespace NewDebugBar;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -16,6 +17,7 @@ use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\EventRegistrar;
+use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
 
 /** Registers profiling services only in explicitly allowed environments. */
@@ -31,7 +33,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxArrayItems: (int) config('new-debug-bar.collection.max_items_per_section', 100),
         ));
 
-        $this->app->singleton(ProfileManager::class, function ($app): ProfileManager {
+        $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
             $maxItems = (int) config('new-debug-bar.collection.max_items_per_section', 100);
             $redactor = $app->make(Redactor::class);
 
@@ -66,7 +68,11 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             return;
         }
 
-        (new EventRegistrar($events, $this->app->make(ProfileManager::class)))->register();
+        (new EventRegistrar($events, $this->app))->register();
+        $events->listen(
+            RequestHandled::class,
+            fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),
+        );
         Livewire::component('new-debug-bar.toolbar', DebugBar::class);
         $router->get('/__new-debug-bar/assets/{path}', AssetController::class)
             ->where('path', '.*')

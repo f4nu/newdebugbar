@@ -61,6 +61,31 @@ it('captures a local web request and its Laravel activity', function () {
         ->toContain('retrieved');
 });
 
+it('isolates mutable collector state between application lifecycles', function () {
+    $first = app(ProfileManager::class);
+
+    $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->assertHeader('X-New-Debug-Bar-Profile');
+
+    app()->forgetScopedInstances();
+    $second = app(ProfileManager::class);
+
+    expect($second)->not->toBe($first)
+        ->and($second->isCollecting())->toBeFalse();
+
+    $this->get('/profiled-next', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->assertHeader('X-New-Debug-Bar-Profile');
+
+    $profiles = collect(File::files(config('new-debug-bar.storage.path')))
+        ->map(fn ($file) => json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR));
+
+    expect($profiles)->toHaveCount(2)
+        ->and($profiles->pluck('sections.request.payload.path')->sort()->values()->all())
+        ->toBe(['/profiled', '/profiled-next']);
+});
+
 it('serves its compiled assets through local package routes', function () {
     $response = $this->get('/__new-debug-bar/assets/new-debug-bar.css')
         ->assertOk()
@@ -93,14 +118,26 @@ it('leaves response types that cannot host the bar untouched', function (string 
     'html without a body' => ['/html-without-body', 200],
     'plain text' => ['/plain-text', 200],
     'download' => ['/download', 200],
-    'failed response' => ['/failed-html', 422],
 ]);
 
-it('discards a profile when the application throws', function () {
-    $this->get('/profiled-exception', ['Accept' => 'text/html'])
-        ->assertInternalServerError();
+it('profiles an html error response', function () {
+    $this->get('/failed-html', ['Accept' => 'text/html'])
+        ->assertUnprocessable()
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertSee('id="new-debug-bar"', false);
+});
 
-    expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse()
+it('preserves a profile when the application throws', function () {
+    $response = $this->get('/profiled-exception', ['Accept' => 'text/html'])
+        ->assertInternalServerError()
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertSee('id="new-debug-bar"', false);
+
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+
+    expect($profile['sections']['request']['summary']['status'])->toBe(500)
+        ->and($profile['sections']['exceptions']['summary']['count'])->toBe(1)
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['class'])->toBe(RuntimeException::class)
         ->and(app(ProfileManager::class)->isCollecting())->toBeFalse();
 });
 
