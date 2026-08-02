@@ -15,7 +15,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "highlight.js": "^11.11.1",
     "pixelmatch": "^7.1.0",
-    "playwright": "1.61.1",
+    "playwright": "^1.62.1",
     "pngjs": "^7.0.0",
     "tailwindcss": "^4.0.7",
     "vite": "^8.0.0"
