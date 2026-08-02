@@ -3,7 +3,7 @@
     "name": "newdebugbar/new-debug-bar",
     "description": "A modern Laravel debug bar built with Livewire.",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
@@ -39,7 +39,8 @@
             "npm run build",
             "pest --testsuite=Browser"
         ],
-        "test:php": "pest --testsuite=Package"
+        "test:php": "pest --testsuite=Package",
+        "benchmark": "php benchmarks/profile-overhead.php"
     },
     "extra": {
         "laravel": {
