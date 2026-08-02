@@ -84,6 +84,21 @@ final class DebugBar extends Component
         $this->dispatch('new-debug-bar-content-updated');
     }
 
+    public function switchProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
+    {
+        abort_unless($this->validProfileId($profileId), 422);
+        $profile = $store->get($profileId);
+        abort_if($profile === null, 404);
+
+        $this->profileId = $profileId;
+        $this->summary = $this->makeSummary($presenter->present($profile));
+        $this->detailsLoaded = false;
+        $this->history = [];
+        $this->comparison = [];
+        $this->comparisonProfileId = null;
+        $this->dispatch('new-debug-bar-profile-switched', summary: $this->summary);
+    }
+
     /** @return array<string, mixed> */
     #[Computed]
     public function profile(): array

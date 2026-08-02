@@ -63,6 +63,7 @@ final class TimelineBuilder
     {
         $label = match ($section) {
             'queries' => $item['normalized_sql'] ?? $item['sql'] ?? 'Query',
+            'livewire' => trim(($item['component'] ?? 'Livewire').' '.implode(' ', $item['actions'] ?? [])),
             'models' => trim(($item['event'] ?? '').' '.($item['model'] ?? 'Model')),
             'cache' => trim(($item['operation'] ?? 'Cache').' '.($item['key_hash'] ?? '')),
             'views' => $item['name'] ?? 'View rendered',

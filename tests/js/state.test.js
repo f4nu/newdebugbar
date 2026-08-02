@@ -99,6 +99,30 @@ test('selecting a section resets content and highlights its code', async () => {
   assert.equal(highlighted, 1);
 });
 
+test('a new application profile keeps a valid section and reloads open details', async () => {
+  const state = createNewDebugBar(summary, runtime());
+  let detailsLoaded = 0;
+  state.$wire = { loadDetails: async () => detailsLoaded++ };
+  state.$nextTick = (callback) => callback();
+  state.$refs = { inspectorClose: { focus() {} } };
+  state.selected = 'logs';
+  state.inspectorOpen = true;
+  state.detailsRequested = true;
+
+  state.switchProfile({ ...summary, path: '/livewire/update' });
+  await Promise.resolve();
+
+  assert.equal(state.summary.path, '/livewire/update');
+  assert.equal(state.selected, 'logs');
+  assert.equal(state.detailsRequested, true);
+  assert.equal(detailsLoaded, 1);
+
+  state.inspectorOpen = false;
+  state.selected = 'missing';
+  state.switchProfile(summary);
+  assert.equal(state.selected, 'overview');
+});
+
 test('the inspector moves focus inside and returns it when closed', () => {
   let openerFocused = 0;
   let closeFocused = 0;

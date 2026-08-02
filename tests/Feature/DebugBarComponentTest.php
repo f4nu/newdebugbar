@@ -154,3 +154,22 @@ it('rejects comparisons from a different path', function () {
         ->call('compareWith', $otherId)
         ->assertStatus(422);
 });
+
+it('switches to an exact retained application profile', function () {
+    $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+    $nextId = $this->get('/profiled-next', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $firstId])
+        ->call('loadDetails')
+        ->assertSet('detailsLoaded', true)
+        ->call('switchProfile', $nextId)
+        ->assertSet('profileId', $nextId)
+        ->assertSet('summary.path', '/profiled-next')
+        ->assertSet('detailsLoaded', false)
+        ->assertSet('history', [])
+        ->assertDispatched('new-debug-bar-profile-switched');
+});

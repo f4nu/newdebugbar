@@ -52,10 +52,13 @@ final class ProfileManager
             'url' => $this->redactedUrl($request, is_array($query) ? $query : []),
             'path' => '/'.ltrim($request->path(), '/'),
             'query' => $query,
-            'input' => $this->redactor->clean($request->input()),
+            'input' => $request->headers->has('X-Livewire')
+                ? ['components' => count((array) $request->input('components', []))]
+                : $this->redactor->clean($request->input()),
             'headers' => $this->redactor->clean($request->headers->all()),
         ];
         $this->collecting = true;
+        $this->recordLivewireRequest($request);
     }
 
     public function isCollecting(): bool
@@ -191,6 +194,45 @@ final class ProfileManager
         }
 
         return strlen(http_build_query($request->request->all(), '', '&', PHP_QUERY_RFC3986));
+    }
+
+    private function recordLivewireRequest(Request $request): void
+    {
+        if (! $request->headers->has('X-Livewire')) {
+            return;
+        }
+
+        foreach (array_values((array) $request->input('components', [])) as $index => $component) {
+            if (! is_array($component) || ! is_string($component['snapshot'] ?? null)) {
+                continue;
+            }
+
+            $snapshot = json_decode($component['snapshot'], true);
+            $name = is_array($snapshot) ? ($snapshot['memo']['name'] ?? null) : null;
+
+            if (! is_string($name) || $name === '' || $name === 'new-debug-bar.toolbar') {
+                continue;
+            }
+
+            $calls = is_array($component['calls'] ?? null) ? $component['calls'] : [];
+            $updates = is_array($component['updates'] ?? null) ? $component['updates'] : [];
+            $this->record('livewire', [
+                'phase' => 'request',
+                'request_index' => $index,
+                'component' => $name,
+                'actions' => array_values(array_unique(array_filter(array_map(
+                    fn (mixed $call): ?string => is_array($call) && is_string($call['method'] ?? null)
+                        ? $call['method']
+                        : null,
+                    $calls,
+                )))),
+                'updated_properties' => array_values(array_map('strval', array_keys($updates))),
+                'validation_failure_count' => 0,
+                'validation_fields' => [],
+                'payload_size_bytes' => $this->requestSize($request),
+                'response_size_bytes' => 0,
+            ]);
+        }
     }
 
     private function hasStartedSession(Request $request): bool

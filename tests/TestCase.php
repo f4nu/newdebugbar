@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Tests;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Laravel\Mcp\Server\McpServiceProvider;
+use Livewire\Component;
+use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
@@ -77,6 +80,12 @@ abstract class TestCase extends Orchestra
             fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
         );
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
+            $component = app('livewire')->mount('profiled-counter');
+
+            return response('<!doctype html><html><head><title>Livewire request</title></head><body><h1 data-testid="host-page">Livewire request</h1>'.$component.'</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 
         $router->middleware(ProfileRequest::class)->get(
@@ -141,6 +150,8 @@ abstract class TestCase extends Orchestra
     {
         parent::setUp();
 
+        view()->addLocation(__DIR__.'/views');
+        Livewire::component('profiled-counter', ProfiledCounter::class);
         $this->app['files']->deleteDirectory(config('new-debug-bar.storage.path'));
     }
 
@@ -157,4 +168,26 @@ final class ProfiledModel extends Model
     protected $table = 'profiled_models';
 
     protected $guarded = [];
+}
+
+final class ProfiledCounter extends Component
+{
+    public int $count = 0;
+
+    public string $name = '';
+
+    public function increment(): void
+    {
+        $this->count++;
+    }
+
+    public function save(): void
+    {
+        $this->validate(['name' => ['required']]);
+    }
+
+    public function render(): View
+    {
+        return view('profiled-counter');
+    }
 }

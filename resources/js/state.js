@@ -196,6 +196,19 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => returnFocus?.focus?.());
     },
 
+    switchProfile(summary) {
+      this.summary = summary ?? {};
+      this.detailsRequested = false;
+      const section = this.sectionKeys.includes(this.selected) ? this.selected : 'overview';
+
+      if (this.inspectorOpen) {
+        this.openInspector(section);
+      } else {
+        this.selected = section;
+        this.$nextTick?.(() => this.syncSectionPanels());
+      }
+    },
+
     copyText(value) {
       try {
         Promise.resolve(browser.writeClipboard?.(value)).catch(() => {});

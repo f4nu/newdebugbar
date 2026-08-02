@@ -27,7 +27,10 @@ final class ProfileRequest
 
         try {
             $this->manager->begin($request);
-            $this->injector->prepareAssets();
+
+            if (! $this->eligibility->isApplicationLivewireRequest($request)) {
+                $this->injector->prepareAssets();
+            }
         } catch (Throwable) {
             return $next($request);
         }

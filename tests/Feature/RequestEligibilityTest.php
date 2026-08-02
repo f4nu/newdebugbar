@@ -3,12 +3,32 @@
 use Illuminate\Http\Request;
 use NewDebugBar\Support\RequestEligibility;
 
+function livewireEligibilityRequest(array $componentNames): Request
+{
+    $payload = [
+        'components' => array_map(fn (string $name): array => [
+            'snapshot' => json_encode(['memo' => ['name' => $name]], JSON_THROW_ON_ERROR),
+            'updates' => [],
+            'calls' => [],
+        ], $componentNames),
+    ];
+
+    return Request::create('/livewire/update', 'POST', server: [
+        'HTTP_ACCEPT' => 'application/json',
+        'HTTP_X_LIVEWIRE' => 'true',
+        'CONTENT_TYPE' => 'application/json',
+    ], content: json_encode($payload, JSON_THROW_ON_ERROR));
+}
+
 it('profiles only eligible html page requests', function (Request $request, bool $allowed) {
     expect(app(RequestEligibility::class)->allows($request))->toBe($allowed);
 })->with([
     'html page' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'text/html']), true],
     'json response' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'application/json']), false],
-    'Livewire update' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'text/html', 'HTTP_X_LIVEWIRE' => 'true']), false],
+    'application Livewire update' => [fn () => livewireEligibilityRequest(['clinic-dashboard']), true],
+    'mixed Livewire update' => [fn () => livewireEligibilityRequest(['clinic-dashboard', 'new-debug-bar.toolbar']), true],
+    'internal Livewire update' => [fn () => livewireEligibilityRequest(['new-debug-bar.toolbar']), false],
+    'malformed Livewire update' => [fn () => livewireEligibilityRequest([]), false],
     'package asset' => [fn () => Request::create('/__new-debug-bar/assets/new-debug-bar.js', server: ['HTTP_ACCEPT' => 'text/html']), false],
     'Livewire route' => [fn () => Request::create('/livewire/update', server: ['HTTP_ACCEPT' => 'text/html']), false],
 ]);

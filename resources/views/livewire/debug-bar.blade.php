@@ -9,6 +9,7 @@
     :data-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
     @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionPanels(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); window.newDebugBarHighlight?.($root) })"
+    @new-debug-bar-profile-switched.window="switchProfile($event.detail.summary)"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <div
@@ -300,6 +301,40 @@
 
                                         <div x-show.important="visibleQueryCount === 0">
                                             <x-new-debug-bar::empty-state label="No queries match these filters." />
+                                        </div>
+                                    @elseif ($sectionKey === 'livewire')
+                                        <div class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                            <div class="ndb:px-3.5 ndb:py-3"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Components updated</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $section['summary']['count'] }}</p></div>
+                                            <div class="ndb:px-3.5 ndb:py-3"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Validation failures</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ array_sum(array_column($section['payload']['items'], 'validation_failure_count')) }}</p></div>
+                                        </div>
+                                        <div class="ndb:space-y-3">
+                                            @forelse ($section['payload']['items'] as $index => $item)
+                                                <article wire:key="livewire-{{ $index }}" class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30">
+                                                    <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800">
+                                                        <span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span>
+                                                        <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $item['component'] }}</code>
+                                                        <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ $item['at_ms'] }} ms</span>
+                                                    </div>
+                                                    <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800">
+                                                        @foreach ([
+                                                            ['Actions', ($item['actions'] ?? []) === [] ? '—' : implode(', ', $item['actions'])],
+                                                            ['Updated properties', ($item['updated_properties'] ?? []) === [] ? '—' : implode(', ', $item['updated_properties'])],
+                                                            ['Request', number_format($item['payload_size_bytes'] ?? 0).' B'],
+                                                            ['Response', number_format($item['response_size_bytes'] ?? 0).' B'],
+                                                        ] as [$label, $value])
+                                                            <div class="ndb:min-w-0 ndb:px-3.5 ndb:py-3"><dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</dt><dd class="ndb:mt-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $value }}</dd></div>
+                                                        @endforeach
+                                                    </dl>
+                                                    @if (($item['validation_failure_count'] ?? 0) > 0)
+                                                        <div class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/45 ndb:px-4 ndb:py-3 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20">
+                                                            <p class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-amber-700 ndb:dark:text-amber-300">{{ $item['validation_failure_count'] }} validation failure{{ $item['validation_failure_count'] === 1 ? '' : 's' }}</p>
+                                                            <p class="ndb:mt-1 ndb:text-xs ndb:font-semibold">{{ implode(', ', $item['validation_fields'] ?? []) }}</p>
+                                                        </div>
+                                                    @endif
+                                                </article>
+                                            @empty
+                                                <x-new-debug-bar::empty-state label="No application Livewire updates were captured." />
+                                            @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'models')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3"><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Model classes</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $section['summary']['model_classes'] }}</p></div><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Lifecycle events</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ count($section['summary']['lifecycle_events']) }}</p></div></div>

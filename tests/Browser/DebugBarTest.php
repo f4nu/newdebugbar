@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\File;
+
 function assertDebugSectionSelected($page, string $section): void
 {
     $page
@@ -51,6 +53,43 @@ it('moves focus into the inspector and returns it to its opener', function () {
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-inspector-action=close]")')
         ->click('[data-ndb-inspector-action="close"]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-toolbar=expand]")')
+        ->assertNoJavaScriptErrors();
+});
+
+it('profiles application Livewire updates without profiling itself', function () {
+    $page = visit('/profiled-livewire')
+        ->click('[data-testid="profiled-increment"]')
+        ->waitForText('1')
+        ->assertScript('Alpine.$data(document.getElementById("new-debug-bar")).summary.path.includes("/livewire-")');
+    $profiles = collect(File::files(config('new-debug-bar.storage.path')))
+        ->map(fn ($file) => json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR));
+    $livewireProfile = $profiles->first(
+        fn (array $profile): bool => str_contains($profile['sections']['request']['payload']['path'], '/livewire-'),
+    );
+
+    expect($livewireProfile)->not->toBeNull()
+        ->and($livewireProfile['sections']['livewire']['summary']['count'])->toBe(1);
+
+    $page
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="livewire"]');
+
+    assertDebugSectionSelected($page, 'livewire');
+
+    $page
+        ->assertSee('profiled-counter')
+        ->assertSee('increment')
+        ->assertSee('Request')
+        ->assertSee('Response')
+        ->click('[data-ndb-inspector-action="close"]')
+        ->click('[data-testid="profiled-save"]')
+        ->wait(0.2)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="livewire"]')
+        ->assertSee('1 validation failure')
+        ->assertSee('name')
         ->assertNoJavaScriptErrors();
 });
 

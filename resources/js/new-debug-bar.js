@@ -33,3 +33,26 @@ window.newDebugBarHighlight = (root = document) => {
 };
 
 window.newDebugBar = (summary) => createNewDebugBar(summary);
+
+const registerLivewireProfileSwitching = () => {
+  if (window.__newDebugBarRequestInterceptor || !window.Livewire?.interceptRequest) return;
+
+  window.__newDebugBarRequestInterceptor = true;
+  window.Livewire.interceptRequest(({ onResponse, onFinish }) => {
+    let profileId = null;
+
+    onResponse(({ response }) => {
+      profileId = response.headers.get('X-New-Debug-Bar-Profile');
+    });
+
+    onFinish(() => {
+      if (!profileId) return;
+
+      const debugBar = window.Livewire.getByName('new-debug-bar.toolbar')[0];
+      Promise.resolve(debugBar?.switchProfile?.(profileId)).catch(() => {});
+    });
+  });
+};
+
+registerLivewireProfileSwitching();
+document.addEventListener('livewire:init', registerLivewireProfileSwitching, { once: true });

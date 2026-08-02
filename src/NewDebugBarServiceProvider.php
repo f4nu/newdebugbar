@@ -16,6 +16,7 @@ use NewDebugBar\Analysis\SectionAnalyzer;
 use NewDebugBar\Analysis\TimelineBuilder;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
+use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Http\Controllers\AssetController;
@@ -29,6 +30,7 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
+use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
 
@@ -73,6 +75,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxVendorFrames: (int) config('new-debug-bar.collection.exception_vendor_frames', 12),
             sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
         ));
+        $this->app->scoped(LivewireUpdateRecorder::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
             $maxItems = (int) config('new-debug-bar.collection.max_items_per_section', 100);
@@ -84,6 +87,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                     $maxItems,
                     (string) config('new-debug-bar.collection.query_bindings', 'safe'),
                 ),
+                new LivewireCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),

@@ -14,6 +14,8 @@ final class ProfileFinalizer
         private readonly ProfileManager $manager,
         private readonly ProfileStore $store,
         private readonly BarInjector $injector,
+        private readonly RequestEligibility $eligibility,
+        private readonly LivewireUpdateRecorder $livewireUpdates,
     ) {}
 
     public function handle(RequestHandled $event): void
@@ -22,13 +24,23 @@ final class ProfileFinalizer
             return;
         }
 
-        if (! $this->injector->supports($event->response)) {
+        $livewire = $this->eligibility->isApplicationLivewireRequest($event->request);
+
+        if (! $livewire && ! $this->injector->supports($event->response)) {
             $this->manager->discard();
 
             return;
         }
 
         try {
+            if ($livewire) {
+                $payload = json_decode((string) $event->response->getContent(), true);
+
+                if (is_array($payload)) {
+                    $this->livewireUpdates->record($payload, $event->request);
+                }
+            }
+
             $profile = $this->manager->finish($event->request, $event->response);
         } catch (Throwable) {
             return;
@@ -42,10 +54,14 @@ final class ProfileFinalizer
 
         $event->request->attributes->set('new-debug-bar.profile-id', $id);
 
-        try {
-            $this->injector->inject($event->response, $id);
-        } catch (Throwable) {
-            // Debug rendering must never replace the application response.
+        if ($livewire) {
+            $event->response->headers->set('X-New-Debug-Bar-Profile', $id);
+        } else {
+            try {
+                $this->injector->inject($event->response, $id);
+            } catch (Throwable) {
+                // Debug rendering must never replace the application response.
+            }
         }
     }
 }
