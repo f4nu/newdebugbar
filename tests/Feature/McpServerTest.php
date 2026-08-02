@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Mcp\Facades\Mcp;
+use Laravel\Mcp\Server\Attributes\Version;
 use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Mcp\Tools\GetDebugFindings;
 use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
@@ -25,9 +26,12 @@ function captureStructuredContent($response): array
 }
 
 it('registers one local read only server with four schema backed tools', function () {
+    $version = (new ReflectionClass(NewDebugBarServer::class))->getAttributes(Version::class)[0]->newInstance();
+
     expect(Mcp::getLocalServer('new-debug-bar'))->toBeCallable()
         ->and(Mcp::getWebServer('new-debug-bar'))->toBeNull()
-        ->and(Mcp::servers())->toHaveKey('new-debug-bar');
+        ->and(Mcp::servers())->toHaveKey('new-debug-bar')
+        ->and($version->value)->toBe('0.1.0');
 
     foreach ([
         ListDebugProfiles::class => 'list-debug-profiles',
