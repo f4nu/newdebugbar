@@ -25,7 +25,7 @@ Laravel 12, Livewire 3, production profiling, and Laravel Octane are not support
 - Artisan commands, `php artisan test` runs, and individual queue-worker jobs as non-HTTP profiles
 - Retained history, same-path comparison, a relative timeline, and deterministic findings
 
-Profiles stay local in `storage/framework/cache/new-debug-bar`. They are bounded, short-lived JSON files and do not use a database.
+Profiles stay local in `storage/framework/new-debug-bar`. They are bounded, short-lived JSON files and do not use a database.
 
 ## Install from a local checkout
 
