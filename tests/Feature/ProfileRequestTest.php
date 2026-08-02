@@ -109,6 +109,33 @@ it('captures outbound HTTP results without private URLs or bodies', function () 
         ->and(json_encode($section))->not->toContain('private-token', 'private-key', 'response-body', 'connection details');
 });
 
+it('captures queued dispatches and synchronous execution without job data', function () {
+    $response = $this->get('/profiled-queue', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $section = $profile['sections']['queue'];
+
+    expect($section['summary'])
+        ->count->toBe(3)
+        ->queued_count->toBe(1)
+        ->executed_count->toBe(2)
+        ->failed_count->toBe(1)
+        ->duration_ms->toBeFloat()
+        ->and($section['payload']['items'][0])
+        ->kind->toBe('queued')
+        ->connection->toBe('redis')
+        ->queue->toBe('emails')
+        ->delay_seconds->toBe(5)
+        ->and($section['payload']['items'][1])
+        ->kind->toBe('executed')
+        ->connection->toBe('sync')
+        ->queue->toBe('sync')
+        ->duration_ms->toBeFloat()
+        ->and($section['payload']['items'][2])
+        ->kind->toBe('failed')
+        ->exception_class->toBe(RuntimeException::class)
+        ->and(json_encode($section))->not->toContain('private queued value', 'queued payload', 'private sync value', 'private failed value', 'private failure message');
+});
+
 it('isolates mutable collector state between application lifecycles', function () {
     $first = app(ProfileManager::class);
 

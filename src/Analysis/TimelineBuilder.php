@@ -65,6 +65,7 @@ final class TimelineBuilder
             'queries' => $item['normalized_sql'] ?? $item['sql'] ?? 'Query',
             'livewire' => trim(($item['component'] ?? 'Livewire').' '.implode(' ', $item['actions'] ?? [])),
             'http_client' => trim(($item['method'] ?? '').' '.($item['url'] ?? 'HTTP request')),
+            'queue' => trim(($item['kind'] ?? '').' '.($item['job'] ?? 'Job')),
             'models' => trim(($item['event'] ?? '').' '.($item['model'] ?? 'Model')),
             'cache' => trim(($item['operation'] ?? 'Cache').' '.($item['key_hash'] ?? '')),
             'views' => $item['name'] ?? 'View rendered',

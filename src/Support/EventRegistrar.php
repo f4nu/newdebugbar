@@ -16,6 +16,11 @@ use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Queue\Events\JobQueued;
+use Illuminate\Queue\Events\JobQueueing;
 use NewDebugBar\ProfileManager;
 use Throwable;
 
@@ -33,6 +38,11 @@ final class EventRegistrar
         RequestSending::class,
         ResponseReceived::class,
         ConnectionFailed::class,
+        JobQueueing::class,
+        JobQueued::class,
+        JobProcessing::class,
+        JobProcessed::class,
+        JobExceptionOccurred::class,
     ];
 
     public function __construct(
@@ -88,6 +98,52 @@ final class EventRegistrar
                 'status' => null,
                 'duration_ms' => null,
                 'failed' => true,
+                'exception_class' => $event->exception::class,
+            ]);
+        });
+
+        $this->listen(JobQueued::class, function (JobQueued $event): void {
+            $this->manager()->record('queue', [
+                'kind' => 'queued',
+                'job' => $this->jobName($event->job),
+                'connection' => $event->connectionName,
+                'queue' => $event->queue,
+                'job_id' => $event->id,
+                'delay_seconds' => $event->delay,
+                'duration_ms' => 0.0,
+            ]);
+        });
+
+        $this->listen(JobProcessing::class, function (JobProcessing $event): void {
+            $this->manager()->record('queue', [
+                'phase' => 'processing',
+                'execution_id' => spl_object_id($event->job),
+            ]);
+        });
+
+        $this->listen(JobProcessed::class, function (JobProcessed $event): void {
+            $this->manager()->record('queue', [
+                'phase' => 'processed',
+                'execution_id' => spl_object_id($event->job),
+                'kind' => 'executed',
+                'job' => $event->job->resolveName(),
+                'connection' => $event->connectionName,
+                'queue' => $event->job->getQueue(),
+                'job_id' => $event->job->getJobId() ?: null,
+                'attempt' => $event->job->attempts(),
+            ]);
+        });
+
+        $this->listen(JobExceptionOccurred::class, function (JobExceptionOccurred $event): void {
+            $this->manager()->record('queue', [
+                'phase' => 'failed',
+                'execution_id' => spl_object_id($event->job),
+                'kind' => 'failed',
+                'job' => $event->job->resolveName(),
+                'connection' => $event->connectionName,
+                'queue' => $event->job->getQueue(),
+                'job_id' => $event->job->getJobId() ?: null,
+                'attempt' => $event->job->attempts(),
                 'exception_class' => $event->exception::class,
             ]);
         });
@@ -206,5 +262,14 @@ final class EventRegistrar
             || str_starts_with($name, 'creating: ')
             || str_starts_with($name, 'bootstrapped: ')
             || str_starts_with($name, 'bootstrapping: ');
+    }
+
+    private function jobName(mixed $job): string
+    {
+        if (is_object($job)) {
+            return $job::class;
+        }
+
+        return is_string($job) && $job !== '' ? $job : get_debug_type($job);
     }
 }

@@ -2,10 +2,14 @@
 
 namespace NewDebugBar\Tests;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobQueued;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -154,6 +158,26 @@ abstract class TestCase extends Orchestra
             return response('<!doctype html><html><body>HTTP client</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-queue', function () {
+            Event::dispatch(new JobQueued(
+                'redis',
+                'emails',
+                'job-1',
+                new ProfiledJob('private queued value'),
+                json_encode(['private' => 'queued payload'], JSON_THROW_ON_ERROR),
+                5,
+            ));
+            Bus::dispatchSync(new ProfiledJob('private sync value'));
+
+            try {
+                Bus::dispatchSync(new ProfiledFailingJob('private failed value'));
+            } catch (\RuntimeException) {
+                // The application handled the failed synchronous job.
+            }
+
+            return response('<!doctype html><html><body>Queue</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->post(
             '/profiled-input',
             fn (Request $request) => response('<!doctype html><html><body>'.$request->input('clinic.name').'</body></html>'),
@@ -203,5 +227,26 @@ final class ProfiledCounter extends Component
     public function render(): View
     {
         return view('profiled-counter');
+    }
+}
+
+final class ProfiledJob implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public string $privateValue) {}
+
+    public function handle(): void {}
+}
+
+final class ProfiledFailingJob implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public string $privateValue) {}
+
+    public function handle(): void
+    {
+        throw new \RuntimeException('private failure message');
     }
 }

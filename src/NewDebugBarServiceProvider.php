@@ -20,6 +20,7 @@ use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\OutboundHttpCollector;
 use NewDebugBar\Collectors\QueryCollector;
+use NewDebugBar\Collectors\QueueCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
@@ -92,6 +93,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 ),
                 new LivewireCollector($redactor, $maxItems),
                 new OutboundHttpCollector($redactor, $maxItems),
+                new QueueCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),

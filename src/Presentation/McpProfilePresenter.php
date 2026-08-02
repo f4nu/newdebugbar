@@ -19,6 +19,7 @@ final class McpProfilePresenter
         'queries',
         'livewire',
         'http_client',
+        'queue',
         'models',
         'cache',
         'views',
