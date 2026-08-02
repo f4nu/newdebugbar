@@ -45,6 +45,15 @@ it('opens every compact toolbar destination and closes cleanly', function () {
     $page->assertNoJavaScriptErrors();
 });
 
+it('moves focus into the inspector and returns it to its opener', function () {
+    visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-inspector-action=close]")')
+        ->click('[data-ndb-inspector-action="close"]')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-toolbar=expand]")')
+        ->assertNoJavaScriptErrors();
+});
+
 it('uses one metric color and concentric glass toolbar corners', function () {
     visit('/profiled')
         ->assertScript(<<<'JS'

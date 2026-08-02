@@ -99,6 +99,24 @@ test('selecting a section resets content and highlights its code', async () => {
   assert.equal(highlighted, 1);
 });
 
+test('the inspector moves focus inside and returns it when closed', () => {
+  let openerFocused = 0;
+  let closeFocused = 0;
+  const opener = { focus: () => openerFocused++ };
+  const browser = runtime();
+  browser.activeElement = () => opener;
+  const state = createNewDebugBar(summary, browser);
+  state.$refs = { inspectorClose: { focus: () => closeFocused++ } };
+  state.$nextTick = (callback) => callback();
+
+  state.openInspector();
+  assert.equal(closeFocused, 1);
+
+  state.closeInspector();
+  assert.equal(openerFocused, 1);
+  assert.equal(state.inspectorReturnFocus, null);
+});
+
 test('the theme toggle shows the opposite resolved theme', () => {
   const state = createNewDebugBar(summary, runtime());
   state.init();
@@ -117,7 +135,11 @@ test('the command palette jumps to sections and changes settings', async () => {
   const state = createNewDebugBar(summary, browser);
   let detailsLoaded = 0;
   state.$wire = { loadDetails: async () => detailsLoaded++ };
+  state.$refs = { inspectorClose: { focus() {} } };
   state.$nextTick = (callback) => callback();
+  const opener = { focus() {} };
+  state.paletteOpen = true;
+  state.paletteReturnFocus = opener;
 
   state.runCommand('section:queries');
   await Promise.resolve();
@@ -125,6 +147,8 @@ test('the command palette jumps to sections and changes settings', async () => {
   assert.equal(state.selected, 'queries');
   assert.equal(detailsLoaded, 1);
   assert.equal(highlighted, 2);
+  assert.equal(state.inspectorReturnFocus, opener);
+  assert.equal(state.paletteReturnFocus, null);
 
   state.runCommand('theme:light');
   assert.equal(state.resolvedTheme, 'light');

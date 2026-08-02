@@ -81,7 +81,7 @@
                 <div class="ndb:flex ndb:items-center ndb:gap-0.5">
                     <x-new-debug-bar::icon-button name="search" data-ndb-inspector-action="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-lg" aria-label="Open command palette" />
                     <x-new-debug-bar::icon-button data-ndb-inspector-action="theme" @click="toggleTheme()" class="ndb:size-9 ndb:rounded-lg" ::aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" ::title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-new-debug-bar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-new-debug-bar::icon name="sun" class="ndb:size-4" /></span></x-new-debug-bar::icon-button>
-                    <x-new-debug-bar::icon-button name="close" data-ndb-inspector-action="close" @click="closeInspector()" class="ndb:size-9 ndb:rounded-lg" aria-label="Close inspector" />
+                    <x-new-debug-bar::icon-button name="close" data-ndb-inspector-action="close" x-ref="inspectorClose" @click="closeInspector()" class="ndb:size-9 ndb:rounded-lg" aria-label="Close inspector" />
                 </div>
             </header>
 

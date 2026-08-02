@@ -12,6 +12,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
   return {
     inspectorOpen: false,
+    inspectorReturnFocus: null,
     detailsRequested: false,
     selected: 'overview',
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
@@ -134,9 +135,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
     },
 
-    openInspector(section = this.selected) {
+    openInspector(section = this.selected, returnFocus = null) {
+      if (!this.inspectorOpen) {
+        this.inspectorReturnFocus = returnFocus ?? browser.activeElement?.();
+      }
+
       this.selectSection(section);
       this.inspectorOpen = true;
+      this.$nextTick?.(() => this.$refs?.inspectorClose?.focus());
 
       if (!this.detailsRequested) {
         this.detailsRequested = true;
@@ -152,7 +158,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     closeInspector() {
+      const returnFocus = this.inspectorReturnFocus;
       this.inspectorOpen = false;
+      this.inspectorReturnFocus = null;
+      this.$nextTick?.(() => returnFocus?.focus?.());
     },
 
     toggleFavorite(key) {
@@ -247,11 +256,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => this.$refs?.paletteSearch?.focus());
     },
 
-    closePalette() {
+    closePalette(restoreFocus = true) {
+      const returnFocus = this.paletteReturnFocus;
       this.paletteOpen = false;
       this.paletteSearch = '';
       this.paletteIndex = 0;
-      this.$nextTick?.(() => this.paletteReturnFocus?.focus?.());
+      this.paletteReturnFocus = null;
+
+      if (restoreFocus) this.$nextTick?.(() => returnFocus?.focus?.());
     },
 
     movePalette(direction) {
@@ -269,7 +281,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     runCommand(id) {
       const [kind, value] = id.split(':');
 
-      if (kind === 'section') this.openInspector(value);
+      if (kind === 'section') {
+        const returnFocus = this.paletteReturnFocus;
+        this.closePalette(false);
+        this.openInspector(value, returnFocus);
+
+        return;
+      }
+
       if (kind === 'theme') this.setTheme(value);
 
       this.closePalette();
