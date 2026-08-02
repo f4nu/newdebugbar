@@ -370,6 +370,38 @@
                                                 <x-new-debug-bar::empty-state label="No queue activity was captured." />
                                             @endforelse
                                         </div>
+                                    @elseif ($sectionKey === 'mail')
+                                        <dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                            @foreach ([['Messages', $section['summary']['count']], ['Recipients', $section['summary']['recipient_count']], ['Attachments', $section['summary']['attachment_count']]] as [$label, $value])
+                                                <div class="ndb:px-3.5 ndb:py-3"><dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</dt><dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</dd></div>
+                                            @endforeach
+                                        </dl>
+                                        <div class="ndb:space-y-2">
+                                            @forelse ($section['payload']['items'] as $index => $item)
+                                                <article wire:key="mail-{{ $index }}" class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:px-3.5 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30">
+                                                    <div class="ndb:min-w-0 ndb:flex-1"><code class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $item['source'] ?: 'Mail message' }}</code><p class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span>{{ $item['recipient_count'] }} recipients</span><span>{{ $item['attachment_count'] }} attachments</span><span>{{ $item['has_html'] ? 'HTML' : 'No HTML' }}</span><span>{{ $item['has_text'] ? 'Text' : 'No text' }}</span></p></div>
+                                                    <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>
+                                                </article>
+                                            @empty
+                                                <x-new-debug-bar::empty-state label="No mail was sent." />
+                                            @endforelse
+                                        </div>
+                                    @elseif ($sectionKey === 'notifications')
+                                        <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                            @foreach ([['Sent', $section['summary']['sent_count']], ['Failed', $section['summary']['failed_count']]] as [$label, $value])
+                                                <div class="ndb:px-3.5 ndb:py-3"><dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</dt><dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</dd></div>
+                                            @endforeach
+                                        </dl>
+                                        <div class="ndb:space-y-2">
+                                            @forelse ($section['payload']['items'] as $index => $item)
+                                                <article wire:key="notification-{{ $index }}" class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 {{ $item['status'] === 'failed' ? 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' : 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' }}">
+                                                    <span class="ndb:w-12 ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wider {{ $item['status'] === 'failed' ? 'ndb:text-red-600 ndb:dark:text-red-300' : 'ndb:text-emerald-600 ndb:dark:text-emerald-300' }}">{{ $item['status'] }}</span>
+                                                    <div class="ndb:min-w-0 ndb:flex-1"><code class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $item['notification'] }}</code><p class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span>{{ $item['channel'] }}</span><span>{{ $item['notifiable_type'] }}</span></p></div>
+                                                </article>
+                                            @empty
+                                                <x-new-debug-bar::empty-state label="No notifications were sent." />
+                                            @endforelse
+                                        </div>
                                     @elseif ($sectionKey === 'models')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3"><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Model classes</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $section['summary']['model_classes'] }}</p></div><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Lifecycle events</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ count($section['summary']['lifecycle_events']) }}</p></div></div>
                                         @forelse ($section['payload']['groups'] as $index => $group)

@@ -66,6 +66,8 @@ final class TimelineBuilder
             'livewire' => trim(($item['component'] ?? 'Livewire').' '.implode(' ', $item['actions'] ?? [])),
             'http_client' => trim(($item['method'] ?? '').' '.($item['url'] ?? 'HTTP request')),
             'queue' => trim(($item['kind'] ?? '').' '.($item['job'] ?? 'Job')),
+            'mail' => 'Mail sent'.(($item['mailable'] ?? null) ? ' '.$item['mailable'] : ''),
+            'notifications' => trim(($item['status'] ?? '').' '.($item['notification'] ?? 'Notification')),
             'models' => trim(($item['event'] ?? '').' '.($item['model'] ?? 'Model')),
             'cache' => trim(($item['operation'] ?? 'Cache').' '.($item['key_hash'] ?? '')),
             'views' => $item['name'] ?? 'View rendered',

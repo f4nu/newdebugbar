@@ -16,6 +16,11 @@ use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Notifications\Events\NotificationFailed;
+use Illuminate\Notifications\Events\NotificationSending;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -43,6 +48,11 @@ final class EventRegistrar
         JobProcessing::class,
         JobProcessed::class,
         JobExceptionOccurred::class,
+        MessageSending::class,
+        MessageSent::class,
+        NotificationSending::class,
+        NotificationSent::class,
+        NotificationFailed::class,
     ];
 
     public function __construct(
@@ -145,6 +155,46 @@ final class EventRegistrar
                 'job_id' => $event->job->getJobId() ?: null,
                 'attempt' => $event->job->attempts(),
                 'exception_class' => $event->exception::class,
+            ]);
+        });
+
+        $this->listen(MessageSending::class, function (MessageSending $event): void {
+            $this->manager()->record('mail', [
+                'phase' => 'sending',
+                'message_id' => spl_object_id($event->message),
+            ]);
+        });
+
+        $this->listen(MessageSent::class, function (MessageSent $event): void {
+            $message = $event->message;
+            $source = $event->data['__laravel_mailable'] ?? $event->data['__laravel_notification'] ?? null;
+
+            $this->manager()->record('mail', [
+                'phase' => 'sent',
+                'message_id' => spl_object_id($message),
+                'source' => is_string($source) ? $source : null,
+                'recipient_count' => count($message->getTo()) + count($message->getCc()) + count($message->getBcc()),
+                'attachment_count' => count($message->getAttachments()),
+                'has_html' => $message->getHtmlBody() !== null,
+                'has_text' => $message->getTextBody() !== null,
+            ]);
+        });
+
+        $this->listen(NotificationSent::class, function (NotificationSent $event): void {
+            $this->manager()->record('notifications', [
+                'status' => 'sent',
+                'notification' => $event->notification::class,
+                'channel' => (string) $event->channel,
+                'notifiable_type' => is_object($event->notifiable) ? $event->notifiable::class : get_debug_type($event->notifiable),
+            ]);
+        });
+
+        $this->listen(NotificationFailed::class, function (NotificationFailed $event): void {
+            $this->manager()->record('notifications', [
+                'status' => 'failed',
+                'notification' => $event->notification::class,
+                'channel' => (string) $event->channel,
+                'notifiable_type' => is_object($event->notifiable) ? $event->notifiable::class : get_debug_type($event->notifiable),
             ]);
         });
 

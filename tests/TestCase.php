@@ -8,6 +8,9 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Events\NotificationFailed;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Notifications\Notification;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -15,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\Component;
 use Livewire\Livewire;
@@ -47,6 +51,8 @@ abstract class TestCase extends Orchestra
             'database' => ':memory:',
             'prefix' => '',
         ]);
+        $app['config']->set('mail.default', 'array');
+        $app['config']->set('mail.mailers.array', ['transport' => 'array']);
     }
 
     protected function defineRoutes($router): void
@@ -178,6 +184,24 @@ abstract class TestCase extends Orchestra
             return response('<!doctype html><html><body>Queue</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-messages', function () {
+            Mail::raw('private body', function ($message): void {
+                $message
+                    ->from('private-sender@example.test')
+                    ->to('private-recipient@example.test')
+                    ->cc('private-copy@example.test')
+                    ->subject('private subject')
+                    ->attachData('private attachment', 'private.txt');
+            });
+
+            $notifiable = new ProfiledNotifiable('private-recipient@example.test');
+            $notification = new ProfiledNotification('private notification data');
+            Event::dispatch(new NotificationSent($notifiable, $notification, 'mail', ['private response']));
+            Event::dispatch(new NotificationFailed($notifiable, $notification, 'slack', ['private' => 'failure data']));
+
+            return response('<!doctype html><html><body>Messages</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->post(
             '/profiled-input',
             fn (Request $request) => response('<!doctype html><html><body>'.$request->input('clinic.name').'</body></html>'),
@@ -249,4 +273,14 @@ final class ProfiledFailingJob implements ShouldQueue
     {
         throw new \RuntimeException('private failure message');
     }
+}
+
+final class ProfiledNotification extends Notification
+{
+    public function __construct(public string $privateValue) {}
+}
+
+final class ProfiledNotifiable
+{
+    public function __construct(public string $privateAddress) {}
 }

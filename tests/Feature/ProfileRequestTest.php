@@ -136,6 +136,43 @@ it('captures queued dispatches and synchronous execution without job data', func
         ->and(json_encode($section))->not->toContain('private queued value', 'queued payload', 'private sync value', 'private failed value', 'private failure message');
 });
 
+it('captures mail and notification shape without private content or identities', function () {
+    $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $mail = $profile['sections']['mail'];
+    $notifications = $profile['sections']['notifications'];
+
+    expect($mail['summary'])
+        ->count->toBe(1)
+        ->recipient_count->toBe(2)
+        ->attachment_count->toBe(1)
+        ->duration_ms->toBeFloat()
+        ->and($mail['payload']['items'][0])
+        ->recipient_count->toBe(2)
+        ->attachment_count->toBe(1)
+        ->has_text->toBeTrue()
+        ->and($notifications['summary'])
+        ->count->toBe(2)
+        ->sent_count->toBe(1)
+        ->failed_count->toBe(1)
+        ->and($notifications['payload']['items'][0])
+        ->status->toBe('sent')
+        ->channel->toBe('mail')
+        ->and($notifications['payload']['items'][1])
+        ->status->toBe('failed')
+        ->channel->toBe('slack')
+        ->and(json_encode([$mail, $notifications]))->not->toContain(
+            'private body',
+            'private subject',
+            'private attachment',
+            'private-sender',
+            'private-recipient',
+            'private-copy',
+            'private notification data',
+            'failure data',
+        );
+});
+
 it('isolates mutable collector state between application lifecycles', function () {
     $first = app(ProfileManager::class);
 

@@ -18,6 +18,8 @@ use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
+use NewDebugBar\Collectors\MailCollector;
+use NewDebugBar\Collectors\NotificationCollector;
 use NewDebugBar\Collectors\OutboundHttpCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\QueueCollector;
@@ -94,6 +96,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new LivewireCollector($redactor, $maxItems),
                 new OutboundHttpCollector($redactor, $maxItems),
                 new QueueCollector($redactor, $maxItems),
+                new MailCollector($redactor, $maxItems),
+                new NotificationCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),
