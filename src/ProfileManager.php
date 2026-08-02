@@ -67,7 +67,10 @@ final class ProfileManager
         }
 
         if (isset($this->collectors[$collector])) {
-            $this->collectors[$collector]->record($item);
+            $this->collectors[$collector]->record([
+                ...$item,
+                'at_ms' => $this->elapsedMilliseconds(),
+            ]);
         }
     }
 
@@ -176,5 +179,10 @@ final class ProfileManager
         }
 
         return $request->url().'?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    private function elapsedMilliseconds(): float
+    {
+        return round(($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000, 3);
     }
 }

@@ -80,5 +80,34 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
         ->assertSet('summary.warning', true)
         ->assertSet('summary.slow_query_count', 1)
         ->assertSet('summary.duplicate_query_count', 1)
+        ->assertSet('summary.extra_query_count', 1)
         ->assertSet('summary.exception_count', 1);
+});
+
+it('uses the shared presenter for deferred query details and findings', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'metrics' => ['duration_ms' => 100],
+        'sections' => [
+            'request' => ['label' => 'Request', 'summary' => ['method' => 'GET', 'status' => 200], 'payload' => [
+                'method' => 'GET',
+                'status' => 200,
+                'path' => '/',
+                'route' => null,
+                'action' => null,
+            ]],
+            'queries' => ['label' => 'Queries', 'summary' => ['count' => 2, 'duration_ms' => 10], 'payload' => ['items' => [
+                ['sql' => 'select ?', 'bindings' => [1], 'duration_ms' => 5, 'connection' => 'testing'],
+                ['sql' => 'select ?', 'bindings' => [2], 'duration_ms' => 5, 'connection' => 'testing'],
+            ], 'dropped' => 0]],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => [], 'dropped' => 0]],
+        ],
+    ]);
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->call('loadDetails')
+        ->assertSet('profile.sections.queries.summary.repeated_pattern_count', 1)
+        ->assertSet('profile.sections.queries.payload.items.0.repeated_count', 2)
+        ->assertSet('profile.findings.0.rule_id', 'query.repeated');
 });

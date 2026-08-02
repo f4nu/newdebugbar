@@ -32,17 +32,21 @@ final class EventRegistrar
     public function __construct(
         private readonly Dispatcher $events,
         private readonly Container $container,
+        private readonly CallSiteResolver $callSites,
     ) {}
 
     public function register(): void
     {
         $this->listen(QueryExecuted::class, function (QueryExecuted $event): void {
+            $location = $this->callSites->capture();
+
             $this->manager()->record('queries', [
                 'sql' => $event->sql,
                 'bindings' => $event->bindings,
                 'duration_ms' => round((float) $event->time, 2),
                 'connection' => $event->connectionName,
                 'type' => $event->readWriteType,
+                ...$location,
             ]);
         });
 

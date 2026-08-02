@@ -62,6 +62,12 @@ it('captures a local web request and its Laravel activity', function () {
 
     expect(array_column($profile['sections']['models']['payload']['items'], 'event'))
         ->toContain('retrieved');
+
+    foreach ($profile['sections'] as $section) {
+        foreach ($section['payload']['items'] ?? [] as $item) {
+            expect($item['at_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0);
+        }
+    }
 });
 
 it('isolates mutable collector state between application lifecycles', function () {

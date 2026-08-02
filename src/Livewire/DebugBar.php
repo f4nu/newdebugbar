@@ -6,6 +6,7 @@ use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
 
 /** Loads a request summary first and defers full inspector data. */
@@ -21,10 +22,10 @@ final class DebugBar extends Component
     #[Locked]
     public bool $detailsLoaded = false;
 
-    public function mount(string $profileId, ProfileStore $store): void
+    public function mount(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
         $this->profileId = $profileId;
-        $this->summary = $this->makeSummary($store->get($profileId) ?? []);
+        $this->summary = $this->makeSummary($presenter->present($store->get($profileId) ?? []));
     }
 
     public function loadDetails(ProfileStore $store): void
@@ -42,7 +43,7 @@ final class DebugBar extends Component
             return [];
         }
 
-        return app(ProfileStore::class)->get($this->profileId) ?? [];
+        return app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($this->profileId) ?? []);
     }
 
     public function render(): View
@@ -57,13 +58,6 @@ final class DebugBar extends Component
     private function makeSummary(array $profile): array
     {
         $sections = $profile['sections'] ?? [];
-        $queries = $sections['queries']['payload']['items'] ?? [];
-        $slowThreshold = (float) config('new-debug-bar.slow_query_ms', 100);
-        $sqlCounts = array_count_values(array_map(
-            fn (array $query): string => preg_replace('/\s+/', ' ', trim((string) ($query['sql'] ?? ''))) ?? '',
-            $queries,
-        ));
-
         $sectionLinks = [];
         $sectionCounts = [];
 
@@ -79,7 +73,7 @@ final class DebugBar extends Component
 
         $status = (int) ($sections['request']['summary']['status'] ?? 0);
         $exceptionCount = (int) ($sections['exceptions']['summary']['count'] ?? 0);
-        $slowQueries = count(array_filter($queries, fn (array $query): bool => ($query['duration_ms'] ?? 0) >= $slowThreshold));
+        $querySummary = $sections['queries']['summary'] ?? [];
 
         return [
             'theme' => config('new-debug-bar.theme', 'system'),
@@ -92,9 +86,10 @@ final class DebugBar extends Component
             'query_count' => $sections['queries']['summary']['count'] ?? 0,
             'query_duration_ms' => $sections['queries']['summary']['duration_ms'] ?? 0,
             'exception_count' => $exceptionCount,
-            'slow_query_count' => $slowQueries,
-            'duplicate_query_count' => count(array_filter($sqlCounts, fn (int $count): bool => $count > 1)),
-            'warning' => $status >= 400 || $exceptionCount > 0 || $slowQueries > 0,
+            'slow_query_count' => $querySummary['slow_count'] ?? 0,
+            'duplicate_query_count' => $querySummary['repeated_pattern_count'] ?? 0,
+            'extra_query_count' => $querySummary['extra_execution_count'] ?? 0,
+            'warning' => $status >= 400 || $exceptionCount > 0 || ($querySummary['slow_count'] ?? 0) > 0,
             'sections' => $sectionLinks,
             'section_counts' => $sectionCounts,
         ];

@@ -8,6 +8,8 @@ use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use NewDebugBar\Analysis\ProfileAnalyzer;
+use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LogCollector;
@@ -16,6 +18,7 @@ use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
@@ -31,6 +34,24 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxDepth: (int) config('new-debug-bar.collection.max_depth', 5),
             maxStringLength: (int) config('new-debug-bar.collection.max_string_length', 2_000),
             maxArrayItems: (int) config('new-debug-bar.collection.max_items_per_section', 100),
+        ));
+
+        $this->app->singleton(QueryAnalyzer::class, fn (): QueryAnalyzer => new QueryAnalyzer(
+            (float) config('new-debug-bar.slow_query_ms', 100),
+        ));
+        $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
+            queries: $app->make(QueryAnalyzer::class),
+            slowRequestMs: (float) config('new-debug-bar.slow_request_ms', 1_000),
+            minimumCacheOperations: (int) config('new-debug-bar.findings.minimum_cache_operations', 5),
+            highCacheMissRate: (float) config('new-debug-bar.findings.high_cache_miss_rate', 0.8),
+            maxFindings: (int) config('new-debug-bar.findings.max_findings', 50),
+        ));
+        $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(
+            projectPath: base_path(),
+            packagePath: dirname(__DIR__),
+            enabled: (bool) config('new-debug-bar.collection.query_call_sites', true),
+            maxFrames: (int) config('new-debug-bar.collection.query_call_site_frames', 5),
+            scanLimit: (int) config('new-debug-bar.collection.query_call_site_scan_limit', 40),
         ));
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
@@ -72,7 +93,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             return;
         }
 
-        (new EventRegistrar($events, $this->app))->register();
+        (new EventRegistrar($events, $this->app, $this->app->make(CallSiteResolver::class)))->register();
         $events->listen(
             RequestHandled::class,
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),
