@@ -16,13 +16,17 @@ final class CacheCollector extends AbstractCollector
 
     public function summary(): array
     {
-        $operations = array_count_values(array_column($this->items, 'operation'));
-
         return [
             ...parent::summary(),
-            'hits' => $operations['hit'] ?? 0,
-            'misses' => $operations['miss'] ?? 0,
-            'writes' => $operations['write'] ?? 0,
+            'hits' => $this->totals['hit'] ?? 0,
+            'misses' => $this->totals['miss'] ?? 0,
+            'writes' => $this->totals['write'] ?? 0,
         ];
+    }
+
+    protected function track(array $item): void
+    {
+        $operation = (string) ($item['operation'] ?? '');
+        $this->totals[$operation] = ($this->totals[$operation] ?? 0) + 1;
     }
 }

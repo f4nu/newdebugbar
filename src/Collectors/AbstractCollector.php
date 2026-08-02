@@ -12,6 +12,9 @@ abstract class AbstractCollector implements Collector
 
     protected int $dropped = 0;
 
+    /** @var array<string, int|float> */
+    protected array $totals = [];
+
     public function __construct(
         protected readonly Redactor $redactor,
         protected readonly int $maxItems,
@@ -21,18 +24,21 @@ abstract class AbstractCollector implements Collector
     {
         $this->items = [];
         $this->dropped = 0;
+        $this->totals = [];
     }
 
     public function record(array $item): void
     {
+        /** @var array<string, mixed> $safeItem */
+        $safeItem = $this->redactor->clean($item);
+        $this->track($safeItem);
+
         if (count($this->items) >= $this->maxItems) {
             $this->dropped++;
 
             return;
         }
 
-        /** @var array<string, mixed> $safeItem */
-        $safeItem = $this->redactor->clean($item);
         $this->items[] = $safeItem;
     }
 
@@ -48,4 +54,7 @@ abstract class AbstractCollector implements Collector
             'dropped' => $this->dropped,
         ];
     }
+
+    /** @param array<string, mixed> $item */
+    protected function track(array $item): void {}
 }

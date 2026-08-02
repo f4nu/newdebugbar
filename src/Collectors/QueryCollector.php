@@ -18,7 +18,12 @@ final class QueryCollector extends AbstractCollector
     {
         return [
             ...parent::summary(),
-            'duration_ms' => round(array_sum(array_column($this->items, 'duration_ms')), 2),
+            'duration_ms' => round($this->totals['duration_ms'] ?? 0, 2),
         ];
+    }
+
+    protected function track(array $item): void
+    {
+        $this->totals['duration_ms'] = ($this->totals['duration_ms'] ?? 0) + (float) ($item['duration_ms'] ?? 0);
     }
 }

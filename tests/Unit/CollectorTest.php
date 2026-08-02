@@ -1,5 +1,7 @@
 <?php
 
+use NewDebugBar\Collectors\CacheCollector;
+use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Support\Redactor;
 
@@ -11,7 +13,7 @@ it('counts dropped collector items without retaining their payload', function ()
 
     expect($collector->summary())->toBe([
         'count' => 2,
-        'duration_ms' => 1.25,
+        'duration_ms' => 6.0,
     ])->and($collector->payload())->toBe([
         'items' => [['sql' => 'select 1', 'duration_ms' => 1.25]],
         'dropped' => 1,
@@ -25,5 +27,25 @@ it('counts dropped collector items without retaining their payload', function ()
     ])->and($collector->payload())->toBe([
         'items' => [],
         'dropped' => 0,
+    ]);
+});
+
+it('includes dropped items in cache and log summaries', function () {
+    $cache = new CacheCollector(new Redactor, maxItems: 1);
+    $logs = new LogCollector(new Redactor, maxItems: 1);
+
+    $cache->record(['operation' => 'hit']);
+    $cache->record(['operation' => 'miss']);
+    $logs->record(['level' => 'info']);
+    $logs->record(['level' => 'error']);
+
+    expect($cache->summary())->toBe([
+        'count' => 2,
+        'hits' => 1,
+        'misses' => 1,
+        'writes' => 0,
+    ])->and($logs->summary())->toBe([
+        'count' => 2,
+        'errors' => 1,
     ]);
 });

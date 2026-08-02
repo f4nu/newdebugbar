@@ -16,11 +16,16 @@ final class LogCollector extends AbstractCollector
 
     public function summary(): array
     {
-        $levels = array_count_values(array_column($this->items, 'level'));
-
         return [
             ...parent::summary(),
-            'errors' => ($levels['error'] ?? 0) + ($levels['critical'] ?? 0) + ($levels['alert'] ?? 0) + ($levels['emergency'] ?? 0),
+            'errors' => $this->totals['errors'] ?? 0,
         ];
+    }
+
+    protected function track(array $item): void
+    {
+        if (in_array($item['level'] ?? null, ['error', 'critical', 'alert', 'emergency'], true)) {
+            $this->totals['errors'] = ($this->totals['errors'] ?? 0) + 1;
+        }
     }
 }
