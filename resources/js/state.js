@@ -164,6 +164,27 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => returnFocus?.focus?.());
     },
 
+    keepFocusWithin(event, container) {
+      if (event.key !== 'Tab') return;
+
+      const focusable = [...(container?.querySelectorAll?.('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])]
+        .filter((element) => element.hidden !== true && (element.getClientRects?.().length ?? 1) > 0);
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = browser.activeElement?.();
+
+      if (event.shiftKey && (active === first || !container.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !container.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
+    },
+
     toggleFavorite(key) {
       if (!this.sectionKeys.includes(key)) return;
 

@@ -70,6 +70,7 @@
             role="dialog"
             aria-modal="true"
             aria-label="Request inspector"
+            @keydown="keepFocusWithin($event, $el)"
             class="ndb:absolute ndb:inset-x-0 ndb:bottom-0 ndb:flex ndb:h-[min(82vh,780px)] ndb:max-h-[calc(100vh-12px)] ndb:flex-col ndb:overflow-hidden ndb:rounded-t-2xl ndb:border-x ndb:border-t ndb:border-white/70 ndb:bg-white/90 ndb:shadow-[0_-24px_80px_-28px_rgba(24,24,27,0.5)] ndb:backdrop-blur-2xl ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950/90"
         >
             <header class="ndb:flex ndb:h-13 ndb:shrink-0 ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:bg-white/55 ndb:pl-3 ndb:pr-2 ndb:backdrop-blur-xl ndb:sm:pl-4 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950/55">
@@ -233,11 +234,11 @@
     </div>
 
     <div x-cloak x-show.important="paletteOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0 ndb:z-50 ndb:grid ndb:justify-items-center ndb:bg-zinc-950/45 ndb:px-3 ndb:pt-[12vh] ndb:backdrop-blur-sm" @click.self="closePalette()">
-        <div x-show.important="paletteOpen" x-transition class="ndb:w-full ndb:max-w-xl ndb:self-start ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-white/70 ndb:bg-white/90 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/90" role="dialog" aria-modal="true" aria-label="Command palette">
+        <div x-show.important="paletteOpen" x-transition @keydown="keepFocusWithin($event, $el)" class="ndb:w-full ndb:max-w-xl ndb:self-start ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-white/70 ndb:bg-white/90 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/90" role="dialog" aria-modal="true" aria-label="Command palette">
             <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:dark:border-zinc-800"><x-new-debug-bar::icon name="search" class="ndb:size-5 ndb:text-zinc-400" /><input data-ndb-palette-search x-ref="paletteSearch" x-model="paletteSearch" @input="paletteIndex = 0" @keydown.down.prevent="movePalette(1)" @keydown.up.prevent="movePalette(-1)" @keydown.enter.prevent="runActiveCommand()" type="search" placeholder="Jump to a section or change a setting…" class="ndb:h-14 ndb:min-w-0 ndb:flex-1 ndb:border-0 ndb:bg-transparent ndb:text-sm ndb:font-medium ndb:outline-none ndb:placeholder:text-zinc-400" /><kbd class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-1.5 ndb:py-1 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-800">ESC</kbd></div>
             <div class="ndb-scrollbar ndb:max-h-[min(420px,60vh)] ndb:overflow-y-auto ndb:p-2">
                 <template x-for="(command, index) in filteredCommands" :key="command.id">
-                    <button type="button" @mouseenter="paletteIndex = index" @click="runCommand(command.id)" class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition" :class="paletteIndex === index ? 'ndb:bg-indigo-50 ndb:text-indigo-800 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-200' : 'ndb:text-zinc-700 ndb:dark:text-zinc-300'"><span class="ndb:flex-1 ndb:text-sm ndb:font-semibold" x-text="command.label"></span><span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400" x-text="command.hint"></span></button>
+                    <button type="button" :data-ndb-command="command.id" @mouseenter="paletteIndex = index" @click="runCommand(command.id)" class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition" :class="paletteIndex === index ? 'ndb:bg-indigo-50 ndb:text-indigo-800 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-200' : 'ndb:text-zinc-700 ndb:dark:text-zinc-300'"><span class="ndb:flex-1 ndb:text-sm ndb:font-semibold" x-text="command.label"></span><span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400" x-text="command.hint"></span></button>
                 </template>
                 <p x-show.important="filteredCommands.length === 0" class="ndb:px-3 ndb:py-8 ndb:text-center ndb:text-sm ndb:text-zinc-500">No matching commands.</p>
             </div>

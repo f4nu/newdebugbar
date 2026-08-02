@@ -117,6 +117,28 @@ test('the inspector moves focus inside and returns it when closed', () => {
   assert.equal(state.inspectorReturnFocus, null);
 });
 
+test('modal focus wraps at both edges', () => {
+  let active = null;
+  let prevented = 0;
+  const browser = runtime();
+  browser.activeElement = () => active;
+  const state = createNewDebugBar(summary, browser);
+  const first = { hidden: false, getClientRects: () => [{}], focus() { active = first; } };
+  const last = { hidden: false, getClientRects: () => [{}], focus() { active = last; } };
+  const container = {
+    contains: (element) => [first, last].includes(element),
+    querySelectorAll: () => [first, last],
+  };
+
+  active = first;
+  state.keepFocusWithin({ key: 'Tab', shiftKey: true, preventDefault: () => prevented++ }, container);
+  assert.equal(active, last);
+
+  state.keepFocusWithin({ key: 'Tab', shiftKey: false, preventDefault: () => prevented++ }, container);
+  assert.equal(active, first);
+  assert.equal(prevented, 2);
+});
+
 test('the theme toggle shows the opposite resolved theme', () => {
   const state = createNewDebugBar(summary, runtime());
   state.init();

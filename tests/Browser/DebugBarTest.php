@@ -54,6 +54,18 @@ it('moves focus into the inspector and returns it to its opener', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('keeps keyboard focus inside the command palette', function () {
+    visit('/profiled')
+        ->click('[data-ndb-toolbar="palette"]')
+        ->wait(0.2)
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
+        ->keys('[data-ndb-palette-search]', 'Shift+Tab')
+        ->assertScript('document.activeElement?.dataset.ndbCommand === "theme:dark"')
+        ->keys('[data-ndb-command="theme:dark"]', 'Tab')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
+        ->assertNoJavaScriptErrors();
+});
+
 it('uses one metric color and concentric glass toolbar corners', function () {
     visit('/profiled')
         ->assertScript(<<<'JS'
