@@ -24,25 +24,31 @@ final class ProfileAnalyzer
         $queryItems = $sections['queries']['payload']['items'] ?? [];
         $queryAnalysis = $this->queries->analyze(is_array($queryItems) ? $queryItems : [], $requestDuration);
         $status = (int) ($sections['request']['summary']['status'] ?? 0);
+        $runtimeType = $sections['request']['payload']['runtime_type'] ?? null;
+        $exitCode = $sections['request']['summary']['exit_code'] ?? null;
         $exceptionCount = (int) ($sections['exceptions']['summary']['count'] ?? 0);
         $findings = [];
 
-        if ($status >= 400 || $exceptionCount > 0) {
+        if ($status >= 400 || (is_int($exitCode) && $exitCode !== 0) || $exceptionCount > 0) {
             $findings[] = $this->finding(
-                'request.error',
+                is_string($runtimeType) ? 'runtime.error' : 'request.error',
                 'error',
                 $exceptionCount > 0 ? 'exceptions' : 'request',
-                'The request ended with an error or captured exception.',
-                ['status' => $status, 'exception_count' => $exceptionCount],
+                is_string($runtimeType)
+                    ? 'The runtime operation ended with an error or captured exception.'
+                    : 'The request ended with an error or captured exception.',
+                ['status' => $status, 'exit_code' => $exitCode, 'exception_count' => $exceptionCount],
             );
         }
 
         if ($requestDuration >= $this->slowRequestMs) {
             $findings[] = $this->finding(
-                'request.slow',
+                is_string($runtimeType) ? 'runtime.slow' : 'request.slow',
                 'warning',
                 'overview',
-                'The request exceeded the configured duration threshold.',
+                is_string($runtimeType)
+                    ? 'The runtime operation exceeded the configured duration threshold.'
+                    : 'The request exceeded the configured duration threshold.',
                 ['duration_ms' => $requestDuration, 'threshold_ms' => $this->slowRequestMs],
             );
         }

@@ -246,6 +246,8 @@ final class McpProfilePresenter
             return $this->clean($payload);
         }
 
+        $runtimeContext = is_array($payload['context'] ?? null) ? $payload['context'] : [];
+
         return $this->clean([
             'method' => $payload['method'] ?? null,
             'path' => $payload['path'] ?? null,
@@ -254,6 +256,16 @@ final class McpProfilePresenter
             'parameters' => array_keys(is_array($payload['parameters'] ?? null) ? $payload['parameters'] : []),
             'middleware' => $payload['middleware'] ?? [],
             'status' => $payload['status'] ?? null,
+            'runtime_type' => $payload['runtime_type'] ?? null,
+            'runtime_name' => $payload['name'] ?? null,
+            'exit_code' => $payload['exit_code'] ?? null,
+            'runtime_context' => [
+                'argument_names' => $runtimeContext['argument_names'] ?? [],
+                'option_names' => $runtimeContext['option_names'] ?? [],
+                'connection' => $runtimeContext['connection'] ?? null,
+                'queue' => $runtimeContext['queue'] ?? null,
+                'attempt' => $runtimeContext['attempt'] ?? null,
+            ],
             'content_type' => $payload['content_type'] ?? null,
             'request_size_bytes' => $payload['request_size_bytes'] ?? null,
             'response_size_bytes' => $payload['response_size_bytes'] ?? null,

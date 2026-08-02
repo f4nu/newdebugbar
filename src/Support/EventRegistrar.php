@@ -9,6 +9,8 @@ use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
 use Illuminate\Cache\Events\KeyForgotten;
 use Illuminate\Cache\Events\KeyWritten;
+use Illuminate\Console\Events\CommandFinished;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
@@ -59,6 +61,8 @@ final class EventRegistrar
         CommandExecuted::class,
         CommandFailed::class,
         CacheFlushed::class,
+        CommandStarting::class,
+        CommandFinished::class,
     ];
 
     public function __construct(
@@ -66,10 +70,33 @@ final class EventRegistrar
         private readonly Container $container,
         private readonly CallSiteResolver $callSites,
         private readonly SafeUrl $safeUrl,
+        private readonly RuntimeProfiler $runtime,
     ) {}
 
     public function register(): void
     {
+        $this->listen(CommandStarting::class, function (CommandStarting $event): void {
+            if ($this->isLongRunningCommand($event->command)) {
+                return;
+            }
+
+            $this->runtime->start(
+                $event->command === 'test' ? 'test' : 'artisan',
+                $event->command,
+                [
+                    'argument_names' => array_keys($event->input->getArguments()),
+                    'option_names' => array_keys($event->input->getOptions()),
+                ],
+                'command:'.spl_object_id($event->input),
+            );
+        });
+
+        $this->listen(CommandFinished::class, function (CommandFinished $event): void {
+            if (! $this->isLongRunningCommand($event->command)) {
+                $this->runtime->finish($event->exitCode, 'command:'.spl_object_id($event->input));
+            }
+        });
+
         $this->listen(QueryExecuted::class, function (QueryExecuted $event): void {
             $location = $this->callSites->capture();
 
@@ -131,6 +158,11 @@ final class EventRegistrar
         });
 
         $this->listen(JobProcessing::class, function (JobProcessing $event): void {
+            $this->runtime->start('queue', $event->job->resolveName(), [
+                'connection' => $event->connectionName,
+                'queue' => $event->job->getQueue(),
+                'attempt' => $event->job->attempts(),
+            ], 'queue:'.spl_object_id($event->job));
             $this->manager()->record('queue', [
                 'phase' => 'processing',
                 'execution_id' => spl_object_id($event->job),
@@ -148,6 +180,7 @@ final class EventRegistrar
                 'job_id' => $event->job->getJobId() ?: null,
                 'attempt' => $event->job->attempts(),
             ]);
+            $this->runtime->finish(0, 'queue:'.spl_object_id($event->job));
         });
 
         $this->listen(JobExceptionOccurred::class, function (JobExceptionOccurred $event): void {
@@ -162,6 +195,7 @@ final class EventRegistrar
                 'attempt' => $event->job->attempts(),
                 'exception_class' => $event->exception::class,
             ]);
+            $this->runtime->fail($event->exception, 'queue:'.spl_object_id($event->job));
         });
 
         $this->listen(MessageSending::class, function (MessageSending $event): void {
@@ -367,6 +401,19 @@ final class EventRegistrar
         }
 
         return is_string($job) && $job !== '' ? $job : get_debug_type($job);
+    }
+
+    private function isLongRunningCommand(string $command): bool
+    {
+        return in_array($command, [
+            'horizon',
+            'octane:start',
+            'queue:listen',
+            'queue:work',
+            'reverb:start',
+            'schedule:work',
+            'serve',
+        ], true);
     }
 
     /** @param list<mixed> $parameters @return list<string> */

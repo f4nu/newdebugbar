@@ -17,6 +17,7 @@ final class ProfileSummaryPresenter
         $cache = $profile['sections']['cache']['summary'] ?? [];
         $status = (int) ($request['summary']['status'] ?? 0);
         $exceptionCount = (int) ($profile['sections']['exceptions']['summary']['count'] ?? 0);
+        $exitCode = $request['summary']['exit_code'] ?? null;
         $cacheReads = (int) ($cache['hits'] ?? 0) + (int) ($cache['misses'] ?? 0);
 
         /** @var array<string, mixed> $summary */
@@ -38,7 +39,7 @@ final class ProfileSummaryPresenter
             'cache_hit_rate' => $cacheReads > 0 ? round(((int) ($cache['hits'] ?? 0) / $cacheReads) * 100, 1) : 0.0,
             'exception_count' => $exceptionCount,
             'finding_count' => count($profile['findings'] ?? []),
-            'warning' => $status >= 400 || $exceptionCount > 0 || ($profile['findings'] ?? []) !== [],
+            'warning' => $status >= 400 || (is_int($exitCode) && $exitCode !== 0) || $exceptionCount > 0 || ($profile['findings'] ?? []) !== [],
         ]);
 
         return $summary;
@@ -47,6 +48,12 @@ final class ProfileSummaryPresenter
     /** @param array<string, mixed> $request */
     private function requestType(array $request): string
     {
+        $runtimeType = $request['payload']['runtime_type'] ?? null;
+
+        if (is_string($runtimeType) && $runtimeType !== '') {
+            return $runtimeType;
+        }
+
         $status = (int) ($request['summary']['status'] ?? 0);
 
         if ($status >= 300 && $status < 400) {

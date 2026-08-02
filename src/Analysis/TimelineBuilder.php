@@ -9,11 +9,13 @@ final class TimelineBuilder
     public function build(array $profile): array
     {
         $duration = (float) ($profile['metrics']['duration_ms'] ?? 0);
+        $runtimeType = $profile['sections']['request']['payload']['runtime_type'] ?? null;
+        $subject = is_string($runtimeType) ? str($runtimeType)->title()->toString() : 'Request';
         $timeline = [[
             'id' => 'request-start',
             'section' => 'request',
             'kind' => 'milestone',
-            'label' => 'Request started',
+            'label' => $subject.' started',
             'at_ms' => 0.0,
             'start_ms' => null,
             'duration_ms' => null,
@@ -46,7 +48,7 @@ final class TimelineBuilder
             'id' => 'request-end',
             'section' => 'request',
             'kind' => 'milestone',
-            'label' => 'Request finished',
+            'label' => $subject.' finished',
             'at_ms' => round($duration, 3),
             'start_ms' => null,
             'duration_ms' => null,

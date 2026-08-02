@@ -25,6 +25,10 @@ final class ProfileManager
 
     private int $startedMemory = 0;
 
+    private string $profileType = 'http';
+
+    private string $primarySectionLabel = 'Request';
+
     /** @var array<string, mixed> */
     private array $request = [];
 
@@ -41,12 +45,7 @@ final class ProfileManager
 
     public function begin(Request $request): void
     {
-        foreach ($this->collectors as $collector) {
-            $collector->reset();
-        }
-
-        $this->startedAt = hrtime(true);
-        $this->startedMemory = memory_get_usage(true);
+        $this->start('http', 'Request');
         $query = $this->redactor->clean($request->query());
         $this->request = [
             'method' => $request->getMethod(),
@@ -60,6 +59,26 @@ final class ProfileManager
         ];
         $this->collecting = true;
         $this->recordLivewireRequest($request);
+    }
+
+    /** @param array<string, mixed> $context */
+    public function beginRuntime(string $type, string $name, array $context = []): void
+    {
+        $type = in_array($type, ['artisan', 'queue', 'test'], true) ? $type : 'runtime';
+        $this->start($type, 'Runtime');
+        $safeContext = $this->redactor->clean($context);
+        $this->request = [
+            'method' => 'CLI',
+            'url' => null,
+            'path' => $type.':'.$name,
+            'query' => [],
+            'input' => [],
+            'headers' => [],
+            'runtime_type' => $type,
+            'name' => $name,
+            'context' => is_array($safeContext) ? $safeContext : [],
+        ];
+        $this->collecting = true;
     }
 
     public function isCollecting(): bool
@@ -86,8 +105,6 @@ final class ProfileManager
     public function finish(Request $request, ?Response $response = null): array
     {
         try {
-            $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
-            $usedMemory = max(0, memory_get_usage(true) - $this->startedMemory);
             $route = $request->route();
 
             $this->request = [
@@ -107,50 +124,33 @@ final class ProfileManager
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
-            $metrics = [
-                'duration_ms' => round($duration, 2),
-                'memory_mb' => round($usedMemory / 1_048_576, 2),
-                'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
+            return $this->buildProfile();
+        } finally {
+            $this->collecting = false;
+        }
+    }
+
+    /** @return array<string, mixed> */
+    public function finishRuntime(int $exitCode = 0): array
+    {
+        try {
+            $this->request = [
+                ...$this->request,
+                'route' => null,
+                'action' => null,
+                'parameters' => [],
+                'middleware' => [],
+                'status' => $exitCode,
+                'exit_code' => $exitCode,
+                'content_type' => null,
+                'request_size_bytes' => 0,
+                'response_size_bytes' => 0,
+                'session_present' => false,
+                'authenticated' => false,
+                'response_headers' => [],
             ];
 
-            $sections = [
-                'overview' => [
-                    'label' => 'Overview',
-                    'summary' => $metrics,
-                    'payload' => [
-                        'environment' => app()->environment(),
-                        'php' => PHP_VERSION,
-                        'laravel' => app()->version(),
-                        'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
-                        'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
-                    ],
-                ],
-                'request' => [
-                    'label' => 'Request',
-                    'summary' => [
-                        'method' => $this->request['method'],
-                        'status' => $this->request['status'],
-                    ],
-                    'payload' => $this->request,
-                ],
-            ];
-
-            foreach ($this->collectors as $collector) {
-                $sections[$collector->key()] = [
-                    'label' => $collector->label(),
-                    'summary' => $collector->summary(),
-                    'payload' => $collector->payload(),
-                ];
-            }
-
-            return [
-                'schema_version' => 1,
-                'id' => (string) Str::uuid(),
-                'recorded_at' => now()->toIso8601String(),
-                'environment' => app()->environment(),
-                'metrics' => $metrics,
-                'sections' => $sections,
-            ];
+            return $this->buildProfile();
         } finally {
             $this->collecting = false;
         }
@@ -187,6 +187,72 @@ final class ProfileManager
         $content = $response?->getContent();
 
         return is_string($content) ? strlen($content) : 0;
+    }
+
+    private function start(string $type, string $primarySectionLabel): void
+    {
+        foreach ($this->collectors as $collector) {
+            $collector->reset();
+        }
+
+        $this->profileType = $type;
+        $this->primarySectionLabel = $primarySectionLabel;
+        $this->startedAt = hrtime(true);
+        $this->startedMemory = memory_get_usage(true);
+        $this->request = [];
+        $this->collecting = true;
+    }
+
+    /** @return array<string, mixed> */
+    private function buildProfile(): array
+    {
+        $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
+        $usedMemory = max(0, memory_get_usage(true) - $this->startedMemory);
+        $metrics = [
+            'duration_ms' => round($duration, 2),
+            'memory_mb' => round($usedMemory / 1_048_576, 2),
+            'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
+        ];
+        $sections = [
+            'overview' => [
+                'label' => 'Overview',
+                'summary' => $metrics,
+                'payload' => [
+                    'environment' => app()->environment(),
+                    'php' => PHP_VERSION,
+                    'laravel' => app()->version(),
+                    'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
+                    'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
+                ],
+            ],
+            'request' => [
+                'label' => $this->primarySectionLabel,
+                'summary' => [
+                    'method' => $this->request['method'],
+                    'status' => $this->request['status'],
+                    'exit_code' => $this->request['exit_code'] ?? null,
+                ],
+                'payload' => $this->request,
+            ],
+        ];
+
+        foreach ($this->collectors as $collector) {
+            $sections[$collector->key()] = [
+                'label' => $collector->label(),
+                'summary' => $collector->summary(),
+                'payload' => $collector->payload(),
+            ];
+        }
+
+        return [
+            'schema_version' => 1,
+            'id' => (string) Str::uuid(),
+            'recorded_at' => now()->toIso8601String(),
+            'profile_type' => $this->profileType,
+            'environment' => app()->environment(),
+            'metrics' => $metrics,
+            'sections' => $sections,
+        ];
     }
 
     private function requestSize(Request $request): int

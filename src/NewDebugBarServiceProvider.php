@@ -38,6 +38,7 @@ use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\RuntimeProfiler;
 use NewDebugBar\Support\SafeUrl;
 
 /** Registers profiling services only in explicitly allowed environments. */
@@ -82,6 +83,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
         ));
         $this->app->scoped(LivewireUpdateRecorder::class);
+        $this->app->scoped(RuntimeProfiler::class);
         $this->app->singleton(SafeUrl::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
@@ -143,6 +145,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app,
             $this->app->make(CallSiteResolver::class),
             $this->app->make(SafeUrl::class),
+            $this->app->make(RuntimeProfiler::class),
         ))->register();
         $events->listen(
             RequestHandled::class,
