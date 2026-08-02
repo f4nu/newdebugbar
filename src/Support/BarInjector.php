@@ -16,15 +16,11 @@ final class BarInjector
 
     public function inject(Response $response, string $profileId): Response
     {
-        if (! $this->canInject($response)) {
+        if (! $this->supports($response)) {
             return $response;
         }
 
         $html = (string) $response->getContent();
-
-        if (preg_match('/<\/body\s*>/i', $html) !== 1) {
-            return $response;
-        }
 
         $stylesheet = e($this->assets->for('new-debug-bar.css'));
         $script = e($this->assets->for('new-debug-bar.js'));
@@ -49,7 +45,7 @@ final class BarInjector
         return $response;
     }
 
-    private function canInject(Response $response): bool
+    public function supports(Response $response): bool
     {
         if ($response instanceof BinaryFileResponse || $response instanceof StreamedResponse) {
             return false;
@@ -65,10 +61,10 @@ final class BarInjector
 
         $contentType = strtolower((string) $response->headers->get('Content-Type'));
 
-        if ($contentType !== '') {
-            return str_contains($contentType, 'text/html');
+        if ($contentType !== '' && ! str_contains($contentType, 'text/html')) {
+            return false;
         }
 
-        return str_contains(strtolower((string) $response->getContent()), '</html>');
+        return preg_match('/<\/body\s*>/i', (string) $response->getContent()) === 1;
     }
 }

@@ -112,6 +112,11 @@ abstract class TestCase extends Orchestra
             '/profiled-collector-failure',
             fn () => response('<!doctype html><html><body>Application response</body></html>'),
         );
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-exception',
+            fn () => throw new \RuntimeException('Application failed.'),
+        );
     }
 
     protected function setUp(): void

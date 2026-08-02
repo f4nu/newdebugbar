@@ -35,16 +35,14 @@ final class ProfileRequest
         try {
             $response = $next($request);
         } catch (Throwable $exception) {
-            if ($profile = $this->finishSafely($request, exception: $exception)) {
-                $this->storeSafely($profile);
-            }
+            $this->manager->discard();
 
             throw $exception;
         }
 
         $profile = $this->finishSafely($request, $response);
 
-        if ($profile === null) {
+        if ($profile === null || ! $this->injector->supports($response)) {
             return $response;
         }
 
@@ -65,10 +63,9 @@ final class ProfileRequest
     private function finishSafely(
         Request $request,
         ?Response $response = null,
-        ?Throwable $exception = null,
     ): ?array {
         try {
-            return $this->manager->finish($request, $response, $exception);
+            return $this->manager->finish($request, $response);
         } catch (Throwable) {
             return null;
         }

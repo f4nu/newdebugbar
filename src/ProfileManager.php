@@ -70,13 +70,9 @@ final class ProfileManager
     }
 
     /** @return array<string, mixed> */
-    public function finish(Request $request, ?Response $response = null, ?Throwable $exception = null): array
+    public function finish(Request $request, ?Response $response = null): array
     {
         try {
-            if ($exception !== null) {
-                $this->recordException($exception);
-            }
-
             $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
             $usedMemory = max(0, memory_get_usage(true) - $this->startedMemory);
             $route = $request->route();
@@ -139,6 +135,11 @@ final class ProfileManager
         } finally {
             $this->collecting = false;
         }
+    }
+
+    public function discard(): void
+    {
+        $this->collecting = false;
     }
 
     public function recordException(Throwable $exception): void

@@ -84,12 +84,22 @@ it('leaves response types that cannot host the bar untouched', function (string 
         ->assertStatus($status)
         ->assertHeaderMissing('X-New-Debug-Bar-Profile')
         ->assertDontSee('id="new-debug-bar"', false);
+
+    expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse();
 })->with([
     'html without a body' => ['/html-without-body', 200],
     'plain text' => ['/plain-text', 200],
     'download' => ['/download', 200],
     'failed response' => ['/failed-html', 422],
 ]);
+
+it('discards a profile when the application throws', function () {
+    $this->get('/profiled-exception', ['Accept' => 'text/html'])
+        ->assertInternalServerError();
+
+    expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse()
+        ->and(app(ProfileManager::class)->isCollecting())->toBeFalse();
+});
 
 it('rejects unknown and unsafe package assets', function () {
     $this->get('/__new-debug-bar/assets/unknown.txt')->assertNotFound();
