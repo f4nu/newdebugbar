@@ -54,7 +54,7 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
             'request' => [
                 'label' => 'Request',
                 'summary' => ['method' => 'POST', 'status' => 500],
-                'payload' => ['path' => 'organizations'],
+                'payload' => ['path' => '/organizations'],
             ],
             'queries' => [
                 'label' => 'Queries',
@@ -75,6 +75,7 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
 
     Livewire::test(DebugBar::class, ['profileId' => $id])
         ->assertSet('summary.method', 'POST')
+        ->assertSet('summary.path', '/organizations')
         ->assertSet('summary.status', 500)
         ->assertSet('summary.warning', true)
         ->assertSet('summary.slow_query_count', 1)

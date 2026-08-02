@@ -3,6 +3,7 @@
 namespace NewDebugBar\Tests;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -116,6 +117,11 @@ abstract class TestCase extends Orchestra
         $router->middleware(ProfileRequest::class)->get(
             '/profiled-exception',
             fn () => throw new \RuntimeException('Application failed.'),
+        );
+
+        $router->middleware(ProfileRequest::class)->post(
+            '/profiled-input',
+            fn (Request $request) => response('<!doctype html><html><body>'.$request->input('clinic.name').'</body></html>'),
         );
     }
 

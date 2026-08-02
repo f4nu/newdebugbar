@@ -45,9 +45,9 @@ final class ProfileManager
         $this->request = [
             'method' => $request->getMethod(),
             'url' => $request->fullUrl(),
-            'path' => $request->path(),
+            'path' => '/'.ltrim($request->path(), '/'),
             'query' => $this->redactor->clean($request->query()),
-            'input' => $this->redactor->clean($request->except(array_keys($request->files->all()))),
+            'input' => $this->redactor->clean($request->input()),
             'headers' => $this->redactor->clean($request->headers->all()),
         ];
         $this->collecting = true;

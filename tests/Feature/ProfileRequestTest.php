@@ -1,11 +1,13 @@
 <?php
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\AssetUrl;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Tests\ProfiledModel;
@@ -45,6 +47,7 @@ it('captures a local web request and its Laravel activity', function () {
         ->environment->toBe('testing')
         ->sections->request->summary->method->toBe('GET')
         ->sections->request->summary->status->toBe(200)
+        ->sections->request->payload->path->toBe('/profiled')
         ->sections->request->payload->query->token->toBe('[redacted]')
         ->sections->request->payload->headers->authorization->toBe('[redacted]')
         ->sections->queries->summary->count->toBeGreaterThanOrEqual(1)
@@ -114,6 +117,21 @@ it('does not profile non html traffic', function () {
     $this->getJson('/plain-json')->assertOk();
 
     expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse();
+});
+
+it('captures nested input without retaining uploaded files', function () {
+    $response = $this->post('/profiled-input', [
+        'clinic' => [
+            'name' => 'Example Clinic',
+            'document' => UploadedFile::fake()->create('private.pdf'),
+        ],
+    ], ['Accept' => 'text/html'])->assertOk();
+
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+
+    expect($profile['sections']['request']['payload']['input'])->toBe([
+        'clinic' => ['name' => 'Example Clinic'],
+    ]);
 });
 
 it('profiles partial models without requiring their primary key', function () {
