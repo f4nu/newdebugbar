@@ -38,7 +38,11 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $redactor = $app->make(Redactor::class);
 
             return new ProfileManager([
-                new QueryCollector($redactor, $maxItems),
+                new QueryCollector(
+                    $redactor,
+                    $maxItems,
+                    (string) config('new-debug-bar.collection.query_bindings', 'safe'),
+                ),
                 new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),

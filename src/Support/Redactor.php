@@ -94,6 +94,52 @@ final class Redactor
         return $value;
     }
 
+    /**
+     * @param  array<array-key, mixed>  $bindings
+     * @return array<array-key, mixed>
+     */
+    public function cleanBindings(array $bindings, string $policy = 'safe'): array
+    {
+        if ($policy === 'none') {
+            return [];
+        }
+
+        if ($policy === 'full') {
+            /** @var array<array-key, mixed> $clean */
+            $clean = $this->clean($bindings);
+
+            return $clean;
+        }
+
+        $clean = [];
+
+        foreach (array_slice($bindings, 0, $this->maxArrayItems, true) as $key => $binding) {
+            if ($this->isSensitive((string) $key)) {
+                $clean[$key] = self::REDACTED;
+
+                continue;
+            }
+
+            $clean[$key] = match (true) {
+                $binding === null, is_bool($binding), is_int($binding), is_float($binding) => $binding,
+                $binding instanceof BackedEnum && ! is_string($binding->value) => $binding->value,
+                $binding instanceof DateTimeInterface => '[datetime]',
+                $binding instanceof UnitEnum => '[enum]',
+                is_string($binding), $binding instanceof Stringable => '[string]',
+                is_array($binding) => '[array]',
+                is_object($binding) => '['.$binding::class.']',
+                is_resource($binding) => '[resource]',
+                default => '['.get_debug_type($binding).']',
+            };
+        }
+
+        if (count($bindings) > $this->maxArrayItems) {
+            $clean['__truncated__'] = count($bindings) - $this->maxArrayItems;
+        }
+
+        return $clean;
+    }
+
     private function isSensitive(string $key): bool
     {
         $normalized = strtolower(str_replace(['-', '.'], '_', $key));

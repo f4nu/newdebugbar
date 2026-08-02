@@ -2,9 +2,19 @@
 
 namespace NewDebugBar\Collectors;
 
+use NewDebugBar\Support\Redactor;
+
 /** Collects database queries and totals their duration. */
 final class QueryCollector extends AbstractCollector
 {
+    public function __construct(
+        Redactor $redactor,
+        int $maxItems,
+        private readonly string $bindingPolicy = 'safe',
+    ) {
+        parent::__construct($redactor, $maxItems);
+    }
+
     public function key(): string
     {
         return 'queries';
@@ -21,6 +31,19 @@ final class QueryCollector extends AbstractCollector
             ...parent::summary(),
             'duration_ms' => round($this->totals['duration_ms'] ?? 0, 2),
         ];
+    }
+
+    public function record(array $item): void
+    {
+        if (array_key_exists('bindings', $item)) {
+            $bindings = $item['bindings'];
+            $item['bindings'] = $this->redactor->cleanBindings(
+                is_array($bindings) ? $bindings : [],
+                $this->bindingPolicy,
+            );
+        }
+
+        parent::record($item);
     }
 
     protected function track(array $item): void

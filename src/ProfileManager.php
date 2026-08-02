@@ -42,11 +42,12 @@ final class ProfileManager
 
         $this->startedAt = hrtime(true);
         $this->startedMemory = memory_get_usage(true);
+        $query = $this->redactor->clean($request->query());
         $this->request = [
             'method' => $request->getMethod(),
-            'url' => $request->fullUrl(),
+            'url' => $this->redactedUrl($request, is_array($query) ? $query : []),
             'path' => '/'.ltrim($request->path(), '/'),
-            'query' => $this->redactor->clean($request->query()),
+            'query' => $query,
             'input' => $this->redactor->clean($request->input()),
             'headers' => $this->redactor->clean($request->headers->all()),
         ];
@@ -127,6 +128,7 @@ final class ProfileManager
             }
 
             return [
+                'schema_version' => 1,
                 'id' => (string) Str::uuid(),
                 'recorded_at' => now()->toIso8601String(),
                 'environment' => app()->environment(),
@@ -164,5 +166,15 @@ final class ProfileManager
 
             return is_object($parameter) ? '['.$parameter::class.']' : $parameter;
         }, $parameters);
+    }
+
+    /** @param array<string, mixed> $query */
+    private function redactedUrl(Request $request, array $query): string
+    {
+        if ($query === []) {
+            return $request->url();
+        }
+
+        return $request->url().'?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
     }
 }

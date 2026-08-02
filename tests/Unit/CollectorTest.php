@@ -30,6 +30,18 @@ it('counts dropped collector items without retaining their payload', function ()
     ]);
 });
 
+it('masks unnamed string query bindings by default', function () {
+    $collector = new QueryCollector(new Redactor, maxItems: 2);
+
+    $collector->record([
+        'sql' => 'select * from users where email = ? and id = ?',
+        'bindings' => ['patient@example.com', 42],
+        'duration_ms' => 1.5,
+    ]);
+
+    expect($collector->payload()['items'][0]['bindings'])->toBe(['[string]', 42]);
+});
+
 it('includes dropped items in cache and log summaries', function () {
     $cache = new CacheCollector(new Redactor, maxItems: 1);
     $logs = new LogCollector(new Redactor, maxItems: 1);

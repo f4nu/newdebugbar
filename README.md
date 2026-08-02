@@ -45,6 +45,8 @@ php artisan vendor:publish --tag=new-debug-bar-config
 
 Set `NEW_DEBUG_BAR_ENABLED=false` to disable the package without removing it.
 
+String query bindings are masked by default because positional bindings do not carry safe field names. Set `NEW_DEBUG_BAR_QUERY_BINDINGS=full` only when you knowingly need complete local binding values, or `none` to omit all bindings.
+
 ## Local development
 
 ```bash

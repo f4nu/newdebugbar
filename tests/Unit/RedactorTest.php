@@ -80,3 +80,27 @@ it('normalizes common debug values without leaking object internals', function (
         fclose($resource);
     }
 });
+
+it('uses an explicit safety policy for positional query bindings', function () {
+    $redactor = new Redactor;
+    $date = new DateTimeImmutable('2026-08-02T10:00:00+00:00');
+
+    expect($redactor->cleanBindings([
+        'private string',
+        42,
+        true,
+        null,
+        $date,
+        ['nested' => 'private'],
+        'token' => 'named secret',
+    ]))->toBe([
+        '[string]',
+        42,
+        true,
+        null,
+        '[datetime]',
+        '[array]',
+        'token' => '[redacted]',
+    ])->and($redactor->cleanBindings(['private string'], 'none'))->toBe([])
+        ->and($redactor->cleanBindings(['private string'], 'full'))->toBe(['private string']);
+});

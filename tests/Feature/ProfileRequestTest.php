@@ -44,10 +44,13 @@ it('captures a local web request and its Laravel activity', function () {
     $profile = json_decode(File::get($files[0]->getPathname()), true, flags: JSON_THROW_ON_ERROR);
 
     expect($profile)
+        ->schema_version->toBe(1)
         ->environment->toBe('testing')
         ->sections->request->summary->method->toBe('GET')
         ->sections->request->summary->status->toBe(200)
         ->sections->request->payload->path->toBe('/profiled')
+        ->sections->request->payload->url->not->toContain('visible')
+        ->sections->request->payload->url->toContain('token=%5Bredacted%5D')
         ->sections->request->payload->query->token->toBe('[redacted]')
         ->sections->request->payload->headers->authorization->toBe('[redacted]')
         ->sections->queries->summary->count->toBeGreaterThanOrEqual(1)
