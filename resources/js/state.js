@@ -4,6 +4,7 @@ const defaultRuntime = () => ({
   storage: window.localStorage,
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
+  writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('new-debug-bar')),
 });
 
@@ -162,6 +163,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.inspectorOpen = false;
       this.inspectorReturnFocus = null;
       this.$nextTick?.(() => returnFocus?.focus?.());
+    },
+
+    copyText(value) {
+      Promise.resolve(browser.writeClipboard?.(value)).catch(() => {});
     },
 
     keepFocusWithin(event, container) {

@@ -139,6 +139,21 @@ test('modal focus wraps at both edges', () => {
   assert.equal(prevented, 2);
 });
 
+test('clipboard failures stay inside the debug bar', async () => {
+  let copied = null;
+  const browser = runtime();
+  browser.writeClipboard = async (value) => {
+    copied = value;
+    throw new Error('Clipboard permission denied');
+  };
+  const state = createNewDebugBar(summary, browser);
+
+  state.copyText('select 1');
+
+  await new Promise((resolve) => setTimeout(resolve));
+  assert.equal(copied, 'select 1');
+});
+
 test('the theme toggle shows the opposite resolved theme', () => {
   const state = createNewDebugBar(summary, runtime());
   state.init();
