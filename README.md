@@ -47,6 +47,23 @@ Set `NEW_DEBUG_BAR_ENABLED=false` to disable the package without removing it.
 
 String query bindings are masked by default because positional bindings do not carry safe field names. Set `NEW_DEBUG_BAR_QUERY_BINDINGS=full` only when you knowingly need complete local binding values, or `none` to omit all bindings.
 
+## Local MCP server
+
+The package registers a local-only MCP server named `new-debug-bar`. Configure an MCP client to run this command from the Laravel application:
+
+```bash
+php artisan mcp:start new-debug-bar
+```
+
+The server exposes four read-only tools:
+
+- `list-debug-profiles`
+- `get-debug-profile-section`
+- `inspect-debug-queries`
+- `get-debug-findings`
+
+Use the `X-New-Debug-Bar-Profile` response header as the exact profile ID for the request you want to inspect. Responses are versioned, redacted, paginated, and size-limited. The package does not register a web MCP endpoint and does not call an AI model.
+
 ## Local development
 
 ```bash

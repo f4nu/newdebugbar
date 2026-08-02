@@ -6,6 +6,7 @@ use Illuminate\Filesystem\Filesystem;
 use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
+use Throwable;
 
 /** Stores short-lived request profiles as private atomic JSON files. */
 final class ProfileStore
@@ -75,6 +76,44 @@ final class ProfileStore
         }
 
         return is_array($profile) ? $profile : null;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function recent(?int $limit = null): array
+    {
+        if (! $this->files->isDirectory($this->path)) {
+            return [];
+        }
+
+        $limit = max(1, min($limit ?? $this->maxProfiles, $this->maxProfiles));
+        $profiles = [];
+
+        foreach (collect($this->files->files($this->path))->sortByDesc->getMTime() as $file) {
+            if ($file->getExtension() !== 'json') {
+                continue;
+            }
+
+            try {
+                $profile = $this->get($file->getBasename('.json'));
+            } catch (Throwable) {
+                $profile = null;
+            }
+
+            if ($profile !== null) {
+                $profiles[] = $profile;
+            }
+
+            if (count($profiles) >= $limit) {
+                break;
+            }
+        }
+
+        return $profiles;
+    }
+
+    public function maxProfiles(): int
+    {
+        return $this->maxProfiles;
     }
 
     private function prune(): void

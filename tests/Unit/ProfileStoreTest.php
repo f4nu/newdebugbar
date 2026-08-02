@@ -44,6 +44,20 @@ it('returns null for missing and malformed profiles', function () {
         ->and($store->get($malformed))->toBeNull();
 });
 
+it('lists valid recent profiles within the retention limit', function () {
+    $store = new ProfileStore($this->files, $this->profilePath, maxProfiles: 2);
+    $first = (string) Str::uuid();
+    $latest = (string) Str::uuid();
+
+    $store->put(['id' => $first]);
+    touch($this->profilePath.'/'.$first.'.json', now()->subSecond()->getTimestamp());
+    $store->put(['id' => $latest]);
+
+    expect(array_column($store->recent(), 'id'))->toBe([$latest, $first])
+        ->and($store->recent(1))->toHaveCount(1)
+        ->and($store->maxProfiles())->toBe(2);
+});
+
 it('deletes an expired profile when it is read', function () {
     $store = new ProfileStore($this->files, $this->profilePath, maxAgeMinutes: 1);
     $id = (string) Str::uuid();

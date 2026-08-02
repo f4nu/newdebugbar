@@ -140,6 +140,16 @@ final class Redactor
         return $clean;
     }
 
+    public function cleanSql(string $sql): string
+    {
+        $sql = preg_replace('/\/\*.*?\*\//s', '/* comment hidden */', $sql) ?? $sql;
+        $sql = preg_replace('/(?:--|#)[^\r\n]*/', '-- comment hidden', $sql) ?? $sql;
+        $sql = preg_replace('/\$([a-z_][a-z0-9_]*)\$.*?\$\1\$/is', "'[string]'", $sql) ?? $sql;
+        $sql = preg_replace('/\$\$.*?\$\$/s', "'[string]'", $sql) ?? $sql;
+
+        return preg_replace("/'(?:''|\\\\.|[^'])*'/s", "'[string]'", $sql) ?? $sql;
+    }
+
     private function isSensitive(string $key): bool
     {
         $normalized = strtolower(str_replace(['-', '.'], '_', $key));

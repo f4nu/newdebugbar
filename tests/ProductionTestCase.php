@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Tests;
 
+use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\LivewireServiceProvider;
 use NewDebugBar\NewDebugBarServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -12,6 +13,7 @@ abstract class ProductionTestCase extends Orchestra
     {
         return [
             LivewireServiceProvider::class,
+            McpServiceProvider::class,
             NewDebugBarServiceProvider::class,
         ];
     }

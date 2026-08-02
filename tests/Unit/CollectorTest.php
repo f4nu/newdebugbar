@@ -42,6 +42,19 @@ it('masks unnamed string query bindings by default', function () {
     expect($collector->payload()['items'][0]['bindings'])->toBe(['[string]', 42]);
 });
 
+it('removes literal values from captured sql', function () {
+    $collector = new QueryCollector(new Redactor, maxItems: 1);
+
+    $collector->record([
+        'sql' => "select * from users where email = 'private@example.com'",
+        'bindings' => [],
+        'duration_ms' => 1,
+    ]);
+
+    expect($collector->payload()['items'][0]['sql'])
+        ->toBe("select * from users where email = '[string]'");
+});
+
 it('includes dropped items in cache and log summaries', function () {
     $cache = new CacheCollector(new Redactor, maxItems: 1);
     $logs = new LogCollector(new Redactor, maxItems: 1);

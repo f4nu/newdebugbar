@@ -104,3 +104,18 @@ it('uses an explicit safety policy for positional query bindings', function () {
     ])->and($redactor->cleanBindings(['private string'], 'none'))->toBe([])
         ->and($redactor->cleanBindings(['private string'], 'full'))->toBe(['private string']);
 });
+
+it('hides literal strings and comments inside captured sql', function () {
+    $redactor = new Redactor;
+    $sql = <<<'SQL'
+        select * from patients
+        where email = 'patient@example.com'
+        and note = $$private note$$
+        -- private comment
+        /* another private comment */
+        SQL;
+
+    expect($redactor->cleanSql($sql))
+        ->not->toContain('patient@example.com', 'private note', 'private comment', 'another private comment')
+        ->toContain("email = '[string]'", "note = '[string]'", '-- comment hidden', '/* comment hidden */');
+});

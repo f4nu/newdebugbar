@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\LivewireServiceProvider;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
@@ -19,6 +20,7 @@ abstract class TestCase extends Orchestra
     {
         return [
             LivewireServiceProvider::class,
+            McpServiceProvider::class,
             NewDebugBarServiceProvider::class,
         ];
     }

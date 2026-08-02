@@ -23,6 +23,11 @@ return [
         'max_age_minutes' => 60,
     ],
 
+    'mcp' => [
+        'max_items' => 50,
+        'max_bytes' => 100_000,
+    ],
+
     'collection' => [
         'application_path' => null,
         'max_items_per_section' => 100,

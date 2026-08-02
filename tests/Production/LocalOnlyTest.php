@@ -1,11 +1,13 @@
 <?php
 
+use Laravel\Mcp\Facades\Mcp;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 
 it('registers no profiler or asset route outside an allowed environment', function () {
     expect(app()->environment())->toBe('testing')
         ->and(config('new-debug-bar.environments'))->toBe(['local'])
         ->and(app('router')->getMiddlewareGroups()['web'])->not->toContain(ProfileRequest::class)
+        ->and(Mcp::getLocalServer('new-debug-bar'))->toBeNull()
         ->and(app('router')->getRoutes()->getByName('new-debug-bar.asset'))->toBeNull();
 
     $this->get('/production-page')

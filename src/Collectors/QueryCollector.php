@@ -35,6 +35,10 @@ final class QueryCollector extends AbstractCollector
 
     public function record(array $item): void
     {
+        if (isset($item['sql']) && is_string($item['sql'])) {
+            $item['sql'] = $this->redactor->cleanSql($item['sql']);
+        }
+
         if (array_key_exists('bindings', $item)) {
             $bindings = $item['bindings'];
             $item['bindings'] = $this->redactor->cleanBindings(

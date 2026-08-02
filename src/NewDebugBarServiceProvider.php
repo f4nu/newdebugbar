@@ -7,6 +7,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
@@ -17,6 +18,9 @@ use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
+use NewDebugBar\Mcp\NewDebugBarServer;
+use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
@@ -79,6 +83,14 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxProfiles: (int) config('new-debug-bar.storage.max_profiles', 20),
             maxAgeMinutes: (int) config('new-debug-bar.storage.max_age_minutes', 60),
         ));
+        $this->app->singleton(McpProfilePresenter::class, fn ($app): McpProfilePresenter => new McpProfilePresenter(
+            store: $app->make(ProfileStore::class),
+            profiles: $app->make(ProfilePresenter::class),
+            redactor: $app->make(Redactor::class),
+            projectPath: base_path(),
+            maxItems: (int) config('new-debug-bar.mcp.max_items', 50),
+            maxBytes: (int) config('new-debug-bar.mcp.max_bytes', 100_000),
+        ));
     }
 
     public function boot(Router $router, Dispatcher $events): void
@@ -99,6 +111,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),
         );
         Livewire::component('new-debug-bar.toolbar', DebugBar::class);
+        Mcp::local('new-debug-bar', NewDebugBarServer::class);
         $router->get('/__new-debug-bar/assets/{path}', AssetController::class)
             ->where('path', '.*')
             ->name('new-debug-bar.asset');
