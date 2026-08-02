@@ -177,6 +177,42 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('shows request sizes presence flags middleware and log call sites', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="request"]')
+        ->assertSee('Request size')
+        ->assertSee('Response size')
+        ->assertSee('Authentication')
+        ->assertSee('Configured middleware order')
+        ->click('[data-ndb-select-section="logs"]')
+        ->assertSee('tests/TestCase.php')
+        ->click('[data-ndb-log-item] > summary')
+        ->assertPresent('[data-ndb-copy-log-callsite="0"]')
+        ->assertNoJavaScriptErrors();
+
+    assertDebugSectionSelected($page, 'logs');
+});
+
+it('shows relative exception frames and highlighted source context', function () {
+    $page = visit('/profiled-reported-exception')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="exceptions"]');
+
+    assertDebugSectionSelected($page, 'exceptions');
+
+    $page
+        ->assertSee('Application frames')
+        ->assertSee('Vendor frames')
+        ->assertSee('tests/TestCase.php')
+        ->assertDontSee('/Users/benjamin/Sites/new-debug-bar/tests/TestCase.php')
+        ->assertPresent('[data-ndb-copy-exception-callsite="0"]')
+        ->assertScript('document.querySelectorAll("#new-debug-bar code[data-ndb-language=php][data-highlighted]").length > 0')
+        ->assertNoJavaScriptErrors();
+});
+
 it('keeps favoriting active and repeatable after Livewire navigation', function () {
     $page = visit('/profiled')
         ->click('[data-testid="host-navigation"]')

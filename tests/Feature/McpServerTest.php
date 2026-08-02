@@ -115,6 +115,10 @@ it('paginates one section and hides private request values', function () {
         ->not->toHaveKeys(['input', 'query', 'headers', 'response_headers', 'url'])
         ->and($content['data']['payload']['input_keys'])->toBe(['clinic', 'token', 'name'])
         ->and($content['data']['payload']['query_keys'])->toBe(['name'])
+        ->and($content['data']['payload']['request_size_bytes'])->toBeGreaterThan(0)
+        ->and($content['data']['payload']['response_size_bytes'])->toBeGreaterThan(0)
+        ->and($content['data']['payload']['session_present'])->toBeFalse()
+        ->and($content['data']['payload']['authenticated'])->toBeFalse()
         ->and($content['data']['pagination'])->toMatchArray([
             'cursor' => 0,
             'returned' => 0,
@@ -122,6 +126,24 @@ it('paginates one section and hides private request values', function () {
             'truncated' => false,
             'next_cursor' => null,
         ]);
+});
+
+it('exposes relative exception evidence without messages or source code', function () {
+    $response = $this->get('/profiled-exception', ['Accept' => 'text/html'])
+        ->assertInternalServerError();
+
+    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $response->headers->get('X-New-Debug-Bar-Profile'),
+        'section' => 'exceptions',
+    ])->assertOk());
+    $item = $content['data']['payload']['items'][0];
+
+    expect($item)
+        ->message->toBe('[message hidden]')
+        ->file->toBe('tests/TestCase.php')
+        ->not->toHaveKeys(['source', 'frames'])
+        ->and($item['application_frames'])->not->toBeEmpty()
+        ->and(json_encode($content))->not->toContain(base_path().'/');
 });
 
 it('returns stable not found results and validation errors', function () {

@@ -83,10 +83,13 @@ final class EventRegistrar
         });
 
         $this->listen(MessageLogged::class, function (MessageLogged $event): void {
+            $location = $this->callSites->capture();
+
             $this->manager()->record('logs', [
                 'level' => $event->level,
                 'message' => $event->message,
                 'context' => $event->context,
+                ...$location,
             ]);
 
             $exception = $event->context['exception'] ?? null;

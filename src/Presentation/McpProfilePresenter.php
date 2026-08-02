@@ -248,6 +248,11 @@ final class McpProfilePresenter
             'parameters' => array_keys(is_array($payload['parameters'] ?? null) ? $payload['parameters'] : []),
             'middleware' => $payload['middleware'] ?? [],
             'status' => $payload['status'] ?? null,
+            'content_type' => $payload['content_type'] ?? null,
+            'request_size_bytes' => $payload['request_size_bytes'] ?? null,
+            'response_size_bytes' => $payload['response_size_bytes'] ?? null,
+            'session_present' => $payload['session_present'] ?? false,
+            'authenticated' => $payload['authenticated'] ?? false,
             'request_header_names' => array_keys(is_array($payload['headers'] ?? null) ? $payload['headers'] : []),
             'response_header_names' => array_keys(is_array($payload['response_headers'] ?? null) ? $payload['response_headers'] : []),
             'query_keys' => array_keys(is_array($payload['query'] ?? null) ? $payload['query'] : []),
@@ -275,6 +280,7 @@ final class McpProfilePresenter
                 'message' => '[message hidden]',
                 'file' => $item['file'] ?? null,
                 'line' => $item['line'] ?? null,
+                'application_frames' => $item['frames']['application'] ?? [],
             ];
         } elseif ($section === 'models' && array_key_exists('key', $item)) {
             $item['key'] = $item['key'] === null ? null : '[identifier]';

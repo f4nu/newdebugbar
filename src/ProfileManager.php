@@ -7,6 +7,7 @@ use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use NewDebugBar\Contracts\Collector;
+use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -27,8 +28,11 @@ final class ProfileManager
     private array $request = [];
 
     /** @param iterable<Collector> $collectors */
-    public function __construct(iterable $collectors, private readonly Redactor $redactor)
-    {
+    public function __construct(
+        iterable $collectors,
+        private readonly Redactor $redactor,
+        private readonly ?ExceptionNormalizer $exceptionNormalizer = null,
+    ) {
         foreach ($collectors as $collector) {
             $this->collectors[$collector->key()] = $collector;
         }
@@ -91,6 +95,11 @@ final class ProfileManager
                     : [],
                 'middleware' => is_object($route) ? app('router')->gatherRouteMiddleware($route) : [],
                 'status' => $response?->getStatusCode() ?? 500,
+                'content_type' => $response?->headers->get('Content-Type'),
+                'request_size_bytes' => $this->requestSize($request),
+                'response_size_bytes' => $this->responseSize($response),
+                'session_present' => $this->hasStartedSession($request),
+                'authenticated' => $this->isAuthenticated($request),
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
@@ -150,13 +159,56 @@ final class ProfileManager
 
     public function recordException(Throwable $exception): void
     {
-        $this->record('exceptions', [
+        $this->record('exceptions', $this->exceptionNormalizer?->normalize($exception) ?? [
             'class' => $exception::class,
             'message' => $exception->getMessage(),
-            'file' => $exception->getFile(),
+            'file' => basename($exception->getFile()),
             'line' => $exception->getLine(),
-            'trace' => $exception->getTraceAsString(),
+            'frames' => ['application' => [], 'vendor' => []],
+            'source' => null,
         ]);
+    }
+
+    private function responseSize(?Response $response): int
+    {
+        $content = $response?->getContent();
+
+        return is_string($content) ? strlen($content) : 0;
+    }
+
+    private function requestSize(Request $request): int
+    {
+        $contentLength = $request->headers->get('Content-Length');
+
+        if (is_numeric($contentLength)) {
+            return max(0, (int) $contentLength);
+        }
+
+        $content = $request->getContent();
+
+        if ($content !== '') {
+            return strlen($content);
+        }
+
+        return strlen(http_build_query($request->request->all(), '', '&', PHP_QUERY_RFC3986));
+    }
+
+    private function hasStartedSession(Request $request): bool
+    {
+        try {
+            return $request->hasSession() && $request->session()->isStarted();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function isAuthenticated(Request $request): bool
+    {
+        try {
+            return $request->user() !== null;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /** @param array<string, mixed> $parameters */

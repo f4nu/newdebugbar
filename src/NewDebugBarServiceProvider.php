@@ -28,6 +28,7 @@ use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
+use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
 
@@ -61,9 +62,16 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(
             projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
             packagePath: dirname(__DIR__),
-            enabled: (bool) config('new-debug-bar.collection.query_call_sites', true),
-            maxFrames: (int) config('new-debug-bar.collection.query_call_site_frames', 5),
-            scanLimit: (int) config('new-debug-bar.collection.query_call_site_scan_limit', 40),
+            enabled: (bool) config('new-debug-bar.collection.call_sites', true),
+            maxFrames: (int) config('new-debug-bar.collection.call_site_frames', 5),
+            scanLimit: (int) config('new-debug-bar.collection.call_site_scan_limit', 40),
+        ));
+        $this->app->singleton(ExceptionNormalizer::class, fn (): ExceptionNormalizer => new ExceptionNormalizer(
+            projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
+            packagePath: dirname(__DIR__),
+            maxApplicationFrames: (int) config('new-debug-bar.collection.exception_application_frames', 12),
+            maxVendorFrames: (int) config('new-debug-bar.collection.exception_vendor_frames', 12),
+            sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
         ));
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
@@ -82,7 +90,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new ItemCollector($redactor, $maxItems, 'events', 'Events'),
                 new LogCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
-            ], $redactor);
+            ], $redactor, $app->make(ExceptionNormalizer::class));
         });
 
         $this->app->singleton(ProfileStore::class, fn ($app): ProfileStore => new ProfileStore(

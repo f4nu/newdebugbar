@@ -53,6 +53,11 @@ it('captures a local web request and its Laravel activity', function () {
         ->sections->request->payload->url->toContain('token=%5Bredacted%5D')
         ->sections->request->payload->query->token->toBe('[redacted]')
         ->sections->request->payload->headers->authorization->toBe('[redacted]')
+        ->sections->request->payload->content_type->toContain('text/html')
+        ->sections->request->payload->request_size_bytes->toBe(0)
+        ->sections->request->payload->response_size_bytes->toBeGreaterThan(0)
+        ->sections->request->payload->session_present->toBeFalse()
+        ->sections->request->payload->authenticated->toBeFalse()
         ->sections->queries->summary->count->toBeGreaterThanOrEqual(1)
         ->sections->models->summary->count->toBeGreaterThanOrEqual(1)
         ->sections->cache->summary->hits->toBe(1)
@@ -62,6 +67,10 @@ it('captures a local web request and its Laravel activity', function () {
 
     expect(array_column($profile['sections']['models']['payload']['items'], 'event'))
         ->toContain('retrieved');
+
+    expect($profile['sections']['logs']['payload']['items'][0]['callsite'])
+        ->toMatchArray(['file' => 'tests/TestCase.php'])
+        ->and($profile['sections']['logs']['payload']['items'][0]['stack'])->not->toBeEmpty();
 
     foreach ($profile['sections'] as $section) {
         foreach ($section['payload']['items'] ?? [] as $item) {
@@ -147,6 +156,10 @@ it('preserves a profile when the application throws', function () {
     expect($profile['sections']['request']['summary']['status'])->toBe(500)
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(1)
         ->and($profile['sections']['exceptions']['payload']['items'][0]['class'])->toBe(RuntimeException::class)
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['file'])->toBe('tests/TestCase.php')
+        ->and($profile['sections']['exceptions']['payload']['items'][0])->not->toHaveKey('trace')
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['frames']['application'])->not->toBeEmpty()
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['source']['lines'])->not->toBeEmpty()
         ->and(app(ProfileManager::class)->isCollecting())->toBeFalse();
 });
 

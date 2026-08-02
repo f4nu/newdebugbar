@@ -12,6 +12,7 @@ use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\LivewireServiceProvider;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
+use NewDebugBar\ProfileManager;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -123,6 +124,12 @@ abstract class TestCase extends Orchestra
             '/profiled-exception',
             fn () => throw new \RuntimeException('Application failed.'),
         );
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-reported-exception', function () {
+            app(ProfileManager::class)->recordException(new \RuntimeException('Reported failure.'));
+
+            return response('<!doctype html><html><body>Reported failure</body></html>');
+        });
 
         $router->middleware(ProfileRequest::class)->post(
             '/profiled-input',
