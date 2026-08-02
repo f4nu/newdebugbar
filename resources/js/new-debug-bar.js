@@ -15,4 +15,3 @@ window.newDebugBarHighlight = (root = document) => {
 };
 
 window.newDebugBar = (summary) => createNewDebugBar(summary);
-window.dispatchEvent(new CustomEvent('new-debug-bar:assets-ready'));

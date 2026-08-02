@@ -24,17 +24,25 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     paletteSearch: '',
     paletteIndex: 0,
     paletteReturnFocus: null,
+    colorScheme: null,
+    colorSchemeListener: null,
     summary,
 
     init() {
       this.restore();
+      this.colorScheme = browser.matchMedia?.('(prefers-color-scheme: dark)') ?? null;
+      this.colorSchemeListener = () => {
+        if (this.theme === 'system') this.applyTheme();
+      };
       this.applyTheme();
       this.$nextTick?.(() => this.syncSectionPanels());
+      this.colorScheme?.addEventListener?.('change', this.colorSchemeListener);
+    },
 
-      const scheme = browser.matchMedia?.('(prefers-color-scheme: dark)');
-      scheme?.addEventListener?.('change', () => {
-        if (this.theme === 'system') this.applyTheme();
-      });
+    destroy() {
+      this.colorScheme?.removeEventListener?.('change', this.colorSchemeListener);
+      this.colorScheme = null;
+      this.colorSchemeListener = null;
     },
 
     restore() {
@@ -223,7 +231,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
     applyTheme() {
       this.resolvedTheme = this.theme === 'system'
-        ? (browser.matchMedia?.('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'light')
+        ? ((this.colorScheme ?? browser.matchMedia?.('(prefers-color-scheme: dark)'))?.matches ? 'dark' : 'light')
         : this.theme;
     },
 

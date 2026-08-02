@@ -12,7 +12,7 @@ function runtime(saved = null) {
       getItem: (key) => values.get(key) ?? null,
       setItem: (key, value) => values.set(key, value),
     },
-    matchMedia: () => ({ matches: true, addEventListener() {} }),
+    matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
     activeElement: () => null,
     highlight: () => {},
   };
@@ -198,10 +198,12 @@ test('favorite guards and drop positions preserve a valid order', () => {
 test('system theme changes only update a system preference', () => {
   let dark = false;
   let listener = null;
+  let removed = null;
   const browser = runtime();
   browser.matchMedia = () => ({
     get matches() { return dark; },
     addEventListener: (_name, callback) => { listener = callback; },
+    removeEventListener: (_name, callback) => { removed = callback; },
   });
   const state = createNewDebugBar(summary, browser);
 
@@ -219,6 +221,11 @@ test('system theme changes only update a system preference', () => {
 
   state.setTheme('invalid');
   assert.equal(state.theme, 'light');
+
+  state.destroy();
+  assert.equal(removed, listener);
+  assert.equal(state.colorScheme, null);
+  assert.equal(state.colorSchemeListener, null);
 });
 
 test('the palette filters, wraps, restores focus, and handles layered shortcuts', () => {

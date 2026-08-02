@@ -8,7 +8,6 @@
     id="new-debug-bar"
     wire:key="new-debug-bar-{{ $profileId }}"
     x-data="newDebugBar(@js($summary))"
-    x-init="init()"
     :data-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
