@@ -44,6 +44,17 @@ it('returns null for missing and malformed profiles', function () {
         ->and($store->get($malformed))->toBeNull();
 });
 
+it('deletes an expired profile when it is read', function () {
+    $store = new ProfileStore($this->files, $this->profilePath, maxAgeMinutes: 1);
+    $id = (string) Str::uuid();
+
+    $store->put(['id' => $id]);
+    touch($this->profilePath.'/'.$id.'.json', now()->subMinutes(2)->getTimestamp());
+
+    expect($store->get($id))->toBeNull()
+        ->and($this->files->exists($this->profilePath.'/'.$id.'.json'))->toBeFalse();
+});
+
 it('prunes old and excess profiles', function () {
     $store = new ProfileStore($this->files, $this->profilePath, maxProfiles: 2, maxAgeMinutes: 1);
     $old = (string) Str::uuid();

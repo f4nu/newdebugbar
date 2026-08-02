@@ -17,12 +17,18 @@ it('redacts sensitive values recursively', function () {
 
     expect($redactor->clean([
         'authorization' => 'Bearer secret',
+        'proxy-authorization' => 'Basic secret',
+        'set-cookie' => 'session=secret',
+        'x-api-key' => 'secret',
         'nested' => [
             'password' => 'secret',
             'clinic_name' => 'Example Clinic',
         ],
     ]))->toBe([
         'authorization' => '[redacted]',
+        'proxy-authorization' => '[redacted]',
+        'set-cookie' => '[redacted]',
+        'x-api-key' => '[redacted]',
         'nested' => [
             'password' => '[redacted]',
             'clinic_name' => 'Example Clinic',

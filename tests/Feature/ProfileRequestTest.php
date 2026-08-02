@@ -6,6 +6,7 @@ use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Support\AssetUrl;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Tests\ProfiledModel;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -94,7 +95,9 @@ it('rejects unknown and unsafe package assets', function () {
     $this->get('/__new-debug-bar/assets/unknown.txt')->assertNotFound();
 
     expect(fn () => app(AssetController::class)('../composer.json'))
-        ->toThrow(NotFoundHttpException::class);
+        ->toThrow(NotFoundHttpException::class)
+        ->and(fn () => app(AssetUrl::class)->for('../composer.json'))
+        ->toThrow(RuntimeException::class);
 });
 
 it('does not profile non html traffic', function () {

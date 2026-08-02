@@ -59,6 +59,14 @@ final class ProfileStore
             return null;
         }
 
+        $expiresAt = now()->subMinutes($this->maxAgeMinutes)->getTimestamp();
+
+        if ($this->files->lastModified($filename) < $expiresAt) {
+            $this->files->delete($filename);
+
+            return null;
+        }
+
         try {
             $profile = json_decode($this->files->get($filename), true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException) {

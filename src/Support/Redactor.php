@@ -15,6 +15,7 @@ final class Redactor
     private const SENSITIVE_KEYS = [
         'authorization',
         'cookie',
+        'set_cookie',
         'password',
         'password_confirmation',
         'secret',
@@ -97,6 +98,8 @@ final class Redactor
         $normalized = strtolower(str_replace(['-', '.'], '_', $key));
 
         return in_array($normalized, self::SENSITIVE_KEYS, true)
+            || str_ends_with($normalized, '_api_key')
+            || str_ends_with($normalized, '_authorization')
             || str_ends_with($normalized, '_password')
             || str_ends_with($normalized, '_secret')
             || str_ends_with($normalized, '_token');

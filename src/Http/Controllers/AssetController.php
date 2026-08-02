@@ -22,7 +22,7 @@ final class AssetController
         $root = realpath(__DIR__.'/../../../dist');
         $file = realpath(__DIR__.'/../../../dist/'.$path);
 
-        if ($root === false || $file === false || ! str_starts_with($file, $root.DIRECTORY_SEPARATOR)) {
+        if ($root === false || $file === false || ! is_file($file) || ! str_starts_with($file, $root.DIRECTORY_SEPARATOR)) {
             abort(404);
         }
 
