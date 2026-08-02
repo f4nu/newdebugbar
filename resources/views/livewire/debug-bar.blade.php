@@ -402,6 +402,23 @@
                                                 <x-new-debug-bar::empty-state label="No notifications were sent." />
                                             @endforelse
                                         </div>
+                                    @elseif ($sectionKey === 'redis')
+                                        <dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                            @foreach ([['Commands', $section['summary']['count']], ['Total time', $section['summary']['duration_ms'].' ms'], ['Failures', $section['summary']['failed_count']]] as [$label, $value])
+                                                <div class="ndb:px-3.5 ndb:py-3"><dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</dt><dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</dd></div>
+                                            @endforeach
+                                        </dl>
+                                        <div class="ndb:space-y-2">
+                                            @forelse ($section['payload']['items'] as $index => $item)
+                                                <article wire:key="redis-{{ $index }}" class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 {{ ($item['failed'] ?? false) ? 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' : 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' }}">
+                                                    <code class="ndb:w-20 ndb:shrink-0 ndb:text-xs ndb:font-bold">{{ $item['command'] }}</code>
+                                                    <div class="ndb:min-w-0 ndb:flex-1"><p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ $item['connection'] }}</p>@if (($item['key_hashes'] ?? []) !== [])<code class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[10px]">{{ implode(', ', $item['key_hashes']) }}</code>@else<p class="ndb:mt-1 ndb:text-[10px] ndb:text-zinc-400">No key metadata</p>@endif</div>
+                                                    <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>
+                                                </article>
+                                            @empty
+                                                <x-new-debug-bar::empty-state label="No direct Redis commands were captured." />
+                                            @endforelse
+                                        </div>
                                     @elseif ($sectionKey === 'models')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3"><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Model classes</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $section['summary']['model_classes'] }}</p></div><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Lifecycle events</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ count($section['summary']['lifecycle_events']) }}</p></div></div>
                                         @forelse ($section['payload']['groups'] as $index => $group)

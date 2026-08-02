@@ -6,6 +6,7 @@ use Composer\InstalledVersions;
 use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
@@ -170,6 +171,15 @@ final class ProfileManager
             'frames' => ['application' => [], 'vendor' => []],
             'source' => null,
         ]);
+    }
+
+    public function excludeRedisCacheOperation(string $operation): void
+    {
+        $collector = $this->collectors['redis'] ?? null;
+
+        if ($this->collecting && $collector instanceof RedisCollector) {
+            $collector->excludeCacheOperation($operation);
+        }
     }
 
     private function responseSize(?Response $response): int

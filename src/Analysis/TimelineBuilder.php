@@ -68,6 +68,7 @@ final class TimelineBuilder
             'queue' => trim(($item['kind'] ?? '').' '.($item['job'] ?? 'Job')),
             'mail' => 'Mail sent'.(($item['mailable'] ?? null) ? ' '.$item['mailable'] : ''),
             'notifications' => trim(($item['status'] ?? '').' '.($item['notification'] ?? 'Notification')),
+            'redis' => trim(($item['command'] ?? 'Redis').' '.($item['connection'] ?? '')),
             'models' => trim(($item['event'] ?? '').' '.($item['model'] ?? 'Model')),
             'cache' => trim(($item['operation'] ?? 'Cache').' '.($item['key_hash'] ?? '')),
             'views' => $item['name'] ?? 'View rendered',

@@ -173,6 +173,36 @@ it('captures mail and notification shape without private content or identities',
         );
 });
 
+it('captures direct Redis commands and removes cache command duplicates', function () {
+    $response = $this->get('/profiled-redis', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $redis = $profile['sections']['redis'];
+    $cache = $profile['sections']['cache'];
+
+    expect($redis['summary'])
+        ->count->toBe(2)
+        ->duration_ms->toBe(1.25)
+        ->failed_count->toBe(1)
+        ->and($redis['payload']['items'][0])
+        ->command->toBe('GET')
+        ->connection->toBe('default')
+        ->key_count->toBe(1)
+        ->key_hashes->toBe([substr(hash('sha256', 'private-direct-key'), 0, 16)])
+        ->and($redis['payload']['items'][1])
+        ->command->toBe('HGET')
+        ->failed->toBeTrue()
+        ->exception_class->toBe(RuntimeException::class)
+        ->and(array_column($cache['payload']['items'], 'operation'))->toContain('write', 'flush')
+        ->and(json_encode([$redis, $cache]))->not->toContain(
+            'private-direct-key',
+            'private-cache-key',
+            'private-cache-value',
+            'private-hash',
+            'private-field',
+            'private Redis failure',
+        );
+});
+
 it('isolates mutable collector state between application lifecycles', function () {
     $first = app(ProfileManager::class);
 

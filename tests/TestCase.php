@@ -3,6 +3,8 @@
 namespace NewDebugBar\Tests;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Cache\Events\CacheFlushed;
+use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,8 @@ use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\Notification;
 use Illuminate\Queue\Events\JobQueued;
+use Illuminate\Redis\Events\CommandExecuted;
+use Illuminate\Redis\Events\CommandFailed;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -202,6 +206,18 @@ abstract class TestCase extends Orchestra
             return response('<!doctype html><html><body>Messages</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-redis', function () {
+            $connection = new ProfiledRedisConnection;
+            Event::dispatch(new CommandExecuted('get', ['private-direct-key'], 1.25, $connection));
+            Event::dispatch(new CommandExecuted('setex', ['private-cache-key', 60, 'private-cache-value'], 0.4, $connection));
+            Event::dispatch(new KeyWritten('redis', 'private-cache-key', 'private-cache-value', 60));
+            Event::dispatch(new CommandExecuted('flushdb', [], 0.5, $connection));
+            Event::dispatch(new CacheFlushed('redis'));
+            Event::dispatch(new CommandFailed('hget', ['private-hash', 'private-field'], new \RuntimeException('private Redis failure'), $connection));
+
+            return response('<!doctype html><html><body>Redis</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->post(
             '/profiled-input',
             fn (Request $request) => response('<!doctype html><html><body>'.$request->input('clinic.name').'</body></html>'),
@@ -283,4 +299,12 @@ final class ProfiledNotification extends Notification
 final class ProfiledNotifiable
 {
     public function __construct(public string $privateAddress) {}
+}
+
+final class ProfiledRedisConnection
+{
+    public function getName(): string
+    {
+        return 'default';
+    }
 }

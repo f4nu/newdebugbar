@@ -22,6 +22,7 @@ final class McpProfilePresenter
         'queue',
         'mail',
         'notifications',
+        'redis',
         'models',
         'cache',
         'views',

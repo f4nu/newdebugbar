@@ -23,6 +23,7 @@ use NewDebugBar\Collectors\NotificationCollector;
 use NewDebugBar\Collectors\OutboundHttpCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\QueueCollector;
+use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
@@ -98,6 +99,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new QueueCollector($redactor, $maxItems),
                 new MailCollector($redactor, $maxItems),
                 new NotificationCollector($redactor, $maxItems),
+                new RedisCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),

@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use Closure;
 use Illuminate\Cache\Events\CacheEvent;
+use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
 use Illuminate\Cache\Events\KeyForgotten;
@@ -26,6 +27,8 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Queue\Events\JobQueueing;
+use Illuminate\Redis\Events\CommandExecuted;
+use Illuminate\Redis\Events\CommandFailed;
 use NewDebugBar\ProfileManager;
 use Throwable;
 
@@ -53,6 +56,9 @@ final class EventRegistrar
         NotificationSending::class,
         NotificationSent::class,
         NotificationFailed::class,
+        CommandExecuted::class,
+        CommandFailed::class,
+        CacheFlushed::class,
     ];
 
     public function __construct(
@@ -198,6 +204,35 @@ final class EventRegistrar
             ]);
         });
 
+        $this->listen(CommandExecuted::class, function (CommandExecuted $event): void {
+            $command = strtoupper((string) $event->command);
+            $keyHashes = $this->redisKeyHashes($command, (array) $event->parameters);
+
+            $this->manager()->record('redis', [
+                'command' => $command,
+                'connection' => $event->connectionName,
+                'duration_ms' => round((float) ($event->time ?? 0), 2),
+                'key_count' => count($keyHashes),
+                'key_hashes' => $keyHashes,
+                'failed' => false,
+            ]);
+        });
+
+        $this->listen(CommandFailed::class, function (CommandFailed $event): void {
+            $command = strtoupper((string) $event->command);
+            $keyHashes = $this->redisKeyHashes($command, (array) $event->parameters);
+
+            $this->manager()->record('redis', [
+                'command' => $command,
+                'connection' => $event->connectionName,
+                'duration_ms' => 0.0,
+                'key_count' => count($keyHashes),
+                'key_hashes' => $keyHashes,
+                'failed' => true,
+                'exception_class' => $event->exception::class,
+            ]);
+        });
+
         $this->listen('eloquent.*', function (string $name, array $payload): void {
             $model = $payload[0] ?? null;
 
@@ -218,6 +253,16 @@ final class EventRegistrar
         $this->listenForCacheEvent(CacheMissed::class, 'miss');
         $this->listenForCacheEvent(KeyWritten::class, 'write');
         $this->listenForCacheEvent(KeyForgotten::class, 'forget');
+        $this->listen(CacheFlushed::class, function (CacheFlushed $event): void {
+            $this->manager()->record('cache', [
+                'operation' => 'flush',
+                'key_hash' => null,
+                'store' => $event->storeName,
+                'tags' => $event->tags,
+                'seconds' => null,
+            ]);
+            $this->manager()->excludeRedisCacheOperation('flush');
+        });
 
         $this->listen('composing: *', function (string $name, array $payload): void {
             $view = $payload[0] ?? null;
@@ -273,6 +318,7 @@ final class EventRegistrar
                 'tags' => $event->tags,
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
             ]);
+            $this->manager()->excludeRedisCacheOperation($operation);
         });
     }
 
@@ -321,5 +367,42 @@ final class EventRegistrar
         }
 
         return is_string($job) && $job !== '' ? $job : get_debug_type($job);
+    }
+
+    /** @param list<mixed> $parameters @return list<string> */
+    private function redisKeyHashes(string $command, array $parameters): array
+    {
+        $multiKeyCommands = ['DEL', 'UNLINK', 'EXISTS', 'MGET', 'PFCOUNT'];
+        $firstKeyCommands = [
+            'APPEND', 'BITCOUNT', 'DECR', 'DECRBY', 'EXPIRE', 'EXPIREAT', 'GET', 'GETDEL', 'GETEX',
+            'GETSET', 'HDEL', 'HEXISTS', 'HGET', 'HGETALL', 'HINCRBY', 'HINCRBYFLOAT', 'HLEN', 'HMGET',
+            'HMSET', 'HSCAN', 'HSET', 'HSETNX', 'INCR', 'INCRBY', 'INCRBYFLOAT', 'LINDEX', 'LINSERT',
+            'LLEN', 'LPOP', 'LPUSH', 'LRANGE', 'LREM', 'LSET', 'LTRIM', 'PERSIST', 'PEXPIRE', 'PSETEX',
+            'PTTL', 'RPOP', 'RPUSH', 'SADD', 'SCARD', 'SET', 'SETEX', 'SETNX', 'SISMEMBER', 'SMEMBERS',
+            'SPOP', 'SREM', 'SSCAN', 'STRLEN', 'TTL', 'TYPE', 'ZADD', 'ZCARD', 'ZCOUNT', 'ZINCRBY',
+            'ZRANGE', 'ZRANK', 'ZREM', 'ZSCAN', 'ZSCORE',
+        ];
+        $keys = [];
+
+        if (in_array($command, $multiKeyCommands, true)) {
+            $keys = count($parameters) === 1 && is_array($parameters[0]) ? $parameters[0] : $parameters;
+        } elseif ($command === 'MSET') {
+            if (count($parameters) === 1 && is_array($parameters[0])) {
+                $keys = array_keys($parameters[0]);
+            } else {
+                foreach ($parameters as $index => $parameter) {
+                    if ($index % 2 === 0) {
+                        $keys[] = $parameter;
+                    }
+                }
+            }
+        } elseif (in_array($command, $firstKeyCommands, true) && array_key_exists(0, $parameters)) {
+            $keys = [$parameters[0]];
+        }
+
+        return array_values(array_unique(array_map(
+            fn (mixed $key): string => substr(hash('sha256', is_scalar($key) ? (string) $key : get_debug_type($key)), 0, 16),
+            $keys,
+        )));
     }
 }

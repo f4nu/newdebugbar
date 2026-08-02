@@ -3,6 +3,7 @@
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\QueryCollector;
+use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Support\Redactor;
 
 it('counts dropped collector items without retaining their payload', function () {
@@ -73,4 +74,18 @@ it('includes dropped items in cache and log summaries', function () {
         'count' => 2,
         'errors' => 1,
     ]);
+});
+
+it('removes a cache command even after the Redis item limit is reached', function () {
+    $redis = new RedisCollector(new Redactor, maxItems: 1);
+    $redis->record(['command' => 'GET', 'duration_ms' => 1.25, 'failed' => false]);
+    $redis->record(['command' => 'SETEX', 'duration_ms' => 0.5, 'failed' => false]);
+
+    $redis->excludeCacheOperation('write');
+
+    expect($redis->summary())->toBe([
+        'count' => 1,
+        'duration_ms' => 1.25,
+        'failed_count' => 0,
+    ])->and($redis->payload()['dropped'])->toBe(0);
 });
