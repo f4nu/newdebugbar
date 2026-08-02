@@ -128,15 +128,18 @@ it('profiles partial models without requiring their primary key', function () {
 });
 
 it('returns the application response when a collector fails', function () {
-    $this->app->instance(ProfileManager::class, new ProfileManager(
+    $manager = new ProfileManager(
         [new CollectorThatFailsDuringSummary],
         $this->app->make(Redactor::class),
-    ));
+    );
+    $this->app->instance(ProfileManager::class, $manager);
 
     $this->get('/profiled-collector-failure')
         ->assertOk()
         ->assertSee('Application response')
         ->assertHeaderMissing('X-New-Debug-Bar-Profile');
+
+    expect($manager->isCollecting())->toBeFalse();
 });
 
 final class CollectorThatFailsDuringSummary implements Collector

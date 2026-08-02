@@ -72,71 +72,73 @@ final class ProfileManager
     /** @return array<string, mixed> */
     public function finish(Request $request, ?Response $response = null, ?Throwable $exception = null): array
     {
-        if ($exception !== null) {
-            $this->recordException($exception);
-        }
+        try {
+            if ($exception !== null) {
+                $this->recordException($exception);
+            }
 
-        $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
-        $usedMemory = max(0, memory_get_usage(true) - $this->startedMemory);
-        $route = $request->route();
+            $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
+            $usedMemory = max(0, memory_get_usage(true) - $this->startedMemory);
+            $route = $request->route();
 
-        $this->request = [
-            ...$this->request,
-            'route' => is_object($route) && method_exists($route, 'getName') ? $route->getName() : null,
-            'action' => is_object($route) && method_exists($route, 'getActionName') ? $route->getActionName() : null,
-            'parameters' => is_object($route) && method_exists($route, 'parameters')
-                ? $this->redactor->clean($this->normalizeRouteParameters($route->parameters()))
-                : [],
-            'middleware' => is_object($route) ? app('router')->gatherRouteMiddleware($route) : [],
-            'status' => $response?->getStatusCode() ?? 500,
-            'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
-        ];
-
-        $metrics = [
-            'duration_ms' => round($duration, 2),
-            'memory_mb' => round($usedMemory / 1_048_576, 2),
-            'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
-        ];
-
-        $sections = [
-            'overview' => [
-                'label' => 'Overview',
-                'summary' => $metrics,
-                'payload' => [
-                    'environment' => app()->environment(),
-                    'php' => PHP_VERSION,
-                    'laravel' => app()->version(),
-                    'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
-                    'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
-                ],
-            ],
-            'request' => [
-                'label' => 'Request',
-                'summary' => [
-                    'method' => $this->request['method'],
-                    'status' => $this->request['status'],
-                ],
-                'payload' => $this->request,
-            ],
-        ];
-
-        foreach ($this->collectors as $collector) {
-            $sections[$collector->key()] = [
-                'label' => $collector->label(),
-                'summary' => $collector->summary(),
-                'payload' => $collector->payload(),
+            $this->request = [
+                ...$this->request,
+                'route' => is_object($route) && method_exists($route, 'getName') ? $route->getName() : null,
+                'action' => is_object($route) && method_exists($route, 'getActionName') ? $route->getActionName() : null,
+                'parameters' => is_object($route) && method_exists($route, 'parameters')
+                    ? $this->redactor->clean($this->normalizeRouteParameters($route->parameters()))
+                    : [],
+                'middleware' => is_object($route) ? app('router')->gatherRouteMiddleware($route) : [],
+                'status' => $response?->getStatusCode() ?? 500,
+                'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
+
+            $metrics = [
+                'duration_ms' => round($duration, 2),
+                'memory_mb' => round($usedMemory / 1_048_576, 2),
+                'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
+            ];
+
+            $sections = [
+                'overview' => [
+                    'label' => 'Overview',
+                    'summary' => $metrics,
+                    'payload' => [
+                        'environment' => app()->environment(),
+                        'php' => PHP_VERSION,
+                        'laravel' => app()->version(),
+                        'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
+                        'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
+                    ],
+                ],
+                'request' => [
+                    'label' => 'Request',
+                    'summary' => [
+                        'method' => $this->request['method'],
+                        'status' => $this->request['status'],
+                    ],
+                    'payload' => $this->request,
+                ],
+            ];
+
+            foreach ($this->collectors as $collector) {
+                $sections[$collector->key()] = [
+                    'label' => $collector->label(),
+                    'summary' => $collector->summary(),
+                    'payload' => $collector->payload(),
+                ];
+            }
+
+            return [
+                'id' => (string) Str::uuid(),
+                'recorded_at' => now()->toIso8601String(),
+                'environment' => app()->environment(),
+                'metrics' => $metrics,
+                'sections' => $sections,
+            ];
+        } finally {
+            $this->collecting = false;
         }
-
-        $this->collecting = false;
-
-        return [
-            'id' => (string) Str::uuid(),
-            'recorded_at' => now()->toIso8601String(),
-            'environment' => app()->environment(),
-            'metrics' => $metrics,
-            'sections' => $sections,
-        ];
     }
 
     public function recordException(Throwable $exception): void

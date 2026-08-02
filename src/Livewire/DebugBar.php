@@ -14,8 +14,10 @@ final class DebugBar extends Component
     public string $profileId;
 
     /** @var array<string, mixed> */
+    #[Locked]
     public array $summary = [];
 
+    #[Locked]
     public bool $detailsLoaded = false;
 
     public function mount(string $profileId, ProfileStore $store): void
