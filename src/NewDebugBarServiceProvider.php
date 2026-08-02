@@ -18,6 +18,7 @@ use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
+use NewDebugBar\Collectors\OutboundHttpCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
@@ -33,6 +34,7 @@ use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\SafeUrl;
 
 /** Registers profiling services only in explicitly allowed environments. */
 final class NewDebugBarServiceProvider extends ServiceProvider
@@ -76,6 +78,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
         ));
         $this->app->scoped(LivewireUpdateRecorder::class);
+        $this->app->singleton(SafeUrl::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
             $maxItems = (int) config('new-debug-bar.collection.max_items_per_section', 100);
@@ -88,6 +91,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                     (string) config('new-debug-bar.collection.query_bindings', 'safe'),
                 ),
                 new LivewireCollector($redactor, $maxItems),
+                new OutboundHttpCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),
@@ -126,7 +130,12 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             return;
         }
 
-        (new EventRegistrar($events, $this->app, $this->app->make(CallSiteResolver::class)))->register();
+        (new EventRegistrar(
+            $events,
+            $this->app,
+            $this->app->make(CallSiteResolver::class),
+            $this->app->make(SafeUrl::class),
+        ))->register();
         $events->listen(
             RequestHandled::class,
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),

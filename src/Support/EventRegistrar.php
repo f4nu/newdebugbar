@@ -12,6 +12,9 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\Client\Events\ConnectionFailed;
+use Illuminate\Http\Client\Events\RequestSending;
+use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Log\Events\MessageLogged;
 use NewDebugBar\ProfileManager;
 use Throwable;
@@ -27,12 +30,16 @@ final class EventRegistrar
         KeyWritten::class,
         KeyForgotten::class,
         MessageLogged::class,
+        RequestSending::class,
+        ResponseReceived::class,
+        ConnectionFailed::class,
     ];
 
     public function __construct(
         private readonly Dispatcher $events,
         private readonly Container $container,
         private readonly CallSiteResolver $callSites,
+        private readonly SafeUrl $safeUrl,
     ) {}
 
     public function register(): void
@@ -47,6 +54,41 @@ final class EventRegistrar
                 'connection' => $event->connectionName,
                 'type' => $event->readWriteType,
                 ...$location,
+            ]);
+        });
+
+        $this->listen(RequestSending::class, function (RequestSending $event): void {
+            $this->manager()->record('http_client', [
+                'phase' => 'sending',
+                'request_id' => spl_object_id($event->request),
+            ]);
+        });
+
+        $this->listen(ResponseReceived::class, function (ResponseReceived $event): void {
+            $handlerStats = $event->response->handlerStats();
+            $totalTime = $handlerStats['total_time'] ?? null;
+
+            $this->manager()->record('http_client', [
+                'phase' => 'completed',
+                'request_id' => spl_object_id($event->request),
+                'method' => strtoupper($event->request->method()),
+                'url' => $this->safeUrl->clean($event->request->url()),
+                'status' => $event->response->status(),
+                'duration_ms' => is_numeric($totalTime) ? round((float) $totalTime * 1_000, 2) : null,
+                'failed' => false,
+            ]);
+        });
+
+        $this->listen(ConnectionFailed::class, function (ConnectionFailed $event): void {
+            $this->manager()->record('http_client', [
+                'phase' => 'failed',
+                'request_id' => spl_object_id($event->request),
+                'method' => strtoupper($event->request->method()),
+                'url' => $this->safeUrl->clean($event->request->url()),
+                'status' => null,
+                'duration_ms' => null,
+                'failed' => true,
+                'exception_class' => $event->exception::class,
             ]);
         });
 

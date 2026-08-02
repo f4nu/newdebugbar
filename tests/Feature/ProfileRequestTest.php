@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
@@ -77,6 +79,34 @@ it('captures a local web request and its Laravel activity', function () {
             expect($item['at_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0);
         }
     }
+});
+
+it('captures outbound HTTP results without private URLs or bodies', function () {
+    Http::fake([
+        'api.example.test/*' => Http::response(['private' => 'response-body'], 202),
+        'down.example.test/*' => Http::failedConnection('private connection details'),
+    ]);
+
+    $response = $this->get('/profiled-http-client', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $section = $profile['sections']['http_client'];
+
+    expect($section['summary'])
+        ->count->toBe(2)
+        ->failed_count->toBe(1)
+        ->duration_ms->toBeFloat()
+        ->and($section['payload']['items'][0])
+        ->method->toBe('GET')
+        ->url->toBe('https://api.example.test/v1/patients?token=%5Bredacted%5D&limit=5')
+        ->status->toBe(202)
+        ->failed->toBeFalse()
+        ->and($section['payload']['items'][1])
+        ->method->toBe('POST')
+        ->url->toBe('https://down.example.test/v1/sync?api_key=%5Bredacted%5D')
+        ->status->toBeNull()
+        ->failed->toBeTrue()
+        ->exception_class->toBe(ConnectionException::class)
+        ->and(json_encode($section))->not->toContain('private-token', 'private-key', 'response-body', 'connection details');
 });
 
 it('isolates mutable collector state between application lifecycles', function () {
