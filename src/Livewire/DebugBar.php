@@ -6,7 +6,9 @@ use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Presentation\ProfilePresenter;
+use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
 
 /** Loads a request summary first and defers full inspector data. */
@@ -22,17 +24,63 @@ final class DebugBar extends Component
     #[Locked]
     public bool $detailsLoaded = false;
 
+    /** @var list<array<string, mixed>> */
+    #[Locked]
+    public array $history = [];
+
+    /** @var array<string, mixed> */
+    #[Locked]
+    public array $comparison = [];
+
+    #[Locked]
+    public ?string $comparisonProfileId = null;
+
     public function mount(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
         $this->profileId = $profileId;
         $this->summary = $this->makeSummary($presenter->present($store->get($profileId) ?? []));
     }
 
-    public function loadDetails(ProfileStore $store): void
-    {
+    public function loadDetails(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
         abort_if($store->get($this->profileId) === null, 404);
 
         $this->detailsLoaded = true;
+        $this->refreshHistory($store, $presenter, $summaries);
+    }
+
+    public function compareWith(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileComparator $comparator,
+    ): void {
+        abort_unless($this->validProfileId($profileId), 422);
+        $current = $store->get($this->profileId);
+        $baseline = $store->get($profileId);
+        abort_if($current === null || $baseline === null, 404);
+
+        $current = $presenter->present($current);
+        $baseline = $presenter->present($baseline);
+        abort_unless(
+            ($current['sections']['request']['payload']['path'] ?? null)
+                === ($baseline['sections']['request']['payload']['path'] ?? null),
+            422,
+        );
+
+        $this->comparisonProfileId = $profileId;
+        $this->comparison = $comparator->compare($baseline, $current);
+        $this->dispatch('new-debug-bar-content-updated');
+    }
+
+    public function clearComparison(): void
+    {
+        $this->comparisonProfileId = null;
+        $this->comparison = [];
+        $this->dispatch('new-debug-bar-content-updated');
     }
 
     /** @return array<string, mixed> */
@@ -71,6 +119,13 @@ final class DebugBar extends Component
             $sectionCounts[$key] = $count;
         }
 
+        $sectionLinks[] = [
+            'key' => 'history',
+            'label' => 'History',
+            'count' => null,
+        ];
+        $sectionCounts['history'] = null;
+
         $status = (int) ($sections['request']['summary']['status'] ?? 0);
         $exceptionCount = (int) ($sections['exceptions']['summary']['count'] ?? 0);
         $querySummary = $sections['queries']['summary'] ?? [];
@@ -93,5 +148,33 @@ final class DebugBar extends Component
             'sections' => $sectionLinks,
             'section_counts' => $sectionCounts,
         ];
+    }
+
+    private function refreshHistory(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        $currentPath = $this->summary['path'] ?? null;
+        $history = [];
+
+        foreach ($store->recent() as $profile) {
+            try {
+                $summary = $summaries->present($presenter->present($profile));
+            } catch (\Throwable) {
+                continue;
+            }
+
+            $summary['is_current'] = ($summary['id'] ?? null) === $this->profileId;
+            $summary['comparable'] = ! $summary['is_current'] && ($summary['path'] ?? null) === $currentPath;
+            $history[] = $summary;
+        }
+
+        $this->history = $history;
+    }
+
+    private function validProfileId(string $profileId): bool
+    {
+        return preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $profileId) === 1;
     }
 }

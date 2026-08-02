@@ -250,6 +250,45 @@ it('filters searches sorts and expands repeated query evidence', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('shows shared findings in overview and the related section', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->waitForText('Findings')
+        ->assertPresent('[data-ndb-finding="query.repeated"]')
+        ->assertPresent('[data-ndb-finding="query.n_plus_one"]')
+        ->click('[data-ndb-select-section="queries"]');
+
+    assertDebugSectionSelected($page, 'queries');
+
+    $page
+        ->assertSee('Related findings')
+        ->assertPresent('[data-ndb-section-panel="queries"] [data-ndb-finding="query.repeated"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('filters retained history and compares the current path', function () {
+    $page = visit('/profiled')
+        ->refresh()
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="history"]');
+
+    assertDebugSectionSelected($page, 'history');
+
+    $page
+        ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length >= 2')
+        ->type('[data-ndb-history-method]', 'POST')
+        ->wait(0.2)
+        ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length', 0)
+        ->clear('[data-ndb-history-method]')
+        ->wait(0.2)
+        ->click('[data-ndb-compare-profile]')
+        ->waitForText('Comparison')
+        ->assertPresent('[data-ndb-comparison]')
+        ->assertVisible('[data-ndb-section-panel="history"]')
+        ->assertNoJavaScriptErrors();
+});
+
 it('keeps the main interactions usable on a phone viewport', function () {
     $page = visit('/profiled')
         ->on()->iPhone14Pro()

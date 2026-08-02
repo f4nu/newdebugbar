@@ -238,6 +238,45 @@ test('query controls filter search and sort captured evidence', () => {
   assert.equal(state.querySort, 'duration');
 });
 
+test('history controls combine path method status and warning filters', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const profile = (path, method, status, warning) => ({
+    dataset: { path, method, status: String(status), warning: String(warning) },
+    hidden: false,
+  });
+  const current = profile('/profiled', 'GET', 200, false);
+  const failed = profile('/profiled', 'POST', 422, true);
+  const other = profile('/clinics', 'GET', 200, true);
+  state.$refs = { historyList: { children: [current, failed, other] } };
+
+  state.applyHistoryFilters();
+  assert.equal(state.visibleHistoryCount, 3);
+
+  state.historyPath = 'PROFILED';
+  state.historyMethod = 'post';
+  state.historyStatus = '422';
+  state.setHistoryWarning('warning');
+  assert.equal(current.hidden, true);
+  assert.equal(failed.hidden, false);
+  assert.equal(other.hidden, true);
+  assert.equal(state.visibleHistoryCount, 1);
+
+  state.historyPath = '';
+  state.historyMethod = '';
+  state.historyStatus = '';
+  state.setHistoryWarning('clean');
+  assert.equal(current.hidden, false);
+  assert.equal(failed.hidden, true);
+  assert.equal(state.visibleHistoryCount, 1);
+
+  state.setHistoryWarning('invalid');
+  assert.equal(state.historyWarning, 'clean');
+
+  state.$refs = {};
+  state.applyHistoryFilters();
+  assert.equal(state.visibleHistoryCount, 0);
+});
+
 test('the command palette jumps to sections and changes settings', async () => {
   let highlighted = 0;
   const browser = runtime();

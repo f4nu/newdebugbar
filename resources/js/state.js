@@ -29,6 +29,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     querySearch: '',
     querySort: 'execution',
     visibleQueryCount: summary.query_count ?? 0,
+    historyPath: '',
+    historyMethod: '',
+    historyStatus: '',
+    historyWarning: 'all',
+    visibleHistoryCount: 0,
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
@@ -131,6 +136,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => {
         this.syncSectionPanels();
         if (this.selected === 'queries') this.applyQueryView();
+        if (this.selected === 'history') this.applyHistoryFilters();
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         browser.highlight?.();
       });
@@ -159,6 +165,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
           .then(() => this.$nextTick?.(() => {
             this.syncSectionPanels();
             this.applyQueryView();
+            this.applyHistoryFilters();
             browser.highlight?.();
           }))
           .catch(() => {
@@ -242,6 +249,41 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       }
 
       return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+    },
+
+    setHistoryWarning(filter) {
+      if (!['all', 'warning', 'clean'].includes(filter)) return;
+
+      this.historyWarning = filter;
+      this.applyHistoryFilters();
+    },
+
+    applyHistoryFilters() {
+      const list = this.$refs?.historyList;
+
+      if (!list?.children) {
+        this.visibleHistoryCount = 0;
+
+        return;
+      }
+
+      const path = this.historyPath.toLowerCase().trim();
+      const method = this.historyMethod.toUpperCase().trim();
+      const status = this.historyStatus.trim();
+      let visible = 0;
+
+      [...list.children].forEach((profile) => {
+        const matches = (path === '' || profile.dataset.path?.includes(path))
+          && (method === '' || profile.dataset.method === method)
+          && (status === '' || profile.dataset.status === status)
+          && (this.historyWarning === 'all'
+            || (this.historyWarning === 'warning' && profile.dataset.warning === 'true')
+            || (this.historyWarning === 'clean' && profile.dataset.warning === 'false'));
+        profile.hidden = !matches;
+        if (matches) visible++;
+      });
+
+      this.visibleHistoryCount = visible;
     },
 
     keepFocusWithin(event, container) {

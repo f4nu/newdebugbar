@@ -8,6 +8,7 @@
     x-data="newDebugBar(@js($summary))"
     :data-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
+    @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionPanels(); applyHistoryFilters(); window.newDebugBarHighlight?.($root) })"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <div
@@ -158,12 +159,14 @@
                                     wire:key="section-{{ $sectionKey }}"
                                     class="ndb:space-y-4"
                                 >
+                                    @php($sectionFindings = array_values(array_filter($profile['findings'] ?? [], fn (array $finding): bool => $sectionKey === 'overview' || $finding['section'] === $sectionKey)))
                                     @if ($sectionKey === 'overview')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach ([['Duration', $profile['metrics']['duration_ms'].' ms', 'clock'], ['Peak memory', $profile['metrics']['peak_memory_mb'].' MB', 'memory'], ['Queries', $profile['sections']['queries']['summary']['count'], 'database'], ['Status', $profile['sections']['request']['summary']['status'], 'check']] as [$label, $value, $icon])
                                                 <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:p-3.5 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900"><x-new-debug-bar::icon :name="$icon" class="ndb:size-4 ndb:text-indigo-500" /><p class="ndb:mt-2 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</p><p class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</p></div>
                                             @endforeach
                                         </div>
+                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" />
                                         <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
                                             <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Runtime</h3>
                                             <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:lg:grid-cols-5">
@@ -179,7 +182,11 @@
                                                 @endif
                                             @endforeach
                                         </div>
-                                    @elseif ($sectionKey === 'request')
+                                    @else
+                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" title="Related findings" />
+                                    @endif
+
+                                    @if ($sectionKey === 'request')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach (['method' => 'Method', 'status' => 'Status', 'route' => 'Route', 'action' => 'Controller'] as $key => $label)
                                                 <div class="ndb:min-w-0 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</p><p class="ndb:mt-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $section['payload'][$key] ?: '—' }}</p></div>
@@ -269,7 +276,7 @@
                                         @empty
                                             <x-new-debug-bar::empty-state label="No exceptions were reported." success />
                                         @endforelse
-                                    @else
+                                    @elseif ($sectionKey !== 'overview')
                                         @forelse ($section['payload']['items'] as $index => $item)
                                             <details wire:key="{{ $sectionKey }}-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
                                                 <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:transition ndb:hover:bg-zinc-50 ndb:dark:hover:bg-zinc-900"><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $item['model'] ?? $item['name'] ?? $item['event'] ?? $item['level'] ?? $item['operation'] ?? $section['label'] }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
@@ -281,6 +288,50 @@
                                     @endif
                                 </section>
                             @endforeach
+
+                            <section data-ndb-section-panel="history" hidden wire:key="section-history" class="ndb:space-y-4">
+                                <div class="ndb:grid ndb:gap-3 ndb:md:grid-cols-3">
+                                    <label><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Path</span><input data-ndb-history-path x-model="historyPath" @input.debounce.100ms="applyHistoryFilters()" type="search" placeholder="Filter by path" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
+                                    <label><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Method</span><input data-ndb-history-method x-model="historyMethod" @input.debounce.100ms="applyHistoryFilters()" type="search" placeholder="GET" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:uppercase ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
+                                    <label><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Status</span><input data-ndb-history-status x-model="historyStatus" @input.debounce.100ms="applyHistoryFilters()" inputmode="numeric" placeholder="200" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
+                                </div>
+                                <div class="ndb:flex ndb:items-center ndb:gap-1 ndb:border-b ndb:border-zinc-200/80 ndb:pb-2 ndb:dark:border-zinc-800">
+                                    @foreach (['all' => 'All', 'warning' => 'Warnings', 'clean' => 'Clean'] as $filter => $label)
+                                        <button type="button" data-ndb-history-warning="{{ $filter }}" @click="setHistoryWarning(@js($filter))" :aria-pressed="historyWarning === @js($filter)" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="historyWarning === @js($filter) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'">{{ $label }}</button>
+                                    @endforeach
+                                    <span class="ndb:ml-auto ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleHistoryCount"></span> profiles</span>
+                                </div>
+
+                                @if ($comparison !== [])
+                                    <div data-ndb-comparison class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-indigo-200/90 ndb:bg-indigo-50/30 ndb:dark:border-indigo-950 ndb:dark:bg-indigo-950/20">
+                                        <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-indigo-200/70 ndb:px-4 ndb:py-3 ndb:dark:border-indigo-950"><div class="ndb:min-w-0 ndb:flex-1"><h3 class="ndb:text-xs ndb:font-bold">Comparison</h3><p class="ndb:mt-0.5 ndb:truncate ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $comparison['path'] }}</p></div><button type="button" wire:click="clearComparison" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Clear</button></div>
+                                        <div class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-indigo-200/70 ndb:lg:grid-cols-4 ndb:dark:divide-indigo-950">
+                                            @foreach ($comparison['metrics'] as $metric)
+                                                <div class="ndb:px-3 ndb:py-2.5"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $metric['label'] }}</p><p class="ndb:mt-1 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $metric['current'] }}{{ $metric['unit'] !== '' ? ' '.$metric['unit'] : '' }}</p><p class="ndb:mt-0.5 ndb:text-[10px] ndb:font-semibold ndb:tabular-nums {{ $metric['delta'] > 0 ? 'ndb:text-amber-700 ndb:dark:text-amber-300' : ($metric['delta'] < 0 ? 'ndb:text-emerald-700 ndb:dark:text-emerald-300' : 'ndb:text-zinc-400') }}">{{ $metric['delta'] > 0 ? '+' : '' }}{{ $metric['delta'] }}{{ $metric['unit'] !== '' ? ' '.$metric['unit'] : '' }}</p></div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <div x-ref="historyList" class="ndb:space-y-2">
+                                    @foreach ($history as $entry)
+                                        <article
+                                            data-ndb-history-profile="{{ $entry['id'] }}"
+                                            data-path="{{ mb_strtolower($entry['path']) }}"
+                                            data-method="{{ $entry['method'] }}"
+                                            data-status="{{ $entry['status'] }}"
+                                            data-warning="{{ $entry['warning'] ? 'true' : 'false' }}"
+                                            class="ndb:flex ndb:flex-col ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 ndb:sm:flex-row ndb:sm:items-center {{ $entry['is_current'] ? 'ndb:border-indigo-200 ndb:bg-indigo-50/40 ndb:dark:border-indigo-950 ndb:dark:bg-indigo-950/20' : 'ndb:border-zinc-200/90 ndb:bg-white/50 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' }}"
+                                        >
+                                            <div class="ndb:min-w-0 ndb:flex-1"><div class="ndb:flex ndb:items-center ndb:gap-2"><span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300">{{ $entry['method'] }}</span><p class="ndb:truncate ndb:text-xs ndb:font-bold">{{ $entry['path'] }}</p>@if ($entry['is_current'])<span class="ndb:text-[9px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Current</span>@endif</div><div class="ndb:mt-1.5 ndb:flex ndb:flex-wrap ndb:gap-x-4 ndb:gap-y-1 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span>{{ $entry['status'] }}</span><span>{{ str($entry['request_type'])->replace('_', ' ')->title() }}</span><span>{{ $entry['duration_ms'] }} ms</span><span>{{ $entry['peak_memory_mb'] }} MB</span><span>{{ $entry['query_count'] }} queries</span><span>{{ $entry['finding_count'] }} findings</span></div></div>
+                                            @if ($entry['comparable'])
+                                                <button type="button" data-ndb-compare-profile="{{ $entry['id'] }}" wire:click="compareWith('{{ $entry['id'] }}')" wire:loading.attr="disabled" class="ndb:self-start ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:text-zinc-600 ndb:transition ndb:hover:border-indigo-300 ndb:hover:text-indigo-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50 ndb:sm:self-center ndb:dark:border-zinc-700 ndb:dark:text-zinc-300 ndb:dark:hover:border-indigo-800 ndb:dark:hover:text-indigo-300">Compare</button>
+                                            @endif
+                                        </article>
+                                    @endforeach
+                                </div>
+                                <div x-show.important="visibleHistoryCount === 0"><x-new-debug-bar::empty-state label="No retained profiles match these filters." /></div>
+                            </section>
                         </div>
                     @elseif ($detailsLoaded)
                         <div class="ndb:p-8 ndb:text-center"><p class="ndb:text-sm ndb:font-semibold">This profile is no longer available.</p></div>

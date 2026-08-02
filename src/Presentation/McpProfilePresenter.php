@@ -27,6 +27,7 @@ final class McpProfilePresenter
     public function __construct(
         private readonly ProfileStore $store,
         private readonly ProfilePresenter $profiles,
+        private readonly ProfileSummaryPresenter $summaries,
         private readonly Redactor $redactor,
         private readonly string $projectPath,
         private readonly int $maxItems = 50,
@@ -43,7 +44,7 @@ final class McpProfilePresenter
 
         foreach ($this->store->recent($this->store->maxProfiles()) as $profile) {
             try {
-                $summary = $this->summary($this->profiles->present($profile));
+                $summary = $this->summaries->present($this->profiles->present($profile));
             } catch (Throwable) {
                 continue;
             }
@@ -213,35 +214,6 @@ final class McpProfilePresenter
         }
     }
 
-    /** @param array<string, mixed> $profile @return array<string, mixed> */
-    private function summary(array $profile): array
-    {
-        $request = $profile['sections']['request'] ?? [];
-        $queries = $profile['sections']['queries']['summary'] ?? [];
-        $cache = $profile['sections']['cache']['summary'] ?? [];
-        $status = (int) ($request['summary']['status'] ?? 0);
-        $exceptionCount = (int) ($profile['sections']['exceptions']['summary']['count'] ?? 0);
-
-        return $this->clean([
-            'id' => $profile['id'] ?? null,
-            'recorded_at' => $profile['recorded_at'] ?? null,
-            'request_type' => $this->requestType($request),
-            'method' => $request['summary']['method'] ?? null,
-            'path' => $request['payload']['path'] ?? null,
-            'status' => $status,
-            'duration_ms' => $profile['metrics']['duration_ms'] ?? 0,
-            'peak_memory_mb' => $profile['metrics']['peak_memory_mb'] ?? 0,
-            'query_count' => $queries['total_count'] ?? $queries['count'] ?? 0,
-            'query_time_ms' => $queries['total_time_ms'] ?? $queries['duration_ms'] ?? 0,
-            'repeated_pattern_count' => $queries['repeated_pattern_count'] ?? 0,
-            'slow_query_count' => $queries['slow_count'] ?? 0,
-            'cache_hits' => $cache['hits'] ?? 0,
-            'cache_misses' => $cache['misses'] ?? 0,
-            'exception_count' => $exceptionCount,
-            'warning' => $status >= 400 || $exceptionCount > 0 || ($profile['findings'] ?? []) !== [],
-        ]);
-    }
-
     /** @param array<string, mixed> $summary @param array<string, mixed> $filters */
     private function matchesFilters(array $summary, array $filters): bool
     {
@@ -258,18 +230,6 @@ final class McpProfilePresenter
         }
 
         return ($filters['warning'] ?? null) === null || $summary['warning'] === $filters['warning'];
-    }
-
-    /** @param array<string, mixed> $request */
-    private function requestType(array $request): string
-    {
-        $status = (int) ($request['summary']['status'] ?? 0);
-
-        if ($status >= 300 && $status < 400) {
-            return 'redirect';
-        }
-
-        return ($request['payload']['headers']['x-livewire'] ?? null) !== null ? 'livewire' : 'full_page';
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */

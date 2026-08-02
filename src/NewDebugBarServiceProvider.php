@@ -10,6 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
 use NewDebugBar\Analysis\ProfileAnalyzer;
+use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
@@ -21,6 +22,7 @@ use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
+use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
@@ -50,6 +52,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             highCacheMissRate: (float) config('new-debug-bar.findings.high_cache_miss_rate', 0.8),
             maxFindings: (int) config('new-debug-bar.findings.max_findings', 50),
         ));
+        $this->app->singleton(ProfileSummaryPresenter::class);
+        $this->app->singleton(ProfileComparator::class);
         $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(
             projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
             packagePath: dirname(__DIR__),
@@ -86,6 +90,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(McpProfilePresenter::class, fn ($app): McpProfilePresenter => new McpProfilePresenter(
             store: $app->make(ProfileStore::class),
             profiles: $app->make(ProfilePresenter::class),
+            summaries: $app->make(ProfileSummaryPresenter::class),
             redactor: $app->make(Redactor::class),
             projectPath: base_path(),
             maxItems: (int) config('new-debug-bar.mcp.max_items', 50),

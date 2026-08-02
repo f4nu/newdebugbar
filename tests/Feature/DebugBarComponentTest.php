@@ -111,3 +111,40 @@ it('uses the shared presenter for deferred query details and findings', function
         ->assertSet('profile.sections.queries.payload.items.0.repeated_count', 2)
         ->assertSet('profile.findings.0.rule_id', 'query.repeated');
 });
+
+it('loads retained history and compares requests from the same path', function () {
+    $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $currentId])
+        ->assertSet('summary.sections.9.key', 'history')
+        ->call('loadDetails')
+        ->assertSet('history.0.is_current', true)
+        ->assertSet('history.1.comparable', true)
+        ->call('compareWith', $firstId)
+        ->assertSet('comparisonProfileId', $firstId)
+        ->assertSet('comparison.path', '/profiled')
+        ->assertSet('comparison.metrics.0.key', 'duration_ms')
+        ->assertSee('Comparison')
+        ->call('clearComparison')
+        ->assertSet('comparisonProfileId', null)
+        ->assertSet('comparison', []);
+});
+
+it('rejects comparisons from a different path', function () {
+    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+    $otherId = $this->get('/profiled-next', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $currentId])
+        ->call('loadDetails')
+        ->call('compareWith', $otherId)
+        ->assertStatus(422);
+});
