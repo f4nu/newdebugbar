@@ -8,12 +8,9 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use NewDebugBar\Collectors\CacheCollector;
-use NewDebugBar\Collectors\EventCollector;
-use NewDebugBar\Collectors\ExceptionCollector;
+use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LogCollector;
-use NewDebugBar\Collectors\ModelCollector;
 use NewDebugBar\Collectors\QueryCollector;
-use NewDebugBar\Collectors\ViewCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
@@ -39,12 +36,12 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
             return new ProfileManager([
                 new QueryCollector($redactor, $maxItems),
-                new ModelCollector($redactor, $maxItems),
+                new ItemCollector($redactor, $maxItems, 'models', 'Models'),
                 new CacheCollector($redactor, $maxItems),
-                new ViewCollector($redactor, $maxItems),
-                new EventCollector($redactor, $maxItems),
+                new ItemCollector($redactor, $maxItems, 'views', 'Views'),
+                new ItemCollector($redactor, $maxItems, 'events', 'Events'),
                 new LogCollector($redactor, $maxItems),
-                new ExceptionCollector($redactor, $maxItems),
+                new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
             ], $redactor);
         });
 
