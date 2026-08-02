@@ -43,6 +43,8 @@ final class ProfileFinalizer
 
             $profile = $this->manager->finish($event->request, $event->response);
         } catch (Throwable) {
+            $this->manager->discard();
+
             return;
         }
 

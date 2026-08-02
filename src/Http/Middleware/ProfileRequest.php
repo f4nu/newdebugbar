@@ -32,6 +32,8 @@ final class ProfileRequest
                 $this->injector->prepareAssets();
             }
         } catch (Throwable) {
+            $this->manager->discard();
+
             return $next($request);
         }
 

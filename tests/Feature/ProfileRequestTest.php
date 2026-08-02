@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -11,8 +13,14 @@ use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\AssetUrl;
+use NewDebugBar\Support\BarInjector;
+use NewDebugBar\Support\LivewireUpdateRecorder;
+use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\RequestEligibility;
 use NewDebugBar\Tests\ProfiledModel;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 it('captures a local web request and its Laravel activity', function () {
@@ -356,6 +364,57 @@ it('returns the application response when a collector fails', function () {
     expect($manager->isCollecting())->toBeFalse();
 });
 
+it('discards request state when profiling setup fails', function () {
+    $manager = app(ProfileManager::class);
+    $middleware = new ProfileRequest(
+        $manager,
+        app(RequestEligibility::class),
+        app(BarInjector::class),
+    );
+    $request = Request::create('/setup-failure', 'POST', [
+        'value' => new StringableThatFails,
+    ], server: ['HTTP_ACCEPT' => 'text/html']);
+
+    $response = $middleware->handle(
+        $request,
+        fn () => new Response('<html><body>Application response</body></html>'),
+    );
+
+    expect($response->getContent())->toContain('Application response')
+        ->and($manager->isCollecting())->toBeFalse();
+});
+
+it('discards request state when Livewire response collection fails', function () {
+    $manager = new ProfileManager(
+        [new CollectorThatFailsDuringRecord],
+        app(Redactor::class),
+    );
+    $request = Request::create('/livewire/update', 'POST');
+    $manager->begin($request);
+    $request->headers->set('X-Livewire', 'true');
+    $request->request->set('components', [[
+        'snapshot' => json_encode(['memo' => ['name' => 'application-counter']], JSON_THROW_ON_ERROR),
+        'updates' => [],
+        'calls' => [],
+    ]]);
+    $response = new JsonResponse(['components' => [[
+        'snapshot' => json_encode(['memo' => ['errors' => []]], JSON_THROW_ON_ERROR),
+        'effects' => [],
+    ]]]);
+    $finalizer = new ProfileFinalizer(
+        $manager,
+        app(ProfileStore::class),
+        app(BarInjector::class),
+        app(RequestEligibility::class),
+        new LivewireUpdateRecorder($manager),
+    );
+
+    $finalizer->handle(new RequestHandled($request, $response));
+
+    expect($manager->isCollecting())->toBeFalse()
+        ->and($response->headers->has('X-New-Debug-Bar-Profile'))->toBeFalse();
+});
+
 final class CollectorThatFailsDuringSummary implements Collector
 {
     public function key(): string
@@ -380,5 +439,43 @@ final class CollectorThatFailsDuringSummary implements Collector
     public function payload(): array
     {
         return ['items' => [], 'dropped' => 0];
+    }
+}
+
+final class CollectorThatFailsDuringRecord implements Collector
+{
+    public function key(): string
+    {
+        return 'livewire';
+    }
+
+    public function label(): string
+    {
+        return 'Livewire';
+    }
+
+    public function reset(): void {}
+
+    public function record(array $item): void
+    {
+        throw new RuntimeException('Collector failed.');
+    }
+
+    public function summary(): array
+    {
+        return ['count' => 0];
+    }
+
+    public function payload(): array
+    {
+        return ['items' => [], 'dropped' => 0];
+    }
+}
+
+final class StringableThatFails
+{
+    public function __toString(): string
+    {
+        throw new RuntimeException('String conversion failed.');
     }
 }
