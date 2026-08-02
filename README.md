@@ -64,6 +64,25 @@ The server exposes four read-only tools:
 
 Use the `X-New-Debug-Bar-Profile` response header as the exact profile ID for the request you want to inspect. Responses are versioned, redacted, paginated, and size-limited. The package does not register a web MCP endpoint and does not call an AI model.
 
+## Test assertions
+
+Optional assertions consume the same analyzers as the inspector and MCP:
+
+```php
+use NewDebugBar\Testing\ProfileAssertions;
+
+ProfileAssertions::stored($profileId)
+    ->assertNoRepeatedQueries()
+    ->assertNoLikelyNPlusOneQueries()
+    ->assertQueryCountAtMost(20)
+    ->assertQueryTimeAtMost(100)
+    ->assertDurationAtMost(500)
+    ->assertPeakMemoryAtMost(64)
+    ->assertNoErrors();
+```
+
+Use `ProfileAssertions::for($profile)` when the test already has the stored profile array.
+
 ## Local development
 
 ```bash
