@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Collectors;
 
+/** Collects database queries and totals their duration. */
 final class QueryCollector extends AbstractCollector
 {
     public function key(): string

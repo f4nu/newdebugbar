@@ -18,6 +18,7 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\Redactor;
 
+/** Registers profiling services only in explicitly allowed environments. */
 final class NewDebugBarServiceProvider extends ServiceProvider
 {
     public function register(): void

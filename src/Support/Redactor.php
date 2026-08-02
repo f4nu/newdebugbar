@@ -7,6 +7,7 @@ use DateTimeInterface;
 use Stringable;
 use UnitEnum;
 
+/** Converts captured values into bounded, JSON-safe, redacted data. */
 final class Redactor
 {
     private const REDACTED = '[redacted]';

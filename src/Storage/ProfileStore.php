@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
 
+/** Stores short-lived request profiles as private atomic JSON files. */
 final class ProfileStore
 {
     public function __construct(

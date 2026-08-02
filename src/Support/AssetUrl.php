@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use RuntimeException;
 
+/** Builds cache-busted URLs for compiled package assets. */
 final class AssetUrl
 {
     public function for(string $asset): string

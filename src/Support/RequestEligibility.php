@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use Illuminate\Http\Request;
 
+/** Decides whether a request can produce an in-page debug toolbar. */
 final class RequestEligibility
 {
     public function allows(Request $request): bool

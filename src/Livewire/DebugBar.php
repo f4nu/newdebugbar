@@ -8,6 +8,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 use NewDebugBar\Storage\ProfileStore;
 
+/** Loads a request summary first and defers full inspector data. */
 final class DebugBar extends Component
 {
     #[Locked]

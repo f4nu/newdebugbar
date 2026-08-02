@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Collectors;
 
+/** Collects log records and counts severe entries. */
 final class LogCollector extends AbstractCollector
 {
     public function key(): string

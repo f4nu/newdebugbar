@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/** Adds the Livewire toolbar and package assets to supported HTML responses. */
 final class BarInjector
 {
     public function __construct(

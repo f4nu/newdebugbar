@@ -5,6 +5,7 @@ namespace NewDebugBar\Collectors;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Support\Redactor;
 
+/** Redacts and bounds captured items while preserving complete summary totals. */
 abstract class AbstractCollector implements Collector
 {
     /** @var array<int, array<string, mixed>> */

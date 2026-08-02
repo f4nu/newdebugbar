@@ -5,6 +5,7 @@ namespace NewDebugBar\Http\Controllers;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/** Serves the package's compiled local assets with immutable caching. */
 final class AssetController
 {
     private const CONTENT_TYPES = [

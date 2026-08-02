@@ -11,6 +11,7 @@ use NewDebugBar\Support\RequestEligibility;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
+/** Profiles eligible web responses and injects their debug interface. */
 final class ProfileRequest
 {
     public function __construct(

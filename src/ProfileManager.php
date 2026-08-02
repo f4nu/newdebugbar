@@ -11,6 +11,7 @@ use NewDebugBar\Support\Redactor;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
+/** Coordinates request timing, collectors, and the final debug profile. */
 final class ProfileManager
 {
     /** @var array<string, Collector> */

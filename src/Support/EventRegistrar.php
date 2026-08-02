@@ -15,6 +15,7 @@ use Illuminate\Log\Events\MessageLogged;
 use NewDebugBar\ProfileManager;
 use Throwable;
 
+/** Routes Laravel runtime events into their matching request collectors. */
 final class EventRegistrar
 {
     /** @var list<class-string> */

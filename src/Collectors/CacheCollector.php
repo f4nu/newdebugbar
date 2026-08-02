@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Collectors;
 
+/** Summarizes cache reads and writes for the current request. */
 final class CacheCollector extends AbstractCollector
 {
     public function key(): string
