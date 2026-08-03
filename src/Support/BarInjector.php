@@ -30,10 +30,11 @@ final class BarInjector
 
         $stylesheet = e($this->assets->for('new-debug-bar.css'));
         $script = e($this->assets->for('new-debug-bar.js'));
-        $component = $this->livewire->mount('new-debug-bar.toolbar', ['profileId' => $profileId], 'new-debug-bar-'.$profileId);
+        $component = $this->livewire->mount('new-debug-bar.toolbar', ['profileId' => $profileId], 'new-debug-bar-toolbar');
 
-        $head = '<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true" data-navigate-track="reload">';
-        $body = '<script src="'.$script.'" data-navigate-once="true" data-navigate-track="reload"></script>'.$component;
+        $head = '<style id="new-debug-bar-critical-css" data-navigate-once="true">#new-debug-bar [x-cloak]{display:none!important}</style>'
+            .'<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true">';
+        $body = '<script src="'.$script.'" data-navigate-once="true"></script>'.$component;
         if (preg_match('/<\/head\s*>/i', $html) === 1) {
             $html = preg_replace('/<\/head\s*>/i', $head.'$0', $html, 1) ?? $html;
         } elseif (preg_match('/<html(?:\s[^>]*)?>/i', $html) === 1) {

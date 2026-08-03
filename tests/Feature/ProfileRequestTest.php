@@ -44,7 +44,9 @@ it('captures a local web request and its Laravel activity', function () {
         ->assertSee('id="new-debug-bar"', false)
         ->assertSee('/__new-debug-bar/assets/new-debug-bar.css', false)
         ->assertSee('/__new-debug-bar/assets/new-debug-bar.js', false)
-        ->assertSee('data-navigate-track="reload"', false)
+        ->assertSee('id="new-debug-bar-critical-css"', false)
+        ->assertDontSee('data-navigate-track', false)
+        ->assertSee('wire:key="new-debug-bar-toolbar"', false)
         ->assertSee('data-update-uri', false);
 
     $files = File::files(config('new-debug-bar.storage.path'));
@@ -254,7 +256,7 @@ it('injects assets into an html document that has no head', function () {
     $this->get('/html-without-head', ['Accept' => 'text/html'])
         ->assertOk()
         ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertSee('<html><head><link', false)
+        ->assertSee('<html><head><style id="new-debug-bar-critical-css"', false)
         ->assertSee('id="new-debug-bar"', false);
 });
 

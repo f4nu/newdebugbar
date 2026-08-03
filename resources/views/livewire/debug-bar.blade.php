@@ -4,7 +4,6 @@
 
 <div
     id="new-debug-bar"
-    wire:key="new-debug-bar-{{ $profileId }}"
     x-data="newDebugBar(@js($summary))"
     :data-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
@@ -18,7 +17,7 @@
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="Debug toolbar"
-        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/70 ndb:p-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-2xl ndb:backdrop-brightness-150 ndb:backdrop-saturate-150 ndb:dark:border-zinc-700/70 ndb:dark:bg-zinc-900/70"
+        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
     >
         <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="request" class="ndb:flex ndb:min-w-0 ndb:max-w-52" aria-label="Open request details">
             <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
@@ -28,33 +27,29 @@
             </span>
         </x-new-debug-bar::toolbar-button>
 
-        <span class="ndb:my-1 ndb:w-px ndb:bg-zinc-200 ndb:dark:bg-zinc-700"></span>
-
         <x-new-debug-bar::toolbar-button section="overview" data-ndb-toolbar="environment" class="ndb:flex">
             <span class="ndb:size-2 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
             <span><span class="ndb:hidden ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:block">Environment</span><span class="ndb:block ndb:max-w-24 ndb:truncate ndb:text-[10px] ndb:font-bold ndb:sm:text-xs" x-text="summary.environment"></span></span>
         </x-new-debug-bar::toolbar-button>
 
         <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="duration" class="ndb:hidden ndb:md:flex">
-            <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:text-indigo-500" />
+            <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></span>
         </x-new-debug-bar::toolbar-button>
 
         <x-new-debug-bar::toolbar-button section="overview" data-ndb-toolbar="memory" class="ndb:hidden ndb:lg:flex">
-            <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:text-indigo-500" />
+            <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
         </x-new-debug-bar::toolbar-button>
 
         <x-new-debug-bar::toolbar-button section="queries" data-ndb-toolbar="queries" class="ndb:hidden ndb:sm:flex">
-            <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:text-indigo-500" />
+            <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
             <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span x-text="summary.query_count"></span><span class="ndb:font-medium ndb:text-zinc-400" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
         </x-new-debug-bar::toolbar-button>
 
-        <span class="ndb:my-1 ndb:w-px ndb:bg-zinc-200 ndb:dark:bg-zinc-700"></span>
-
-        <div class="ndb:flex ndb:items-center ndb:gap-0.5">
-            <x-new-debug-bar::icon-button name="search" data-ndb-toolbar="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)" />
-            <x-new-debug-bar::icon-button name="expand" data-ndb-toolbar="expand" @click="openInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector" />
+        <div data-ndb-toolbar-actions class="ndb:ml-0.5 ndb:flex ndb:items-center ndb:gap-0.5">
+            <x-new-debug-bar::icon-button name="search" :dark-surface="true" data-ndb-toolbar="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)" />
+            <x-new-debug-bar::icon-button name="expand" :dark-surface="true" data-ndb-toolbar="expand" @click="openInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector" />
         </div>
     </div>
 

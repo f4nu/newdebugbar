@@ -50,8 +50,10 @@ it('opens every compact toolbar destination and closes cleanly', function () {
 it('moves focus into the inspector and returns it to its opener', function () {
     visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-inspector-action=close]")')
         ->click('[data-ndb-inspector-action="close"]')
+        ->wait(0.2)
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-toolbar=expand]")')
         ->assertNoJavaScriptErrors();
 });
@@ -105,7 +107,7 @@ it('keeps keyboard focus inside the command palette', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('uses one metric color and concentric glass toolbar corners', function () {
+it('uses one metric color and balanced glass toolbar spacing', function () {
     visit('/profiled')
         ->assertScript(<<<'JS'
             getComputedStyle(document.getElementById('new-debug-bar')).fontFamily.includes('Outfit Variable')
@@ -121,9 +123,23 @@ it('uses one metric color and concentric glass toolbar corners', function () {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
                 const filter = getComputedStyle(toolbar).backdropFilter;
 
-                return filter.includes('brightness(1.5)') && filter.includes('saturate(1.5)');
+                return filter.includes('brightness(1.1)') && filter.includes('saturate(1.25)');
             })()
             JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const expand = document.querySelector('[data-ndb-toolbar="expand"]');
+                const toolbarBox = toolbar.getBoundingClientRect();
+                const expandBox = expand.getBoundingClientRect();
+                const right = toolbarBox.right - expandBox.right;
+                const top = expandBox.top - toolbarBox.top;
+                const bottom = toolbarBox.bottom - expandBox.bottom;
+
+                return Math.abs(right - top) <= 1 && Math.abs(right - bottom) <= 1;
+            })()
+            JS)
+        ->assertScript('document.querySelectorAll(\'[role="toolbar"] > span\').length', 0)
         ->assertScript(<<<'JS'
             (() => {
                 const metricColors = ['duration', 'memory', 'queries'].map((name) =>
@@ -134,6 +150,42 @@ it('uses one metric color and concentric glass toolbar corners', function () {
                 return new Set(metricColors).size === 1 && metricColors[0] !== utilityColor;
             })()
             JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('uses a darker compact surface without exaggerated backdrop color', function () {
+    visit('/profiled')
+        ->click('[data-ndb-toolbar="palette"]')
+        ->type('[data-ndb-palette-search]', 'dark theme')
+        ->keys('[data-ndb-palette-search]', 'Enter')
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const style = getComputedStyle(toolbar);
+                const alpha = Number(style.backgroundColor.match(/[\d.]+(?=\))$/)?.[0] ?? 1);
+
+                return alpha >= 0.9
+                    && style.backdropFilter.includes('brightness(0.75)')
+                    && style.backdropFilter.includes('saturate(1)');
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('keeps package asset updates inside Livewire navigation', function () {
+    $page = visit('/profiled');
+
+    $page->script(<<<'JS'
+        window.__newDebugBarNavigationSentinel = true;
+        const stylesheet = document.querySelector('link[href*="/__new-debug-bar/assets/new-debug-bar.css"]');
+        stylesheet.href = stylesheet.href.replace(/id=[^&]+/, 'id=stale-test-build');
+        JS);
+
+    $page
+        ->click('[data-testid="host-navigation"]')
+        ->waitForText('Second request')
+        ->assertScript('window.__newDebugBarNavigationSentinel === true')
+        ->assertCount('#new-debug-bar', 1)
         ->assertNoJavaScriptErrors();
 });
 
