@@ -211,6 +211,20 @@ it('matches the visual baseline for the :dataset toolbar', function (string $the
     assertVisualDebugBaseline($page, "toolbar-{$theme}");
 })->with(['light', 'dark']);
 
+it('matches the visual baseline for the :dataset narrow toolbar', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-narrow-{$theme}");
+})->with(['light', 'dark']);
+
 it('matches the visual baseline for the :dataset command palette', function (string $theme) {
     $page = visit('/profiled-rich');
     setVisualDebugTheme($page, $theme);

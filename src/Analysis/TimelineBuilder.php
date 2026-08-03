@@ -2,7 +2,7 @@
 
 namespace NewDebugBar\Analysis;
 
-/** Builds a searchable event sequence without turning point events into spans. */
+/** Builds a searchable event sequence with geometry for an honest waterfall view. */
 final class TimelineBuilder
 {
     /** @param array<string, mixed> $profile @return list<array<string, mixed>> */
@@ -31,15 +31,18 @@ final class TimelineBuilder
                     continue;
                 }
 
-                $isQuery = $section === 'queries' && isset($item['duration_ms']);
+                $spanDuration = isset($item['duration_ms']) && is_numeric($item['duration_ms'])
+                    ? max(0, (float) $item['duration_ms'])
+                    : null;
+                $hasDuration = $spanDuration !== null && $spanDuration > 0;
                 $timeline[] = [
                     'id' => $section.'-'.$index,
                     'section' => $section,
-                    'kind' => $isQuery ? 'span' : 'point',
+                    'kind' => $hasDuration ? 'span' : 'point',
                     'label' => $this->label($section, $item),
                     'at_ms' => round((float) $item['at_ms'], 3),
-                    'start_ms' => $isQuery ? round(max(0, (float) $item['at_ms'] - (float) $item['duration_ms']), 3) : null,
-                    'duration_ms' => $isQuery ? round((float) $item['duration_ms'], 2) : null,
+                    'start_ms' => $hasDuration ? round(max(0, (float) $item['at_ms'] - $spanDuration), 3) : null,
+                    'duration_ms' => $hasDuration ? round($spanDuration, 2) : null,
                 ];
             }
         }
@@ -57,7 +60,19 @@ final class TimelineBuilder
         usort($timeline, fn (array $left, array $right): int => $left['at_ms'] <=> $right['at_ms']
             ?: $this->kindOrder($left['kind']) <=> $this->kindOrder($right['kind']));
 
-        return $timeline;
+        $scale = max(0.001, ...array_column($timeline, 'at_ms'));
+
+        return array_map(function (array $item) use ($scale): array {
+            $item['at_percent'] = $this->percentage($item['at_ms'], $scale);
+            $item['start_percent'] = $item['start_ms'] === null
+                ? null
+                : $this->percentage($item['start_ms'], $scale);
+            $item['duration_percent'] = $item['duration_ms'] === null
+                ? null
+                : round(min(100, max(0, ($item['duration_ms'] / $scale) * 100)), 3);
+
+            return $item;
+        }, $timeline);
     }
 
     /** @param array<string, mixed> $item */
@@ -92,5 +107,10 @@ final class TimelineBuilder
             'span' => 1,
             default => 2,
         };
+    }
+
+    private function percentage(float $value, float $scale): float
+    {
+        return round(min(100, max(0, ($value / $scale) * 100)), 3);
     }
 }

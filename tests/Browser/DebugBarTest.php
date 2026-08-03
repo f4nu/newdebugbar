@@ -242,6 +242,7 @@ it('filters the timeline without inventing spans for point events', function () 
 
     $page
         ->assertPresent('[data-ndb-timeline-item="request-start"]')
+        ->assertVisible('[data-ndb-timeline-waterfall]')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
         ->assertScript(<<<'JS'
             Number(document.querySelector('[data-ndb-section-panel="timeline"] [x-text="visibleTimelineCount"]').textContent)
@@ -254,12 +255,23 @@ it('filters the timeline without inventing spans for point events', function () 
             JS)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item][data-section="queries"]'))
-                .every((item) => item.textContent.includes('span') && item.textContent.includes('→'))
+                .every((item) => {
+                    const track = item.querySelector('[data-ndb-timeline-track]').getBoundingClientRect();
+                    const mark = item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect();
+
+                    return item.dataset.kind === 'span'
+                        && Number(item.dataset.start) < Number(item.dataset.position)
+                        && Number(item.dataset.duration) > 0
+                        && mark.width >= 3
+                        && mark.left >= track.left
+                        && mark.right <= track.right + 1;
+                })
             JS)
         ->click('[data-ndb-timeline-filter="events"]')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.textContent.includes('point') && !item.textContent.includes('→'))
+                .every((item) => item.dataset.kind === 'point'
+                    && item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect().width > 0)
             JS)
         ->type('[data-ndb-timeline-search]', 'nothing can match this')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length', 0)
@@ -553,6 +565,16 @@ it('keeps the main interactions usable on a phone viewport', function () {
     $page = visit('/profiled')
         ->on()->iPhone14Pro()
         ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const box = toolbar.getBoundingClientRect();
+
+                return Math.abs(box.width - (window.innerWidth - 24)) <= 1
+                    && Math.abs(box.left - 12) <= 1
+                    && Math.abs(window.innerWidth - box.right - 12) <= 1;
+            })()
+            JS)
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="queries"]');

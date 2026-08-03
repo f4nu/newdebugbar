@@ -75,7 +75,7 @@ abstract class TestCase extends Orchestra
             return response(<<<HTML
                 <!doctype html>
                 <html>
-                    <head><title>{$title}</title></head>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>{$title}</title></head>
                     <body>
                         <main>
                             <h1 data-testid="host-page">{$title}</h1>

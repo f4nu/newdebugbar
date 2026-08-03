@@ -17,9 +17,9 @@
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="Debug toolbar"
-        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
+        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:w-auto ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
     >
-        <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="request" class="ndb:flex ndb:min-w-0 ndb:max-w-52" aria-label="Open request details">
+        <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="request" class="ndb:flex ndb:min-w-0 ndb:max-w-52 ndb:flex-1 ndb:sm:flex-none" aria-label="Open request details">
             <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
             <span class="ndb:min-w-0">
                 <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
@@ -184,17 +184,73 @@
                                     @endif
 
                                     @if ($sectionKey === 'timeline')
-                                        @php($timelineSections = array_values(array_unique(array_column($section['payload']['items'], 'section'))))
+                                        @php($timelineItems = $section['payload']['items'])
+                                        @php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
+                                        @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
+                                        @php($timelineTicks = [0, 25, 50, 75, 100])
                                         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:pb-3 ndb:lg:flex-row ndb:lg:items-end ndb:dark:border-zinc-800">
                                             <div class="ndb:min-w-0 ndb:flex-1"><p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Source</p><div class="ndb:flex ndb:overflow-x-auto" role="group" aria-label="Filter timeline"><button type="button" data-ndb-timeline-filter="all" @click="setTimelineFilter('all')" :aria-pressed="timelineFilter === 'all'" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold" :class="timelineFilter === 'all' ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'">All</button>@foreach ($timelineSections as $timelineSection)<button type="button" data-ndb-timeline-filter="{{ $timelineSection }}" @click="setTimelineFilter(@js($timelineSection))" :aria-pressed="timelineFilter === @js($timelineSection)" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold" :class="timelineFilter === @js($timelineSection) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'">{{ str($timelineSection)->title() }}</button>@endforeach</div></div>
                                             <label class="ndb:min-w-0 ndb:lg:w-72"><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Search</span><input data-ndb-timeline-search x-model="timelineSearch" @input.debounce.100ms="applyTimelineFilters()" type="search" placeholder="Event or section" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
                                         </div>
-                                        <p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleTimelineCount"></span> events</p>
-                                        <ol x-ref="timelineList" class="ndb:ml-2 ndb:list-none ndb:border-l ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                            @foreach ($section['payload']['items'] as $item)
-                                                <li data-ndb-timeline-item="{{ $item['id'] }}" data-section="{{ $item['section'] }}" data-search="{{ mb_strtolower($item['label'].' '.$item['section']) }}" class="ndb:relative ndb:pb-4 ndb:pl-5 ndb:last:pb-0"><span class="ndb:absolute ndb:-left-[5px] ndb:top-1.5 ndb:size-2.5 ndb:rounded-full ndb:border-2 ndb:border-white {{ $item['kind'] === 'span' ? 'ndb:bg-indigo-500' : ($item['kind'] === 'milestone' ? 'ndb:bg-zinc-700 ndb:dark:bg-zinc-200' : 'ndb:bg-zinc-400') }} ndb:dark:border-zinc-950"></span><div class="ndb:flex ndb:flex-wrap ndb:items-start ndb:gap-x-3 ndb:gap-y-1"><p class="ndb:min-w-0 ndb:flex-1 ndb:text-xs ndb:font-semibold">{{ $item['label'] }}</p><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $item['kind'] === 'span' ? $item['start_ms'].' → '.$item['at_ms'].' ms' : $item['at_ms'].' ms' }}</span></div><div class="ndb:mt-0.5 ndb:flex ndb:gap-3 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"><span>{{ $item['section'] }}</span><span>{{ $item['kind'] }}</span>@if ($item['duration_ms'] !== null)<span>{{ $item['duration_ms'] }} ms</span>@endif</div></li>
-                                            @endforeach
-                                        </ol>
+                                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
+                                            <div><h3 class="ndb:text-xs ndb:font-bold">Waterfall</h3><p class="ndb:mt-0.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleTimelineCount"></span> events across {{ number_format($timelineDuration, $timelineDuration < 10 ? 1 : 0) }} ms</p></div>
+                                            <div class="ndb:flex ndb:items-center ndb:gap-4 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400" aria-label="Timeline legend"><span class="ndb:flex ndb:items-center ndb:gap-1.5"><span class="ndb:h-1.5 ndb:w-5 ndb:rounded-sm ndb:bg-indigo-500"></span>Duration</span><span class="ndb:flex ndb:items-center ndb:gap-1.5"><span class="ndb:size-2 ndb:rounded-full ndb:bg-sky-500"></span>Event</span></div>
+                                        </div>
+                                        <div data-ndb-timeline-waterfall class="ndb-scrollbar ndb:overflow-x-auto ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30">
+                                            <div class="ndb:min-w-[760px]">
+                                                <div class="ndb:grid ndb:grid-cols-[minmax(190px,0.8fr)_minmax(420px,2fr)_88px] ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/80 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/70">
+                                                    <div class="ndb:self-end ndb:px-3 ndb:pb-2 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Activity</div>
+                                                    <div class="ndb:relative ndb:h-10 ndb:border-x ndb:border-zinc-200/90 ndb:dark:border-zinc-800" aria-label="Timeline from zero to {{ number_format($timelineDuration, $timelineDuration < 10 ? 1 : 0) }} milliseconds">
+                                                        @foreach ($timelineTicks as $tick)
+                                                            @php($timelineTickMs = $timelineDuration * $tick / 100)
+                                                            <span class="ndb:absolute ndb:bottom-2 ndb:whitespace-nowrap {{ $tick === 0 ? 'ndb:translate-x-0' : ($tick === 100 ? 'ndb:-translate-x-full' : 'ndb:-translate-x-1/2') }} ndb:text-[9px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400" style="left: {{ $tick }}%">{{ number_format($timelineTickMs, $timelineTickMs > 0 && $timelineTickMs < 10 ? 1 : 0) }} ms</span>
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="ndb:self-end ndb:px-3 ndb:pb-2 ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Timing</div>
+                                                </div>
+                                                <ol x-ref="timelineList" class="ndb:m-0 ndb:list-none ndb:divide-y ndb:divide-zinc-100 ndb:p-0 ndb:dark:divide-zinc-800/80">
+                                                    @foreach ($timelineItems as $item)
+                                                        <li
+                                                            data-ndb-timeline-item="{{ $item['id'] }}"
+                                                            data-section="{{ $item['section'] }}"
+                                                            data-kind="{{ $item['kind'] }}"
+                                                            data-position="{{ $item['at_percent'] }}"
+                                                            @if ($item['start_percent'] !== null) data-start="{{ $item['start_percent'] }}" @endif
+                                                            @if ($item['duration_percent'] !== null) data-duration="{{ $item['duration_percent'] }}" @endif
+                                                            data-search="{{ mb_strtolower($item['label'].' '.$item['section']) }}"
+                                                            class="ndb:grid ndb:min-h-14 ndb:grid-cols-[minmax(190px,0.8fr)_minmax(420px,2fr)_88px]"
+                                                            style="--ndb-timeline-at: {{ $item['at_percent'] }}%; --ndb-timeline-start: {{ $item['start_percent'] ?? $item['at_percent'] }}%; --ndb-timeline-width: {{ $item['duration_percent'] ?? 0 }}%;"
+                                                        >
+                                                            <div class="ndb:min-w-0 ndb:px-3 ndb:py-2.5">
+                                                                <p class="ndb:truncate ndb:text-xs ndb:font-semibold" title="{{ $item['label'] }}">{{ $item['label'] }}</p>
+                                                                <button type="button" @click="selectSection(@js($item['section']))" class="ndb:mt-0.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:transition ndb:hover:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:text-indigo-300">{{ str($item['section'])->replace('_', ' ')->title() }}</button>
+                                                            </div>
+                                                            <div data-ndb-timeline-track class="ndb:relative ndb:overflow-hidden ndb:border-x ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
+                                                                @foreach ([25, 50, 75] as $tick)
+                                                                    <span aria-hidden="true" class="ndb:absolute ndb:inset-y-0 ndb:border-l ndb:border-zinc-200/60 ndb:dark:border-zinc-800/80" style="left: {{ $tick }}%"></span>
+                                                                @endforeach
+                                                                <span aria-hidden="true" class="ndb:absolute ndb:inset-x-0 ndb:top-1/2 ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-700/80"></span>
+                                                                @if ($item['kind'] === 'span')
+                                                                    <span data-ndb-timeline-mark title="{{ $item['label'] }} — {{ number_format((float) $item['duration_ms'], $item['duration_ms'] < 10 ? 1 : 0) }} ms" class="ndb:absolute ndb:top-1/2 ndb:left-[var(--ndb-timeline-start)] ndb:h-2.5 ndb:w-[max(3px,var(--ndb-timeline-width))] ndb:-translate-y-1/2 ndb:rounded-sm ndb:bg-indigo-500 ndb:shadow-[0_0_0_1px_rgba(79,70,229,0.18)] ndb:dark:bg-indigo-400"></span>
+                                                                @elseif ($item['kind'] === 'milestone')
+                                                                    <span data-ndb-timeline-mark title="{{ $item['label'] }}" class="ndb:absolute ndb:top-1/2 ndb:left-[clamp(4px,var(--ndb-timeline-at),calc(100%-4px))] ndb:h-5 ndb:w-px ndb:-translate-x-1/2 ndb:-translate-y-1/2 ndb:bg-zinc-700 ndb:dark:bg-zinc-200"></span>
+                                                                @else
+                                                                    <span data-ndb-timeline-mark title="{{ $item['label'] }}" class="ndb:absolute ndb:top-1/2 ndb:left-[clamp(4px,var(--ndb-timeline-at),calc(100%-4px))] ndb:size-2.5 ndb:-translate-x-1/2 ndb:-translate-y-1/2 ndb:rounded-full ndb:border-2 ndb:border-white ndb:bg-sky-500 ndb:shadow-sm ndb:dark:border-zinc-900 ndb:dark:bg-sky-400"></span>
+                                                                @endif
+                                                            </div>
+                                                            <div class="ndb:self-center ndb:px-3 ndb:text-right ndb:tabular-nums">
+                                                                @if ($item['kind'] === 'span')
+                                                                    <p class="ndb:text-[10px] ndb:font-bold">{{ number_format((float) $item['duration_ms'], $item['duration_ms'] < 10 ? 1 : 0) }} ms</p>
+                                                                    <p class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400">{{ $item['start_ms'] }}–{{ $item['at_ms'] }} ms</p>
+                                                                @else
+                                                                    <p class="ndb:text-[10px] ndb:font-bold">{{ number_format((float) $item['at_ms'], $item['at_ms'] > 0 && $item['at_ms'] < 10 ? 1 : 0) }} ms</p>
+                                                                @endif
+                                                            </div>
+                                                        </li>
+                                                    @endforeach
+                                                </ol>
+                                            </div>
+                                        </div>
                                         <div x-show.important="visibleTimelineCount === 0"><x-new-debug-bar::empty-state label="No timeline events match these filters." /></div>
                                     @elseif ($sectionKey === 'request')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">

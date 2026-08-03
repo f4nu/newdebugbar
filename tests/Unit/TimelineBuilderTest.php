@@ -2,7 +2,7 @@
 
 use NewDebugBar\Analysis\TimelineBuilder;
 
-it('keeps point events distinct and only estimates query spans', function () {
+it('keeps point events distinct and visualizes recorded durations', function () {
     $timeline = (new TimelineBuilder)->build([
         'metrics' => ['duration_ms' => 50],
         'sections' => [
@@ -22,6 +22,12 @@ it('keeps point events distinct and only estimates query spans', function () {
                 'message' => str_repeat('a', 200),
                 'at_ms' => 20,
             ]]]],
+            'http_client' => ['payload' => ['items' => [[
+                'method' => 'GET',
+                'url' => 'https://example.test/status',
+                'duration_ms' => 10,
+                'at_ms' => 30,
+            ]]]],
         ],
     ]);
 
@@ -30,14 +36,55 @@ it('keeps point events distinct and only estimates query spans', function () {
         'cache-0',
         'queries-0',
         'logs-0',
+        'http_client-0',
         'request-end',
     ])->and($timeline[1])
         ->kind->toBe('point')
         ->start_ms->toBeNull()
         ->duration_ms->toBeNull()
+        ->at_percent->toBe(10.0)
         ->and($timeline[2])
         ->kind->toBe('span')
         ->start_ms->toBe(6.0)
         ->duration_ms->toBe(4.0)
+        ->start_percent->toBe(12.0)
+        ->at_percent->toBe(20.0)
+        ->duration_percent->toBe(8.0)
+        ->and($timeline[4])
+        ->kind->toBe('span')
+        ->start_ms->toBe(20.0)
+        ->duration_ms->toBe(10.0)
+        ->start_percent->toBe(40.0)
+        ->at_percent->toBe(60.0)
+        ->duration_percent->toBe(20.0)
+        ->and($timeline[5])
+        ->at_percent->toBe(100.0)
         ->and(mb_strlen($timeline[3]['label']))->toBeLessThanOrEqual(140);
+});
+
+it('keeps timeline geometry bounded when events exceed the reported duration', function () {
+    $timeline = (new TimelineBuilder)->build([
+        'metrics' => ['duration_ms' => 0],
+        'sections' => [
+            'request' => ['payload' => []],
+            'queries' => ['payload' => ['items' => [[
+                'normalized_sql' => 'select 1',
+                'duration_ms' => -5,
+                'at_ms' => 20,
+            ]]]],
+        ],
+    ]);
+
+    $query = collect($timeline)->firstWhere('id', 'queries-0');
+    $requestEnd = collect($timeline)->firstWhere('id', 'request-end');
+
+    expect($query)
+        ->kind->toBe('point')
+        ->start_ms->toBeNull()
+        ->duration_ms->toBeNull()
+        ->start_percent->toBeNull()
+        ->at_percent->toBe(100.0)
+        ->duration_percent->toBeNull()
+        ->and($requestEnd)
+        ->at_percent->toBe(0.0);
 });
