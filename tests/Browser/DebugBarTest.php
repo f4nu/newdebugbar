@@ -851,13 +851,17 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->assertVisible('[data-ndb-header-memory]')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript(<<<'JS'
             (() => {
                 const facts = document.querySelector('[data-ndb-header-facts]');
                 const cards = Array.from(facts.querySelectorAll('[data-ndb-header-fact]'));
                 const firstTop = cards[0].getBoundingClientRect().top;
+                const styles = getComputedStyle(facts);
 
-                return facts.scrollWidth <= facts.clientWidth
+                return styles.overflowX === 'auto'
+                    && Number.parseFloat(styles.columnGap) >= 8
+                    && facts.scrollWidth > facts.clientWidth
                     && facts.getBoundingClientRect().height < 55
                     && cards.length === 4
                     && cards.every((card) => {
@@ -865,17 +869,65 @@ it('keeps the main interactions usable on a phone viewport', function () {
 
                         return box.width > 0
                             && Math.abs(box.top - firstTop) <= 1
-                            && box.left >= 0
-                            && box.right <= window.innerWidth;
+                            && getComputedStyle(card).flexShrink === '0';
                     });
             })()
             JS)
-        ->click('[data-ndb-select-section="queries"]');
+        ->assertScript(<<<'JS'
+            (() => {
+                const navigation = document.querySelector('#new-debug-bar-section-navigation');
+
+                return getComputedStyle(navigation).visibility === 'hidden'
+                    && navigation.getBoundingClientRect().right <= 1;
+            })()
+            JS)
+        ->click('[data-ndb-mobile-sections-toggle]')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'true')
+        ->assertVisible('#new-debug-bar-section-navigation')
+        ->assertVisible('[data-ndb-mobile-sections-backdrop]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const navigation = document.querySelector('#new-debug-bar-section-navigation');
+                const box = navigation.getBoundingClientRect();
+
+                return getComputedStyle(navigation).position === 'absolute'
+                    && box.left >= 0
+                    && box.right <= window.innerWidth
+                    && box.width <= 281
+                    && document.activeElement === navigation.querySelector('[data-ndb-select-section][aria-current="page"]');
+            })()
+            JS)
+        ->click('[data-ndb-select-section="queries"]')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-section-heading]")')
+        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"');
 
     assertDebugSectionSelected($page, 'queries');
 
     $page
+        ->click('[data-ndb-mobile-sections-toggle]')
         ->click('[data-ndb-toggle-favorite="queries"]')
         ->assertAttribute('[data-ndb-toggle-favorite="queries"]', 'aria-pressed', 'true')
+        ->keys('[data-ndb-toggle-favorite="queries"]', 'Escape')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
+        ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
+        ->click('[data-ndb-mobile-sections-toggle]')
+        ->click('[data-ndb-mobile-sections-backdrop]')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
+        ->resize(1440, 900)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toggle = document.querySelector('[data-ndb-mobile-sections-toggle]');
+                const navigation = document.querySelector('#new-debug-bar-section-navigation');
+
+                return getComputedStyle(toggle).display === 'none'
+                    && getComputedStyle(navigation).position === 'static'
+                    && getComputedStyle(navigation).visibility === 'visible';
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

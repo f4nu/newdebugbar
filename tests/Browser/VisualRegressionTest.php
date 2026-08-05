@@ -562,3 +562,20 @@ it('matches the visual baseline for the :dataset narrow inspector', function (st
 
     assertVisualDebugBaseline($page, "narrow-inspector-{$theme}");
 })->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset narrow section drawer', function (string $theme) {
+    $page = visualDebugPage('overview', $theme)
+        ->resize(390, 844)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-mobile-sections-toggle]')
+        ->assertVisible('#new-debug-bar-section-navigation')
+        ->assertVisible('[data-ndb-mobile-sections-backdrop]');
+
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "narrow-section-drawer-{$theme}");
+})->with(['light', 'dark']);

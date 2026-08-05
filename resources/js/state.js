@@ -17,6 +17,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
   return {
     inspectorOpen: false,
     inspectorReturnFocus: null,
+    mobileSectionsOpen: false,
+    mobileSectionsReturnFocus: null,
     detailsRequested: false,
     selected: 'overview',
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
@@ -165,7 +167,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     selectSection(section) {
+      const focusContentHeading = this.mobileSectionsOpen;
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
+      this.mobileSectionsOpen = false;
+      this.mobileSectionsReturnFocus = null;
       this.$nextTick?.(() => {
         this.syncSectionPanels();
         if (this.selected === 'queries') this.applyQueryView();
@@ -174,8 +179,30 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         if (this.selected === 'events') this.applyEventFilters();
         if (this.selected === 'logs') this.applyLogFilters();
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
+        if (focusContentHeading) this.$refs?.sectionHeading?.focus?.();
         browser.highlight?.();
       });
+    },
+
+    openMobileSections(returnFocus = null) {
+      if (this.mobileSectionsOpen) return;
+
+      this.mobileSectionsReturnFocus = returnFocus ?? browser.activeElement?.();
+      this.mobileSectionsOpen = true;
+      this.$nextTick?.(() => {
+        const selectedSection = this.$refs?.mobileSectionsNav
+          ?.querySelector?.('[data-ndb-select-section][aria-current="page"]');
+
+        (selectedSection ?? this.$refs?.mobileSectionsClose)?.focus?.();
+      });
+    },
+
+    closeMobileSections(restoreFocus = true) {
+      const returnFocus = this.mobileSectionsReturnFocus;
+      this.mobileSectionsOpen = false;
+      this.mobileSectionsReturnFocus = null;
+
+      if (restoreFocus) this.$nextTick?.(() => returnFocus?.focus?.());
     },
 
     syncSectionPanels() {
@@ -191,6 +218,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         this.inspectorReturnFocus = returnFocus ?? browser.activeElement?.();
       }
 
+      this.mobileSectionsOpen = false;
+      this.mobileSectionsReturnFocus = null;
       this.selectSection(section);
       this.inspectorOpen = true;
       this.$nextTick?.(() => this.$refs?.inspectorClose?.focus());
@@ -217,6 +246,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       const returnFocus = this.inspectorReturnFocus;
       this.inspectorOpen = false;
       this.inspectorReturnFocus = null;
+      this.mobileSectionsOpen = false;
+      this.mobileSectionsReturnFocus = null;
       this.$nextTick?.(() => returnFocus?.focus?.());
     },
 
@@ -562,7 +593,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     openPalette() {
-      this.paletteReturnFocus = browser.activeElement?.();
+      this.paletteReturnFocus = this.mobileSectionsOpen
+        ? this.mobileSectionsReturnFocus
+        : browser.activeElement?.();
+      this.mobileSectionsOpen = false;
+      this.mobileSectionsReturnFocus = null;
       this.paletteOpen = true;
       this.paletteSearch = '';
       this.paletteIndex = 0;
@@ -615,6 +650,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       if (event.key === 'Escape') {
         if (this.paletteOpen) this.closePalette();
+        else if (this.mobileSectionsOpen) this.closeMobileSections();
         else if (this.inspectorOpen) this.closeInspector();
       }
     },

@@ -68,7 +68,7 @@
             role="dialog"
             aria-modal="true"
             aria-label="Request inspector"
-            @keydown="keepFocusWithin($event, $el)"
+            @keydown="keepFocusWithin($event, mobileSectionsOpen ? $refs.mobileSectionsNav : $el)"
             class="ndb:absolute ndb:inset-x-0 ndb:bottom-0 ndb:flex ndb:h-[min(82vh,780px)] ndb:max-h-[calc(100vh-12px)] ndb:flex-col ndb:overflow-hidden ndb:rounded-t-2xl ndb:border-x ndb:border-t ndb:border-white/70 ndb:bg-white/90 ndb:shadow-[0_-24px_80px_-28px_rgba(24,24,27,0.5)] ndb:backdrop-blur-2xl ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950/90"
         >
             <header class="ndb:shrink-0 ndb:border-b ndb:border-zinc-200/80 ndb:bg-white ndb:p-1.5 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950">
@@ -81,26 +81,40 @@
                         </span>
                     </x-new-debug-bar::toolbar-button>
 
-                    <div data-ndb-header-facts class="ndb:order-3 ndb:grid ndb:w-full ndb:grid-cols-4 ndb:gap-0.5 ndb:sm:order-none ndb:sm:flex ndb:sm:w-auto ndb:sm:gap-1">
-                        <x-new-debug-bar::toolbar-button section="overview" data-ndb-header-fact="environment" class="ndb:flex ndb:min-w-0">
-                            <span class="ndb:size-2 ndb:shrink-0 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
-                            <span class="ndb:min-w-0"><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Environment</span><span data-ndb-header-environment class="ndb:block ndb:max-w-24 ndb:truncate ndb:text-xs ndb:font-bold" x-text="summary.environment"></span></span>
-                        </x-new-debug-bar::toolbar-button>
+                    <div data-ndb-header-mobile-row class="ndb:order-3 ndb:flex ndb:w-full ndb:min-w-0 ndb:items-stretch ndb:gap-2 ndb:sm:contents">
+                        <button
+                            type="button"
+                            data-ndb-mobile-sections-toggle
+                            @click="openMobileSections()"
+                            :aria-expanded="mobileSectionsOpen"
+                            aria-controls="new-debug-bar-section-navigation"
+                            class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:border ndb:border-zinc-200/80 ndb:bg-zinc-50/80 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:shadow-sm ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/80 ndb:dark:text-zinc-200 ndb:dark:hover:bg-zinc-800"
+                        >
+                            <x-new-debug-bar::icon name="sidebar" class="ndb:size-4 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                            <span>Sections</span>
+                        </button>
 
-                        <x-new-debug-bar::toolbar-button section="request" data-ndb-header-fact="duration" class="ndb:flex ndb:min-w-0">
-                            <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
-                            <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></span>
-                        </x-new-debug-bar::toolbar-button>
+                        <div data-ndb-header-facts class="ndb-scrollbar ndb:flex ndb:min-w-0 ndb:flex-1 ndb:gap-2 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:pb-0.5 ndb:sm:order-none ndb:sm:w-auto ndb:sm:flex-none ndb:sm:gap-1 ndb:sm:overflow-visible ndb:sm:pb-0">
+                            <x-new-debug-bar::toolbar-button section="overview" data-ndb-header-fact="environment" class="ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <span class="ndb:size-2 ndb:shrink-0 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
+                                <span class="ndb:min-w-0"><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Environment</span><span data-ndb-header-environment class="ndb:block ndb:max-w-24 ndb:truncate ndb:text-xs ndb:font-bold" x-text="summary.environment"></span></span>
+                            </x-new-debug-bar::toolbar-button>
 
-                        <x-new-debug-bar::toolbar-button section="overview" data-ndb-header-fact="memory" class="ndb:flex ndb:min-w-0">
-                            <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
-                            <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span data-ndb-header-memory class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
-                        </x-new-debug-bar::toolbar-button>
+                            <x-new-debug-bar::toolbar-button section="request" data-ndb-header-fact="duration" class="ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                                <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></span>
+                            </x-new-debug-bar::toolbar-button>
 
-                        <x-new-debug-bar::toolbar-button section="queries" data-ndb-header-fact="queries" class="ndb:flex ndb:min-w-0">
-                            <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
-                            <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span data-ndb-header-query-count x-text="summary.query_count"></span><span data-ndb-header-query-duration class="ndb:font-medium ndb:text-zinc-400" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
-                        </x-new-debug-bar::toolbar-button>
+                            <x-new-debug-bar::toolbar-button section="overview" data-ndb-header-fact="memory" class="ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                                <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span data-ndb-header-memory class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
+                            </x-new-debug-bar::toolbar-button>
+
+                            <x-new-debug-bar::toolbar-button section="queries" data-ndb-header-fact="queries" class="ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                                <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span data-ndb-header-query-count x-text="summary.query_count"></span><span data-ndb-header-query-duration class="ndb:font-medium ndb:text-zinc-400" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
+                            </x-new-debug-bar::toolbar-button>
+                        </div>
                     </div>
 
                     <div class="ndb:ml-auto ndb:flex ndb:items-center ndb:gap-0.5">
@@ -111,14 +125,38 @@
                 </div>
             </header>
 
-            <div class="ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:sm:flex-row">
-                <nav aria-label="Debug sections" class="ndb:flex ndb:max-h-36 ndb:shrink-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:p-2 ndb:backdrop-blur-xl ndb:sm:max-h-none ndb:sm:w-[210px] ndb:sm:border-b-0 ndb:sm:border-r ndb:sm:p-3 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/60">
-                    <div id="new-debug-bar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:gap-0.5 ndb:overflow-x-auto ndb:sm:flex-1 ndb:sm:flex-col ndb:sm:overflow-x-visible ndb:sm:overflow-y-auto">
+            <div class="ndb:relative ndb:isolate ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:sm:flex-row">
+                <div
+                    x-cloak
+                    x-show.important="mobileSectionsOpen"
+                    x-transition.opacity.duration.150ms
+                    data-ndb-mobile-sections-backdrop
+                    @click="closeMobileSections()"
+                    class="ndb:absolute ndb:inset-y-0 ndb:right-0 ndb:left-[min(82vw,280px)] ndb:z-20 ndb:bg-zinc-950/25 ndb:backdrop-blur-[1px] ndb:sm:hidden ndb:dark:bg-black/55"
+                    aria-hidden="true"
+                ></div>
+
+                <nav
+                    id="new-debug-bar-section-navigation"
+                    x-ref="mobileSectionsNav"
+                    aria-label="Debug sections"
+                    :data-ndb-mobile-open="mobileSectionsOpen ? 'true' : 'false'"
+                    class="ndb:invisible ndb:pointer-events-none ndb:absolute ndb:inset-y-0 ndb:left-0 ndb:z-30 ndb:flex ndb:w-[82vw] ndb:max-w-[280px] ndb:-translate-x-full ndb:flex-col ndb:border-r ndb:border-zinc-200/80 ndb:bg-zinc-50/95 ndb:p-3 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:transition-transform ndb:duration-200 ndb:ease-out ndb:data-[ndb-mobile-open=true]:visible ndb:data-[ndb-mobile-open=true]:pointer-events-auto ndb:data-[ndb-mobile-open=true]:translate-x-0 ndb:sm:visible ndb:sm:pointer-events-auto ndb:sm:static ndb:sm:z-auto ndb:sm:w-[210px] ndb:sm:max-w-none ndb:sm:shrink-0 ndb:sm:translate-x-0 ndb:sm:shadow-none ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/95 ndb:sm:dark:bg-zinc-900/60"
+                >
+                    <div class="ndb:mb-2 ndb:flex ndb:h-10 ndb:items-center ndb:justify-between ndb:border-b ndb:border-zinc-200/80 ndb:px-1 ndb:pb-2 ndb:sm:hidden ndb:dark:border-zinc-800/80">
+                        <span class="ndb:flex ndb:items-center ndb:gap-2 ndb:text-sm ndb:font-bold">
+                            <x-new-debug-bar::icon name="sidebar" class="ndb:size-4 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                            Sections
+                        </span>
+                        <x-new-debug-bar::icon-button name="close" data-ndb-mobile-sections-close x-ref="mobileSectionsClose" @click="closeMobileSections()" class="ndb:size-8 ndb:rounded-lg" aria-label="Close sections" />
+                    </div>
+
+                    <div id="new-debug-bar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:gap-0.5 ndb:overflow-y-auto">
                         <template x-for="(section, sectionIndex) in orderedSections" :key="'section-' + section.key">
                             <div x-show.important="isSectionVisible(section)" class="ndb:contents">
-                                <p data-ndb-favorites-heading x-show.important="favorites.length > 0 && sectionIndex === 0" class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">Favorites</p>
-                                <div x-show.important="favorites.length > 0 && section.key === firstVisibleNonFavoriteKey" class="ndb:hidden ndb:h-px ndb:bg-zinc-200 ndb:sm:my-2 ndb:sm:block ndb:dark:bg-zinc-800"></div>
-                                <p data-ndb-sections-heading x-show.important="favorites.length > 0 && section.key === firstVisibleNonFavoriteKey" class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">Sections</p>
+                                <p data-ndb-favorites-heading x-show.important="favorites.length > 0 && sectionIndex === 0" class="ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400">Favorites</p>
+                                <div x-show.important="favorites.length > 0 && section.key === firstVisibleNonFavoriteKey" class="ndb:my-2 ndb:h-px ndb:bg-zinc-200 ndb:dark:bg-zinc-800"></div>
+                                <p data-ndb-sections-heading x-show.important="favorites.length > 0 && section.key === firstVisibleNonFavoriteKey" class="ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400">Sections</p>
                                 <div
                                     :draggable="isFavorite(section.key)"
                                     :data-ndb-section="section.key"
@@ -130,7 +168,7 @@
                                     @dragleave="leaveFavorite(section.key)"
                                     @drop.prevent="dropFavorite(section.key, favoriteDropAfter)"
                                     @dragend="endFavoriteDrag()"
-                                    class="ndb:group ndb:relative ndb:flex ndb:w-auto ndb:shrink-0 ndb:items-center ndb:rounded-lg ndb:pr-1 ndb:transition ndb:hover:bg-zinc-200/60 ndb:sm:w-full ndb:dark:hover:bg-zinc-800/60"
+                                    class="ndb:group ndb:relative ndb:flex ndb:w-full ndb:items-center ndb:rounded-lg ndb:pr-1 ndb:transition ndb:hover:bg-zinc-200/60 ndb:dark:hover:bg-zinc-800/60"
                                     :class="selected === section.key ? 'ndb-section-active' : ''"
                                 >
                                     <span :data-ndb-favorite-drop-before="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:top-0 ndb:z-20 ndb:h-1 ndb:-translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
@@ -172,9 +210,9 @@
                     </div>
                 </nav>
 
-                <main x-ref="content" class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70">
+                <main x-ref="content" :inert="mobileSectionsOpen" class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70">
                     <div class="ndb:sticky ndb:top-0 ndb:z-10 ndb:flex ndb:h-12 ndb:items-center ndb:border-b ndb:border-zinc-100/80 ndb:bg-white/65 ndb:px-4 ndb:backdrop-blur-xl ndb:sm:px-6 ndb:dark:border-zinc-900/80 ndb:dark:bg-zinc-950/65">
-                        <h2 data-ndb-section-heading class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-sm ndb:font-bold" x-text="selectedSection.label"></h2>
+                        <h2 data-ndb-section-heading x-ref="sectionHeading" tabindex="-1" class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-sm ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500" x-text="selectedSection.label"></h2>
                     </div>
 
                     <div wire:loading.flex wire:target="loadDetails" class="ndb:min-h-64 ndb:items-center ndb:justify-center ndb:p-8">

@@ -198,6 +198,46 @@ test('the inspector moves focus inside and returns it when closed', () => {
   assert.equal(state.inspectorReturnFocus, null);
 });
 
+test('mobile section navigation manages focus and layered dismissal', () => {
+  let active = null;
+  let selectedFocused = 0;
+  let headingFocused = 0;
+  let openerFocused = 0;
+  const opener = { focus() { active = opener; openerFocused++; } };
+  const selectedButton = { focus() { active = selectedButton; selectedFocused++; } };
+  const heading = { focus() { active = heading; headingFocused++; } };
+  const browser = runtime();
+  browser.activeElement = () => active;
+  const state = createNewDebugBar(summary, browser);
+  state.$root = { querySelectorAll: () => [] };
+  state.$refs = {
+    content: { scrollTop: 40 },
+    mobileSectionsNav: { querySelector: () => selectedButton },
+    mobileSectionsClose: { focus() {} },
+    sectionHeading: heading,
+  };
+  state.$nextTick = (callback) => callback();
+  state.inspectorOpen = true;
+
+  active = opener;
+  state.openMobileSections();
+  assert.equal(state.mobileSectionsOpen, true);
+  assert.equal(selectedFocused, 1);
+
+  state.selectSection('queries');
+  assert.equal(state.selected, 'queries');
+  assert.equal(state.mobileSectionsOpen, false);
+  assert.equal(state.mobileSectionsReturnFocus, null);
+  assert.equal(headingFocused, 1);
+
+  active = opener;
+  state.openMobileSections();
+  state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
+  assert.equal(state.mobileSectionsOpen, false);
+  assert.equal(state.inspectorOpen, true);
+  assert.equal(openerFocused, 1);
+});
+
 test('modal focus wraps at both edges', () => {
   let active = null;
   let prevented = 0;
