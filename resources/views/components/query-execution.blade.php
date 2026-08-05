@@ -2,6 +2,8 @@
     'query',
     'identity',
     'filterable' => false,
+    'explain' => null,
+    'explainError' => null,
 ])
 
 @php
@@ -34,9 +36,21 @@
             <span class="ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">{{ $query['query_time_percent'] }}% query time</span>
             <span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $query['duration_ms'] }} ms</span>
             <button type="button" @click="copyText(@js($query['sql']))" class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white" aria-label="Copy query {{ $query['execution'] }}" title="Copy query"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button>
+            @if (($query['runnable_available'] ?? false) && is_string($query['runnable_sql'] ?? null))
+                <button type="button" @click="copyText(@js($query['runnable_sql']))" class="ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950" aria-label="Copy runnable query {{ $query['execution'] }}">Copy runnable</button>
+                <button type="button" wire:click="explainQuery({{ $query['execution'] }})" wire:loading.attr="disabled" wire:target="explainQuery({{ $query['execution'] }})" class="ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950">Explain</button>
+            @endif
         </div>
     </div>
     <pre class="ndb-code ndb-scrollbar ndb:rounded-none"><code data-ndb-language="sql">{{ $query['sql'] }}</code></pre>
+    @if (is_array($explain))
+        <div class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:p-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60">
+            <p class="ndb:mb-2 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $explain['mode'] }} · {{ $explain['driver'] }}</p>
+            <pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json">{{ json_encode($explain['rows'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+        </div>
+    @elseif (is_string($explainError))
+        <p class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20 ndb:dark:text-amber-300">{{ $explainError }}</p>
+    @endif
     @if (($query['callsite'] ?? null) !== null)
         <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:border-t ndb:border-zinc-200 ndb:bg-white/60 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/40">
             <span class="ndb:font-semibold ndb:text-zinc-400">Application call site</span>

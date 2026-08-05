@@ -18,12 +18,22 @@ it('counts dropped collector items without retaining their payload', function ()
         'dropped_count' => 1,
         'truncated' => true,
         'duration_ms' => 6.0,
+        'transaction_count' => 0,
+        'rollback_count' => 0,
     ])->and($collector->payload())->toBe([
-        'items' => [['sql' => 'select 1', 'duration_ms' => 1.25]],
+        'items' => [[
+            'sql' => 'select 1',
+            'duration_ms' => 1.25,
+            'source_preserved' => true,
+            'runnable_available' => false,
+        ]],
         'dropped' => 1,
         'retained' => 1,
         'total' => 2,
         'truncated' => true,
+        'transactions' => [],
+        'transaction_dropped' => 0,
+        'transaction_total' => 0,
     ]);
 
     $collector->reset();
@@ -34,13 +44,31 @@ it('counts dropped collector items without retaining their payload', function ()
         'dropped_count' => 0,
         'truncated' => false,
         'duration_ms' => 0.0,
+        'transaction_count' => 0,
+        'rollback_count' => 0,
     ])->and($collector->payload())->toBe([
         'items' => [],
         'dropped' => 0,
         'retained' => 0,
         'total' => 0,
         'truncated' => false,
+        'transactions' => [],
+        'transaction_dropped' => 0,
+        'transaction_total' => 0,
     ]);
+});
+
+it('keeps transaction events separate from query counts', function () {
+    $collector = new QueryCollector(new Redactor, maxItems: 2);
+    $collector->record(['sql' => 'select 1', 'bindings' => [], 'duration_ms' => 1]);
+    $collector->recordTransaction(['kind' => 'begin', 'connection' => 'testing', 'at_ms' => 1.2]);
+    $collector->recordTransaction(['kind' => 'rollback', 'connection' => 'testing', 'at_ms' => 1.5]);
+
+    expect($collector->summary())
+        ->count->toBe(1)
+        ->transaction_count->toBe(2)
+        ->rollback_count->toBe(1)
+        ->and($collector->payload()['transactions'])->toHaveCount(2);
 });
 
 it('masks unnamed string query bindings by default', function () {

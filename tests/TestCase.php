@@ -20,13 +20,16 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\Component;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
+use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
 use NewDebugBar\ProfileManager;
@@ -119,6 +122,34 @@ abstract class TestCase extends Orchestra
             $component = app('livewire')->mount('profiled-counter');
 
             return response('<!doctype html><html><head><title>Livewire request</title></head><body><h1 data-testid="host-page">Livewire request</h1>'.$component.'</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-context', function () {
+            Gate::define('inspect-profile', fn (mixed $user, ProfiledModel $model): bool => $user === null && $model instanceof ProfiledModel);
+            Gate::allows('inspect-profile', [new ProfiledModel]);
+            Debug::message('Checkout checkpoint', [
+                'step' => 2,
+                'token' => 'private-developer-token',
+            ]);
+            Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
+            Event::dispatch(new ProfiledApplicationEvent);
+            DB::beginTransaction();
+            DB::rollBack();
+            $view = view()->file(__DIR__.'/views/context.blade.php', [
+                'label' => 'Context view',
+                'private_value' => 'not-collected',
+            ])->render();
+
+            return response('<!doctype html><html><body>'.$view.'</body></html>');
+        });
+
+        $router->middleware(['web', ProfileRequest::class])->post('/profiled-validation', function () {
+            Validator::make(['email' => 'invalid'], [
+                'email' => ['required', 'email'],
+                'name' => ['required'],
+            ])->validateWithBag('signup');
+
+            return response('unreachable');
         });
 
         $router->middleware(ProfileRequest::class)->get('/hostile-styles', fn () => response(<<<'HTML'
@@ -360,4 +391,11 @@ final class ProfiledRedisConnection
     {
         return 'default';
     }
+}
+
+final class ProfiledApplicationEvent {}
+
+final class ProfiledApplicationListener
+{
+    public function handle(ProfiledApplicationEvent $event): void {}
 }

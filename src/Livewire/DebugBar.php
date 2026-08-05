@@ -3,6 +3,7 @@
 namespace NewDebugBar\Livewire;
 
 use Illuminate\Contracts\View\View;
+use InvalidArgumentException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -10,6 +11,7 @@ use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Support\QueryExplainer;
 
 /** Loads a request summary first and defers full inspector data. */
 final class DebugBar extends Component
@@ -34,6 +36,14 @@ final class DebugBar extends Component
 
     #[Locked]
     public ?string $comparisonProfileId = null;
+
+    /** @var array<int, array<string, mixed>> */
+    #[Locked]
+    public array $queryExplains = [];
+
+    /** @var array<int, string> */
+    #[Locked]
+    public array $queryExplainErrors = [];
 
     public function mount(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
@@ -84,6 +94,29 @@ final class DebugBar extends Component
         $this->dispatch('new-debug-bar-content-updated');
     }
 
+    public function explainQuery(
+        int $execution,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        QueryExplainer $explainer,
+    ): void {
+        abort_unless($execution > 0, 422);
+        $profile = $presenter->present($store->get($this->profileId) ?? []);
+        $query = collect($profile['sections']['queries']['payload']['items'] ?? [])
+            ->firstWhere('execution', $execution);
+        abort_unless(is_array($query), 404);
+
+        try {
+            $this->queryExplains[$execution] = $explainer->explain($query);
+            unset($this->queryExplainErrors[$execution]);
+        } catch (InvalidArgumentException $exception) {
+            unset($this->queryExplains[$execution]);
+            $this->queryExplainErrors[$execution] = $exception->getMessage();
+        }
+
+        $this->dispatch('new-debug-bar-content-updated');
+    }
+
     public function switchProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
         abort_unless($this->validProfileId($profileId), 422);
@@ -96,6 +129,8 @@ final class DebugBar extends Component
         $this->history = [];
         $this->comparison = [];
         $this->comparisonProfileId = null;
+        $this->queryExplains = [];
+        $this->queryExplainErrors = [];
         $this->dispatch('new-debug-bar-profile-switched', summary: $this->summary);
     }
 

@@ -5,10 +5,14 @@ namespace NewDebugBar;
 use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
+use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\RequestContext;
 use NewDebugBar\Support\RuntimeContext;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,12 +38,16 @@ final class ProfileManager
     /** @var array<string, mixed> */
     private array $request = [];
 
+    /** @var array<string, float> */
+    private array $lifecycleMarks = [];
+
     /** @param iterable<Collector> $collectors */
     public function __construct(
         iterable $collectors,
         private readonly Redactor $redactor,
         private readonly ?ExceptionNormalizer $exceptionNormalizer = null,
         private readonly ?RuntimeContext $runtimeContext = null,
+        private readonly ?RequestContext $requestContext = null,
     ) {
         foreach ($collectors as $collector) {
             $this->collectors[$collector->key()] = $collector;
@@ -109,6 +117,14 @@ final class ProfileManager
     {
         try {
             $route = $request->route();
+            $middleware = is_object($route) ? app('router')->gatherRouteMiddleware($route) : [];
+            $authentication = $this->requestContext?->authentication($request, $middleware) ?? [];
+            $session = $this->requestContext?->session($request) ?? [];
+            $validation = $this->collectors['validation'] ?? null;
+
+            if ($validation instanceof ValidationCollector) {
+                $validation->attachResponseStatus($response?->getStatusCode() ?? 500);
+            }
 
             $this->request = [
                 ...$this->request,
@@ -117,14 +133,18 @@ final class ProfileManager
                 'parameters' => is_object($route) && method_exists($route, 'parameters')
                     ? $this->redactor->clean($this->normalizeRouteParameters($route->parameters()))
                     : [],
-                'middleware' => is_object($route) ? app('router')->gatherRouteMiddleware($route) : [],
+                'middleware' => $middleware,
                 'status' => $response?->getStatusCode() ?? 500,
                 'request_type' => $this->requestType($request, $response),
                 'content_type' => $response?->headers->get('Content-Type'),
                 'request_size_bytes' => $this->requestSize($request),
                 'response_size_bytes' => $this->responseSize($response),
-                'session_present' => $this->hasStartedSession($request),
-                'authenticated' => $this->isAuthenticated($request),
+                'session_present' => (bool) ($session['present'] ?? $this->hasStartedSession($request)),
+                'authenticated' => (bool) ($authentication['authenticated'] ?? $this->isAuthenticated($request)),
+                'authentication' => $authentication,
+                'session' => $session,
+                'timing_scope' => 'global_middleware_entry',
+                'early_bootstrap_measured' => false,
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
@@ -177,6 +197,79 @@ final class ProfileManager
         ]);
     }
 
+    /** @param array<string, mixed> $context */
+    public function message(string $label, array $context = []): void
+    {
+        $this->record('messages', [
+            'label' => $label,
+            'context' => $context,
+        ]);
+    }
+
+    public function recordValidationException(ValidationException $exception): void
+    {
+        $failed = $exception->validator->failed();
+        $rules = [];
+
+        foreach ($failed as $field => $fieldRules) {
+            $rules[(string) $field] = array_values(array_map('strval', array_keys((array) $fieldRules)));
+        }
+
+        $this->record('validation', [
+            'fields' => array_values(array_map('strval', array_keys($failed))),
+            'rules' => $rules,
+            'error_bag' => (string) $exception->errorBag,
+            'exception_status' => (int) $exception->status,
+            'redirect_requested' => is_string($exception->redirectTo) && $exception->redirectTo !== '',
+        ]);
+    }
+
+    /** @param array<string, mixed> $item */
+    public function recordTransaction(array $item): void
+    {
+        $collector = $this->collectors['queries'] ?? null;
+
+        if ($this->collecting && $collector instanceof QueryCollector) {
+            $collector->recordTransaction([
+                ...$item,
+                'at_ms' => $this->elapsedMilliseconds(),
+            ]);
+        }
+    }
+
+    public function lifecycle(string $event): void
+    {
+        if (! $this->collecting) {
+            return;
+        }
+
+        $now = $this->elapsedMilliseconds();
+
+        if ($event === 'routing') {
+            $this->lifecycleMarks['routing'] = $now;
+
+            return;
+        }
+
+        if ($event === 'route_matched') {
+            $this->finishLifecycleSpan('routing', 'Route matching', $now);
+            $this->lifecycleMarks['route_work'] = $now;
+
+            return;
+        }
+
+        if ($event === 'preparing_response') {
+            $this->finishLifecycleSpan('route_work', 'Route middleware, binding, controller and rendering', $now);
+            $this->lifecycleMarks['response'] = $now;
+
+            return;
+        }
+
+        if ($event === 'response_prepared') {
+            $this->finishLifecycleSpan('response', 'Response preparation', $now);
+        }
+    }
+
     public function excludeRedisCacheOperation(string $operation): void
     {
         $collector = $this->collectors['redis'] ?? null;
@@ -220,6 +313,7 @@ final class ProfileManager
         $this->startedAt = hrtime(true);
         $this->startedMemory = memory_get_usage(true);
         $this->request = [];
+        $this->lifecycleMarks = [];
         $this->collecting = true;
     }
 
@@ -370,6 +464,21 @@ final class ProfileManager
     private function elapsedMilliseconds(): float
     {
         return round(($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000, 3);
+    }
+
+    private function finishLifecycleSpan(string $key, string $name, float $now): void
+    {
+        $start = $this->lifecycleMarks[$key] ?? null;
+
+        if ($start === null) {
+            return;
+        }
+
+        unset($this->lifecycleMarks[$key]);
+        $this->record('lifecycle', [
+            'name' => $name,
+            'duration_ms' => round(max(0, $now - $start), 2),
+        ]);
     }
 
     private function requestType(Request $request, ?Response $response): string

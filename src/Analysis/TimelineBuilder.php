@@ -26,24 +26,34 @@ final class TimelineBuilder
                 continue;
             }
 
-            foreach ($data['payload']['items'] ?? [] as $index => $item) {
-                if (! is_array($item) || ! isset($item['at_ms'])) {
-                    continue;
-                }
+            $streams = [['name' => 'item', 'items' => $data['payload']['items'] ?? []]];
 
-                $spanDuration = isset($item['duration_ms']) && is_numeric($item['duration_ms'])
-                    ? max(0, (float) $item['duration_ms'])
-                    : null;
-                $hasDuration = $spanDuration !== null && $spanDuration > 0;
-                $timeline[] = [
-                    'id' => $section.'-'.$index,
-                    'section' => $section,
-                    'kind' => $hasDuration ? 'span' : 'point',
-                    'label' => $this->label($section, $item),
-                    'at_ms' => round((float) $item['at_ms'], 3),
-                    'start_ms' => $hasDuration ? round(max(0, (float) $item['at_ms'] - $spanDuration), 3) : null,
-                    'duration_ms' => $hasDuration ? round($spanDuration, 2) : null,
-                ];
+            if ($section === 'queries') {
+                $streams[] = ['name' => 'transaction', 'items' => $data['payload']['transactions'] ?? []];
+            }
+
+            foreach ($streams as $stream) {
+                foreach ($stream['items'] as $index => $item) {
+                    if (! is_array($item) || ! isset($item['at_ms'])) {
+                        continue;
+                    }
+
+                    $spanDuration = isset($item['duration_ms']) && is_numeric($item['duration_ms'])
+                        ? max(0, (float) $item['duration_ms'])
+                        : null;
+                    $hasDuration = $spanDuration !== null && $spanDuration > 0;
+                    $timeline[] = [
+                        'id' => $stream['name'] === 'item'
+                            ? $section.'-'.$index
+                            : $section.'-'.$stream['name'].'-'.$index,
+                        'section' => $section,
+                        'kind' => $hasDuration ? 'span' : 'point',
+                        'label' => $this->label($section, $item),
+                        'at_ms' => round((float) $item['at_ms'], 3),
+                        'start_ms' => $hasDuration ? round(max(0, (float) $item['at_ms'] - $spanDuration), 3) : null,
+                        'duration_ms' => $hasDuration ? round($spanDuration, 2) : null,
+                    ];
+                }
             }
         }
 
@@ -86,6 +96,12 @@ final class TimelineBuilder
             if ($dropped > 0) {
                 $omitted[(string) $section] = $dropped;
             }
+
+            $transactionDropped = (int) ($data['payload']['transaction_dropped'] ?? 0);
+
+            if ($transactionDropped > 0) {
+                $omitted['query_transactions'] = $transactionDropped;
+            }
         }
 
         return $omitted;
@@ -95,7 +111,9 @@ final class TimelineBuilder
     private function label(string $section, array $item): string
     {
         $label = match ($section) {
-            'queries' => $item['normalized_sql'] ?? $item['sql'] ?? 'Query',
+            'queries' => ($item['kind'] ?? null) !== null
+                ? 'Transaction '.($item['kind'] ?? 'event').' '.($item['connection'] ?? '')
+                : ($item['normalized_sql'] ?? $item['sql'] ?? 'Query'),
             'livewire' => trim(($item['component'] ?? 'Livewire').' '.implode(' ', $item['actions'] ?? [])),
             'http_client' => trim(($item['method'] ?? '').' '.($item['url'] ?? 'HTTP request')),
             'queue' => trim(($item['kind'] ?? '').' '.($item['job'] ?? 'Job')),

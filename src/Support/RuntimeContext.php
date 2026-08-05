@@ -43,6 +43,7 @@ final class RuntimeContext
                 'environment' => (string) config('app.env', 'unknown'),
                 'php' => PHP_VERSION,
                 'php_sapi' => PHP_SAPI,
+                'runtime_type' => $this->runtimeType(),
                 'laravel' => $this->app->version(),
                 'debug' => (bool) config('app.debug', false),
                 'locale' => $this->app->getLocale(),
@@ -52,6 +53,7 @@ final class RuntimeContext
                 'configuration' => $this->app->configurationIsCached(),
                 'routes' => $this->app->routesAreCached(),
                 'events' => $this->app->eventsAreCached(),
+                'views' => null,
             ],
             'drivers' => array_filter([
                 'database' => $this->driver('database.default'),
@@ -99,5 +101,26 @@ final class RuntimeContext
         $driver = config($key);
 
         return is_string($driver) && $driver !== '' ? $driver : null;
+    }
+
+    private function runtimeType(): string
+    {
+        if (isset($_SERVER['LARAVEL_OCTANE'])) {
+            return 'Octane';
+        }
+
+        if (PHP_SAPI === 'frankenphp' || extension_loaded('frankenphp')) {
+            return 'FrankenPHP';
+        }
+
+        if (getenv('RR_MODE') !== false) {
+            return 'RoadRunner';
+        }
+
+        return match (PHP_SAPI) {
+            'fpm-fcgi' => 'FPM',
+            'cli' => 'CLI',
+            default => PHP_SAPI,
+        };
     }
 }

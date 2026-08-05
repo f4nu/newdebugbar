@@ -4,6 +4,7 @@ namespace NewDebugBar\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Support\BarInjector;
 use NewDebugBar\Support\RequestEligibility;
@@ -40,7 +41,9 @@ final class ProfileRequest
         try {
             return $next($request);
         } catch (Throwable $exception) {
-            $this->manager->recordException($exception);
+            if (! $exception instanceof ValidationException) {
+                $this->manager->recordException($exception);
+            }
 
             throw $exception;
         }

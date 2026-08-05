@@ -193,7 +193,7 @@
                                                         <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Framework cache</h3>
                                                         <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-3">
                                                             @foreach ($runtimeCacheState as $label => $value)
-                                                                <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">{{ $value ? 'Cached' : 'Open' }}</dd></div>
+                                                                <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">{{ $value === null ? 'Not exposed' : ($value ? 'Cached' : 'Open') }}</dd></div>
                                                             @endforeach
                                                         </dl>
                                                     </div>
@@ -360,7 +360,7 @@
 
                                         <div x-ref="queryItems" class="ndb:space-y-3">
                                             @foreach ($section['payload']['items'] as $query)
-                                                <x-new-debug-bar::query-execution :query="$query" :identity="'item-'.$query['execution']" filterable />
+                                                <x-new-debug-bar::query-execution :query="$query" :identity="'item-'.$query['execution']" :explain="$queryExplains[$query['execution']] ?? null" :explain-error="$queryExplainErrors[$query['execution']] ?? null" filterable />
                                             @endforeach
                                         </div>
 
@@ -384,7 +384,7 @@
                                                     </summary>
                                                     <div class="ndb:space-y-3 ndb:border-t ndb:border-indigo-200/70 ndb:p-3 ndb:dark:border-indigo-950">
                                                         @foreach ($group['executions'] as $execution)
-                                                            <x-new-debug-bar::query-execution :query="$execution" :identity="'group-'.$group['fingerprint'].'-'.$execution['execution']" />
+                                                            <x-new-debug-bar::query-execution :query="$execution" :identity="'group-'.$group['fingerprint'].'-'.$execution['execution']" :explain="$queryExplains[$execution['execution']] ?? null" :explain-error="$queryExplainErrors[$execution['execution']] ?? null" />
                                                         @endforeach
                                                     </div>
                                                 </details>

@@ -2,12 +2,15 @@
 
 namespace NewDebugBar;
 
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
 use NewDebugBar\Analysis\ProfileAnalyzer;
@@ -25,6 +28,7 @@ use NewDebugBar\Collectors\OutboundHttpCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\QueueCollector;
 use NewDebugBar\Collectors\RedisCollector;
+use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
@@ -34,12 +38,15 @@ use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
+use NewDebugBar\Support\EditorLink;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\LivewireMountRecorder;
 use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\ProfileFinalizer;
+use NewDebugBar\Support\QueryExplainer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\RequestContext;
 use NewDebugBar\Support\RuntimeContext;
 use NewDebugBar\Support\RuntimeProfiler;
 use NewDebugBar\Support\SafeUrl;
@@ -85,6 +92,16 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxVendorFrames: (int) config('new-debug-bar.collection.exception_vendor_frames', 12),
             sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
         ));
+        $this->app->singleton(EditorLink::class, fn (): EditorLink => new EditorLink(
+            projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
+            editor: (string) config('new-debug-bar.editor.name', 'vscode'),
+            remotePath: config('new-debug-bar.editor.remote_path'),
+            localPath: config('new-debug-bar.editor.local_path'),
+        ));
+        $this->app->singleton(RequestContext::class, fn (): RequestContext => new RequestContext(
+            maxKeys: (int) config('new-debug-bar.collection.max_items_per_array', 100),
+        ));
+        $this->app->singleton(QueryExplainer::class);
         $this->app->scoped(LivewireUpdateRecorder::class);
         $this->app->scoped(LivewireMountRecorder::class);
         $this->app->scoped(RuntimeProfiler::class);
@@ -111,9 +128,13 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new CacheCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'views', 'Views'),
                 new ItemCollector($redactor, $maxItems, 'events', 'Events'),
+                new ItemCollector($redactor, $maxItems, 'authorization', 'Authorization'),
+                new ValidationCollector($redactor, $maxItems),
+                new ItemCollector($redactor, $maxItems, 'lifecycle', 'Lifecycle'),
+                new ItemCollector($redactor, $maxItems, 'messages', 'Messages'),
                 new LogCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
-            ], $redactor, $app->make(ExceptionNormalizer::class), $app->make(RuntimeContext::class));
+            ], $redactor, $app->make(ExceptionNormalizer::class), $app->make(RuntimeContext::class), $app->make(RequestContext::class));
         });
 
         $this->app->singleton(ProfileStore::class, fn ($app): ProfileStore => new ProfileStore(
@@ -151,7 +172,17 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(CallSiteResolver::class),
             $this->app->make(SafeUrl::class),
             $this->app->make(RuntimeProfiler::class),
+            $this->app->make(Redactor::class),
         ))->register();
+        $exceptions = $this->app->make(ExceptionHandler::class);
+
+        if (method_exists($exceptions, 'renderable')) {
+            $exceptions->renderable(function (ValidationException $exception, Request $request): null {
+                $this->app->make(ProfileManager::class)->recordValidationException($exception);
+
+                return null;
+            });
+        }
         $events->listen(
             RequestHandled::class,
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),

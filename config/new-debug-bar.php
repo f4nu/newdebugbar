@@ -7,9 +7,19 @@ return [
 
     'theme' => 'system',
 
+    'editor' => [
+        'name' => env('NEW_DEBUG_BAR_EDITOR', 'vscode'),
+        'remote_path' => env('NEW_DEBUG_BAR_REMOTE_PATH'),
+        'local_path' => env('NEW_DEBUG_BAR_LOCAL_PATH'),
+    ],
+
     'slow_query_ms' => 100,
 
     'slow_request_ms' => 1_000,
+
+    'queries' => [
+        'explain' => true,
+    ],
 
     'findings' => [
         'minimum_cache_operations' => 5,
@@ -35,6 +45,7 @@ return [
         'max_depth' => 5,
         'max_string_length' => 2_000,
         'query_bindings' => env('NEW_DEBUG_BAR_QUERY_BINDINGS', 'safe'),
+        'key_policy' => env('NEW_DEBUG_BAR_KEY_POLICY', 'hash'),
         'call_sites' => true,
         'call_site_frames' => 5,
         'call_site_scan_limit' => 40,

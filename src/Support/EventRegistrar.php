@@ -3,6 +3,7 @@
 namespace NewDebugBar\Support;
 
 use Closure;
+use Illuminate\Auth\Access\Events\GateEvaluated;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\CacheHit;
@@ -11,10 +12,14 @@ use Illuminate\Cache\Events\KeyForgotten;
 use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Database\Events\TransactionBeginning;
+use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Http\Client\Events\ResponseReceived;
@@ -31,7 +36,13 @@ use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Queue\Events\JobQueueing;
 use Illuminate\Redis\Events\CommandExecuted;
 use Illuminate\Redis\Events\CommandFailed;
+use Illuminate\Routing\Events\PreparingResponse;
+use Illuminate\Routing\Events\ResponsePrepared;
+use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Routing\Events\Routing;
 use NewDebugBar\ProfileManager;
+use ReflectionFunction;
+use ReflectionMethod;
 use Throwable;
 
 /** Routes Laravel runtime events into their matching request collectors. */
@@ -63,6 +74,14 @@ final class EventRegistrar
         CacheFlushed::class,
         CommandStarting::class,
         CommandFinished::class,
+        GateEvaluated::class,
+        TransactionBeginning::class,
+        TransactionCommitted::class,
+        TransactionRolledBack::class,
+        Routing::class,
+        RouteMatched::class,
+        PreparingResponse::class,
+        ResponsePrepared::class,
     ];
 
     public function __construct(
@@ -71,10 +90,29 @@ final class EventRegistrar
         private readonly CallSiteResolver $callSites,
         private readonly SafeUrl $safeUrl,
         private readonly RuntimeProfiler $runtime,
+        private readonly Redactor $redactor,
     ) {}
 
     public function register(): void
     {
+        $this->listen(Routing::class, fn () => $this->manager()->lifecycle('routing'));
+        $this->listen(RouteMatched::class, fn () => $this->manager()->lifecycle('route_matched'));
+        $this->listen(PreparingResponse::class, fn () => $this->manager()->lifecycle('preparing_response'));
+        $this->listen(ResponsePrepared::class, fn () => $this->manager()->lifecycle('response_prepared'));
+
+        $this->listen(GateEvaluated::class, function (GateEvaluated $event): void {
+            $this->manager()->record('authorization', [
+                'ability' => $event->ability,
+                'result' => $event->result === true ? 'allowed' : 'denied',
+                'handler' => $this->authorizationHandler($event),
+                'user_type' => is_object($event->user) ? $event->user::class : null,
+                'argument_types' => array_values(array_map(
+                    fn (mixed $argument): string => is_object($argument) ? $argument::class : get_debug_type($argument),
+                    $event->arguments,
+                )),
+            ]);
+        });
+
         $this->listen(CommandStarting::class, function (CommandStarting $event): void {
             if ($this->isLongRunningCommand($event->command)) {
                 return;
@@ -99,16 +137,39 @@ final class EventRegistrar
 
         $this->listen(QueryExecuted::class, function (QueryExecuted $event): void {
             $location = $this->callSites->capture();
+            $runnableSql = null;
+
+            if (config('new-debug-bar.collection.query_bindings') === 'full') {
+                try {
+                    $runnableSql = $event->toRawSql();
+                } catch (Throwable) {
+                    $runnableSql = null;
+                }
+            }
 
             $this->manager()->record('queries', [
                 'sql' => $event->sql,
                 'bindings' => $event->bindings,
+                'runnable_sql' => $runnableSql,
                 'duration_ms' => round((float) $event->time, 2),
                 'connection' => $event->connectionName,
                 'type' => $event->readWriteType,
                 ...$location,
             ]);
         });
+
+        $this->listen(TransactionBeginning::class, fn (TransactionBeginning $event) => $this->manager()->recordTransaction([
+            'kind' => 'begin',
+            'connection' => $event->connectionName,
+        ]));
+        $this->listen(TransactionCommitted::class, fn (TransactionCommitted $event) => $this->manager()->recordTransaction([
+            'kind' => 'commit',
+            'connection' => $event->connectionName,
+        ]));
+        $this->listen(TransactionRolledBack::class, fn (TransactionRolledBack $event) => $this->manager()->recordTransaction([
+            'kind' => 'rollback',
+            'connection' => $event->connectionName,
+        ]));
 
         $this->listen(RequestSending::class, function (RequestSending $event): void {
             $this->manager()->record('http_client', [
@@ -240,28 +301,26 @@ final class EventRegistrar
 
         $this->listen(CommandExecuted::class, function (CommandExecuted $event): void {
             $command = strtoupper((string) $event->command);
-            $keyHashes = $this->redisKeyHashes($command, (array) $event->parameters);
+            $keys = $this->redisKeys($command, (array) $event->parameters);
 
             $this->manager()->record('redis', [
                 'command' => $command,
                 'connection' => $event->connectionName,
                 'duration_ms' => round((float) ($event->time ?? 0), 2),
-                'key_count' => count($keyHashes),
-                'key_hashes' => $keyHashes,
+                ...$keys,
                 'failed' => false,
             ]);
         });
 
         $this->listen(CommandFailed::class, function (CommandFailed $event): void {
             $command = strtoupper((string) $event->command);
-            $keyHashes = $this->redisKeyHashes($command, (array) $event->parameters);
+            $keys = $this->redisKeys($command, (array) $event->parameters);
 
             $this->manager()->record('redis', [
                 'command' => $command,
                 'connection' => $event->connectionName,
                 'duration_ms' => 0.0,
-                'key_count' => count($keyHashes),
-                'key_hashes' => $keyHashes,
+                ...$keys,
                 'failed' => true,
                 'exception_class' => $event->exception::class,
             ]);
@@ -300,12 +359,17 @@ final class EventRegistrar
 
         $this->listen('composing: *', function (string $name, array $payload): void {
             $view = $payload[0] ?? null;
+            $viewName = str($name)->after('composing: ')->toString();
+            $path = is_object($view) && method_exists($view, 'getPath') ? $view->getPath() : null;
 
             $this->manager()->record('views', [
-                'name' => str($name)->after('composing: ')->toString(),
+                'name' => $viewName,
+                'source' => is_string($path) ? $this->callSites->location($path) : null,
+                'composers' => $this->listenerDetails('composing: '.$viewName),
                 'data_keys' => is_object($view) && method_exists($view, 'getData')
                     ? array_keys($view->getData())
                     : [],
+                'timing' => 'composition_marker',
             ]);
         });
 
@@ -333,6 +397,8 @@ final class EventRegistrar
 
             $this->manager()->record('events', [
                 'name' => $name,
+                'listeners' => $this->listenerDetails($name),
+                'broadcast' => ($payload[0] ?? null) instanceof ShouldBroadcast,
                 'payload_types' => array_map(
                     fn (mixed $item): string => is_object($item) ? $item::class : get_debug_type($item),
                     $payload,
@@ -347,7 +413,9 @@ final class EventRegistrar
         $this->listen($eventClass, function (CacheEvent $event) use ($operation): void {
             $this->manager()->record('cache', [
                 'operation' => $operation,
-                'key_hash' => substr(hash('sha256', $event->key), 0, 16),
+                'key_hash' => $this->redactor->cleanKey($event->key),
+                'key' => $this->keyPolicy() === 'full' ? $this->redactor->cleanKey($event->key, 'full') : null,
+                'key_policy' => $this->keyPolicy(),
                 'store' => $event->storeName,
                 'tags' => $event->tags,
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
@@ -418,8 +486,102 @@ final class EventRegistrar
         ], true);
     }
 
-    /** @param list<mixed> $parameters @return list<string> */
-    private function redisKeyHashes(string $command, array $parameters): array
+    private function authorizationHandler(GateEvaluated $event): string
+    {
+        try {
+            $gate = $this->container->make('gate');
+
+            foreach ($event->arguments as $argument) {
+                if (! is_object($argument) && ! is_string($argument)) {
+                    continue;
+                }
+
+                $policy = $gate->getPolicyFor($argument);
+
+                if (is_object($policy) || is_string($policy)) {
+                    return (is_object($policy) ? $policy::class : $policy).'@'.$event->ability;
+                }
+            }
+        } catch (Throwable) {
+            // Fall through to the honest callback label.
+        }
+
+        return 'callback';
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function listenerDetails(string $event): array
+    {
+        if (! method_exists($this->events, 'getRawListeners')) {
+            return [];
+        }
+
+        $raw = $this->events->getRawListeners();
+        $listeners = [];
+
+        foreach ((array) ($raw[$event] ?? []) as $listener) {
+            $detail = $this->listenerDetail($listener);
+
+            if ($detail !== null) {
+                $listeners[] = $detail;
+            }
+        }
+
+        return array_slice($listeners, 0, 25);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function listenerDetail(mixed $listener): ?array
+    {
+        if (is_string($listener)) {
+            if (str_starts_with($listener, self::class) || str_starts_with($listener, 'Illuminate\\')) {
+                return null;
+            }
+
+            [$class, $method] = str_contains($listener, '@')
+                ? explode('@', $listener, 2)
+                : [$listener, method_exists($listener, 'handle') ? 'handle' : '__invoke'];
+
+            return ['name' => $class.'@'.$method, 'source' => $this->methodLocation($class, $method)];
+        }
+
+        if (is_array($listener) && count($listener) >= 2) {
+            $class = is_object($listener[0]) ? $listener[0]::class : (string) $listener[0];
+            $method = (string) $listener[1];
+
+            return ['name' => $class.'@'.$method, 'source' => $this->methodLocation($class, $method)];
+        }
+
+        if ($listener instanceof Closure) {
+            $reflection = new ReflectionFunction($listener);
+            $file = $reflection->getFileName();
+            $source = is_string($file) ? $this->callSites->location($file, $reflection->getStartLine()) : null;
+
+            return $source === null ? null : ['name' => 'Closure', 'source' => $source];
+        }
+
+        if (is_object($listener)) {
+            return ['name' => $listener::class, 'source' => $this->methodLocation($listener::class, '__invoke')];
+        }
+
+        return null;
+    }
+
+    /** @return array{file: string, line: int}|null */
+    private function methodLocation(string $class, string $method): ?array
+    {
+        try {
+            $reflection = new ReflectionMethod($class, $method);
+            $file = $reflection->getFileName();
+
+            return is_string($file) ? $this->callSites->location($file, $reflection->getStartLine()) : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** @param list<mixed> $parameters @return array{key_count: int, key_hashes: list<string>, keys: list<string>, key_policy: string} */
+    private function redisKeys(string $command, array $parameters): array
     {
         $multiKeyCommands = ['DEL', 'UNLINK', 'EXISTS', 'MGET', 'PFCOUNT'];
         $firstKeyCommands = [
@@ -449,9 +611,25 @@ final class EventRegistrar
             $keys = [$parameters[0]];
         }
 
-        return array_values(array_unique(array_map(
-            fn (mixed $key): string => substr(hash('sha256', is_scalar($key) ? (string) $key : get_debug_type($key)), 0, 16),
+        $hashes = array_values(array_unique(array_map(
+            fn (mixed $key): string => $this->redactor->cleanKey($key),
             $keys,
         )));
+        $policy = $this->keyPolicy();
+
+        return [
+            'key_count' => count($hashes),
+            'key_hashes' => $hashes,
+            'keys' => $policy === 'full' ? array_values(array_unique(array_map(
+                fn (mixed $key): string => $this->redactor->cleanKey($key, 'full'),
+                $keys,
+            ))) : [],
+            'key_policy' => $policy,
+        ];
+    }
+
+    private function keyPolicy(): string
+    {
+        return config('new-debug-bar.collection.key_policy') === 'full' ? 'full' : 'hash';
     }
 }

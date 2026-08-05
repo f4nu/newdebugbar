@@ -150,6 +150,24 @@ final class Redactor
         return preg_replace("/'(?:''|\\\\.|[^'])*'/s", "'[string]'", $sql) ?? $sql;
     }
 
+    public function cleanKey(mixed $key, string $policy = 'hash'): string
+    {
+        $value = is_scalar($key) || $key instanceof Stringable ? (string) $key : get_debug_type($key);
+
+        if ($policy !== 'full') {
+            return substr(hash('sha256', $value), 0, 16);
+        }
+
+        $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value) ?? '';
+        $value = preg_replace(
+            '/\b(token|password|secret|authorization|api[_-]?key)([:=_-]?)[^:|\/]+/i',
+            '$1$2[redacted]',
+            $value,
+        ) ?? $value;
+
+        return mb_strlen($value) > 250 ? mb_substr($value, 0, 249).'…' : $value;
+    }
+
     private function isSensitive(string $key): bool
     {
         $normalized = strtolower(str_replace(['-', '.'], '_', $key));

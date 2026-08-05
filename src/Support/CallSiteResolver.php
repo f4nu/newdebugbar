@@ -49,6 +49,25 @@ final class CallSiteResolver
         ];
     }
 
+    /** @return array{file: string, line: int}|null */
+    public function location(string $path, int $line = 1): ?array
+    {
+        if (! $this->enabled) {
+            return null;
+        }
+
+        $file = $this->normalizePath($path);
+
+        if ($file === null || ! $this->isApplicationFile($file)) {
+            return null;
+        }
+
+        return [
+            'file' => $this->relativePath($file),
+            'line' => max(1, $line),
+        ];
+    }
+
     private function normalizePath(string $path): ?string
     {
         $realPath = realpath($path);
