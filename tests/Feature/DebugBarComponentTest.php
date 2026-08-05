@@ -17,7 +17,9 @@ it('loads full profile details only after the inspector asks', function () {
         ->call('loadDetails')
         ->assertSet('detailsLoaded', true)
         ->assertDispatched('new-debug-bar-content-updated')
-        ->assertSee('Profiled request completed');
+        ->assertSee('Profiled request completed')
+        ->assertSeeHtml('data-ndb-lifecycle-scope')
+        ->assertSee('Early Laravel bootstrap is not measured.');
 });
 
 it('locks server-owned profile state', function () {
@@ -151,6 +153,47 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
         ->assertSee('Showing 0 of 2 views.')
         ->assertSeeHtml('data-ndb-timeline-incomplete')
         ->assertSee('Timeline incomplete: 2 source events were omitted.');
+});
+
+it('marks secondary query transaction omissions as truncated', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'environment' => 'testing',
+        'metrics' => ['duration_ms' => 10, 'peak_memory_mb' => 8],
+        'sections' => [
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'GET', 'status' => 200],
+                'payload' => ['method' => 'GET', 'status' => 200, 'path' => '/', 'route' => null, 'action' => null],
+            ],
+            'queries' => [
+                'label' => 'Queries',
+                'summary' => ['count' => 0, 'duration_ms' => 0],
+                'payload' => [
+                    'items' => [],
+                    'dropped' => 0,
+                    'transactions' => [['kind' => 'begin']],
+                    'transaction_retained' => 1,
+                    'transaction_dropped' => 2,
+                    'transaction_total' => 3,
+                ],
+            ],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => [], 'dropped' => 0]],
+        ],
+    ]);
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->assertSet('summary.sections', function (array $sections): bool {
+            $queries = collect($sections)->firstWhere('key', 'queries');
+
+            return $queries['active'] === true
+                && $queries['attention'] === true
+                && $queries['truncated'] === true;
+        })
+        ->call('loadDetails')
+        ->assertSeeHtml('data-ndb-collection-status="query-transactions"')
+        ->assertSee('Showing 1 of 3 query transaction events.');
 });
 
 it('uses the shared presenter for deferred query details and findings', function () {

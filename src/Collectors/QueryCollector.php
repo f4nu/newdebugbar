@@ -36,10 +36,15 @@ final class QueryCollector extends AbstractCollector
 
     public function summary(): array
     {
+        $summary = parent::summary();
+
         return [
-            ...parent::summary(),
+            ...$summary,
+            'truncated' => $summary['truncated'] || $this->droppedTransactions > 0,
             'duration_ms' => round($this->totals['duration_ms'] ?? 0, 2),
             'transaction_count' => $this->transactionCount,
+            'transaction_retained_count' => count($this->transactions),
+            'transaction_dropped_count' => $this->droppedTransactions,
             'rollback_count' => $this->rollbackCount,
         ];
     }
@@ -94,7 +99,7 @@ final class QueryCollector extends AbstractCollector
             $this->rollbackCount++;
         }
 
-        if (count($this->transactions) >= $this->maxItems) {
+        if ($this->retainedCount() >= $this->maxItems) {
             $this->droppedTransactions++;
 
             return;
@@ -110,6 +115,7 @@ final class QueryCollector extends AbstractCollector
         return [
             ...parent::payload(),
             'transactions' => $this->transactions,
+            'transaction_retained' => count($this->transactions),
             'transaction_dropped' => $this->droppedTransactions,
             'transaction_total' => $this->transactionCount,
         ];
@@ -118,6 +124,11 @@ final class QueryCollector extends AbstractCollector
     protected function track(array $item): void
     {
         $this->totals['duration_ms'] = ($this->totals['duration_ms'] ?? 0) + (float) ($item['duration_ms'] ?? 0);
+    }
+
+    protected function retainedCount(): int
+    {
+        return count($this->items) + count($this->transactions);
     }
 
     /** @param array<array-key, mixed> $values */

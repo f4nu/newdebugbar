@@ -11,6 +11,7 @@ use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
 use NewDebugBar\Mcp\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Tools\ListDebugProfiles;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
 
 function captureStructuredContent($response): array
@@ -147,6 +148,36 @@ it('keeps explicitly enabled mail content out of MCP responses', function () {
     ]);
 });
 
+it('masks full query bindings and log labels again at the MCP boundary', function () {
+    config()->set('new-debug-bar.collection.query_bindings', 'full');
+    app()->forgetInstance(ProfileManager::class);
+    $response = $this->get('/profiled-private-query', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+
+    expect(json_encode(app(ProfileStore::class)->get($profileId)['sections']['queries']))
+        ->toContain('private-alpha', 'private-beta', 'private-gamma');
+
+    $queries = captureStructuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
+        'profile_id' => $profileId,
+        'filter' => 'repeated',
+    ])->assertOk()
+        ->assertDontSee(['private-alpha', 'private-beta', 'private-gamma']));
+    $timeline = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'timeline',
+    ])->assertOk()
+        ->assertDontSee('private timeline log message'));
+
+    expect($queries['data']['repeated_groups'][0]['executions'][0])
+        ->bindings->toBe(['[string]'])
+        ->binding_policy->toBe('safe')
+        ->bindings_complete->toBeFalse()
+        ->runnable_available->toBeFalse()
+        ->not->toHaveKey('runnable_sql')
+        ->and(collect($timeline['data']['payload']['items'])->firstWhere('section', 'logs')['label'])
+        ->toBe('[log message hidden]');
+});
+
 it('paginates one section and hides private request values', function () {
     $response = $this->post('/profiled-input?name=query-secret', [
         'clinic' => ['name' => 'patient-secret'],
@@ -249,6 +280,71 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
         ->and($profiles['data']['truncated'])->toBeTrue()
         ->and($models['data']['payload'])->not->toHaveKeys(['groups', 'repeated_groups', 'repeated_misses'])
         ->and(array_column($profiles['data']['profiles'], 'id'))->not->toContain($corruptId);
+});
+
+it('advances past an item that cannot fit within the MCP byte limit', function () {
+    config()->set('new-debug-bar.mcp.max_bytes', 700);
+    app()->forgetInstance(McpProfilePresenter::class);
+    $profileId = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'schema_version' => 1,
+        'id' => $profileId,
+        'metrics' => ['duration_ms' => 1],
+        'sections' => [
+            'events' => [
+                'label' => 'Events',
+                'summary' => ['count' => 1],
+                'payload' => ['items' => [[
+                    'name' => str_repeat('oversized-event-', 180),
+                ]], 'dropped' => 0],
+            ],
+        ],
+    ]);
+
+    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'events',
+        'limit' => 1,
+    ])->assertOk());
+
+    expect(strlen(json_encode($content)))->toBeLessThanOrEqual(700)
+        ->and($content['data']['pagination'])
+        ->returned->toBe(0)
+        ->omitted_due_to_bytes->toBe(1)
+        ->next_cursor->toBeNull();
+});
+
+it('falls back to bounded identity metadata when section metadata is oversized', function () {
+    config()->set('new-debug-bar.mcp.max_bytes', 700);
+    app()->forgetInstance(McpProfilePresenter::class);
+    $profileId = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'schema_version' => 1,
+        'id' => $profileId,
+        'metrics' => ['duration_ms' => 1],
+        'sections' => [
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'GET', 'status' => 200],
+                'payload' => [
+                    'path' => '/oversized',
+                    'middleware' => array_fill(0, 100, str_repeat('LongMiddlewareName', 120)),
+                ],
+            ],
+        ],
+    ]);
+
+    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'request',
+    ])->assertOk());
+
+    expect(strlen(json_encode($content)))->toBeLessThanOrEqual(700)
+        ->and($content['data'])
+        ->profile_id->toBe($profileId)
+        ->section->toBe('request')
+        ->content_omitted->toBeTrue()
+        ->and($content['data']['pagination']['truncated'])->toBeTrue();
 });
 
 it('bounds deeply nested MCP values and treats malformed profiles as missing', function () {

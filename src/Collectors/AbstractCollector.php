@@ -34,7 +34,7 @@ abstract class AbstractCollector implements Collector
         $safeItem = $this->redactor->clean($item);
         $this->track($safeItem);
 
-        if (count($this->items) >= $this->maxItems) {
+        if ($this->retainedCount() >= $this->maxItems) {
             $this->dropped++;
 
             return;
@@ -68,4 +68,9 @@ abstract class AbstractCollector implements Collector
 
     /** @param array<string, mixed> $item */
     protected function track(array $item): void {}
+
+    protected function retainedCount(): int
+    {
+        return count($this->items);
+    }
 }

@@ -62,6 +62,15 @@ final class RedisCollector extends AbstractCollector
     {
         $commands = self::CACHE_COMMANDS[$operation] ?? [];
 
+        if ($this->lastDropped !== null && in_array($this->lastDropped['command'], $commands, true)) {
+            $this->dropped = max(0, $this->dropped - 1);
+            $this->totals['duration_ms'] = max(0, ($this->totals['duration_ms'] ?? 0) - $this->lastDropped['duration_ms']);
+            $this->totals['failed_count'] = max(0, ($this->totals['failed_count'] ?? 0) - ($this->lastDropped['failed'] ? 1 : 0));
+            $this->lastDropped = null;
+
+            return;
+        }
+
         for ($index = count($this->items) - 1; $index >= 0; $index--) {
             if (in_array($this->items[$index]['command'] ?? null, $commands, true)) {
                 $item = $this->items[$index];
@@ -71,13 +80,6 @@ final class RedisCollector extends AbstractCollector
 
                 return;
             }
-        }
-
-        if ($this->lastDropped !== null && in_array($this->lastDropped['command'], $commands, true)) {
-            $this->dropped = max(0, $this->dropped - 1);
-            $this->totals['duration_ms'] = max(0, ($this->totals['duration_ms'] ?? 0) - $this->lastDropped['duration_ms']);
-            $this->totals['failed_count'] = max(0, ($this->totals['failed_count'] ?? 0) - ($this->lastDropped['failed'] ? 1 : 0));
-            $this->lastDropped = null;
         }
     }
 

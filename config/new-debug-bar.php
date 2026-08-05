@@ -45,7 +45,9 @@ return [
 
     'collection' => [
         'application_path' => null,
+        // Detailed top-level entries retained across each collector's streams.
         'max_items_per_collector' => 500,
+        // Items retained inside one normalized nested array.
         'max_items_per_array' => 100,
         'max_depth' => 5,
         'max_string_length' => 2_000,

@@ -41,6 +41,47 @@ final class ProfileAnalyzer
             );
         }
 
+        foreach ($sections as $key => $section) {
+            $dropped = (int) ($section['payload']['dropped'] ?? 0);
+
+            if ($dropped > 0) {
+                $retained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? []));
+                $total = (int) ($section['summary']['count'] ?? ($retained + $dropped));
+                $label = strtolower((string) ($section['label'] ?? str($key)->replace('_', ' ')));
+                $findings[] = $this->finding(
+                    'collector.truncated',
+                    'info',
+                    (string) $key,
+                    sprintf('Showing %d of %d %s.', $retained, $total, $label),
+                    [
+                        'collector' => (string) $key,
+                        'retained' => $retained,
+                        'total' => $total,
+                        'dropped' => $dropped,
+                    ],
+                );
+            }
+
+            $transactionDropped = (int) ($section['payload']['transaction_dropped'] ?? 0);
+
+            if ($transactionDropped > 0) {
+                $transactionRetained = (int) ($section['payload']['transaction_retained'] ?? count($section['payload']['transactions'] ?? []));
+                $transactionTotal = (int) ($section['payload']['transaction_total'] ?? ($transactionRetained + $transactionDropped));
+                $findings[] = $this->finding(
+                    'collector.truncated',
+                    'info',
+                    (string) $key,
+                    sprintf('Showing %d of %d query transaction events.', $transactionRetained, $transactionTotal),
+                    [
+                        'collector' => 'query_transactions',
+                        'retained' => $transactionRetained,
+                        'total' => $transactionTotal,
+                        'dropped' => $transactionDropped,
+                    ],
+                );
+            }
+        }
+
         if ($requestDuration >= $this->slowRequestMs) {
             $findings[] = $this->finding(
                 is_string($runtimeType) ? 'runtime.slow' : 'request.slow',
@@ -96,28 +137,6 @@ final class ProfileAnalyzer
                         'count' => $group['count'],
                         'bindings_vary' => true,
                         'shared_callsite' => $group['shared_callsite'],
-                    ],
-                );
-            }
-        }
-
-        foreach ($sections as $key => $section) {
-            $dropped = (int) ($section['payload']['dropped'] ?? 0);
-
-            if ($dropped > 0) {
-                $retained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? []));
-                $total = (int) ($section['summary']['count'] ?? ($retained + $dropped));
-                $label = strtolower((string) ($section['label'] ?? str($key)->replace('_', ' ')));
-                $findings[] = $this->finding(
-                    'collector.truncated',
-                    'info',
-                    (string) $key,
-                    sprintf('Showing %d of %d %s.', $retained, $total, $label),
-                    [
-                        'collector' => (string) $key,
-                        'retained' => $retained,
-                        'total' => $total,
-                        'dropped' => $dropped,
                     ],
                 );
             }

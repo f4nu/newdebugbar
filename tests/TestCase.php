@@ -143,6 +143,16 @@ abstract class TestCase extends Orchestra
             return response('<!doctype html><html><body>'.$view.'</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-private-query', function () {
+            foreach (['private-alpha', 'private-beta', 'private-gamma'] as $value) {
+                DB::select('select ? as private_value', [$value]);
+            }
+
+            Log::info('private timeline log message');
+
+            return response('<!doctype html><html><body>Private query fixture</body></html>');
+        });
+
         $router->middleware(['web', ProfileRequest::class])->post('/profiled-validation', function () {
             Validator::make(['email' => 'invalid'], [
                 'email' => ['required', 'email'],
@@ -306,6 +316,13 @@ abstract class TestCase extends Orchestra
             Event::dispatch(new CommandFailed('hget', ['private-hash', 'private-field'], new \RuntimeException('private Redis failure'), $connection));
 
             return response('<!doctype html><html><body>Redis</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-redis-independent-cache', function () {
+            Event::dispatch(new CommandExecuted('get', ['private-direct-key'], 1.25, new ProfiledRedisConnection));
+            Cache::get('independent-array-cache-key');
+
+            return response('<!doctype html><html><body>Independent cache</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->post(

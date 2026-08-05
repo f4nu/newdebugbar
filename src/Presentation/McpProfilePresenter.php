@@ -292,7 +292,9 @@ final class McpProfilePresenter
             return $this->clean($item);
         }
 
-        if ($section === 'logs') {
+        if ($section === 'queries') {
+            $item = $this->safeQueryItem($item);
+        } elseif ($section === 'logs') {
             $item = [
                 'at_ms' => $item['at_ms'] ?? null,
                 'level' => $item['level'] ?? null,
@@ -310,6 +312,12 @@ final class McpProfilePresenter
             ];
         } elseif ($section === 'models' && array_key_exists('key', $item)) {
             $item['key'] = $item['key'] === null ? null : '[identifier]';
+        } elseif ($section === 'timeline') {
+            if (($item['section'] ?? null) === 'logs') {
+                $item['label'] = '[log message hidden]';
+            } elseif (($item['section'] ?? null) === 'queries' && is_string($item['label'] ?? null)) {
+                $item['label'] = $this->redactor->cleanSql($item['label']);
+            }
         } elseif ($section === 'mail' && is_array($item['preview'] ?? null)) {
             $preview = $item['preview'];
             $item['preview'] = [
@@ -324,6 +332,43 @@ final class McpProfilePresenter
         }
 
         return $this->clean($item);
+    }
+
+    /** @param array<string, mixed> $item @return array<string, mixed> */
+    private function safeQueryItem(array $item): array
+    {
+        foreach (['sql', 'normalized_sql'] as $key) {
+            if (is_string($item[$key] ?? null)) {
+                $item[$key] = $this->redactor->cleanSql($item[$key]);
+            }
+        }
+
+        $hasBindingMetadata = array_key_exists('bindings', $item)
+            || array_key_exists('binding_policy', $item)
+            || array_key_exists('bindings_complete', $item)
+            || array_key_exists('runnable_available', $item)
+            || array_key_exists('runnable_sql', $item);
+
+        if ($hasBindingMetadata) {
+            $item['bindings'] = $this->redactor->cleanBindings(
+                is_array($item['bindings'] ?? null) ? $item['bindings'] : [],
+                'safe',
+            );
+            $item['binding_policy'] = 'safe';
+            $item['bindings_complete'] = false;
+            $item['runnable_available'] = false;
+        }
+
+        unset($item['runnable_sql']);
+
+        if (is_array($item['executions'] ?? null)) {
+            $item['executions'] = array_map(
+                fn (mixed $execution): mixed => is_array($execution) ? $this->safeQueryItem($execution) : $execution,
+                $item['executions'],
+            );
+        }
+
+        return $item;
     }
 
     private function executionNumber(array $item): int
@@ -352,6 +397,7 @@ final class McpProfilePresenter
         $cursor = max(0, $cursor);
         $limit = max(1, min($limit, $this->maxItems));
         $page = array_values(array_slice($all, $cursor, $limit));
+        $requestedCount = count($page);
         $truncated = $cursor + count($page) < count($all);
         $response = $this->response($build($page, $this->pagination($cursor, count($page), count($all), $truncated)));
 
@@ -361,19 +407,67 @@ final class McpProfilePresenter
             $response = $this->response($build($page, $this->pagination($cursor, count($page), count($all), true)));
         }
 
+        if ($requestedCount > 0 && $page === []) {
+            $response = $this->response($build([], $this->pagination(
+                $cursor,
+                0,
+                count($all),
+                true,
+                omittedDueToBytes: 1,
+            )));
+        }
+
+        if ($this->byteLength($response) > $this->maxBytes) {
+            $response = $this->minimalPaginatedResponse($response);
+        }
+
         return $response;
     }
 
     /** @return array<string, mixed> */
-    private function pagination(int $cursor, int $count, int $total, bool $truncated): array
-    {
-        return [
+    private function pagination(
+        int $cursor,
+        int $count,
+        int $total,
+        bool $truncated,
+        int $omittedDueToBytes = 0,
+    ): array {
+        $nextOffset = $cursor + ($omittedDueToBytes > 0 ? $omittedDueToBytes : $count);
+        $pagination = [
             'cursor' => $cursor,
             'returned' => $count,
             'total' => $total,
             'truncated' => $truncated,
-            'next_cursor' => $cursor + $count < $total ? $cursor + $count : null,
+            'next_cursor' => $nextOffset < $total ? $nextOffset : null,
         ];
+
+        if ($omittedDueToBytes > 0) {
+            $pagination['omitted_due_to_bytes'] = $omittedDueToBytes;
+        }
+
+        return $pagination;
+    }
+
+    /** @param array<string, mixed> $response @return array<string, mixed> */
+    private function minimalPaginatedResponse(array $response): array
+    {
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $minimal = [];
+
+        foreach (['profile_id', 'section', 'filter', 'search', 'sort'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $minimal[$key] = $data[$key];
+            }
+        }
+
+        $pagination = is_array($data['pagination'] ?? null) ? $data['pagination'] : [];
+        $pagination['truncated'] = true;
+
+        return $this->response([
+            ...$minimal,
+            'content_omitted' => true,
+            'pagination' => $pagination,
+        ]);
     }
 
     /** @return array<string, mixed> */

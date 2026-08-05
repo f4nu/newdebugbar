@@ -178,7 +178,7 @@
                                         <div data-ndb-collection-status="{{ $sectionKey }}" role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Showing {{ number_format($collectionRetained) }} of {{ number_format($collectionTotal) }} {{ strtolower($section['label']) }}.</div>
                                     @endif
                                     @if ($sectionKey === 'queries' && (int) ($section['payload']['transaction_dropped'] ?? 0) > 0)
-                                        <div data-ndb-collection-status="query-transactions" role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Showing {{ number_format(count($section['payload']['transactions'] ?? [])) }} of {{ number_format((int) ($section['payload']['transaction_total'] ?? 0)) }} query transaction events.</div>
+                                        <div data-ndb-collection-status="query-transactions" role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Showing {{ number_format((int) ($section['payload']['transaction_retained'] ?? count($section['payload']['transactions'] ?? []))) }} of {{ number_format((int) ($section['payload']['transaction_total'] ?? 0)) }} query transaction events.</div>
                                     @endif
                                     @if ($sectionKey === 'timeline' && ($section['payload']['incomplete'] ?? false))
                                         <div data-ndb-timeline-incomplete role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Timeline incomplete: {{ number_format((int) ($section['payload']['omitted_count'] ?? 0)) }} source events were omitted.</div>
@@ -615,6 +615,9 @@
                                         </div>
                                     @elseif ($sectionKey === 'lifecycle')
                                         <div class="ndb:space-y-2">
+                                            @if (($profile['sections']['request']['payload']['timing_scope'] ?? null) === 'global_middleware_entry')
+                                                <p data-ndb-lifecycle-scope class="ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60 ndb:dark:text-zinc-400">Timing starts at the debug middleware. Early Laravel bootstrap is not measured.</p>
+                                            @endif
                                             @forelse ($section['payload']['items'] as $index => $item)
                                                 <article wire:key="lifecycle-{{ $index }}" class="ndb:flex ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:px-3.5 ndb:py-3 ndb:dark:border-zinc-800"><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:text-xs ndb:font-semibold">{{ $item['name'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span></article>
                                             @empty

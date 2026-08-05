@@ -196,8 +196,10 @@ final class DebugBar extends Component
                 (int) ($section['summary']['dropped_count'] ?? 0),
                 (int) ($section['payload']['dropped'] ?? 0),
             );
+            $secondaryDropped = (int) ($section['payload']['transaction_dropped'] ?? 0);
             $truncated = (bool) ($section['summary']['truncated'] ?? $section['payload']['truncated'] ?? false)
-                || $dropped > 0;
+                || $dropped > 0
+                || $secondaryDropped > 0;
             $incomplete = (bool) ($section['payload']['incomplete'] ?? false);
             $findingCount = $findingCounts[$key] ?? 0;
             $attention = $findingCount > 0 || $truncated || $incomplete;

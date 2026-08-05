@@ -355,11 +355,15 @@ final class EventRegistrar
             $this->manager()->record('cache', [
                 'operation' => 'flush',
                 'key_hash' => null,
+                'key_policy' => $this->keyPolicy(),
                 'store' => $event->storeName,
                 ...$this->cacheTags($event->tags),
                 'seconds' => null,
             ]);
-            $this->manager()->excludeRedisCacheOperation('flush');
+
+            if ($this->cacheStoreUsesRedis($event->storeName)) {
+                $this->manager()->excludeRedisCacheOperation('flush');
+            }
         });
 
         $this->listen('composing: *', function (string $name, array $payload): void {
@@ -425,7 +429,9 @@ final class EventRegistrar
                 ...$this->cacheTags($event->tags),
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
             ]);
-            $this->manager()->excludeRedisCacheOperation($operation);
+            if ($this->cacheStoreUsesRedis($event->storeName)) {
+                $this->manager()->excludeRedisCacheOperation($operation);
+            }
         });
     }
 
@@ -640,6 +646,14 @@ final class EventRegistrar
     private function keyPolicy(): string
     {
         return config('new-debug-bar.collection.key_policy') === 'full' ? 'full' : 'hash';
+    }
+
+    private function cacheStoreUsesRedis(?string $store): bool
+    {
+        $stores = config('cache.stores', []);
+        $definition = is_array($stores) && is_string($store) ? ($stores[$store] ?? null) : null;
+
+        return is_array($definition) && ($definition['driver'] ?? null) === 'redis';
     }
 
     /** @param list<mixed> $tags @return array{tag_count: int, tag_retained: int, tag_dropped: int, tag_hashes: list<string>, tags: list<string>} */

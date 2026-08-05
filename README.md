@@ -59,7 +59,7 @@ composer update newdebugbar/new-debug-bar --with-dependencies
 
 Laravel discovers the provider automatically. Keep the package in `require-dev`, use Composer's `--no-dev` option for production installs, and disable the classic Laravel Debugbar while testing New Debug Bar.
 
-An application without Livewire receives Livewire through Composer. Livewire 3 creates a normal Composer version conflict. The host does not need to change its Vite or Tailwind setup.
+An application without Livewire receives Livewire through Composer. Livewire 3 creates a normal Composer version conflict. The host does not need to change its Vite or Tailwind setup. Livewire and package assets are added only after a complete profile is stored, and an existing host runtime is reused rather than injected twice.
 
 ## Configuration
 
@@ -71,7 +71,7 @@ php artisan vendor:publish --tag=new-debug-bar-config
 
 Set `NEW_DEBUG_BAR_ENABLED=false` to disable the package. By default it registers only when Laravel's environment is `local`.
 
-String query bindings are masked because positional bindings do not have safe field names. Set `NEW_DEBUG_BAR_QUERY_BINDINGS=full` only when complete local values are knowingly required, or `none` to omit all bindings. Manual `EXPLAIN` is local-only, read-only, never automatic, and unavailable unless complete bindings were captured. Mutating SQL, multiple statements, and `EXPLAIN ANALYZE` are rejected.
+String query bindings are masked because positional bindings do not have safe field names. Set `NEW_DEBUG_BAR_QUERY_BINDINGS=full` only when complete local values are knowingly required, or `none` to omit all bindings. The MCP presenter always masks positional bindings again and omits runnable SQL. Manual `EXPLAIN` is local-only, read-only, never automatic, and unavailable unless complete bindings were captured. Mutating SQL, multiple statements, and `EXPLAIN ANALYZE` are rejected.
 
 Cache keys, cache tags, and Redis keys use short hashes by default. Set `NEW_DEBUG_BAR_KEY_POLICY=full` only when raw local keys and tags are knowingly required. Key and tag lists still follow the nested-array limit in either mode.
 
@@ -79,7 +79,7 @@ Editor links default to VS Code. `NEW_DEBUG_BAR_EDITOR`, `NEW_DEBUG_BAR_REMOTE_P
 
 Mail content stays hidden by default. `NEW_DEBUG_BAR_MAIL_PREVIEW=true` enables bounded local HTML and text previews plus an attachment-free `.eml` download. HTML opens on a separate package route with a restrictive sandbox policy; it is never inserted into the host page. Address omissions and bounded bodies are reported, and attachment contents are never retained.
 
-The config also controls the theme, slow thresholds, retained profile count and age, MCP limits, collector limits, nested-array limits, and bounded call-site capture. Each collector may observe at most 500 entries by default; normalized nested arrays independently retain at most 100 items. Affected sections report retained, dropped, total, and truncation state directly, and Timeline names incomplete evidence when source entries were omitted.
+The config also controls the theme, slow thresholds, retained profile count and age, MCP limits, collector limits, nested-array limits, and bounded call-site capture. Each collector retains details for at most 500 top-level entries by default while its summary keeps counting omitted entries; query executions and transaction events share that query-collector limit. Normalized nested arrays independently retain at most 100 items. Affected sections report retained, dropped, total, and truncation state directly, and Timeline names incomplete evidence when source entries were omitted.
 
 ## Privacy and safety
 
@@ -108,7 +108,7 @@ It exposes four bounded, read-only tools:
 - `inspect-debug-queries`
 - `get-debug-findings`
 
-Use the `X-New-Debug-Bar-Profile` response header as the exact correlation ID. MCP responses are versioned, redacted, paginated, and size-limited. Limited profile lists report their complete matching total, every stored context section is available through the section tool, and mail-preview content remains browser-only even when preview capture is enabled. No web MCP route is registered.
+Use the `X-New-Debug-Bar-Profile` response header as the exact correlation ID. MCP responses are versioned, redacted, paginated, and size-limited. Limited profile lists report their complete matching total, oversized items or metadata report their omission instead of stalling pagination, every stored context section is available through the section tool, and mail-preview content remains browser-only even when preview capture is enabled. No web MCP route is registered.
 
 Smoke-test the server with Laravel MCP's Inspector command:
 

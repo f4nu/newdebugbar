@@ -19,6 +19,8 @@ it('counts dropped collector items without retaining their payload', function ()
         'truncated' => true,
         'duration_ms' => 6.0,
         'transaction_count' => 0,
+        'transaction_retained_count' => 0,
+        'transaction_dropped_count' => 0,
         'rollback_count' => 0,
     ])->and($collector->payload())->toBe([
         'items' => [[
@@ -32,6 +34,7 @@ it('counts dropped collector items without retaining their payload', function ()
         'total' => 2,
         'truncated' => true,
         'transactions' => [],
+        'transaction_retained' => 0,
         'transaction_dropped' => 0,
         'transaction_total' => 0,
     ]);
@@ -45,6 +48,8 @@ it('counts dropped collector items without retaining their payload', function ()
         'truncated' => false,
         'duration_ms' => 0.0,
         'transaction_count' => 0,
+        'transaction_retained_count' => 0,
+        'transaction_dropped_count' => 0,
         'rollback_count' => 0,
     ])->and($collector->payload())->toBe([
         'items' => [],
@@ -53,12 +58,13 @@ it('counts dropped collector items without retaining their payload', function ()
         'total' => 0,
         'truncated' => false,
         'transactions' => [],
+        'transaction_retained' => 0,
         'transaction_dropped' => 0,
         'transaction_total' => 0,
     ]);
 });
 
-it('keeps transaction events separate from query counts', function () {
+it('keeps query counts separate while sharing one collector retention limit', function () {
     $collector = new QueryCollector(new Redactor, maxItems: 2);
     $collector->record(['sql' => 'select 1', 'bindings' => [], 'duration_ms' => 1]);
     $collector->recordTransaction(['kind' => 'begin', 'connection' => 'testing', 'at_ms' => 1.2]);
@@ -66,9 +72,16 @@ it('keeps transaction events separate from query counts', function () {
 
     expect($collector->summary())
         ->count->toBe(1)
+        ->truncated->toBeTrue()
         ->transaction_count->toBe(2)
+        ->transaction_retained_count->toBe(1)
+        ->transaction_dropped_count->toBe(1)
         ->rollback_count->toBe(1)
-        ->and($collector->payload()['transactions'])->toHaveCount(2);
+        ->and($collector->payload())
+        ->transactions->toHaveCount(1)
+        ->transaction_retained->toBe(1)
+        ->transaction_dropped->toBe(1)
+        ->transaction_total->toBe(2);
 });
 
 it('masks unnamed string query bindings by default', function () {
@@ -137,4 +150,31 @@ it('removes a cache command even after the Redis item limit is reached', functio
         'duration_ms' => 1.25,
         'failed_count' => 0,
     ])->and($redis->payload()['dropped'])->toBe(0);
+});
+
+it('does not remove an older direct Redis command for a dropped cache command', function () {
+    $redis = new RedisCollector(new Redactor, maxItems: 1);
+    $redis->record([
+        'command' => 'GET',
+        'key_hashes' => ['direct-key'],
+        'duration_ms' => 1.25,
+        'failed' => false,
+    ]);
+    $redis->record([
+        'command' => 'GET',
+        'key_hashes' => ['cache-key'],
+        'duration_ms' => 0.5,
+        'failed' => false,
+    ]);
+
+    $redis->excludeCacheOperation('hit');
+
+    expect($redis->summary())->toBe([
+        'count' => 1,
+        'retained_count' => 1,
+        'dropped_count' => 0,
+        'truncated' => false,
+        'duration_ms' => 1.25,
+        'failed_count' => 0,
+    ])->and($redis->payload()['items'][0]['key_hashes'])->toBe(['direct-key']);
 });
