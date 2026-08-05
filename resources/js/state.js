@@ -190,11 +190,19 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.mobileSectionsReturnFocus = returnFocus ?? browser.activeElement?.();
       this.mobileSectionsOpen = true;
       this.$nextTick?.(() => {
-        const selectedSection = this.$refs?.mobileSectionsNav
+        const navigation = this.$refs?.mobileSectionsNav;
+        const selectedSection = navigation
           ?.querySelector?.('[data-ndb-select-section][aria-current="page"]');
+        const firstSection = navigation?.querySelector?.('[data-ndb-select-section]');
 
-        (selectedSection ?? this.$refs?.mobileSectionsClose)?.focus?.();
+        (selectedSection ?? firstSection)?.focus?.();
       });
+    },
+
+    toggleMobileSections() {
+      this.mobileSectionsOpen
+        ? this.closeMobileSections()
+        : this.openMobileSections();
     },
 
     closeMobileSections(restoreFocus = true) {

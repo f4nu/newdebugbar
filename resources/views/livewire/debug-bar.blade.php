@@ -85,13 +85,16 @@
                         <button
                             type="button"
                             data-ndb-mobile-sections-toggle
-                            @click="openMobileSections()"
+                            @click="toggleMobileSections()"
                             :aria-expanded="mobileSectionsOpen"
+                            :aria-label="mobileSectionsOpen ? 'Close sections' : 'Open sections'"
+                            :title="mobileSectionsOpen ? 'Close sections' : 'Open sections'"
                             aria-controls="new-debug-bar-section-navigation"
-                            class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-2 ndb:rounded-xl ndb:border ndb:border-zinc-200/80 ndb:bg-zinc-50/80 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:shadow-sm ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/80 ndb:dark:text-zinc-200 ndb:dark:hover:bg-zinc-800"
+                            class="ndb:flex ndb:size-11 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-xl ndb:border ndb:shadow-sm ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden"
+                            :class="mobileSectionsOpen ? 'ndb:border-indigo-200 ndb:bg-indigo-50 ndb:text-indigo-600 ndb:hover:bg-indigo-100 ndb:dark:border-indigo-800 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-900' : 'ndb:border-zinc-200/80 ndb:bg-zinc-50/80 ndb:text-zinc-700 ndb:hover:bg-zinc-100 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/80 ndb:dark:text-zinc-200 ndb:dark:hover:bg-zinc-800'"
                         >
-                            <x-new-debug-bar::icon name="sidebar" class="ndb:size-4 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
-                            <span>Sections</span>
+                            <span x-show.important="! mobileSectionsOpen"><x-new-debug-bar::icon name="sidebar" class="ndb:size-4" /></span>
+                            <span x-cloak x-show.important="mobileSectionsOpen"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></span>
                         </button>
 
                         <div data-ndb-header-facts class="ndb-scrollbar ndb:flex ndb:min-w-0 ndb:flex-1 ndb:gap-2 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:pb-0.5 ndb:sm:order-none ndb:sm:w-auto ndb:sm:flex-none ndb:sm:gap-1 ndb:sm:overflow-visible ndb:sm:pb-0">
@@ -143,14 +146,6 @@
                     :data-ndb-mobile-open="mobileSectionsOpen ? 'true' : 'false'"
                     class="ndb:invisible ndb:pointer-events-none ndb:absolute ndb:inset-y-0 ndb:left-0 ndb:z-30 ndb:flex ndb:w-[82vw] ndb:max-w-[280px] ndb:-translate-x-full ndb:flex-col ndb:border-r ndb:border-zinc-200/80 ndb:bg-zinc-50/95 ndb:p-3 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:transition-transform ndb:duration-200 ndb:ease-out ndb:data-[ndb-mobile-open=true]:visible ndb:data-[ndb-mobile-open=true]:pointer-events-auto ndb:data-[ndb-mobile-open=true]:translate-x-0 ndb:sm:visible ndb:sm:pointer-events-auto ndb:sm:static ndb:sm:z-auto ndb:sm:w-[210px] ndb:sm:max-w-none ndb:sm:shrink-0 ndb:sm:translate-x-0 ndb:sm:shadow-none ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/95 ndb:sm:dark:bg-zinc-900/60"
                 >
-                    <div class="ndb:mb-2 ndb:flex ndb:h-10 ndb:items-center ndb:justify-between ndb:border-b ndb:border-zinc-200/80 ndb:px-1 ndb:pb-2 ndb:sm:hidden ndb:dark:border-zinc-800/80">
-                        <span class="ndb:flex ndb:items-center ndb:gap-2 ndb:text-sm ndb:font-bold">
-                            <x-new-debug-bar::icon name="sidebar" class="ndb:size-4 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
-                            Sections
-                        </span>
-                        <x-new-debug-bar::icon-button name="close" data-ndb-mobile-sections-close x-ref="mobileSectionsClose" @click="closeMobileSections()" class="ndb:size-8 ndb:rounded-lg" aria-label="Close sections" />
-                    </div>
-
                     <div id="new-debug-bar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:gap-0.5 ndb:overflow-y-auto">
                         <template x-for="(section, sectionIndex) in orderedSections" :key="'section-' + section.key">
                             <div x-show.important="isSectionVisible(section)" class="ndb:contents">

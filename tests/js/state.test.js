@@ -213,7 +213,6 @@ test('mobile section navigation manages focus and layered dismissal', () => {
   state.$refs = {
     content: { scrollTop: 40 },
     mobileSectionsNav: { querySelector: () => selectedButton },
-    mobileSectionsClose: { focus() {} },
     sectionHeading: heading,
   };
   state.$nextTick = (callback) => callback();
@@ -223,6 +222,14 @@ test('mobile section navigation manages focus and layered dismissal', () => {
   state.openMobileSections();
   assert.equal(state.mobileSectionsOpen, true);
   assert.equal(selectedFocused, 1);
+
+  state.toggleMobileSections();
+  assert.equal(state.mobileSectionsOpen, false);
+  assert.equal(openerFocused, 1);
+
+  active = opener;
+  state.toggleMobileSections();
+  assert.equal(state.mobileSectionsOpen, true);
 
   state.selectSection('queries');
   assert.equal(state.selected, 'queries');
@@ -235,7 +242,7 @@ test('mobile section navigation manages focus and layered dismissal', () => {
   state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
   assert.equal(state.mobileSectionsOpen, false);
   assert.equal(state.inspectorOpen, true);
-  assert.equal(openerFocused, 1);
+  assert.equal(openerFocused, 2);
 });
 
 test('modal focus wraps at both edges', () => {

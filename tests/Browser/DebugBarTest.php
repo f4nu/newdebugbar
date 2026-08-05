@@ -852,6 +852,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->wait(0.2)
         ->assertVisible('[data-ndb-header-memory]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
         ->assertScript(<<<'JS'
             (() => {
                 const facts = document.querySelector('[data-ndb-header-facts]');
@@ -883,6 +884,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
             JS)
         ->click('[data-ndb-mobile-sections-toggle]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'true')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Close sections')
         ->assertVisible('#new-debug-bar-section-navigation')
         ->assertVisible('[data-ndb-mobile-sections-backdrop]')
         ->assertScript(<<<'JS'
@@ -897,6 +899,12 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && document.activeElement === navigation.querySelector('[data-ndb-select-section][aria-current="page"]');
             })()
             JS)
+        ->click('[data-ndb-mobile-sections-toggle]')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
+        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
+        ->click('[data-ndb-mobile-sections-toggle]')
         ->click('[data-ndb-select-section="queries"]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-section-heading]")')
