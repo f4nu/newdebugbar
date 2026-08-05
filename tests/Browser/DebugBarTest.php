@@ -704,6 +704,14 @@ it('keeps the main interactions usable on a phone viewport', function () {
             JS)
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
+        ->assertVisible('[data-ndb-header-memory]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const memory = document.querySelector('[data-ndb-header-memory]').getBoundingClientRect();
+
+                return memory.left >= 0 && memory.right <= window.innerWidth;
+            })()
+            JS)
         ->click('[data-ndb-select-section="queries"]');
 
     assertDebugSectionSelected($page, 'queries');
