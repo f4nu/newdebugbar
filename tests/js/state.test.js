@@ -56,18 +56,22 @@ test('active sections hide only quiet collectors and keep access predictable', (
   state.init();
 
   assert.equal(state.sectionMode, 'active');
+  assert.equal(state.activeSectionCount, 3);
   assert.equal(state.quietSectionCount, 2);
   assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'queries', 'history']);
 
   state.selectSection('logs');
+  assert.equal(state.activeSectionCount, 4);
   assert.equal(state.quietSectionCount, 1);
   assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'queries', 'logs', 'history']);
 
   state.toggleFavorite('cache');
+  assert.equal(state.activeSectionCount, 5);
   assert.equal(state.quietSectionCount, 0);
   assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'overview', 'queries', 'logs', 'history']);
 
   state.setSectionMode('all');
+  assert.equal(state.activeSectionCount, 5);
   assert.equal(state.quietSectionCount, 0);
   assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'overview', 'queries', 'logs', 'history']);
   assert.equal(JSON.parse(browser.values.get(STORAGE_KEY)).sectionMode, 'all');

@@ -80,6 +80,10 @@ it('discloses active sections first without losing quiet section access', functi
         ->assertAttribute('[data-ndb-overview-environment]', 'open', '')
         ->click('[data-ndb-section-mode="all"]')
         ->assertAttribute('[data-ndb-section-mode="all"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            Number(document.querySelector('[data-ndb-section-mode="active"] span:last-child').textContent)
+                < Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
+            JS)
         ->assertVisible('[data-ndb-section="validation"]')
         ->click('[data-ndb-select-section="validation"]')
         ->click('[data-ndb-section-mode="active"]')

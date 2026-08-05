@@ -140,6 +140,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       return this.orderedSections.filter((section) => this.isSectionVisible(section));
     },
 
+    get activeSectionCount() {
+      return (this.summary.sections ?? []).filter((section) => (
+        this.isSectionActive(section)
+        || this.isFavorite(section.key)
+        || section.key === this.selected
+      )).length;
+    },
+
     get quietSectionCount() {
       if (this.sectionMode === 'all') return 0;
 
