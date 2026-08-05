@@ -37,11 +37,17 @@ test('restores safe local preferences', () => {
   state.init();
 
   assert.equal(state.resolvedTheme, 'dark');
-  assert.equal(state.sectionMode, 'all');
   assert.deepEqual(state.favorites, ['logs']);
+  assert.equal('sectionMode' in state, false);
+
+  state.setTheme('light');
+  assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
+    theme: 'light',
+    favorites: ['logs'],
+  });
 });
 
-test('active sections hide only quiet collectors and keep access predictable', () => {
+test('shows active sections alphabetically while keeping selected and favorite quiet sections', () => {
   const browser = runtime();
   const state = createNewDebugBar({
     sections: [
@@ -55,35 +61,20 @@ test('active sections hide only quiet collectors and keep access predictable', (
 
   state.init();
 
-  assert.equal(state.sectionMode, 'active');
-  assert.equal(state.activeSectionCount, 3);
-  assert.equal(state.quietSectionCount, 2);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'queries', 'history']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['history', 'overview', 'queries']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'history');
+  assert.equal(state.isSectionVisible(state.summary.sections[2]), false);
 
   state.selectSection('logs');
-  assert.equal(state.activeSectionCount, 4);
-  assert.equal(state.quietSectionCount, 1);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'queries', 'logs', 'history']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['history', 'logs', 'overview', 'queries']);
 
   state.toggleFavorite('cache');
-  assert.equal(state.activeSectionCount, 5);
-  assert.equal(state.quietSectionCount, 0);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'overview', 'queries', 'logs', 'history']);
-
-  state.setSectionMode('all');
-  assert.equal(state.activeSectionCount, 5);
-  assert.equal(state.quietSectionCount, 0);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'overview', 'queries', 'logs', 'history']);
-  assert.equal(JSON.parse(browser.values.get(STORAGE_KEY)).sectionMode, 'all');
-});
-
-test('invalid disclosure preferences fall back to active sections', () => {
-  const state = createNewDebugBar(summary, runtime({ sectionMode: 'hidden' }));
-
-  state.init();
-  state.setSectionMode('hidden');
-
-  assert.equal(state.sectionMode, 'active');
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'history', 'logs', 'overview', 'queries']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'history');
+  assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
+    theme: 'system',
+    favorites: ['cache'],
+  });
 });
 
 test('favorites can be pinned and reordered', () => {
@@ -100,7 +91,7 @@ test('favorites can be pinned and reordered', () => {
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'overview', 'logs']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'logs', 'overview']);
 });
 
 test('favorites can be reordered by dragging', () => {
@@ -326,6 +317,35 @@ test('query controls filter search and sort captured evidence', () => {
   state.setQuerySort('invalid');
   assert.equal(state.queryFilter, 'all');
   assert.equal(state.querySort, 'duration');
+});
+
+test('query finding actions reveal and focus the relevant evidence', () => {
+  const state = createNewDebugBar(summary, runtime());
+  let scrolled = null;
+  const repeated = { scrollIntoView: (options) => { scrolled = ['repeated', options]; } };
+  const slow = { scrollIntoView: (options) => { scrolled = ['slow', options]; } };
+  state.$refs = {
+    queryItems: {
+      children: [],
+      querySelector: () => slow,
+    },
+    queryGroups: {
+      children: [],
+      querySelector: () => repeated,
+    },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.reviewQueryEvidence('repeated');
+  assert.equal(state.queryFilter, 'repeated');
+  assert.deepEqual(scrolled, ['repeated', { block: 'start' }]);
+
+  state.reviewQueryEvidence('slow');
+  assert.equal(state.queryFilter, 'slow');
+  assert.deepEqual(scrolled, ['slow', { block: 'start' }]);
+
+  state.reviewQueryEvidence('invalid');
+  assert.equal(state.queryFilter, 'slow');
 });
 
 test('history controls combine path method status and warning filters', () => {

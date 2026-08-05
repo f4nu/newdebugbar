@@ -28,7 +28,7 @@ Laravel 12, Livewire 3, production profiling, and Laravel Octane are not support
 
 Profiles stay local in `storage/framework/new-debug-bar`. They are bounded, short-lived JSON files and do not use a database. The package profiles application JSON, API, AJAX, redirect, stream, download, Artisan, test, and worker activity without injecting UI into those responses. Same-origin `fetch` and `XMLHttpRequest` profile IDs are added to History without replacing the page profile.
 
-The expanded inspector opens with an Active section list: populated collectors, findings, truncation, incomplete data, favorites, and the current section stay visible. All restores the stable full collector list, and the command palette always searches every section. Overview leads with findings, quick metrics, and relevant activity; Runtime, drivers, framework cache, and Ecosystem remain available in one secondary disclosure. This preference is saved per site.
+The expanded inspector shows only request-relevant sections: populated collectors, findings, truncation, incomplete data, favorites, and the current section stay visible. Non-favorites are alphabetical. Favorites stay above them in the order they were added and can be reordered. The command palette always searches every section, including quiet collectors. Its header reuses the compact toolbar treatment and keeps request, environment, duration, peak memory, and query facts visible without separator glyphs. Overview leads with findings and relevant activity; Runtime, drivers, framework cache, and Ecosystem remain available in one secondary disclosure.
 
 ## Install from a local checkout
 

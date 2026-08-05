@@ -47,3 +47,26 @@ it('groups models views cache behavior and event sources', function () {
         ->and(array_column($profile['sections']['events']['payload']['items'], 'source'))
         ->toBe(['framework', 'application']);
 });
+
+it('sorts model groups by count then by model name', function () {
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'models' => ['summary' => ['count' => 5], 'payload' => ['items' => [
+                ['model' => 'App\\Models\\User', 'event' => 'retrieved'],
+                ['model' => 'App\\Models\\Audit', 'event' => 'saved'],
+                ['model' => 'App\\Models\\Clinic', 'event' => 'created'],
+                ['model' => 'App\\Models\\User', 'event' => 'retrieved'],
+                ['model' => 'App\\Models\\Clinic', 'event' => 'created'],
+            ]]],
+        ],
+    ]);
+
+    expect(array_map(
+        fn (array $group): array => [$group['model'], $group['count']],
+        $profile['sections']['models']['payload']['groups'],
+    ))->toBe([
+        ['App\\Models\\Clinic', 2],
+        ['App\\Models\\User', 2],
+        ['App\\Models\\Audit', 1],
+    ]);
+});

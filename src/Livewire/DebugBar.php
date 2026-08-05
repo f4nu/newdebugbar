@@ -235,7 +235,7 @@ final class DebugBar extends Component
         return [
             'profile_id' => $profile['id'] ?? $this->profileId,
             'theme' => config('new-debug-bar.theme', 'system'),
-            'environment' => strtoupper((string) ($profile['environment'] ?? app()->environment())),
+            'environment' => (string) ($profile['environment'] ?? app()->environment()),
             'method' => $sections['request']['summary']['method'] ?? 'GET',
             'path' => $sections['request']['payload']['path'] ?? '/',
             'status' => $status,

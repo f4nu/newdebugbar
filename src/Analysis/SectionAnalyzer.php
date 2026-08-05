@@ -36,10 +36,15 @@ final class SectionAnalyzer
             $events[$event] = ($events[$event] ?? 0) + 1;
         }
 
+        $groups = array_values($groups);
+        usort($groups, fn (array $left, array $right): int => $right['count'] <=> $left['count']
+            ?: strcasecmp((string) $left['model'], (string) $right['model'])
+            ?: strcasecmp((string) $left['event'], (string) $right['event']));
+
         if (isset($profile['sections']['models'])) {
             $profile['sections']['models']['summary']['model_classes'] = count(array_unique(array_column($items, 'model')));
             $profile['sections']['models']['summary']['lifecycle_events'] = $events;
-            $profile['sections']['models']['payload']['groups'] = array_values($groups);
+            $profile['sections']['models']['payload']['groups'] = $groups;
         }
 
         return $profile;

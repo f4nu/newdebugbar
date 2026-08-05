@@ -78,7 +78,8 @@ it('captures validation field and rule names with the rendered redirect status',
     Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-New-Debug-Bar-Profile')])
         ->call('loadDetails')
         ->assertSee('2 invalid fields')
-        ->assertSee('signup bag · HTTP 302')
+        ->assertSee('signup bag')
+        ->assertSee('HTTP 302')
         ->assertSee('Required');
 });
 

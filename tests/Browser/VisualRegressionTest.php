@@ -107,11 +107,10 @@ function visualDebugPage(string $section, string $theme)
     return $page;
 }
 
-function setVisualDebugTheme($page, string $theme, array $favorites = [], string $sectionMode = 'all'): void
+function setVisualDebugTheme($page, string $theme, array $favorites = []): void
 {
     $preferences = json_encode([
         'theme' => $theme,
-        'sectionMode' => $sectionMode,
         'favorites' => $favorites,
     ], JSON_THROW_ON_ERROR);
     $page->assertScript(<<<JS
@@ -125,9 +124,18 @@ function setVisualDebugTheme($page, string $theme, array $favorites = [], string
         ->assertAttribute('#new-debug-bar', 'data-theme', $theme);
 }
 
+function selectVisualDebugSection($page, string $section): void
+{
+    $page
+        ->click('[data-ndb-inspector-action="palette"]')
+        ->assertVisible('[role="dialog"][aria-label="Command palette"]')
+        ->click("[data-ndb-command=\"section:{$section}\"]")
+        ->wait(0.1);
+}
+
 function stabilizeVisualDebugValues($page): void
 {
-    $page->assertScript(<<<'JS'
+    $page->wait(0.25)->assertScript(<<<'JS'
         (() => {
             let numericIndex = 0;
             const walker = document.createTreeWalker(
@@ -136,10 +144,76 @@ function stabilizeVisualDebugValues($page): void
             );
 
             while (walker.nextNode()) {
+                const parent = walker.currentNode.parentElement;
+                const summaryValue = parent?.closest('[data-ndb-query-summary-value]')?.dataset.ndbQuerySummaryValue;
+                const preservesQueryEvidence = parent?.closest(`
+                    [data-ndb-query-finding-summary],
+                    [data-ndb-query-result-count],
+                    [data-ndb-query-group-count],
+                    [data-ndb-query-group-extra],
+                    [data-ndb-query-execution-number],
+                    [data-ndb-query-repeat-count],
+                    [data-ndb-query-bindings-count],
+                    [data-ndb-query-stack-count],
+                    code[data-ndb-language="sql"]
+                `) !== null;
+
+                if (preservesQueryEvidence || ['queries', 'repeated', 'extra-runs'].includes(summaryValue)) {
+                    continue;
+                }
+
                 const preserved = walker.currentNode.nodeValue.replaceAll('N+1', 'N_PLUS_ONE');
                 walker.currentNode.nodeValue = preserved
                     .replace(/\d+(?:[.,:]\d+)*/g, () => String((numericIndex++ % 9) + 1))
                     .replaceAll('N_PLUS_ONE', 'N+1');
+            }
+
+            const normalizeQueryMetrics = (articles) => {
+                let totalDuration = 0;
+                let totalPercent = 0;
+
+                articles.forEach((article, index) => {
+                    const duration = articles.length - index;
+                    const percent = duration * 2;
+
+                    article.querySelector('[data-ndb-query-duration]').textContent = `${duration} ms`;
+                    article.querySelector('[data-ndb-query-percent]').textContent = `${percent}% query time`;
+                    totalDuration += duration;
+                    totalPercent += percent;
+                });
+
+                return { totalDuration, totalPercent };
+            };
+            const queryItems = Array.from(document.querySelectorAll('[data-ndb-query-item]'));
+
+            if (queryItems.length > 0) {
+                const totals = normalizeQueryMetrics(queryItems);
+                const queryTime = document.querySelector('[data-ndb-query-summary-value="query-time"]');
+                const requestShare = document.querySelector('[data-ndb-query-summary-value="request-share"]');
+
+                if (queryTime) queryTime.textContent = `${totals.totalDuration} ms`;
+                if (requestShare) requestShare.textContent = `${totals.totalPercent}%`;
+            }
+
+            document.querySelectorAll('[data-ndb-query-group]').forEach((group) => {
+                const articles = Array.from(group.querySelectorAll('[data-ndb-query-group-executions] > article'));
+                const totals = normalizeQueryMetrics(articles);
+                const duration = group.querySelector('[data-ndb-query-group-duration]');
+
+                if (duration) duration.textContent = `${totals.totalDuration} ms`;
+            });
+
+            const timelineTicks = Array.from(document.querySelectorAll('[data-ndb-timeline-tick]'));
+
+            if (timelineTicks.length > 0) {
+                const axisValues = ['0 ms', '2.5 ms', '5 ms', '7.5 ms', '10 ms'];
+                const visibleItems = Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])')).length;
+                const summary = document.querySelector('[data-ndb-timeline-summary]');
+
+                timelineTicks.forEach((tick, index) => {
+                    tick.textContent = axisValues[index];
+                });
+                if (summary) summary.textContent = `${visibleItems} events across 10 ms`;
             }
 
             if (! document.getElementById('new-debug-bar-visual-stability')) {
@@ -199,9 +273,11 @@ it('matches the visual baseline for the :dataset section', function (string $sec
     $page = visualDebugPage($section, $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Sections')
-        ->click("[data-ndb-select-section=\"{$section}\"]")
-        ->wait(0.2)
+        ->waitForText('Environment details');
+
+    selectVisualDebugSection($page, $section);
+
+    $page
         ->assertVisible("[data-ndb-section-panel=\"{$section}\"]");
 
     stabilizeVisualDebugValues($page);
@@ -214,13 +290,14 @@ it('matches the visual baseline for the :dataset section', function (string $sec
 
 it('matches the visual baseline for the :dataset progressive overview', function (string $theme) {
     $page = visit('/profiled-rich');
-    setVisualDebugTheme($page, $theme, [], 'active');
+    setVisualDebugTheme($page, $theme);
 
     $page
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
         ->waitForText('Environment details')
-        ->assertAttribute('[data-ndb-section-mode="active"]', 'aria-pressed', 'true')
+        ->assertMissing('[data-ndb-section-mode]')
+        ->assertMissing('[data-ndb-quiet-count]')
         ->assertNoJavaScriptErrors();
 
     stabilizeVisualDebugValues($page);
@@ -230,13 +307,14 @@ it('matches the visual baseline for the :dataset progressive overview', function
 
 it('matches the visual baseline for the :dataset narrow progressive overview', function (string $theme) {
     $page = visit('/profiled-rich');
-    setVisualDebugTheme($page, $theme, [], 'active');
+    setVisualDebugTheme($page, $theme);
 
     $page
         ->resize(390, 844)
         ->click('[data-ndb-toolbar="expand"]')
         ->waitForText('Environment details')
-        ->assertAttribute('[data-ndb-section-mode="active"]', 'aria-pressed', 'true')
+        ->assertMissing('[data-ndb-section-mode]')
+        ->assertMissing('[data-ndb-quiet-count]')
         ->assertNoJavaScriptErrors();
 
     stabilizeVisualDebugValues($page);
@@ -246,7 +324,7 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
 
 it('matches the visual baseline for the :dataset expanded environment details', function (string $theme) {
     $page = visit('/profiled-rich');
-    setVisualDebugTheme($page, $theme, [], 'active');
+    setVisualDebugTheme($page, $theme);
 
     $page
         ->resize(1440, 900)
@@ -271,7 +349,7 @@ it('matches the visual baseline for the :dataset expanded environment details', 
 
 it('matches the visual baseline for the :dataset narrow expanded environment details', function (string $theme) {
     $page = visit('/profiled-rich');
-    setVisualDebugTheme($page, $theme, [], 'active');
+    setVisualDebugTheme($page, $theme);
 
     $page
         ->resize(390, 844)
@@ -344,10 +422,21 @@ it('matches the visual baseline for :dataset expanded query bindings', function 
     $page = visualDebugPage('queries', $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Sections')
-        ->click('[data-ndb-select-section="queries"]')
+        ->waitForText('Environment details');
+
+    selectVisualDebugSection($page, 'queries');
+
+    $page
         ->click('[data-ndb-query-bindings="item-1"] summary')
-        ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '');
+        ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '')
+        ->assertScript(<<<'JS'
+            (() => {
+                const content = document.querySelector('#new-debug-bar main');
+                content.scrollTop = 0;
+
+                return content.scrollTop === 0;
+            })()
+            JS);
 
     stabilizeVisualDebugValues($page);
 
@@ -361,10 +450,13 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
     $page = visualDebugPage('queries', $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Sections')
-        ->click('[data-ndb-select-section="queries"]')
-        ->click('[data-ndb-query-filter="repeated"]')
-        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) > div:last-child > article").length > 0');
+        ->waitForText('Environment details');
+
+    selectVisualDebugSection($page, 'queries');
+
+    $page
+        ->click('[data-ndb-query-review="repeated"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article").length > 0');
 
     stabilizeVisualDebugValues($page);
 
@@ -385,8 +477,11 @@ it('matches the visual baseline for expanded :dataset details', function (string
     $page = visualDebugPage($section, $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Sections')
-        ->click("[data-ndb-select-section=\"{$section}\"]")
+        ->waitForText('Environment details');
+
+    selectVisualDebugSection($page, $section);
+
+    $page
         ->click("[data-ndb-section-panel=\"{$section}\"] details:first-of-type summary")
         ->assertAttribute("[data-ndb-section-panel=\"{$section}\"] details:first-of-type", 'open', '');
 
@@ -453,8 +548,11 @@ it('matches the visual baseline for the :dataset narrow inspector', function (st
         ->resize(390, 844)
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
-        ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
-        ->click('[data-ndb-select-section="queries"]')
+        ->assertVisible('[role="dialog"][aria-label="Request inspector"]');
+
+    selectVisualDebugSection($page, 'queries');
+
+    $page
         ->assertVisible('[data-ndb-section-panel="queries"]');
 
     stabilizeVisualDebugValues($page);

@@ -20,6 +20,15 @@ function assertFavoriteOrder($page, string $order): void
         JS, $order);
 }
 
+function selectDebugSectionViaPalette($page, string $section): void
+{
+    $page
+        ->click('[data-ndb-inspector-action="palette"]')
+        ->assertVisible('[role="dialog"][aria-label="Command palette"]')
+        ->click("[data-ndb-command=\"section:{$section}\"]")
+        ->wait(0.1);
+}
+
 it('opens every compact toolbar destination and closes cleanly', function () {
     $page = visit('/profiled')
         ->assertPresent('[data-testid="host-page"]')
@@ -40,7 +49,7 @@ it('opens every compact toolbar destination and closes cleanly', function () {
         assertDebugSectionSelected($page, $section);
 
         if ($toolbar === 'expand') {
-            $page->assertScript('document.querySelector("[role=dialog][aria-label=\\"Request inspector\\"] > header").textContent.includes("MB peak")');
+            $page->assertScript('document.querySelector("[data-ndb-header-memory]").textContent.includes("MB")');
         }
 
         $page
@@ -51,56 +60,64 @@ it('opens every compact toolbar destination and closes cleanly', function () {
     $page->assertNoJavaScriptErrors();
 });
 
-it('discloses active sections first without losing quiet section access', function () {
+it('shows active sections alphabetically and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
-    $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'active', favorites: []}))");
+    $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
 
     $page
         ->refresh()
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
-        ->assertAttribute('[data-ndb-section-mode="active"]', 'aria-pressed', 'true')
+        ->assertMissing('[data-ndb-section-mode]')
+        ->assertMissing('[data-ndb-quiet-count]')
+        ->assertDontSee('quiet hidden')
         ->assertScript(<<<'JS'
-            document.querySelectorAll('[data-ndb-section-visible="true"]').length
-                < Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
+            (() => {
+                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+
+                return state.sidebarSections.length < state.summary.sections.length
+                    && state.sidebarSections.every((section) => section.active !== false || state.favorites.includes(section.key) || section.key === state.selected);
+            })()
             JS)
         ->assertScript(<<<'JS'
-            Number(document.querySelector('[data-ndb-quiet-count] span:first-child').textContent)
-                === Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
-                    - document.querySelectorAll('[data-ndb-section-visible="true"]').length
+            (() => {
+                const labels = Array.from(document.querySelectorAll('[data-ndb-section-visible="true"] .ndb-section-label'))
+                    .map((label) => label.textContent.trim());
+                const sorted = [...labels].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+
+                return JSON.stringify(labels) === JSON.stringify(sorted);
+            })()
             JS)
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section=\\"validation\\"]").parentElement).display === "none"')
+        ->assertAttribute('[data-ndb-section="validation"]', 'data-ndb-section-visible', 'false')
+        ->assertScript('document.querySelector("[data-ndb-header-environment]").textContent.trim() === "testing"')
+        ->assertScript('!["·", "•", "|"].some((separator) => document.querySelector("[data-ndb-header-facts]").textContent.includes(separator))')
+        ->assertScript(<<<'JS'
+            (() => {
+                const top = getComputedStyle(document.querySelector('[data-ndb-header-fact="duration"]'));
+                const bottom = getComputedStyle(document.querySelector('[data-ndb-toolbar="duration"]'));
+
+                return top.borderRadius === bottom.borderRadius
+                    && top.paddingLeft === bottom.paddingLeft
+                    && top.paddingTop === bottom.paddingTop;
+            })()
+            JS)
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-header-toolbar]").parentElement).backgroundColor', 'rgb(255, 255, 255)')
+        ->assertMissing('[data-ndb-section-attention]')
+        ->assertVisible('[data-ndb-section="queries"] .ndb-section-count')
         ->assertScript('document.querySelector("[data-ndb-overview-environment]").open === false')
         ->assertScript(<<<'JS'
             document.querySelector('[data-ndb-findings]').getBoundingClientRect().top
                 < document.querySelector('[data-ndb-overview-activity]').getBoundingClientRect().top
             JS)
         ->click('[data-ndb-overview-environment] summary')
-        ->assertAttribute('[data-ndb-overview-environment]', 'open', '')
-        ->click('[data-ndb-section-mode="all"]')
-        ->assertAttribute('[data-ndb-section-mode="all"]', 'aria-pressed', 'true')
-        ->assertScript(<<<'JS'
-            Number(document.querySelector('[data-ndb-section-mode="active"] span:last-child').textContent)
-                < Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
-            JS)
-        ->assertVisible('[data-ndb-section="validation"]')
-        ->click('[data-ndb-select-section="validation"]')
-        ->click('[data-ndb-section-mode="active"]')
-        ->assertVisible('[data-ndb-section="validation"]');
+        ->assertAttribute('[data-ndb-overview-environment]', 'open', '');
 
+    selectDebugSectionViaPalette($page, 'validation');
     assertDebugSectionSelected($page, 'validation');
 
     $page
-        ->click('[data-ndb-section-mode="all"]')
-        ->refresh()
-        ->click('[data-ndb-toolbar="expand"]')
-        ->wait(0.2)
-        ->assertAttribute('[data-ndb-section-mode="all"]', 'aria-pressed', 'true')
-        ->assertScript(<<<'JS'
-            document.querySelectorAll('[data-ndb-section-visible="true"]').length
-                === Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
-            JS)
+        ->assertAttribute('[data-ndb-section="validation"]', 'data-ndb-section-visible', 'true')
         ->assertNoJavaScriptErrors();
 });
 
@@ -309,11 +326,10 @@ it('switches every section after Livewire navigation with one active state', fun
         ->waitForText('Second request')
         ->assertPathIs('/profiled-next')
         ->click('[data-ndb-toolbar="expand"]')
-        ->wait(0.2)
-        ->click('[data-ndb-section-mode="all"]');
+        ->wait(0.2);
 
     foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'history', 'overview', 'models'] as $section) {
-        $page->click("[data-ndb-select-section=\"{$section}\"]");
+        selectDebugSectionViaPalette($page, $section);
 
         assertDebugSectionSelected($page, $section);
     }
@@ -377,6 +393,14 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->click('[data-ndb-select-section="models"]')
         ->assertSee('Model classes')
         ->assertSee('Lifecycle events')
+        ->assertScript(<<<'JS'
+            (() => {
+                const counts = Array.from(document.querySelectorAll('[data-ndb-model-group]'))
+                    .map((group) => Number(group.dataset.count));
+
+                return counts.every((count, index) => index === 0 || counts[index - 1] >= count);
+            })()
+            JS)
         ->click('[data-ndb-select-section="cache"]')
         ->assertSee('Hit rate')
         ->assertSee('Misses')
@@ -528,6 +552,10 @@ it('reorders favorites with the keyboard and drag and drop', function () {
 
     assertFavoriteOrder($page, 'request,overview,queries');
 
+    $page
+        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-favorites-heading]")).filter((heading) => heading.offsetParent !== null).length', 1)
+        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-sections-heading]")).filter((heading) => heading.offsetParent !== null).length', 1);
+
     $page->keys('[data-ndb-select-section="overview"]', 'Shift+ArrowUp');
     assertFavoriteOrder($page, 'overview,request,queries');
 
@@ -630,15 +658,54 @@ it('filters searches sorts and shows repeated query evidence without another dis
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
         ->waitForText('Extra runs')
+        ->assertPresent('[data-ndb-query-findings]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const buttons = Array.from(document.querySelectorAll('[data-ndb-query-filter]'));
+
+                return buttons.filter((button) => button.getAttribute('aria-pressed') === 'true').length === 1
+                    && buttons.every((button) => {
+                        const style = getComputedStyle(button);
+
+                        return parseFloat(style.borderBottomLeftRadius) > 0
+                            && style.borderTopColor === style.borderBottomColor;
+                    });
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const search = document.querySelector('[data-ndb-query-search]');
+                const searchLabel = search.parentElement.querySelector('span');
+                const sort = document.querySelector('[role="group"][aria-label="Sort queries"]');
+                const sortLabel = sort.parentElement.querySelector('p');
+
+                return Math.abs(search.getBoundingClientRect().left - searchLabel.getBoundingClientRect().left) < 1
+                    && Math.abs(sort.getBoundingClientRect().left - sortLabel.getBoundingClientRect().left) < 1;
+            })()
+            JS)
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
-        ->click('[data-ndb-query-filter="repeated"]')
+        ->click('[data-ndb-query-review="repeated"]')
+        ->assertAttribute('[data-ndb-query-filter="repeated"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
-        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) > div:last-child > article").length', 3)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] code[data-ndb-language=sql]").length', 1)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article").length', 3)
+        ->assertScript(<<<'JS'
+            document.querySelector('[data-ndb-query-group]:not([hidden])').getBoundingClientRect().top
+                >= document.querySelector('[data-ndb-section-heading]').parentElement.getBoundingClientRect().bottom - 1
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article'))
+                .every((article) => article.querySelector(':scope > pre code[data-ndb-language="sql"]') === null)
+            JS)
         ->assertSee('Likely N+1')
         ->click('[data-ndb-query-filter="read"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-filter][aria-pressed=true]").length', 1)
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
         ->click('[data-ndb-query-sort="duration"]')
+        ->assertAttribute('[data-ndb-query-sort="execution"]', 'aria-pressed', 'false')
+        ->assertAttribute('[data-ndb-query-sort="duration"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-sort][aria-pressed=true]").length', 1)
         ->assertScript(<<<'JS'
             (() => {
                 const durations = Array.from(document.querySelectorAll('[data-ndb-query-item]:not([hidden])'))
@@ -653,7 +720,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
         ->assertNoJavaScriptErrors();
 });
 
-it('shows shared findings in overview and the related section', function () {
+it('turns query findings into direct evidence actions instead of raw json', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
         ->waitForText('Findings')
@@ -664,8 +731,14 @@ it('shows shared findings in overview and the related section', function () {
     assertDebugSectionSelected($page, 'queries');
 
     $page
-        ->assertSee('Related findings')
-        ->assertPresent('[data-ndb-section-panel="queries"] [data-ndb-finding="query.repeated"]')
+        ->assertSee('Query findings')
+        ->assertPresent('[data-ndb-query-review="repeated"]')
+        ->assertCount('[data-ndb-query-findings] details', 0)
+        ->assertCount('[data-ndb-query-findings] code', 0)
+        ->assertMissing('[data-ndb-section-panel="queries"] [data-ndb-finding]')
+        ->click('[data-ndb-query-review="repeated"]')
+        ->assertAttribute('[data-ndb-query-filter="repeated"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-query-group]:not([hidden])')
         ->assertNoJavaScriptErrors();
 });
 
@@ -711,9 +784,21 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertVisible('[data-ndb-header-memory]')
         ->assertScript(<<<'JS'
             (() => {
-                const memory = document.querySelector('[data-ndb-header-memory]').getBoundingClientRect();
+                const facts = document.querySelector('[data-ndb-header-facts]');
+                const cards = Array.from(facts.querySelectorAll('[data-ndb-header-fact]'));
+                const firstTop = cards[0].getBoundingClientRect().top;
 
-                return memory.left >= 0 && memory.right <= window.innerWidth;
+                return facts.scrollWidth <= facts.clientWidth
+                    && facts.getBoundingClientRect().height < 55
+                    && cards.length === 4
+                    && cards.every((card) => {
+                        const box = card.getBoundingClientRect();
+
+                        return box.width > 0
+                            && Math.abs(box.top - firstTop) <= 1
+                            && box.left >= 0
+                            && box.right <= window.innerWidth;
+                    });
             })()
             JS)
         ->click('[data-ndb-select-section="queries"]');

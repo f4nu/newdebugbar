@@ -77,6 +77,7 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
     ]);
 
     Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->assertSet('summary.environment', 'testing')
         ->assertSet('summary.method', 'POST')
         ->assertSet('summary.path', '/organizations')
         ->assertSet('summary.status', 500)
