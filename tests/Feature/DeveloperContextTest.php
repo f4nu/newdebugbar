@@ -41,7 +41,13 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
         ->source->editor_url->toStartWith('vscode://file/')
         ->and($profile['sections']['lifecycle']['summary']['count'])->toBeGreaterThanOrEqual(2)
         ->and(array_column($profile['sections']['timeline']['payload']['items'], 'label'))
-        ->toContain('Route matching', 'Route middleware, binding, controller and rendering')
+        ->toContain(
+            'Route matching',
+            'Route middleware, binding, controller and rendering',
+            'Route response preparation',
+            'Final response preparation',
+        )
+        ->not->toContain('Response preparation')
         ->and(json_encode($profile))->not->toContain('private-developer-token', 'not-collected');
 
     $event = collect($profile['sections']['events']['payload']['items'])

@@ -89,7 +89,7 @@ It excludes uploaded files, cache values, full model attributes, mail content un
 
 Use `NewDebugBar\Debug::message('Checkout checkpoint', ['step' => 3])` for a bounded, redacted local development marker. Message context follows the same redaction and size rules as the collectors.
 
-Lifecycle timings are intentionally honest: Laravel exposes reliable boundaries for the combined route middleware, binding, controller, and response-rendering work, plus transaction durations. The package does not invent separate controller or view durations where Laravel provides no safe hook, and it labels unavailable early-bootstrap or view-cache facts as not measured or not exposed.
+Lifecycle timings are intentionally honest: Laravel exposes reliable boundaries for the combined route middleware, binding, controller, and response-rendering work, plus transaction durations. Laravel 13 prepares the route result and final routed response at separate supported boundaries, so the panel names those spans `Route response preparation` and `Final response preparation` instead of showing two ambiguous copies. The package does not invent separate controller or view durations where Laravel provides no safe hook, and it labels unavailable early-bootstrap or view-cache facts as not measured or not exposed.
 
 The package never calls an AI model. It only captures facts and applies explicit rules.
 

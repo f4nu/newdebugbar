@@ -41,6 +41,8 @@ final class ProfileManager
     /** @var array<string, float> */
     private array $lifecycleMarks = [];
 
+    private int $responsePreparationIndex = 0;
+
     /** @param iterable<Collector> $collectors */
     public function __construct(
         iterable $collectors,
@@ -260,13 +262,20 @@ final class ProfileManager
 
         if ($event === 'preparing_response') {
             $this->finishLifecycleSpan('route_work', 'Route middleware, binding, controller and rendering', $now);
+            $this->responsePreparationIndex++;
             $this->lifecycleMarks['response'] = $now;
 
             return;
         }
 
         if ($event === 'response_prepared') {
-            $this->finishLifecycleSpan('response', 'Response preparation', $now);
+            $name = match ($this->responsePreparationIndex) {
+                1 => 'Route response preparation',
+                2 => 'Final response preparation',
+                default => 'Response preparation '.$this->responsePreparationIndex,
+            };
+
+            $this->finishLifecycleSpan('response', $name, $now);
         }
     }
 
@@ -314,6 +323,7 @@ final class ProfileManager
         $this->startedMemory = memory_get_usage(true);
         $this->request = [];
         $this->lifecycleMarks = [];
+        $this->responsePreparationIndex = 0;
         $this->collecting = true;
     }
 
