@@ -206,7 +206,7 @@ abstract class TestCase extends Orchestra
         $router->middleware(ProfileRequest::class)->get(
             '/download',
             fn () => response('<html><body>Download</body></html>', 200, [
-                'Content-Disposition' => 'attachment; filename="debug.html"',
+                'Content-Disposition' => 'Attachment; filename="debug.html"',
             ]),
         );
 
@@ -294,9 +294,15 @@ abstract class TestCase extends Orchestra
             $connection = new ProfiledRedisConnection;
             Event::dispatch(new CommandExecuted('get', ['private-direct-key'], 1.25, $connection));
             Event::dispatch(new CommandExecuted('setex', ['private-cache-key', 60, 'private-cache-value'], 0.4, $connection));
-            Event::dispatch(new KeyWritten('redis', 'private-cache-key', 'private-cache-value', 60));
+            Event::dispatch(new KeyWritten(
+                'redis',
+                'private-cache-key',
+                'private-cache-value',
+                60,
+                ['tenant:private-clinic', 'patient:private-patient'],
+            ));
             Event::dispatch(new CommandExecuted('flushdb', [], 0.5, $connection));
-            Event::dispatch(new CacheFlushed('redis'));
+            Event::dispatch(new CacheFlushed('redis', ['tenant:private-clinic']));
             Event::dispatch(new CommandFailed('hget', ['private-hash', 'private-field'], new \RuntimeException('private Redis failure'), $connection));
 
             return response('<!doctype html><html><body>Redis</body></html>');

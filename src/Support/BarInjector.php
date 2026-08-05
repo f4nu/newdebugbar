@@ -60,7 +60,7 @@ final class BarInjector
             return false;
         }
 
-        if (str_contains((string) $response->headers->get('Content-Disposition'), 'attachment')) {
+        if (str_contains(strtolower((string) $response->headers->get('Content-Disposition')), 'attachment')) {
             return false;
         }
 

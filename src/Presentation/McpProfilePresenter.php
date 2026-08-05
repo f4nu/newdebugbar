@@ -27,6 +27,10 @@ final class McpProfilePresenter
         'cache',
         'views',
         'events',
+        'authorization',
+        'validation',
+        'lifecycle',
+        'messages',
         'logs',
         'exceptions',
     ];
@@ -47,7 +51,7 @@ final class McpProfilePresenter
      */
     public function list(array $filters, int $limit): array
     {
-        $summaries = [];
+        $matching = [];
 
         foreach ($this->store->recent($this->store->maxProfiles()) as $profile) {
             try {
@@ -60,15 +64,12 @@ final class McpProfilePresenter
                 continue;
             }
 
-            $summaries[] = $summary;
-
-            if (count($summaries) >= min($limit, $this->store->maxProfiles())) {
-                break;
-            }
+            $matching[] = $summary;
         }
 
-        $total = count($summaries);
-        $response = $this->profileListResponse($summaries, $total, false);
+        $total = count($matching);
+        $summaries = array_slice($matching, 0, max(1, min($limit, $this->store->maxProfiles())));
+        $response = $this->profileListResponse($summaries, $total, count($summaries) < $total);
 
         while ($this->byteLength($response) > $this->maxBytes && $summaries !== []) {
             array_pop($summaries);
@@ -309,6 +310,17 @@ final class McpProfilePresenter
             ];
         } elseif ($section === 'models' && array_key_exists('key', $item)) {
             $item['key'] = $item['key'] === null ? null : '[identifier]';
+        } elseif ($section === 'mail' && is_array($item['preview'] ?? null)) {
+            $preview = $item['preview'];
+            $item['preview'] = [
+                'available' => true,
+                'html_available' => is_string($preview['html'] ?? null),
+                'text_available' => is_string($preview['text'] ?? null),
+                'eml_available' => is_string($preview['eml'] ?? null),
+                'truncated' => (bool) ($preview['truncated'] ?? false),
+                'attachments_omitted' => (int) ($preview['attachments_omitted'] ?? 0),
+                'addresses_omitted' => (int) ($preview['addresses_omitted'] ?? 0),
+            ];
         }
 
         return $this->clean($item);

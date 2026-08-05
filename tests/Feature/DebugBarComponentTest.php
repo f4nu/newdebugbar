@@ -96,7 +96,13 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
             'request' => [
                 'label' => 'Request',
                 'summary' => ['method' => 'GET', 'status' => 200],
-                'payload' => ['path' => '/organizations'],
+                'payload' => [
+                    'method' => 'GET',
+                    'status' => 200,
+                    'path' => '/organizations',
+                    'route' => null,
+                    'action' => null,
+                ],
             ],
             'queries' => [
                 'label' => 'Queries',
@@ -139,7 +145,12 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
                 && $sections['timeline']['attention'] === true
                 && $sections['timeline']['incomplete'] === true
                 && $sections['history']['active'] === true;
-        });
+        })
+        ->call('loadDetails')
+        ->assertSeeHtml('data-ndb-collection-status="views"')
+        ->assertSee('Showing 0 of 2 views.')
+        ->assertSeeHtml('data-ndb-timeline-incomplete')
+        ->assertSee('Timeline incomplete: 2 source events were omitted.');
 });
 
 it('uses the shared presenter for deferred query details and findings', function () {

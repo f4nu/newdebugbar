@@ -356,7 +356,7 @@ final class EventRegistrar
                 'operation' => 'flush',
                 'key_hash' => null,
                 'store' => $event->storeName,
-                'tags' => $event->tags,
+                ...$this->cacheTags($event->tags),
                 'seconds' => null,
             ]);
             $this->manager()->excludeRedisCacheOperation('flush');
@@ -422,7 +422,7 @@ final class EventRegistrar
                 'key' => $this->keyPolicy() === 'full' ? $this->redactor->cleanKey($event->key, 'full') : null,
                 'key_policy' => $this->keyPolicy(),
                 'store' => $event->storeName,
-                'tags' => $event->tags,
+                ...$this->cacheTags($event->tags),
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
             ]);
             $this->manager()->excludeRedisCacheOperation($operation);
@@ -616,6 +616,8 @@ final class EventRegistrar
             $keys = [$parameters[0]];
         }
 
+        $keyCount = count($keys);
+        $keys = array_slice($keys, 0, $this->nestedItemLimit());
         $hashes = array_values(array_unique(array_map(
             fn (mixed $key): string => $this->redactor->cleanKey($key),
             $keys,
@@ -623,7 +625,9 @@ final class EventRegistrar
         $policy = $this->keyPolicy();
 
         return [
-            'key_count' => count($hashes),
+            'key_count' => $keyCount,
+            'key_retained' => count($keys),
+            'key_dropped' => max(0, $keyCount - count($keys)),
             'key_hashes' => $hashes,
             'keys' => $policy === 'full' ? array_values(array_unique(array_map(
                 fn (mixed $key): string => $this->redactor->cleanKey($key, 'full'),
@@ -636,5 +640,32 @@ final class EventRegistrar
     private function keyPolicy(): string
     {
         return config('new-debug-bar.collection.key_policy') === 'full' ? 'full' : 'hash';
+    }
+
+    /** @param list<mixed> $tags @return array{tag_count: int, tag_retained: int, tag_dropped: int, tag_hashes: list<string>, tags: list<string>} */
+    private function cacheTags(array $tags): array
+    {
+        $tagCount = count($tags);
+        $tags = array_slice($tags, 0, $this->nestedItemLimit());
+        $policy = $this->keyPolicy();
+
+        return [
+            'tag_count' => $tagCount,
+            'tag_retained' => count($tags),
+            'tag_dropped' => max(0, $tagCount - count($tags)),
+            'tag_hashes' => array_values(array_unique(array_map(
+                fn (mixed $tag): string => $this->redactor->cleanKey($tag),
+                $tags,
+            ))),
+            'tags' => $policy === 'full' ? array_values(array_unique(array_map(
+                fn (mixed $tag): string => $this->redactor->cleanKey($tag, 'full'),
+                $tags,
+            ))) : [],
+        ];
+    }
+
+    private function nestedItemLimit(): int
+    {
+        return max(0, (int) config('new-debug-bar.collection.max_items_per_array', 100));
     }
 }

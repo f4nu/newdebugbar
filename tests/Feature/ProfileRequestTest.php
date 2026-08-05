@@ -226,14 +226,40 @@ it('captures direct Redis commands and removes cache command duplicates', functi
         ->failed->toBeTrue()
         ->exception_class->toBe(RuntimeException::class)
         ->and(array_column($cache['payload']['items'], 'operation'))->toContain('write', 'flush')
+        ->and($cache['payload']['items'][0])
+        ->tag_count->toBe(2)
+        ->tag_hashes->toBe([
+            substr(hash('sha256', 'tenant:private-clinic'), 0, 16),
+            substr(hash('sha256', 'patient:private-patient'), 0, 16),
+        ])
+        ->tags->toBe([])
         ->and(json_encode([$redis, $cache]))->not->toContain(
             'private-direct-key',
             'private-cache-key',
             'private-cache-value',
+            'private-clinic',
+            'private-patient',
             'private-hash',
             'private-field',
             'private Redis failure',
         );
+});
+
+it('reveals bounded cache and Redis keys only under the explicit full key policy', function () {
+    config()->set('new-debug-bar.collection.key_policy', 'full');
+
+    $response = $this->get('/profiled-redis', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $cacheWrite = collect($profile['sections']['cache']['payload']['items'])->firstWhere('operation', 'write');
+    $redisGet = collect($profile['sections']['redis']['payload']['items'])->firstWhere('command', 'GET');
+
+    expect($cacheWrite)
+        ->key_policy->toBe('full')
+        ->key->toBe('private-cache-key')
+        ->tags->toBe(['tenant:private-clinic', 'patient:private-patient'])
+        ->and($redisGet)
+        ->key_policy->toBe('full')
+        ->keys->toBe(['private-direct-key']);
 });
 
 it('isolates mutable collector state between application lifecycles', function () {

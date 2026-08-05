@@ -94,13 +94,57 @@ it('lists and filters bounded profile summaries', function () {
     expect($all['data']['profiles'])->toHaveCount(1)
         ->and($all['data'])
         ->count->toBe(1)
-        ->total->toBe(1)
-        ->truncated->toBeFalse()
+        ->total->toBe(2)
+        ->truncated->toBeTrue()
         ->and($failed['data']['profiles'])->toHaveCount(1)
         ->and($failed['data']['profiles'][0])
         ->path->toBe('/failed-html')
         ->status->toBe(422)
         ->warning->toBeTrue();
+});
+
+it('exposes every recorded context section through the bounded section tool', function () {
+    $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+
+    foreach (['authorization', 'validation', 'lifecycle', 'messages'] as $section) {
+        $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+            'profile_id' => $profileId,
+            'section' => $section,
+        ])->assertOk());
+
+        expect($content['status'])->toBe('ok')
+            ->and($content['data']['section'])->toBe($section);
+    }
+});
+
+it('keeps explicitly enabled mail content out of MCP responses', function () {
+    config()->set('new-debug-bar.mail_preview.enabled', true);
+    $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+
+    $mail = NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'mail',
+    ])->assertOk()
+        ->assertDontSee([
+            'private body',
+            'private subject',
+            'private-sender@example.test',
+            'private-recipient@example.test',
+            'private-copy@example.test',
+        ]);
+    $content = captureStructuredContent($mail);
+
+    expect($content['data']['payload']['items'][0]['preview'])->toMatchArray([
+        'available' => true,
+        'html_available' => false,
+        'text_available' => true,
+        'eml_available' => true,
+        'truncated' => false,
+        'attachments_omitted' => 1,
+        'addresses_omitted' => 0,
+    ]);
 });
 
 it('paginates one section and hides private request values', function () {

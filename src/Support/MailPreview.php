@@ -23,6 +23,7 @@ final class MailPreview
         [$subject, $subjectTruncated] = $this->bounded($message->getSubject(), min(2_000, $this->maxBodyBytes));
         [$html, $htmlTruncated] = $this->bounded($message->getHtmlBody());
         [$text, $textTruncated] = $this->bounded($message->getTextBody());
+        $addressesOmitted = $this->addressesOmitted($message);
         $copy = $this->attachmentFreeCopy($message, $subject, $html, $text);
 
         return [
@@ -37,8 +38,9 @@ final class MailPreview
             // The inputs are bounded before serialization so the MIME document
             // stays valid instead of being cut through a header or body part.
             'eml' => $copy->toString(),
-            'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated,
+            'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated || $addressesOmitted > 0,
             'attachments_omitted' => count($message->getAttachments()),
+            'addresses_omitted' => $addressesOmitted,
         ];
     }
 
@@ -106,6 +108,20 @@ final class MailPreview
             return [$value, false];
         }
 
-        return [mb_strcut($value, 0, $limit, 'UTF-8').'\n[preview truncated]', true];
+        return [mb_strcut($value, 0, $limit, 'UTF-8')."\n[preview truncated]", true];
+    }
+
+    private function addressesOmitted(Email $message): int
+    {
+        return array_sum(array_map(
+            fn (array $addresses): int => max(0, count($addresses) - $this->maxRecipients),
+            [
+                $message->getFrom(),
+                $message->getTo(),
+                $message->getCc(),
+                $message->getBcc(),
+                $message->getReplyTo(),
+            ],
+        ));
     }
 }

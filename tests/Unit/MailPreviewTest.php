@@ -40,7 +40,10 @@ it('bounds the inputs without cutting the serialized mime message', function () 
     expect($preview)
         ->truncated->toBeTrue()
         ->to->toBe(['first@example.test'])
+        ->addresses_omitted->toBe(1)
         ->and(strlen($preview['subject']))->toBeLessThanOrEqual(85)
+        ->and($preview['text'])->toContain("\n[preview truncated]")
+        ->not->toContain('\\n[preview truncated]')
         ->and($preview['eml'])->toEndWith("\r\n")
         ->not->toEndWith('[preview truncated]');
 });

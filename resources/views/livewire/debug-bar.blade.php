@@ -170,7 +170,19 @@
                                     wire:key="section-{{ $sectionKey }}"
                                     class="ndb:space-y-4"
                                 >
-                                    @php($sectionFindings = array_values(array_filter($profile['findings'] ?? [], fn (array $finding): bool => $sectionKey === 'overview' || $finding['section'] === $sectionKey)))
+                                    @php($sectionFindings = array_values(array_filter($profile['findings'] ?? [], fn (array $finding): bool => $finding['rule_id'] !== 'collector.truncated' && ($sectionKey === 'overview' || $finding['section'] === $sectionKey))))
+                                    @php($collectionDropped = (int) ($section['payload']['dropped'] ?? 0))
+                                    @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? $section['payload']['retained'] ?? count($section['payload']['items'] ?? [])))
+                                    @php($collectionTotal = (int) ($section['summary']['count'] ?? $section['payload']['total'] ?? ($collectionRetained + $collectionDropped)))
+                                    @if ($sectionKey !== 'overview' && $collectionDropped > 0)
+                                        <div data-ndb-collection-status="{{ $sectionKey }}" role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Showing {{ number_format($collectionRetained) }} of {{ number_format($collectionTotal) }} {{ strtolower($section['label']) }}.</div>
+                                    @endif
+                                    @if ($sectionKey === 'queries' && (int) ($section['payload']['transaction_dropped'] ?? 0) > 0)
+                                        <div data-ndb-collection-status="query-transactions" role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Showing {{ number_format(count($section['payload']['transactions'] ?? [])) }} of {{ number_format((int) ($section['payload']['transaction_total'] ?? 0)) }} query transaction events.</div>
+                                    @endif
+                                    @if ($sectionKey === 'timeline' && ($section['payload']['incomplete'] ?? false))
+                                        <div data-ndb-timeline-incomplete role="status" class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300">Timeline incomplete: {{ number_format((int) ($section['payload']['omitted_count'] ?? 0)) }} source events were omitted.</div>
+                                    @endif
                                     @if ($sectionKey === 'overview')
                                         @php($runtimeFacts = is_array($section['payload']['runtime'] ?? null) ? $section['payload']['runtime'] : array_filter(['environment' => $section['payload']['environment'] ?? null, 'php' => $section['payload']['php'] ?? null, 'laravel' => $section['payload']['laravel'] ?? null]))
                                         @php($runtimeDrivers = is_array($section['payload']['drivers'] ?? null) ? $section['payload']['drivers'] : [])
@@ -534,8 +546,8 @@
                                                                 @if (is_string($item['preview']['text'] ?? null))<a href="{{ route('new-debug-bar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'text']) }}" target="_blank" rel="noreferrer" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Open text preview</a>@endif
                                                                 <a href="{{ route('new-debug-bar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'eml']) }}" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Download .eml</a>
                                                             </div>
-                                                            @if (($item['preview']['attachments_omitted'] ?? 0) > 0 || ($item['preview']['truncated'] ?? false))
-                                                                <p class="ndb:text-[10px] ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">@if (($item['preview']['attachments_omitted'] ?? 0) > 0){{ $item['preview']['attachments_omitted'] }} attachments omitted.@endif @if ($item['preview']['truncated'] ?? false)Preview content was bounded.@endif</p>
+                                                            @if (($item['preview']['attachments_omitted'] ?? 0) > 0 || ($item['preview']['addresses_omitted'] ?? 0) > 0 || ($item['preview']['truncated'] ?? false))
+                                                                <p class="ndb:text-[10px] ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">@if (($item['preview']['attachments_omitted'] ?? 0) > 0){{ $item['preview']['attachments_omitted'] }} attachments omitted.@endif @if (($item['preview']['addresses_omitted'] ?? 0) > 0){{ $item['preview']['addresses_omitted'] }} addresses omitted.@endif @if ($item['preview']['truncated'] ?? false)Preview content was bounded.@endif</p>
                                                             @endif
                                                         </div>
                                                     @endif
