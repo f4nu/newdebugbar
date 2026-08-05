@@ -88,3 +88,15 @@ it('keeps timeline geometry bounded when events exceed the reported duration', f
         ->and($requestEnd)
         ->at_percent->toBe(0.0);
 });
+
+it('reports every collector source omitted from the timeline', function () {
+    $omitted = (new TimelineBuilder)->omittedSources([
+        'sections' => [
+            'queries' => ['payload' => ['dropped' => 2]],
+            'views' => ['payload' => ['dropped' => 17]],
+            'logs' => ['payload' => ['dropped' => 0]],
+        ],
+    ]);
+
+    expect($omitted)->toBe(['queries' => 2, 'views' => 17]);
+});

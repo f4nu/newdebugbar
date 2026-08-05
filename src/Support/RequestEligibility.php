@@ -4,7 +4,7 @@ namespace NewDebugBar\Support;
 
 use Illuminate\Http\Request;
 
-/** Decides whether a request can produce an in-page debug toolbar. */
+/** Decides whether an application request can produce a safe stored profile. */
 final class RequestEligibility
 {
     public function allows(Request $request): bool
@@ -13,15 +13,19 @@ final class RequestEligibility
             return false;
         }
 
-        if ($this->isLivewireRequest($request)) {
-            return $this->isApplicationLivewireRequest($request);
-        }
-
-        if ($request->expectsJson() || $request->is('__new-debug-bar/*') || $request->is('livewire/*')) {
+        if ($request->is('__new-debug-bar/*')) {
             return false;
         }
 
-        return $request->acceptsHtml();
+        return ! $this->isLivewireRequest($request) || $this->isApplicationLivewireRequest($request);
+    }
+
+    public function mayInjectToolbar(Request $request): bool
+    {
+        return ! $this->isLivewireRequest($request)
+            && ! $request->expectsJson()
+            && ! $request->ajax()
+            && $request->acceptsHtml();
     }
 
     public function isApplicationLivewireRequest(Request $request): bool

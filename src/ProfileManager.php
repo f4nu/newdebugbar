@@ -2,7 +2,6 @@
 
 namespace NewDebugBar;
 
-use Composer\InstalledVersions;
 use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -10,7 +9,10 @@ use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\RuntimeContext;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /** Coordinates request timing, collectors, and the final debug profile. */
@@ -37,6 +39,7 @@ final class ProfileManager
         iterable $collectors,
         private readonly Redactor $redactor,
         private readonly ?ExceptionNormalizer $exceptionNormalizer = null,
+        private readonly ?RuntimeContext $runtimeContext = null,
     ) {
         foreach ($collectors as $collector) {
             $this->collectors[$collector->key()] = $collector;
@@ -116,6 +119,7 @@ final class ProfileManager
                     : [],
                 'middleware' => is_object($route) ? app('router')->gatherRouteMiddleware($route) : [],
                 'status' => $response?->getStatusCode() ?? 500,
+                'request_type' => $this->requestType($request, $response),
                 'content_type' => $response?->headers->get('Content-Type'),
                 'request_size_bytes' => $this->requestSize($request),
                 'response_size_bytes' => $this->responseSize($response),
@@ -184,6 +188,22 @@ final class ProfileManager
 
     private function responseSize(?Response $response): int
     {
+        $contentLength = $response?->headers->get('Content-Length');
+
+        if (is_numeric($contentLength)) {
+            return max(0, (int) $contentLength);
+        }
+
+        if ($response instanceof BinaryFileResponse) {
+            $file = $response->getFile();
+
+            return $file->isFile() ? max(0, $file->getSize()) : 0;
+        }
+
+        if ($response instanceof StreamedResponse) {
+            return 0;
+        }
+
         $content = $response?->getContent();
 
         return is_string($content) ? strlen($content) : 0;
@@ -213,17 +233,12 @@ final class ProfileManager
             'memory_mb' => round($usedMemory / 1_048_576, 2),
             'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
         ];
+        $livewireActivity = (int) (($this->collectors['livewire'] ?? null)?->summary()['count'] ?? 0) > 0;
         $sections = [
             'overview' => [
                 'label' => 'Overview',
                 'summary' => $metrics,
-                'payload' => [
-                    'environment' => app()->environment(),
-                    'php' => PHP_VERSION,
-                    'laravel' => app()->version(),
-                    'livewire' => InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'unknown',
-                    'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
-                ],
+                'payload' => $this->runtimeContext?->build($livewireActivity) ?? [],
             ],
             'request' => [
                 'label' => $this->primarySectionLabel,
@@ -294,6 +309,7 @@ final class ProfileManager
             $updates = is_array($component['updates'] ?? null) ? $component['updates'] : [];
             $this->record('livewire', [
                 'phase' => 'request',
+                'kind' => 'update',
                 'request_index' => $index,
                 'component' => $name,
                 'actions' => array_values(array_unique(array_filter(array_map(
@@ -354,5 +370,40 @@ final class ProfileManager
     private function elapsedMilliseconds(): float
     {
         return round(($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000, 3);
+    }
+
+    private function requestType(Request $request, ?Response $response): string
+    {
+        if ($request->headers->has('X-Livewire')) {
+            return 'livewire';
+        }
+
+        $status = $response?->getStatusCode() ?? 500;
+
+        if ($status >= 300 && $status < 400) {
+            return 'redirect';
+        }
+
+        if ($response instanceof BinaryFileResponse) {
+            return 'download';
+        }
+
+        if (str_contains(strtolower((string) $response?->headers->get('Content-Disposition')), 'attachment')) {
+            return 'download';
+        }
+
+        if ($response instanceof StreamedResponse) {
+            return 'stream';
+        }
+
+        if ($request->ajax()) {
+            return 'ajax';
+        }
+
+        $contentType = strtolower((string) $response?->headers->get('Content-Type'));
+
+        return $request->expectsJson() || str_contains($contentType, 'json')
+            ? 'json'
+            : 'full_page';
     }
 }

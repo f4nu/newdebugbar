@@ -75,6 +75,22 @@ final class TimelineBuilder
         }, $timeline);
     }
 
+    /** @param array<string, mixed> $profile @return array<string, int> */
+    public function omittedSources(array $profile): array
+    {
+        $omitted = [];
+
+        foreach ($profile['sections'] ?? [] as $section => $data) {
+            $dropped = (int) ($data['payload']['dropped'] ?? 0);
+
+            if ($dropped > 0) {
+                $omitted[(string) $section] = $dropped;
+            }
+        }
+
+        return $omitted;
+    }
+
     /** @param array<string, mixed> $item */
     private function label(string $section, array $item): string
     {

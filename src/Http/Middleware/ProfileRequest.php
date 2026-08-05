@@ -10,7 +10,7 @@ use NewDebugBar\Support\RequestEligibility;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
-/** Profiles eligible web responses and injects their debug interface. */
+/** Profiles eligible Laravel requests without changing unsupported response bodies. */
 final class ProfileRequest
 {
     public function __construct(
@@ -21,14 +21,14 @@ final class ProfileRequest
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $this->eligibility->allows($request)) {
+        if ($this->manager->isCollecting() || ! $this->eligibility->allows($request)) {
             return $next($request);
         }
 
         try {
             $this->manager->begin($request);
 
-            if (! $this->eligibility->isApplicationLivewireRequest($request)) {
+            if ($this->eligibility->mayInjectToolbar($request)) {
                 $this->injector->prepareAssets();
             }
         } catch (Throwable) {

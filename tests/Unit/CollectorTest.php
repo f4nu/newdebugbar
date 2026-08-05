@@ -14,20 +14,32 @@ it('counts dropped collector items without retaining their payload', function ()
 
     expect($collector->summary())->toBe([
         'count' => 2,
+        'retained_count' => 1,
+        'dropped_count' => 1,
+        'truncated' => true,
         'duration_ms' => 6.0,
     ])->and($collector->payload())->toBe([
         'items' => [['sql' => 'select 1', 'duration_ms' => 1.25]],
         'dropped' => 1,
+        'retained' => 1,
+        'total' => 2,
+        'truncated' => true,
     ]);
 
     $collector->reset();
 
     expect($collector->summary())->toBe([
         'count' => 0,
+        'retained_count' => 0,
+        'dropped_count' => 0,
+        'truncated' => false,
         'duration_ms' => 0.0,
     ])->and($collector->payload())->toBe([
         'items' => [],
         'dropped' => 0,
+        'retained' => 0,
+        'total' => 0,
+        'truncated' => false,
     ]);
 });
 
@@ -67,11 +79,17 @@ it('includes dropped items in cache and log summaries', function () {
 
     expect($cache->summary())->toBe([
         'count' => 2,
+        'retained_count' => 1,
+        'dropped_count' => 1,
+        'truncated' => true,
         'hits' => 1,
         'misses' => 1,
         'writes' => 0,
     ])->and($logs->summary())->toBe([
         'count' => 2,
+        'retained_count' => 1,
+        'dropped_count' => 1,
+        'truncated' => true,
         'errors' => 1,
     ]);
 });
@@ -85,6 +103,9 @@ it('removes a cache command even after the Redis item limit is reached', functio
 
     expect($redis->summary())->toBe([
         'count' => 1,
+        'retained_count' => 1,
+        'dropped_count' => 0,
+        'truncated' => false,
         'duration_ms' => 1.25,
         'failed_count' => 0,
     ])->and($redis->payload()['dropped'])->toBe(0);

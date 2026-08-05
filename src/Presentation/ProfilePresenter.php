@@ -31,9 +31,16 @@ final class ProfilePresenter
         );
 
         if (isset($profile['sections']['queries'])) {
+            $collectorSummary = $profile['sections']['queries']['summary'] ?? [];
             $profile['sections']['queries']['summary'] = [
-                ...($profile['sections']['queries']['summary'] ?? []),
+                ...$collectorSummary,
                 ...$queryAnalysis['summary'],
+                'count' => $collectorSummary['count'] ?? count($queryAnalysis['items']),
+                'total_count' => $collectorSummary['count'] ?? count($queryAnalysis['items']),
+                'retained_count' => $collectorSummary['retained_count'] ?? count($queryAnalysis['items']),
+                'dropped_count' => $collectorSummary['dropped_count'] ?? 0,
+                'duration_ms' => $collectorSummary['duration_ms'] ?? $queryAnalysis['summary']['total_time_ms'],
+                'total_time_ms' => $collectorSummary['duration_ms'] ?? $queryAnalysis['summary']['total_time_ms'],
             ];
             $profile['sections']['queries']['payload']['items'] = $queryAnalysis['items'];
             $profile['sections']['queries']['payload']['repeated_groups'] = $queryAnalysis['repeated_groups'];
@@ -43,6 +50,7 @@ final class ProfilePresenter
 
         if (isset($profile['sections']['request'])) {
             $timeline = $this->timeline->build($profile);
+            $omittedSources = $this->timeline->omittedSources($profile);
             $ordered = [];
 
             foreach ($profile['sections'] as $key => $section) {
@@ -52,7 +60,13 @@ final class ProfilePresenter
                     $ordered['timeline'] = [
                         'label' => 'Timeline',
                         'summary' => ['count' => count($timeline)],
-                        'payload' => ['items' => $timeline, 'dropped' => 0],
+                        'payload' => [
+                            'items' => $timeline,
+                            'dropped' => 0,
+                            'incomplete' => $omittedSources !== [],
+                            'omitted_count' => array_sum($omittedSources),
+                            'omitted_sources' => $omittedSources,
+                        ],
                     ];
                 }
             }

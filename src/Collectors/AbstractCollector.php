@@ -45,7 +45,14 @@ abstract class AbstractCollector implements Collector
 
     public function summary(): array
     {
-        return ['count' => count($this->items) + $this->dropped];
+        $retained = count($this->items);
+
+        return [
+            'count' => $retained + $this->dropped,
+            'retained_count' => $retained,
+            'dropped_count' => $this->dropped,
+            'truncated' => $this->dropped > 0,
+        ];
     }
 
     public function payload(): array
@@ -53,6 +60,9 @@ abstract class AbstractCollector implements Collector
         return [
             'items' => $this->items,
             'dropped' => $this->dropped,
+            'retained' => count($this->items),
+            'total' => count($this->items) + $this->dropped,
+            'truncated' => $this->dropped > 0,
         ];
     }
 

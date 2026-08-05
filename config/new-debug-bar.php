@@ -30,7 +30,8 @@ return [
 
     'collection' => [
         'application_path' => null,
-        'max_items_per_section' => 100,
+        'max_items_per_collector' => 500,
+        'max_items_per_array' => 100,
         'max_depth' => 5,
         'max_string_length' => 2_000,
         'query_bindings' => env('NEW_DEBUG_BAR_QUERY_BINDINGS', 'safe'),

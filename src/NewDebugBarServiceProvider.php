@@ -3,6 +3,7 @@
 namespace NewDebugBar;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Router;
@@ -35,9 +36,11 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
+use NewDebugBar\Support\LivewireMountRecorder;
 use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\RuntimeContext;
 use NewDebugBar\Support\RuntimeProfiler;
 use NewDebugBar\Support\SafeUrl;
 
@@ -51,7 +54,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(Redactor::class, fn (): Redactor => new Redactor(
             maxDepth: (int) config('new-debug-bar.collection.max_depth', 5),
             maxStringLength: (int) config('new-debug-bar.collection.max_string_length', 2_000),
-            maxArrayItems: (int) config('new-debug-bar.collection.max_items_per_section', 100),
+            maxArrayItems: (int) config('new-debug-bar.collection.max_items_per_array', 100),
         ));
 
         $this->app->singleton(QueryAnalyzer::class, fn (): QueryAnalyzer => new QueryAnalyzer(
@@ -83,11 +86,13 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
         ));
         $this->app->scoped(LivewireUpdateRecorder::class);
+        $this->app->scoped(LivewireMountRecorder::class);
         $this->app->scoped(RuntimeProfiler::class);
+        $this->app->singleton(RuntimeContext::class);
         $this->app->singleton(SafeUrl::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
-            $maxItems = (int) config('new-debug-bar.collection.max_items_per_section', 100);
+            $maxItems = (int) config('new-debug-bar.collection.max_items_per_collector', 500);
             $redactor = $app->make(Redactor::class);
 
             return new ProfileManager([
@@ -108,7 +113,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new ItemCollector($redactor, $maxItems, 'events', 'Events'),
                 new LogCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
-            ], $redactor, $app->make(ExceptionNormalizer::class));
+            ], $redactor, $app->make(ExceptionNormalizer::class), $app->make(RuntimeContext::class));
         });
 
         $this->app->singleton(ProfileStore::class, fn ($app): ProfileStore => new ProfileStore(
@@ -152,11 +157,16 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),
         );
         Livewire::component('new-debug-bar.toolbar', DebugBar::class);
+        $this->app->make(LivewireMountRecorder::class)->register();
         Mcp::local('new-debug-bar', NewDebugBarServer::class);
         $router->get('/__new-debug-bar/assets/{path}', AssetController::class)
             ->where('path', '.*')
             ->name('new-debug-bar.asset');
-        $router->pushMiddlewareToGroup('web', ProfileRequest::class);
+        $kernel = $this->app->make(HttpKernel::class);
+
+        if (method_exists($kernel, 'pushMiddleware')) {
+            $kernel->pushMiddleware(ProfileRequest::class);
+        }
     }
 
     private function isEnabledEnvironment(): bool

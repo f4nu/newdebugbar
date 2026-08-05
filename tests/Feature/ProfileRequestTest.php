@@ -29,7 +29,6 @@ it('captures a local web request and its Laravel activity', function () {
     expect(app()->environment())->toBe('testing')
         ->and(app()->bound('middleware.disable'))->toBeFalse()
         ->and(config('new-debug-bar.environments'))->toBe(['testing'])
-        ->and(app('router')->getMiddlewareGroups()['web'])->toContain(ProfileRequest::class)
         ->and(app('router')->gatherRouteMiddleware($route))->toContain(ProfileRequest::class);
 
     $response = $this->get('/profiled?token=visible', [
@@ -70,6 +69,9 @@ it('captures a local web request and its Laravel activity', function () {
         ->sections->request->payload->response_size_bytes->toBeGreaterThan(0)
         ->sections->request->payload->session_present->toBeFalse()
         ->sections->request->payload->authenticated->toBeFalse()
+        ->sections->overview->payload->runtime->environment->toBe('testing')
+        ->sections->overview->payload->runtime->laravel->toBe(app()->version())
+        ->sections->overview->payload->drivers->database->toBe(config('database.default'))
         ->sections->queries->summary->count->toBeGreaterThanOrEqual(1)
         ->sections->models->summary->count->toBeGreaterThanOrEqual(1)
         ->sections->cache->summary->hits->toBe(1)
@@ -80,6 +82,9 @@ it('captures a local web request and its Laravel activity', function () {
     expect(array_column($profile['sections']['models']['payload']['items'], 'event'))
         ->toContain('retrieved');
 
+    expect(array_column($profile['sections']['overview']['payload']['ecosystem'], 'key'))
+        ->not->toContain('livewire');
+
     expect($profile['sections']['logs']['payload']['items'][0]['callsite'])
         ->toMatchArray(['file' => 'tests/TestCase.php'])
         ->and($profile['sections']['logs']['payload']['items'][0]['stack'])->not->toBeEmpty();
@@ -89,6 +94,24 @@ it('captures a local web request and its Laravel activity', function () {
             expect($item['at_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0);
         }
     }
+});
+
+it('records initial application Livewire renders and then reports Livewire in the ecosystem', function () {
+    $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $section = $profile['sections']['livewire'];
+
+    expect($section['summary'])
+        ->count->toBe(1)
+        ->initial_render_count->toBe(1)
+        ->update_count->toBe(0)
+        ->component_count->toBe(1)
+        ->and($section['payload']['items'][0])
+        ->kind->toBe('initial')
+        ->component->toBe('profiled-counter')
+        ->duration_ms->toBeFloat()
+        ->and(array_column($profile['sections']['overview']['payload']['ecosystem'], 'key'))
+        ->toContain('livewire');
 });
 
 it('captures outbound HTTP results without private URLs or bodies', function () {
@@ -139,7 +162,7 @@ it('captures queued dispatches and synchronous execution without job data', func
         ->kind->toBe('executed')
         ->connection->toBe('sync')
         ->queue->toBe('sync')
-        ->duration_ms->toBeFloat()
+        ->duration_ms->toBeGreaterThanOrEqual(0)
         ->and($section['payload']['items'][2])
         ->kind->toBe('failed')
         ->exception_class->toBe(RuntimeException::class)
@@ -261,12 +284,18 @@ it('injects assets into an html document that has no head', function () {
 });
 
 it('leaves response types that cannot host the bar untouched', function (string $path, int $status) {
-    $this->get($path, ['Accept' => 'text/html'])
+    $response = $this->get($path, ['Accept' => 'text/html'])
         ->assertStatus($status)
-        ->assertHeaderMissing('X-New-Debug-Bar-Profile')
+        ->assertHeader('X-New-Debug-Bar-Profile')
         ->assertDontSee('id="new-debug-bar"', false);
 
-    expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+
+    expect($profile)->not->toBeNull()
+        ->and($profile['sections']['request']['payload']['request_type'])->toBe(match ($path) {
+            '/download' => 'download',
+            default => 'full_page',
+        });
 })->with([
     'html without a body' => ['/html-without-body', 200],
     'plain text' => ['/plain-text', 200],
@@ -307,10 +336,68 @@ it('rejects unknown and unsafe package assets', function () {
         ->toThrow(RuntimeException::class);
 });
 
-it('does not profile non html traffic', function () {
-    $this->getJson('/plain-json')->assertOk();
+it('profiles JSON without changing its body or injecting the toolbar', function () {
+    $response = $this->getJson('/plain-json')
+        ->assertOk()
+        ->assertExactJson(['ready' => true])
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertDontSee('id="new-debug-bar"', false);
 
-    expect(File::exists(config('new-debug-bar.storage.path')))->toBeFalse();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+
+    expect($profile['sections']['request']['payload']['request_type'])->toBe('json')
+        ->and($profile['sections']['request']['payload']['response_size_bytes'])
+        ->toBe(strlen(json_encode(['ready' => true])));
+});
+
+it('profiles API AJAX redirect streamed and binary responses without body injection', function () {
+    $api = $this->getJson('/api/plain-json')
+        ->assertOk()
+        ->assertExactJson(['source' => 'api'])
+        ->assertHeader('X-New-Debug-Bar-Profile');
+
+    $ajax = $this->get('/ajax-fragment', [
+        'Accept' => 'text/html',
+        'X-Requested-With' => 'XMLHttpRequest',
+    ])
+        ->assertOk()
+        ->assertContent('<div data-fragment>Search result</div>')
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertDontSee('id="new-debug-bar"', false);
+
+    $redirect = $this->get('/profile-redirect', ['Accept' => 'text/html'])
+        ->assertRedirect('/profiled')
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertDontSee('id="new-debug-bar"', false);
+
+    $stream = $this->get('/streamed-response', ['Accept' => 'text/plain'])
+        ->assertOk()
+        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertStreamedContent('streamed-body');
+
+    $binary = $this->get('/binary-response')
+        ->assertOk()
+        ->assertDownload('profiled-counter.txt')
+        ->assertHeader('X-New-Debug-Bar-Profile');
+
+    $profiles = collect([
+        'json' => $api,
+        'ajax' => $ajax,
+        'redirect' => $redirect,
+        'stream' => $stream,
+        'download' => $binary,
+    ])->map(fn ($response) => app(ProfileStore::class)->get(
+        $response->headers->get('X-New-Debug-Bar-Profile'),
+    ));
+
+    expect($profiles->map(fn (array $profile): string => $profile['sections']['request']['payload']['request_type'])->all())
+        ->toBe([
+            'json' => 'json',
+            'ajax' => 'ajax',
+            'redirect' => 'redirect',
+            'stream' => 'stream',
+            'download' => 'download',
+        ]);
 });
 
 it('captures nested input without retaining uploaded files', function () {

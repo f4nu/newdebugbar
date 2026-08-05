@@ -158,6 +158,10 @@
                                 >
                                     @php($sectionFindings = array_values(array_filter($profile['findings'] ?? [], fn (array $finding): bool => $sectionKey === 'overview' || $finding['section'] === $sectionKey)))
                                     @if ($sectionKey === 'overview')
+                                        @php($runtimeFacts = is_array($section['payload']['runtime'] ?? null) ? $section['payload']['runtime'] : array_filter(['environment' => $section['payload']['environment'] ?? null, 'php' => $section['payload']['php'] ?? null, 'laravel' => $section['payload']['laravel'] ?? null]))
+                                        @php($runtimeDrivers = is_array($section['payload']['drivers'] ?? null) ? $section['payload']['drivers'] : [])
+                                        @php($runtimeCacheState = is_array($section['payload']['cache_state'] ?? null) ? $section['payload']['cache_state'] : [])
+                                        @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach ([['Duration', $profile['metrics']['duration_ms'].' ms', 'clock'], ['Peak memory', $profile['metrics']['peak_memory_mb'].' MB', 'memory'], ['Queries', $profile['sections']['queries']['summary']['count'], 'database'], ['Status', $profile['sections']['request']['summary']['status'], 'check']] as [$label, $value, $icon])
                                                 <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:p-3.5 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900"><x-new-debug-bar::icon :name="$icon" class="ndb:size-4 ndb:text-indigo-500" /><p class="ndb:mt-2 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</p><p class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</p></div>
@@ -167,10 +171,46 @@
                                         <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
                                             <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Runtime</h3>
                                             <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:lg:grid-cols-5">
-                                                @foreach ($section['payload'] as $label => $value)
-                                                    <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->replace('_', ' ')->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ $value }}</dd></div>
+                                                @foreach ($runtimeFacts as $label => $value)
+                                                    <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->replace('_', ' ')->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ is_bool($value) ? ($value ? 'On' : 'Off') : $value }}</dd></div>
                                                 @endforeach
                                             </dl>
+                                        </div>
+                                        @if ($runtimeDrivers !== [] || $runtimeCacheState !== [])
+                                            <div class="ndb:grid ndb:gap-3 ndb:lg:grid-cols-2">
+                                                @if ($runtimeDrivers !== [])
+                                                    <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
+                                                        <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Drivers</h3>
+                                                        <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-3">
+                                                            @foreach ($runtimeDrivers as $label => $value)
+                                                                <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ $value }}</dd></div>
+                                                            @endforeach
+                                                        </dl>
+                                                    </div>
+                                                @endif
+                                                @if ($runtimeCacheState !== [])
+                                                    <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
+                                                        <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Framework cache</h3>
+                                                        <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-3">
+                                                            @foreach ($runtimeCacheState as $label => $value)
+                                                                <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">{{ $value ? 'Cached' : 'Open' }}</dd></div>
+                                                            @endforeach
+                                                        </dl>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
+                                            <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"><h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Ecosystem</h3><span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Observed host packages</span></div>
+                                            @if ($runtimeEcosystem === [])
+                                                <p class="ndb:mt-3 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">No supported ecosystem packages were detected for this request.</p>
+                                            @else
+                                                <ul class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
+                                                    @foreach ($runtimeEcosystem as $package)
+                                                        <li class="ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:dark:bg-zinc-900">{{ $package['label'] }} <span class="ndb:text-zinc-400">{{ $package['version'] }}</span></li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
                                         </div>
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-4">
                                             @foreach ($summary['section_counts'] as $key => $count)

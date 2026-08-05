@@ -56,6 +56,10 @@ final class BarInjector
             return false;
         }
 
+        if ($response->isRedirection()) {
+            return false;
+        }
+
         if (str_contains((string) $response->headers->get('Content-Disposition'), 'attachment')) {
             return false;
         }

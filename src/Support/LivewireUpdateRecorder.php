@@ -47,6 +47,7 @@ final class LivewireUpdateRecorder
 
             $this->manager->record('livewire', [
                 'phase' => 'response',
+                'kind' => 'update',
                 'request_index' => $index,
                 'component' => $name,
                 'actions' => array_values(array_unique(array_filter(array_map(

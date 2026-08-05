@@ -45,7 +45,11 @@ it('records safe application Livewire facts and skips internal components', func
     $items = $profile['sections']['livewire']['payload']['items'];
 
     expect($profile['sections']['livewire']['summary']['count'])->toBe(1)
+        ->and($profile['sections']['livewire']['summary']['initial_render_count'])->toBe(0)
+        ->and($profile['sections']['livewire']['summary']['update_count'])->toBe(1)
+        ->and($profile['sections']['livewire']['summary']['component_count'])->toBe(1)
         ->and($items[0])
+        ->kind->toBe('update')
         ->component->toBe('profiled-counter')
         ->actions->toBe(['save'])
         ->updated_properties->toBe(['name'])

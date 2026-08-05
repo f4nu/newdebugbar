@@ -138,6 +138,25 @@ abstract class TestCase extends Orchestra
 
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 
+        $router->get('/api/plain-json', fn () => response()->json(['source' => 'api']));
+
+        $router->get('/ajax-fragment', fn () => response('<div data-fragment>Search result</div>', 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]));
+
+        $router->get('/profile-redirect', fn () => redirect('/profiled'));
+
+        $router->get('/streamed-response', fn () => response()->stream(
+            static fn () => print 'streamed-body',
+            200,
+            ['Content-Type' => 'text/plain'],
+        ));
+
+        $router->get('/binary-response', fn () => response()->download(
+            __DIR__.'/views/profiled-counter.blade.php',
+            'profiled-counter.txt',
+        ));
+
         $router->middleware(ProfileRequest::class)->get(
             '/html-without-head',
             fn () => response('<html><body>Headless page</body></html>'),

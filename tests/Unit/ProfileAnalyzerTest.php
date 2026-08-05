@@ -17,6 +17,8 @@ it('produces stable bounded findings with supporting evidence', function () {
         'sections' => [
             'request' => ['summary' => ['status' => 500]],
             'queries' => [
+                'label' => 'Queries',
+                'summary' => ['count' => 5, 'retained_count' => 3],
                 'payload' => [
                     'items' => [
                         ['sql' => 'select ?', 'bindings' => [1], 'duration_ms' => 60, 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
@@ -50,6 +52,10 @@ it('produces stable bounded findings with supporting evidence', function () {
         ->and($findings[4]['evidence']['shared_callsite'])->toBe([
             'file' => 'app/A.php',
             'line' => 1,
+        ])
+        ->and($findings[5])->toMatchArray([
+            'summary' => 'Showing 3 of 5 queries.',
+            'evidence' => ['collector' => 'queries', 'retained' => 3, 'total' => 5, 'dropped' => 2],
         ]);
 });
 

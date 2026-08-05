@@ -60,6 +60,7 @@ final class ProfileSummaryPresenter
             return 'redirect';
         }
 
-        return ($request['payload']['headers']['x-livewire'] ?? null) !== null ? 'livewire' : 'full_page';
+        return (string) ($request['payload']['request_type']
+            ?? (($request['payload']['headers']['x-livewire'] ?? null) !== null ? 'livewire' : 'full_page'));
     }
 }

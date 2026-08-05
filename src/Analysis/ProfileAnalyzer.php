@@ -105,12 +105,20 @@ final class ProfileAnalyzer
             $dropped = (int) ($section['payload']['dropped'] ?? 0);
 
             if ($dropped > 0) {
+                $retained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? []));
+                $total = (int) ($section['summary']['count'] ?? ($retained + $dropped));
+                $label = strtolower((string) ($section['label'] ?? str($key)->replace('_', ' ')));
                 $findings[] = $this->finding(
                     'collector.truncated',
                     'info',
                     (string) $key,
-                    'A collector reached its configured item limit.',
-                    ['collector' => (string) $key, 'dropped' => $dropped],
+                    sprintf('Showing %d of %d %s.', $retained, $total, $label),
+                    [
+                        'collector' => (string) $key,
+                        'retained' => $retained,
+                        'total' => $total,
+                        'dropped' => $dropped,
+                    ],
                 );
             }
         }

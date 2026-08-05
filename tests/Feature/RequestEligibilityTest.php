@@ -20,17 +20,26 @@ function livewireEligibilityRequest(array $componentNames): Request
     ], content: json_encode($payload, JSON_THROW_ON_ERROR));
 }
 
-it('profiles only eligible html page requests', function (Request $request, bool $allowed) {
+it('profiles application requests and excludes package owned traffic', function (Request $request, bool $allowed) {
     expect(app(RequestEligibility::class)->allows($request))->toBe($allowed);
 })->with([
     'html page' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'text/html']), true],
-    'json response' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'application/json']), false],
+    'json response' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'application/json']), true],
     'application Livewire update' => [fn () => livewireEligibilityRequest(['clinic-dashboard']), true],
     'mixed Livewire update' => [fn () => livewireEligibilityRequest(['clinic-dashboard', 'new-debug-bar.toolbar']), true],
     'internal Livewire update' => [fn () => livewireEligibilityRequest(['new-debug-bar.toolbar']), false],
     'malformed Livewire update' => [fn () => livewireEligibilityRequest([]), false],
     'package asset' => [fn () => Request::create('/__new-debug-bar/assets/new-debug-bar.js', server: ['HTTP_ACCEPT' => 'text/html']), false],
-    'Livewire route' => [fn () => Request::create('/livewire/update', server: ['HTTP_ACCEPT' => 'text/html']), false],
+    'ordinary route named like Livewire' => [fn () => Request::create('/livewire/update', server: ['HTTP_ACCEPT' => 'text/html']), true],
+]);
+
+it('injects a toolbar only for ordinary html page requests', function (Request $request, bool $allowed) {
+    expect(app(RequestEligibility::class)->mayInjectToolbar($request))->toBe($allowed);
+})->with([
+    'html page' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'text/html']), true],
+    'json request' => [fn () => Request::create('/api/clinics', server: ['HTTP_ACCEPT' => 'application/json']), false],
+    'ajax request' => [fn () => Request::create('/search', server: ['HTTP_ACCEPT' => 'text/html', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']), false],
+    'Livewire update' => [fn () => livewireEligibilityRequest(['clinic-dashboard']), false],
 ]);
 
 it('stops profiling when the package is disabled', function () {

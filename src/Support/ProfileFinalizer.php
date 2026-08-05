@@ -26,12 +26,6 @@ final class ProfileFinalizer
 
         $livewire = $this->eligibility->isApplicationLivewireRequest($event->request);
 
-        if (! $livewire && ! $this->injector->supports($event->response)) {
-            $this->manager->discard();
-
-            return;
-        }
-
         try {
             if ($livewire) {
                 $payload = json_decode((string) $event->response->getContent(), true);
@@ -55,10 +49,9 @@ final class ProfileFinalizer
         }
 
         $event->request->attributes->set('new-debug-bar.profile-id', $id);
+        $event->response->headers->set('X-New-Debug-Bar-Profile', $id);
 
-        if ($livewire) {
-            $event->response->headers->set('X-New-Debug-Bar-Profile', $id);
-        } else {
+        if (! $livewire && $this->injector->supports($event->response)) {
             try {
                 $this->injector->inject($event->response, $id);
             } catch (Throwable) {
