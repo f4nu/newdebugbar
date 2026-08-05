@@ -181,6 +181,43 @@ it('keeps keyboard focus inside the command palette', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('uses translucent command palette hover colors in :dataset mode', function (string $theme) {
+    $preferences = json_encode([
+        'theme' => $theme,
+        'favorites' => [],
+    ], JSON_THROW_ON_ERROR);
+
+    visit('/profiled-rich')
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('new-debug-bar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
+        ->refresh()
+        ->assertAttribute('#new-debug-bar', 'data-theme', $theme)
+        ->click('[data-ndb-toolbar="palette"]')
+        ->hover('[data-ndb-command="section:request"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const command = document.querySelector('[data-ndb-command="section:request"]');
+                const background = getComputedStyle(command).backgroundColor;
+                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                const alpha = Number(
+                    background.match(/\/\s*([\d.]+)\s*\)$/)?.[1]
+                        ?? background.match(/,\s*([\d.]+)\s*\)$/)?.[1]
+                        ?? 1
+                );
+
+                return state.filteredCommands[state.paletteIndex]?.id === 'section:request'
+                    && alpha > 0
+                    && alpha < 1;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('uses one metric color and balanced glass toolbar spacing', function () {
     visit('/profiled')
         ->assertScript(<<<'JS'
