@@ -48,6 +48,9 @@ it('captures a local web request and its Laravel activity', function () {
         ->assertSee('wire:key="new-debug-bar-toolbar"', false)
         ->assertSee('data-update-uri', false);
 
+    expect(substr_count((string) $response->getContent(), '<!-- Livewire Styles -->'))->toBe(1)
+        ->and(substr_count((string) $response->getContent(), 'data-update-uri='))->toBe(1);
+
     $files = File::files(config('new-debug-bar.storage.path'));
 
     expect($files)->toHaveCount(1);
@@ -100,6 +103,9 @@ it('records initial application Livewire renders and then reports Livewire in th
     $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
     $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
     $section = $profile['sections']['livewire'];
+
+    expect(substr_count((string) $response->getContent(), '<!-- Livewire Styles -->'))->toBe(1)
+        ->and(substr_count((string) $response->getContent(), 'data-update-uri='))->toBe(1);
 
     expect($section['summary'])
         ->count->toBe(1)
@@ -245,18 +251,35 @@ it('captures direct Redis commands and removes cache command duplicates', functi
         );
 });
 
+it('keeps direct Redis commands when a non Redis cache store emits a similar operation', function () {
+    $response = $this->get('/profiled-redis-independent-cache', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $redis = $profile['sections']['redis'];
+    $cache = $profile['sections']['cache'];
+
+    expect($redis['summary']['count'])->toBe(1)
+        ->and($redis['payload']['items'][0])
+        ->command->toBe('GET')
+        ->key_hashes->toBe([substr(hash('sha256', 'private-direct-key'), 0, 16)])
+        ->and($cache['summary']['misses'])->toBe(1);
+});
+
 it('reveals bounded cache and Redis keys only under the explicit full key policy', function () {
     config()->set('new-debug-bar.collection.key_policy', 'full');
 
     $response = $this->get('/profiled-redis', ['Accept' => 'text/html'])->assertOk();
     $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
     $cacheWrite = collect($profile['sections']['cache']['payload']['items'])->firstWhere('operation', 'write');
+    $cacheFlush = collect($profile['sections']['cache']['payload']['items'])->firstWhere('operation', 'flush');
     $redisGet = collect($profile['sections']['redis']['payload']['items'])->firstWhere('command', 'GET');
 
     expect($cacheWrite)
         ->key_policy->toBe('full')
         ->key->toBe('private-cache-key')
         ->tags->toBe(['tenant:private-clinic', 'patient:private-patient'])
+        ->and($cacheFlush)
+        ->key_policy->toBe('full')
+        ->tags->toBe(['tenant:private-clinic'])
         ->and($redisGet)
         ->key_policy->toBe('full')
         ->keys->toBe(['private-direct-key']);
@@ -466,6 +489,8 @@ it('profiles partial models without requiring their primary key', function () {
 });
 
 it('returns the application response when a collector fails', function () {
+    app('livewire')->flushState();
+
     $manager = new ProfileManager(
         [new CollectorThatFailsDuringSummary],
         $this->app->make(Redactor::class),
@@ -474,7 +499,7 @@ it('returns the application response when a collector fails', function () {
 
     $this->get('/profiled-collector-failure')
         ->assertOk()
-        ->assertSee('Application response')
+        ->assertContent('<!doctype html><html><body>Application response</body></html>')
         ->assertHeaderMissing('X-New-Debug-Bar-Profile');
 
     expect($manager->isCollecting())->toBeFalse();
@@ -485,7 +510,6 @@ it('discards request state when profiling setup fails', function () {
     $middleware = new ProfileRequest(
         $manager,
         app(RequestEligibility::class),
-        app(BarInjector::class),
     );
     $request = Request::create('/setup-failure', 'POST', [
         'value' => new StringableThatFails,
@@ -496,7 +520,7 @@ it('discards request state when profiling setup fails', function () {
         fn () => new Response('<html><body>Application response</body></html>'),
     );
 
-    expect($response->getContent())->toContain('Application response')
+    expect($response->getContent())->toBe('<html><body>Application response</body></html>')
         ->and($manager->isCollecting())->toBeFalse();
 });
 

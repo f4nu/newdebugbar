@@ -20,14 +20,6 @@ final class RequestEligibility
         return ! $this->isLivewireRequest($request) || $this->isApplicationLivewireRequest($request);
     }
 
-    public function mayInjectToolbar(Request $request): bool
-    {
-        return ! $this->isLivewireRequest($request)
-            && ! $request->expectsJson()
-            && ! $request->ajax()
-            && $request->acceptsHtml();
-    }
-
     public function isApplicationLivewireRequest(Request $request): bool
     {
         $names = $this->livewireComponentNames($request);

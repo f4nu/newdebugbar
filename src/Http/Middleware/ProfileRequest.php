@@ -6,7 +6,6 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use NewDebugBar\ProfileManager;
-use NewDebugBar\Support\BarInjector;
 use NewDebugBar\Support\RequestEligibility;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -17,7 +16,6 @@ final class ProfileRequest
     public function __construct(
         private readonly ProfileManager $manager,
         private readonly RequestEligibility $eligibility,
-        private readonly BarInjector $injector,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -28,10 +26,6 @@ final class ProfileRequest
 
         try {
             $this->manager->begin($request);
-
-            if ($this->eligibility->mayInjectToolbar($request)) {
-                $this->injector->prepareAssets();
-            }
         } catch (Throwable) {
             $this->manager->discard();
 

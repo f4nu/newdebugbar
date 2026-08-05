@@ -35,15 +35,6 @@ it('profiles application requests and excludes package owned traffic', function 
     'ordinary similarly named script' => [fn () => Request::create('/livewire-example/app.js', server: ['HTTP_ACCEPT' => 'text/javascript']), true],
 ]);
 
-it('injects a toolbar only for ordinary html page requests', function (Request $request, bool $allowed) {
-    expect(app(RequestEligibility::class)->mayInjectToolbar($request))->toBe($allowed);
-})->with([
-    'html page' => [fn () => Request::create('/dashboard', server: ['HTTP_ACCEPT' => 'text/html']), true],
-    'json request' => [fn () => Request::create('/api/clinics', server: ['HTTP_ACCEPT' => 'application/json']), false],
-    'ajax request' => [fn () => Request::create('/search', server: ['HTTP_ACCEPT' => 'text/html', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']), false],
-    'Livewire update' => [fn () => livewireEligibilityRequest(['clinic-dashboard']), false],
-]);
-
 it('stops profiling when the package is disabled', function () {
     config()->set('new-debug-bar.enabled', false);
 

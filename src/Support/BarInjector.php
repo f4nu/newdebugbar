@@ -3,6 +3,7 @@
 namespace NewDebugBar\Support;
 
 use Livewire\LivewireManager;
+use Livewire\Mechanisms\FrontendAssets\FrontendAssets;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,11 +16,6 @@ final class BarInjector
         private readonly AssetUrl $assets,
     ) {}
 
-    public function prepareAssets(): void
-    {
-        $this->livewire->forceAssetInjection();
-    }
-
     public function inject(Response $response, string $profileId): Response
     {
         if (! $this->supports($response)) {
@@ -31,10 +27,14 @@ final class BarInjector
         $stylesheet = e($this->assets->for('new-debug-bar.css'));
         $script = e($this->assets->for('new-debug-bar.js'));
         $component = $this->livewire->mount('new-debug-bar.toolbar', ['profileId' => $profileId], 'new-debug-bar-toolbar');
+        $livewireStyles = FrontendAssets::styles();
+        $livewireScripts = FrontendAssets::scripts();
 
-        $head = '<style id="new-debug-bar-critical-css" data-navigate-once="true">#new-debug-bar [x-cloak]{display:none!important}</style>'
+        $head = $livewireStyles
+            .'<style id="new-debug-bar-critical-css" data-navigate-once="true">#new-debug-bar [x-cloak]{display:none!important}</style>'
             .'<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true">';
-        $body = '<script src="'.$script.'" data-navigate-once="true"></script>'.$component;
+        $body = $livewireScripts
+            .'<script src="'.$script.'" data-navigate-once="true"></script>'.$component;
         if (preg_match('/<\/head\s*>/i', $html) === 1) {
             $html = preg_replace('/<\/head\s*>/i', $head.'$0', $html, 1) ?? $html;
         } elseif (preg_match('/<html(?:\s[^>]*)?>/i', $html) === 1) {
