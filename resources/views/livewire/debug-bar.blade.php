@@ -85,58 +85,71 @@
             </header>
 
             <div class="ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:sm:flex-row">
-                <nav aria-label="Debug sections" class="ndb-scrollbar ndb:flex ndb:max-h-36 ndb:shrink-0 ndb:gap-0.5 ndb:overflow-x-auto ndb:border-b ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:p-2 ndb:backdrop-blur-xl ndb:sm:max-h-none ndb:sm:w-[210px] ndb:sm:flex-col ndb:sm:overflow-x-visible ndb:sm:overflow-y-auto ndb:sm:border-b-0 ndb:sm:border-r ndb:sm:p-3 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/60">
-                    <template x-for="(section, sectionIndex) in sidebarSections" :key="'section-' + section.key">
-                        <div class="ndb:contents">
-                            <p x-show.important="favorites.length > 0 && sectionIndex === 0" class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">Favorites</p>
-                            <div x-show.important="favorites.length > 0 && sectionIndex === favorites.length" class="ndb:hidden ndb:h-px ndb:bg-zinc-200 ndb:sm:my-2 ndb:sm:block ndb:dark:bg-zinc-800"></div>
-                            <p x-show.important="sectionIndex === favorites.length" class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">Sections</p>
-                            <div
-                                :draggable="isFavorite(section.key)"
-                                :data-ndb-section="section.key"
-                                :data-ndb-favorite="isFavorite(section.key) ? 'true' : 'false'"
-                                data-ndb-dragging="false"
-                                @dragstart="startFavoriteDrag(section.key, $event)"
-                                @dragover.prevent="hoverFavorite(section.key, $event.clientY > $event.currentTarget.getBoundingClientRect().top + ($event.currentTarget.offsetHeight / 2))"
-                                @dragleave="leaveFavorite(section.key)"
-                                @drop.prevent="dropFavorite(section.key, favoriteDropAfter)"
-                                @dragend="endFavoriteDrag()"
-                                class="ndb:relative ndb:flex ndb:w-auto ndb:shrink-0 ndb:items-center ndb:rounded-lg ndb:pr-1 ndb:transition ndb:hover:bg-zinc-200/60 ndb:sm:w-full ndb:dark:hover:bg-zinc-800/60"
-                                :class="selected === section.key ? 'ndb-section-active' : ''"
-                            >
-                                <span :data-ndb-favorite-drop-before="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:top-0 ndb:z-20 ndb:h-1 ndb:-translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
-                                <span :data-ndb-favorite-drop-after="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:bottom-0 ndb:z-20 ndb:h-1 ndb:translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
-                                <button
-                                    type="button"
-                                    :data-ndb-select-section="section.key"
-                                    :aria-current="selected === section.key ? 'page' : null"
-                                    :aria-label="isFavorite(section.key) ? section.label + '. Drag to reorder. Shift and arrow keys also reorder.' : section.label"
-                                    @click="selectSection(section.key)"
-                                    @keydown.shift.arrow-up.prevent="moveFavorite(section.key, -1)"
-                                    @keydown.shift.arrow-down.prevent="moveFavorite(section.key, 1)"
-                                    class="ndb:flex ndb:h-9 ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:px-2.5 ndb:text-left ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
-                                    :class="(isFavorite(section.key) ? 'ndb:cursor-grab ndb:active:cursor-grabbing ' : '') + (selected === section.key ? '' : 'ndb:text-zinc-600 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:text-white')"
-                                >
-                                    <span class="ndb-section-label ndb:truncate" x-text="section.label"></span>
-                                    <span x-show.important="section.count !== null" class="ndb-section-count ndb:ml-auto ndb:text-[10px] ndb:tabular-nums" :class="selected === section.key ? '' : 'ndb:text-zinc-400'" x-text="section.count"></span>
-                                </button>
-                                <button
-                                    type="button"
-                                    draggable="false"
-                                    :data-ndb-toggle-favorite="section.key"
-                                    :aria-label="(isFavorite(section.key) ? 'Remove ' : 'Add ') + section.label + (isFavorite(section.key) ? ' from favorites' : ' to favorites')"
-                                    :aria-pressed="isFavorite(section.key)"
-                                    :title="isFavorite(section.key) ? 'Remove from favorites' : 'Add to favorites'"
-                                    @dragstart.prevent
-                                    @click.stop="toggleFavorite(section.key)"
-                                    class="ndb-star-button ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-400 ndb:transition ndb:hover:scale-105 ndb:hover:text-blue-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-blue-500 ndb:dark:text-zinc-500 ndb:dark:hover:text-blue-300"
-                                >
-                                    <span x-show.important="! isFavorite(section.key)" class="ndb-section-star-outline"><x-new-debug-bar::icon name="star" class="ndb:size-3.5" /></span>
-                                    <span x-show.important="isFavorite(section.key)"><x-new-debug-bar::icon name="star-filled" class="ndb-favorite-star ndb:size-3.5" /></span>
-                                </button>
-                            </div>
+                <nav aria-label="Debug sections" class="ndb:flex ndb:max-h-36 ndb:shrink-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:p-2 ndb:backdrop-blur-xl ndb:sm:max-h-none ndb:sm:w-[210px] ndb:sm:border-b-0 ndb:sm:border-r ndb:sm:p-3 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/60">
+                    <div class="ndb:mb-2 ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-2">
+                        <div role="group" aria-label="Section visibility" class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:rounded-lg ndb:bg-zinc-200/70 ndb:p-0.5 ndb:dark:bg-zinc-800/80">
+                            <button type="button" data-ndb-section-mode="active" aria-controls="new-debug-bar-section-list" :aria-pressed="sectionMode === 'active'" @click="setSectionMode('active')" class="ndb:flex ndb:h-7 ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:justify-center ndb:gap-1.5 ndb:rounded-md ndb:px-2 ndb:text-[10px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="sectionMode === 'active' ? 'ndb:bg-white ndb:text-zinc-950 ndb:shadow-sm ndb:dark:bg-zinc-700 ndb:dark:text-white' : 'ndb:text-zinc-500 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:text-white'"><span>Active</span><span class="ndb:tabular-nums ndb:text-zinc-400" x-text="sidebarSections.length"></span></button>
+                            <button type="button" data-ndb-section-mode="all" aria-controls="new-debug-bar-section-list" :aria-pressed="sectionMode === 'all'" @click="setSectionMode('all')" class="ndb:flex ndb:h-7 ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:justify-center ndb:gap-1.5 ndb:rounded-md ndb:px-2 ndb:text-[10px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="sectionMode === 'all' ? 'ndb:bg-white ndb:text-zinc-950 ndb:shadow-sm ndb:dark:bg-zinc-700 ndb:dark:text-white' : 'ndb:text-zinc-500 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:text-white'"><span>All</span><span class="ndb:tabular-nums ndb:text-zinc-400" x-text="sectionKeys.length"></span></button>
                         </div>
-                    </template>
+                        <p data-ndb-quiet-count x-show.important="sectionMode === 'active' && quietSectionCount > 0" aria-live="polite" class="ndb:shrink-0 ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"><span x-text="quietSectionCount"></span><span class="ndb:hidden ndb:sm:inline"> quiet hidden</span><span class="ndb:sm:hidden"> quiet</span></p>
+                    </div>
+
+                    <div id="new-debug-bar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:gap-0.5 ndb:overflow-x-auto ndb:sm:flex-1 ndb:sm:flex-col ndb:sm:overflow-x-visible ndb:sm:overflow-y-auto">
+                        <template x-for="(section, sectionIndex) in orderedSections" :key="'section-' + section.key">
+                            <div x-show.important="isSectionVisible(section)" class="ndb:contents">
+                                <p x-show.important="favorites.length > 0 && sectionIndex === 0" class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">Favorites</p>
+                                <div x-show.important="favorites.length > 0 && sectionIndex === favorites.length" class="ndb:hidden ndb:h-px ndb:bg-zinc-200 ndb:sm:my-2 ndb:sm:block ndb:dark:bg-zinc-800"></div>
+                                <p x-show.important="sectionIndex === favorites.length" class="ndb:hidden ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400 ndb:sm:block">Sections</p>
+                                <div
+                                    :draggable="isFavorite(section.key)"
+                                    :data-ndb-section="section.key"
+                                    :data-ndb-section-visible="isSectionVisible(section) ? 'true' : 'false'"
+                                    :data-ndb-favorite="isFavorite(section.key) ? 'true' : 'false'"
+                                    data-ndb-dragging="false"
+                                    @dragstart="startFavoriteDrag(section.key, $event)"
+                                    @dragover.prevent="hoverFavorite(section.key, $event.clientY > $event.currentTarget.getBoundingClientRect().top + ($event.currentTarget.offsetHeight / 2))"
+                                    @dragleave="leaveFavorite(section.key)"
+                                    @drop.prevent="dropFavorite(section.key, favoriteDropAfter)"
+                                    @dragend="endFavoriteDrag()"
+                                    class="ndb:group ndb:relative ndb:flex ndb:w-auto ndb:shrink-0 ndb:items-center ndb:rounded-lg ndb:pr-1 ndb:transition ndb:hover:bg-zinc-200/60 ndb:sm:w-full ndb:dark:hover:bg-zinc-800/60"
+                                    :class="selected === section.key ? 'ndb-section-active' : ''"
+                                >
+                                    <span :data-ndb-favorite-drop-before="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:top-0 ndb:z-20 ndb:h-1 ndb:-translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
+                                    <span :data-ndb-favorite-drop-after="section.key" hidden class="ndb:absolute ndb:inset-x-0.5 ndb:bottom-0 ndb:z-20 ndb:h-1 ndb:translate-y-1/2 ndb:rounded-full ndb:bg-indigo-500 ndb:shadow-[0_0_0_2px_rgba(255,255,255,0.8)] ndb:dark:shadow-[0_0_0_2px_rgba(9,9,11,0.9)]"></span>
+                                    <button
+                                        type="button"
+                                        :data-ndb-select-section="section.key"
+                                        :aria-current="selected === section.key ? 'page' : null"
+                                        :aria-label="isFavorite(section.key) ? section.label + '. Drag to reorder. Shift and arrow keys also reorder.' : section.label"
+                                        @click="selectSection(section.key)"
+                                        @keydown.shift.arrow-up.prevent="moveFavorite(section.key, -1)"
+                                        @keydown.shift.arrow-down.prevent="moveFavorite(section.key, 1)"
+                                        class="ndb:flex ndb:h-9 ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:px-2.5 ndb:text-left ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                                        :class="(isFavorite(section.key) ? 'ndb:cursor-grab ndb:active:cursor-grabbing ' : '') + (selected === section.key ? '' : 'ndb:text-zinc-600 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:text-white')"
+                                    >
+                                        <span class="ndb-section-label ndb:truncate" x-text="section.label"></span>
+                                        <span x-show.important="section.count !== null" class="ndb-section-count ndb:ml-auto ndb:text-[10px] ndb:tabular-nums" :class="selected === section.key ? '' : 'ndb:text-zinc-400'" x-text="section.count"></span>
+                                        <span x-show.important="section.attention" class="ndb:grid ndb:size-4 ndb:shrink-0 ndb:place-items-center ndb:rounded-full ndb:bg-amber-100 ndb:text-[9px] ndb:font-black ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300" title="Has findings or incomplete data">!</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        draggable="false"
+                                        :data-ndb-toggle-favorite="section.key"
+                                        :aria-label="(isFavorite(section.key) ? 'Remove ' : 'Add ') + section.label + (isFavorite(section.key) ? ' from favorites' : ' to favorites')"
+                                        :aria-pressed="isFavorite(section.key)"
+                                        :title="isFavorite(section.key) ? 'Remove from favorites' : 'Add to favorites'"
+                                        @dragstart.prevent
+                                        @click.stop="toggleFavorite(section.key)"
+                                        class="ndb-star-button ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-400 ndb:transition ndb:hover:scale-105 ndb:hover:text-blue-600 ndb:focus-visible:opacity-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-blue-500 ndb:sm:opacity-0 ndb:sm:group-focus-within:opacity-100 ndb:sm:group-hover:opacity-100 ndb:dark:text-zinc-500 ndb:dark:hover:text-blue-300"
+                                        :class="isFavorite(section.key) || selected === section.key ? 'ndb:sm:opacity-100' : ''"
+                                    >
+                                        <span x-show.important="! isFavorite(section.key)" class="ndb-section-star-outline"><x-new-debug-bar::icon name="star" class="ndb:size-3.5" /></span>
+                                        <span x-show.important="isFavorite(section.key)"><x-new-debug-bar::icon name="star-filled" class="ndb-favorite-star ndb:size-3.5" /></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </nav>
 
                 <main x-ref="content" class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70">
@@ -163,6 +176,9 @@
                                         @php($runtimeDrivers = is_array($section['payload']['drivers'] ?? null) ? $section['payload']['drivers'] : [])
                                         @php($runtimeCacheState = is_array($section['payload']['cache_state'] ?? null) ? $section['payload']['cache_state'] : [])
                                         @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
+                                        @php($runtimeSummary = array_values(array_filter([isset($runtimeFacts['environment']) ? strtoupper((string) $runtimeFacts['environment']) : null, isset($runtimeFacts['php']) ? 'PHP '.$runtimeFacts['php'] : null, isset($runtimeFacts['laravel']) ? 'Laravel '.$runtimeFacts['laravel'] : null])))
+                                        @php($activitySections = array_values(array_filter($summary['sections'] ?? [], fn (array $link): bool => ! in_array($link['key'], ['overview', 'request', 'history'], true) && $link['count'] !== null && ($link['active'] ?? true))))
+                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" />
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach ([['Duration', $profile['metrics']['duration_ms'].' ms', 'clock'], ['Peak memory', $profile['metrics']['peak_memory_mb'].' MB', 'memory'], ['Queries', $profile['sections']['queries']['summary']['count'], 'database'], ['Status', $profile['sections']['request']['summary']['status'], 'check']] as [$label, $value, $icon])
                                                 <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:p-3.5 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900"><x-new-debug-bar::icon :name="$icon" class="ndb:size-4 ndb:text-indigo-500" /><p class="ndb:mt-2 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</p><p class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</p></div>
@@ -171,58 +187,69 @@
                                         @if (is_string($section['payload']['action_location']['editor_url'] ?? null))
                                             <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:dark:border-zinc-800"><span class="ndb:font-semibold ndb:text-zinc-400">Controller source</span><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $section['payload']['action_location']['copy'] }}</code><a href="{{ $section['payload']['action_location']['editor_url'] }}" class="ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a></div>
                                         @endif
-                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" />
-                                        <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
-                                            <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Runtime</h3>
-                                            <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:lg:grid-cols-5">
-                                                @foreach ($runtimeFacts as $label => $value)
-                                                    <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->replace('_', ' ')->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ is_bool($value) ? ($value ? 'On' : 'Off') : $value }}</dd></div>
-                                                @endforeach
-                                            </dl>
-                                        </div>
-                                        @if ($runtimeDrivers !== [] || $runtimeCacheState !== [])
-                                            <div class="ndb:grid ndb:gap-3 ndb:lg:grid-cols-2">
-                                                @if ($runtimeDrivers !== [])
-                                                    <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
-                                                        <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Drivers</h3>
-                                                        <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-3">
-                                                            @foreach ($runtimeDrivers as $label => $value)
-                                                                <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ $value }}</dd></div>
-                                                            @endforeach
-                                                        </dl>
-                                                    </div>
-                                                @endif
-                                                @if ($runtimeCacheState !== [])
-                                                    <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
-                                                        <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Framework cache</h3>
-                                                        <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-3">
-                                                            @foreach ($runtimeCacheState as $label => $value)
-                                                                <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">{{ $value === null ? 'Not exposed' : ($value ? 'Cached' : 'Open') }}</dd></div>
-                                                            @endforeach
-                                                        </dl>
-                                                    </div>
-                                                @endif
+                                        @if ($activitySections !== [])
+                                            <div data-ndb-overview-activity>
+                                                <div class="ndb:mb-2 ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"><h3 class="ndb:text-xs ndb:font-bold">Activity</h3><span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ count($activitySections) }} relevant sections</span></div>
+                                                <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-4">
+                                                    @foreach ($activitySections as $link)
+                                                        <button type="button" data-ndb-overview-activity-section="{{ $link['key'] }}" @click="selectSection(@js($link['key']))" class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-2 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:hover:border-indigo-300 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-800 ndb:dark:hover:border-indigo-800 ndb:dark:hover:bg-indigo-950/50"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $link['label'] }}</span>@if ($link['attention'])<span class="ndb:grid ndb:size-4 ndb:shrink-0 ndb:place-items-center ndb:rounded-full ndb:bg-amber-100 ndb:text-[9px] ndb:font-black ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300" title="Has findings or incomplete data">!</span>@endif<span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $link['count'] }}</span></button>
+                                                    @endforeach
+                                                </div>
                                             </div>
                                         @endif
-                                        <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
-                                            <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"><h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Ecosystem</h3><span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Observed host packages</span></div>
-                                            @if ($runtimeEcosystem === [])
-                                                <p class="ndb:mt-3 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">No supported ecosystem packages were detected for this request.</p>
-                                            @else
-                                                <ul class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
-                                                    @foreach ($runtimeEcosystem as $package)
-                                                        <li class="ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:dark:bg-zinc-900">{{ $package['label'] }} <span class="ndb:text-zinc-400">{{ $package['version'] }}</span></li>
-                                                    @endforeach
-                                                </ul>
-                                            @endif
-                                        </div>
-                                        <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-4">
-                                            @foreach ($summary['section_counts'] as $key => $count)
-                                                @if ($count !== null)
-                                                    <button type="button" @click="selectSection(@js($key))" class="ndb:flex ndb:items-center ndb:justify-between ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:hover:border-indigo-300 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-800 ndb:dark:hover:border-indigo-800 ndb:dark:hover:bg-indigo-950/50"><span class="ndb:text-xs ndb:font-semibold">{{ $profile['sections'][$key]['label'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $count }}</span></button>
+                                        <details data-ndb-overview-environment class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
+                                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3.5 ndb:transition ndb:hover:bg-zinc-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900">
+                                                <span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Environment details</span>@if ($runtimeSummary !== [])<span class="ndb:mt-0.5 ndb:block ndb:truncate ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ implode(' · ', $runtimeSummary) }}</span>@endif</span>
+                                                <span class="ndb:hidden ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:inline">Runtime, drivers, ecosystem</span>
+                                                <x-new-debug-bar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition" />
+                                            </summary>
+                                            <div data-ndb-overview-environment-content class="ndb:space-y-5 ndb:border-t ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
+                                                <div>
+                                                    <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Runtime</h3>
+                                                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:lg:grid-cols-5">
+                                                        @foreach ($runtimeFacts as $label => $value)
+                                                            <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->replace('_', ' ')->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ is_bool($value) ? ($value ? 'On' : 'Off') : $value }}</dd></div>
+                                                        @endforeach
+                                                    </dl>
+                                                </div>
+                                                @if ($runtimeDrivers !== [] || $runtimeCacheState !== [])
+                                                    <div class="ndb:grid ndb:gap-5 ndb:border-t ndb:border-zinc-200 ndb:pt-5 ndb:lg:grid-cols-2 ndb:dark:border-zinc-800">
+                                                        @if ($runtimeDrivers !== [])
+                                                            <div>
+                                                                <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Drivers</h3>
+                                                                <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-3">
+                                                                    @foreach ($runtimeDrivers as $label => $value)
+                                                                        <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">{{ $value }}</dd></div>
+                                                                    @endforeach
+                                                                </dl>
+                                                            </div>
+                                                        @endif
+                                                        @if ($runtimeCacheState !== [])
+                                                            <div>
+                                                                <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Framework cache</h3>
+                                                                <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-3">
+                                                                    @foreach ($runtimeCacheState as $label => $value)
+                                                                        <div><dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ str($label)->title() }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">{{ $value === null ? 'Not exposed' : ($value ? 'Cached' : 'Open') }}</dd></div>
+                                                                    @endforeach
+                                                                </dl>
+                                                            </div>
+                                                        @endif
+                                                    </div>
                                                 @endif
-                                            @endforeach
-                                        </div>
+                                                <div class="ndb:border-t ndb:border-zinc-200 ndb:pt-5 ndb:dark:border-zinc-800">
+                                                    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"><h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Ecosystem</h3><span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Observed host packages</span></div>
+                                                    @if ($runtimeEcosystem === [])
+                                                        <p class="ndb:mt-3 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">No supported ecosystem packages were detected for this request.</p>
+                                                    @else
+                                                        <ul class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
+                                                            @foreach ($runtimeEcosystem as $package)
+                                                                <li class="ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:dark:bg-zinc-900">{{ $package['label'] }} <span class="ndb:text-zinc-400">{{ $package['version'] }}</span></li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </details>
                                     @else
                                         <x-new-debug-bar::finding-list :findings="$sectionFindings" title="Related findings" />
                                     @endif

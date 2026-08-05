@@ -19,6 +19,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     inspectorReturnFocus: null,
     detailsRequested: false,
     selected: 'overview',
+    sectionMode: 'active',
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
     favorites: [],
@@ -74,6 +75,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         const saved = JSON.parse(browser.storage?.getItem(STORAGE_KEY) ?? '{}');
 
         if (['system', 'light', 'dark'].includes(saved.theme)) this.theme = saved.theme;
+        if (['active', 'all'].includes(saved.sectionMode)) this.sectionMode = saved.sectionMode;
         if (Array.isArray(saved.favorites)) {
           const allowed = this.sectionKeys;
           this.favorites = [...new Set(saved.favorites)].filter((key) => allowed.includes(key));
@@ -87,6 +89,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       try {
         browser.storage?.setItem(STORAGE_KEY, JSON.stringify({
           theme: this.theme,
+          sectionMode: this.sectionMode,
           favorites: this.favorites,
         }));
       } catch {
@@ -124,12 +127,27 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
     },
 
-    get sidebarSections() {
-      const byKey = new Map((this.summary.sections ?? []).map((section) => [section.key, section]));
+    get orderedSections() {
+      const allSections = this.summary.sections ?? [];
+      const byKey = new Map(allSections.map((section) => [section.key, section]));
       const favorites = this.favorites.map((key) => byKey.get(key)).filter(Boolean);
-      const sections = (this.summary.sections ?? []).filter((section) => !this.isFavorite(section.key));
+      const sections = allSections.filter((section) => !this.isFavorite(section.key));
 
       return [...favorites, ...sections];
+    },
+
+    get sidebarSections() {
+      return this.orderedSections.filter((section) => this.isSectionVisible(section));
+    },
+
+    get quietSectionCount() {
+      if (this.sectionMode === 'all') return 0;
+
+      return (this.summary.sections ?? []).filter((section) => (
+        !this.isSectionActive(section)
+        && !this.isFavorite(section.key)
+        && section.key !== this.selected
+      )).length;
     },
 
     get selectedSection() {
@@ -139,6 +157,24 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
     isFavorite(key) {
       return this.favorites.includes(key);
+    },
+
+    isSectionActive(section) {
+      return section?.active !== false;
+    },
+
+    isSectionVisible(section) {
+      return this.sectionMode === 'all'
+        || this.isSectionActive(section)
+        || this.isFavorite(section.key)
+        || section.key === this.selected;
+    },
+
+    setSectionMode(mode) {
+      if (!['active', 'all'].includes(mode)) return;
+
+      this.sectionMode = mode;
+      this.persist();
     },
 
     selectSection(section) {

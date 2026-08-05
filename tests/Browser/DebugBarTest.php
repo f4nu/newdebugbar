@@ -51,6 +51,55 @@ it('opens every compact toolbar destination and closes cleanly', function () {
     $page->assertNoJavaScriptErrors();
 });
 
+it('discloses active sections first without losing quiet section access', function () {
+    $page = visit('/profiled-rich');
+    $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'active', favorites: []}))");
+
+    $page
+        ->refresh()
+        ->resize(1440, 900)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->assertAttribute('[data-ndb-section-mode="active"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            document.querySelectorAll('[data-ndb-section-visible="true"]').length
+                < Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
+            JS)
+        ->assertScript(<<<'JS'
+            Number(document.querySelector('[data-ndb-quiet-count] span:first-child').textContent)
+                === Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
+                    - document.querySelectorAll('[data-ndb-section-visible="true"]').length
+            JS)
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section=\\"validation\\"]").parentElement).display === "none"')
+        ->assertScript('document.querySelector("[data-ndb-overview-environment]").open === false')
+        ->assertScript(<<<'JS'
+            document.querySelector('[data-ndb-findings]').getBoundingClientRect().top
+                < document.querySelector('[data-ndb-overview-activity]').getBoundingClientRect().top
+            JS)
+        ->click('[data-ndb-overview-environment] summary')
+        ->assertAttribute('[data-ndb-overview-environment]', 'open', '')
+        ->click('[data-ndb-section-mode="all"]')
+        ->assertAttribute('[data-ndb-section-mode="all"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-section="validation"]')
+        ->click('[data-ndb-select-section="validation"]')
+        ->click('[data-ndb-section-mode="active"]')
+        ->assertVisible('[data-ndb-section="validation"]');
+
+    assertDebugSectionSelected($page, 'validation');
+
+    $page
+        ->click('[data-ndb-section-mode="all"]')
+        ->refresh()
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->assertAttribute('[data-ndb-section-mode="all"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            document.querySelectorAll('[data-ndb-section-visible="true"]').length
+                === Number(document.querySelector('[data-ndb-section-mode="all"] span:last-child').textContent)
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('moves focus into the inspector and returns it to its opener', function () {
     visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
@@ -256,7 +305,8 @@ it('switches every section after Livewire navigation with one active state', fun
         ->waitForText('Second request')
         ->assertPathIs('/profiled-next')
         ->click('[data-ndb-toolbar="expand"]')
-        ->wait(0.2);
+        ->wait(0.2)
+        ->click('[data-ndb-section-mode="all"]');
 
     foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'history', 'overview', 'models'] as $section) {
         $page->click("[data-ndb-select-section=\"{$section}\"]");

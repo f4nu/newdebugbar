@@ -28,6 +28,8 @@ Laravel 12, Livewire 3, production profiling, and Laravel Octane are not support
 
 Profiles stay local in `storage/framework/new-debug-bar`. They are bounded, short-lived JSON files and do not use a database. The package profiles application JSON, API, AJAX, redirect, stream, download, Artisan, test, and worker activity without injecting UI into those responses. Same-origin `fetch` and `XMLHttpRequest` profile IDs are added to History without replacing the page profile.
 
+The expanded inspector opens with an Active section list: populated collectors, findings, truncation, incomplete data, favorites, and the current section stay visible. All restores the stable full collector list, and the command palette always searches every section. Overview leads with findings, quick metrics, and relevant activity; Runtime, drivers, framework cache, and Ecosystem remain available in one secondary disclosure. This preference is saved per site.
+
 ## Install from a local checkout
 
 Add a development path repository to the Laravel application's `composer.json`:

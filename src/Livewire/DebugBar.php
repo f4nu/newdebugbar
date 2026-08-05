@@ -177,15 +177,39 @@ final class DebugBar extends Component
     private function makeSummary(array $profile): array
     {
         $sections = $profile['sections'] ?? [];
+        $findings = is_array($profile['findings'] ?? null) ? $profile['findings'] : [];
+        $findingCounts = [];
         $sectionLinks = [];
         $sectionCounts = [];
 
+        foreach ($findings as $finding) {
+            $sectionKey = is_array($finding) ? ($finding['section'] ?? null) : null;
+
+            if (is_string($sectionKey)) {
+                $findingCounts[$sectionKey] = ($findingCounts[$sectionKey] ?? 0) + 1;
+            }
+        }
+
         foreach ($sections as $key => $section) {
             $count = $section['summary']['count'] ?? null;
+            $dropped = max(
+                (int) ($section['summary']['dropped_count'] ?? 0),
+                (int) ($section['payload']['dropped'] ?? 0),
+            );
+            $truncated = (bool) ($section['summary']['truncated'] ?? $section['payload']['truncated'] ?? false)
+                || $dropped > 0;
+            $incomplete = (bool) ($section['payload']['incomplete'] ?? false);
+            $findingCount = $findingCounts[$key] ?? 0;
+            $attention = $findingCount > 0 || $truncated || $incomplete;
             $sectionLinks[] = [
                 'key' => $key,
                 'label' => $section['label'] ?? ucfirst($key),
                 'count' => $count,
+                'active' => $count === null || (int) $count > 0 || $attention,
+                'attention' => $attention,
+                'finding_count' => $findingCount,
+                'truncated' => $truncated,
+                'incomplete' => $incomplete,
             ];
             $sectionCounts[$key] = $count;
         }
@@ -194,6 +218,11 @@ final class DebugBar extends Component
             'key' => 'history',
             'label' => 'History',
             'count' => null,
+            'active' => true,
+            'attention' => false,
+            'finding_count' => 0,
+            'truncated' => false,
+            'incomplete' => false,
         ];
         $sectionCounts['history'] = null;
 
@@ -216,7 +245,7 @@ final class DebugBar extends Component
             'slow_query_count' => $querySummary['slow_count'] ?? 0,
             'duplicate_query_count' => $querySummary['repeated_pattern_count'] ?? 0,
             'extra_query_count' => $querySummary['extra_execution_count'] ?? 0,
-            'warning' => $status >= 400 || $exceptionCount > 0 || ($querySummary['slow_count'] ?? 0) > 0,
+            'warning' => $status >= 400 || $exceptionCount > 0 || $findings !== [],
             'sections' => $sectionLinks,
             'section_counts' => $sectionCounts,
         ];

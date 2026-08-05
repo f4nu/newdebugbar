@@ -85,6 +85,63 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
         ->assertSet('summary.exception_count', 1);
 });
 
+it('marks active, quiet, truncated, and incomplete sections for disclosure', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'environment' => 'testing',
+        'metrics' => ['duration_ms' => 15.2, 'peak_memory_mb' => 8.5],
+        'sections' => [
+            'overview' => ['label' => 'Overview', 'summary' => [], 'payload' => []],
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'GET', 'status' => 200],
+                'payload' => ['path' => '/organizations'],
+            ],
+            'queries' => [
+                'label' => 'Queries',
+                'summary' => ['count' => 0, 'duration_ms' => 0],
+                'payload' => ['items' => [], 'dropped' => 0],
+            ],
+            'views' => [
+                'label' => 'Views',
+                'summary' => ['count' => 2, 'retained_count' => 0, 'dropped_count' => 2],
+                'payload' => ['items' => [], 'dropped' => 2, 'truncated' => true],
+            ],
+            'logs' => [
+                'label' => 'Logs',
+                'summary' => ['count' => 0],
+                'payload' => ['items' => [], 'dropped' => 0],
+            ],
+            'exceptions' => [
+                'label' => 'Exceptions',
+                'summary' => ['count' => 0],
+                'payload' => ['items' => [], 'dropped' => 0],
+            ],
+        ],
+    ]);
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->assertSet('summary.warning', true)
+        ->assertSet('summary.sections', function (array $sections): bool {
+            $sections = collect($sections)->keyBy('key');
+
+            return $sections['overview']['active'] === true
+                && $sections['request']['active'] === true
+                && $sections['queries']['active'] === false
+                && $sections['logs']['active'] === false
+                && $sections['exceptions']['active'] === false
+                && $sections['views']['active'] === true
+                && $sections['views']['attention'] === true
+                && $sections['views']['truncated'] === true
+                && $sections['views']['finding_count'] === 1
+                && $sections['timeline']['active'] === true
+                && $sections['timeline']['attention'] === true
+                && $sections['timeline']['incomplete'] === true
+                && $sections['history']['active'] === true;
+        });
+});
+
 it('uses the shared presenter for deferred query details and findings', function () {
     $id = (string) Str::uuid();
     app(ProfileStore::class)->put([
