@@ -288,6 +288,30 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
     assertVisualDebugBaseline($page, "query-repeated-{$theme}");
 })->with(['light', 'dark']);
 
+$expandedDetailCases = [
+    'light models' => ['models', 'light'],
+    'dark models' => ['models', 'dark'],
+    'light cache' => ['cache', 'light'],
+    'dark cache' => ['cache', 'dark'],
+];
+
+it('matches the visual baseline for expanded :dataset details', function (string $section, string $theme) {
+    $page = visualDebugPage($section, $theme)
+        ->resize(1440, 900)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->waitForText('Sections')
+        ->click("[data-ndb-select-section=\"{$section}\"]")
+        ->click("[data-ndb-section-panel=\"{$section}\"] details:first-of-type summary")
+        ->assertAttribute("[data-ndb-section-panel=\"{$section}\"] details:first-of-type", 'open', '');
+
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "details-expanded-{$section}-{$theme}");
+})->with($expandedDetailCases);
+
 it('matches the visual baseline for :dataset favorite ordering', function (string $theme) {
     $page = visit('/profiled-rich');
     setVisualDebugTheme($page, $theme, ['request', 'overview', 'queries']);
