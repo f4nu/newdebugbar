@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\LivewireUpdateRecorder;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -57,4 +58,15 @@ it('records safe application Livewire facts and skips internal components', func
         ->validation_fields->toBe(['name'])
         ->payload_size_bytes->toBe(strlen($content))
         ->and(json_encode($profile))->not->toContain('private-value', 'another-private-value', 'private-parameter', 'loadDetails');
+});
+
+it('resolves the active request manager for mounts after earlier requests', function () {
+    $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
+    $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+
+    expect($profile['sections']['livewire']['summary'])
+        ->count->toBe(1)
+        ->initial_render_count->toBe(1)
+        ->update_count->toBe(0);
 });

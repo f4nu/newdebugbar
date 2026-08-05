@@ -13,7 +13,7 @@ final class RequestEligibility
             return false;
         }
 
-        if ($request->is('__new-debug-bar/*')) {
+        if ($request->is('__new-debug-bar/*') || $this->isLivewireAsset($request)) {
             return false;
         }
 
@@ -40,6 +40,12 @@ final class RequestEligibility
     private function isLivewireRequest(Request $request): bool
     {
         return $request->headers->has('X-Livewire');
+    }
+
+    private function isLivewireAsset(Request $request): bool
+    {
+        return $request->isMethod('GET')
+            && preg_match('#\Alivewire-[0-9a-f]{8}/livewire(?:\.min)?\.js\z#i', $request->path()) === 1;
     }
 
     /** @return list<string>|null */

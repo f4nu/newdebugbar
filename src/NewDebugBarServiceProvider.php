@@ -30,6 +30,7 @@ use NewDebugBar\Collectors\QueueCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Http\Controllers\AssetController;
+use NewDebugBar\Http\Controllers\MailPreviewController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Mcp\NewDebugBarServer;
@@ -43,6 +44,7 @@ use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\LivewireMountRecorder;
 use NewDebugBar\Support\LivewireUpdateRecorder;
+use NewDebugBar\Support\MailPreview;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\QueryExplainer;
 use NewDebugBar\Support\Redactor;
@@ -102,6 +104,10 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxKeys: (int) config('new-debug-bar.collection.max_items_per_array', 100),
         ));
         $this->app->singleton(QueryExplainer::class);
+        $this->app->singleton(MailPreview::class, fn (): MailPreview => new MailPreview(
+            maxBodyBytes: (int) config('new-debug-bar.mail_preview.max_body_bytes', 50_000),
+            maxRecipients: (int) config('new-debug-bar.collection.max_items_per_array', 100),
+        ));
         $this->app->scoped(LivewireUpdateRecorder::class);
         $this->app->scoped(LivewireMountRecorder::class);
         $this->app->scoped(RuntimeProfiler::class);
@@ -173,6 +179,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(SafeUrl::class),
             $this->app->make(RuntimeProfiler::class),
             $this->app->make(Redactor::class),
+            $this->app->make(MailPreview::class),
         ))->register();
         $exceptions = $this->app->make(ExceptionHandler::class);
 
@@ -193,6 +200,11 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $router->get('/__new-debug-bar/assets/{path}', AssetController::class)
             ->where('path', '.*')
             ->name('new-debug-bar.asset');
+        $router->get('/__new-debug-bar/mail/{profile}/{index}/{format}', MailPreviewController::class)
+            ->whereUuid('profile')
+            ->whereNumber('index')
+            ->whereIn('format', ['html', 'text', 'eml'])
+            ->name('new-debug-bar.mail-preview');
         $kernel = $this->app->make(HttpKernel::class);
 
         if (method_exists($kernel, 'pushMiddleware')) {

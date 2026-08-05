@@ -123,6 +123,25 @@ test('a new application profile keeps a valid section and reloads open details',
   assert.equal(state.selected, 'overview');
 });
 
+test('background profiles refresh loaded history without switching the active profile', async () => {
+  const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
+  const discoveredProfileId = '550e8400-e29b-41d4-a716-446655440000';
+  const state = createNewDebugBar({ ...summary, profile_id: activeProfileId }, runtime());
+  let discovered = null;
+  state.$wire = { discoverProfile: async (id) => { discovered = id; } };
+  state.$nextTick = (callback) => callback();
+
+  state.noticeProfile(discoveredProfileId);
+  await Promise.resolve();
+
+  assert.equal(discovered, discoveredProfileId);
+  assert.equal(state.discoveredProfileId, discoveredProfileId);
+  assert.equal(state.summary.profile_id, activeProfileId);
+
+  state.noticeProfile('not-a-profile');
+  assert.equal(discovered, discoveredProfileId);
+});
+
 test('the inspector moves focus inside and returns it when closed', () => {
   let openerFocused = 0;
   let closeFocused = 0;

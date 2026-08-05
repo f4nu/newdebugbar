@@ -6,6 +6,8 @@ use Illuminate\Session\ArraySessionHandler;
 use Illuminate\Session\Store;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Livewire\Livewire;
+use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\RequestContext;
@@ -66,6 +68,12 @@ it('captures validation field and rule names with the rendered redirect status',
         ->error_bag->toBe('signup')
         ->response_status->toBe(302)
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(0);
+
+    Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-New-Debug-Bar-Profile')])
+        ->call('loadDetails')
+        ->assertSee('2 invalid fields')
+        ->assertSee('signup bag · HTTP 302')
+        ->assertSee('Required');
 });
 
 it('shows authentication and session shape without identity or values', function () {

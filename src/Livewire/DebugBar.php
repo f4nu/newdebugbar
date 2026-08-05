@@ -45,6 +45,9 @@ final class DebugBar extends Component
     #[Locked]
     public array $queryExplainErrors = [];
 
+    #[Locked]
+    public ?string $discoveredProfileId = null;
+
     public function mount(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
         $this->profileId = $profileId;
@@ -59,7 +62,7 @@ final class DebugBar extends Component
         abort_if($store->get($this->profileId) === null, 404);
 
         $this->detailsLoaded = true;
-        $this->refreshHistory($store, $presenter, $summaries);
+        $this->refreshHistoryData($store, $presenter, $summaries);
         $this->dispatch('new-debug-bar-content-updated');
     }
 
@@ -92,6 +95,22 @@ final class DebugBar extends Component
         $this->comparisonProfileId = null;
         $this->comparison = [];
         $this->dispatch('new-debug-bar-content-updated');
+    }
+
+    public function discoverProfile(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        abort_unless($this->validProfileId($profileId), 422);
+        abort_if($store->get($profileId) === null, 404);
+        $this->discoveredProfileId = $profileId;
+
+        if ($this->detailsLoaded) {
+            $this->refreshHistoryData($store, $presenter, $summaries);
+            $this->dispatch('new-debug-bar-content-updated');
+        }
     }
 
     public function explainQuery(
@@ -131,6 +150,7 @@ final class DebugBar extends Component
         $this->comparisonProfileId = null;
         $this->queryExplains = [];
         $this->queryExplainErrors = [];
+        $this->discoveredProfileId = null;
         $this->dispatch('new-debug-bar-profile-switched', summary: $this->summary);
     }
 
@@ -182,6 +202,7 @@ final class DebugBar extends Component
         $querySummary = $sections['queries']['summary'] ?? [];
 
         return [
+            'profile_id' => $profile['id'] ?? $this->profileId,
             'theme' => config('new-debug-bar.theme', 'system'),
             'environment' => strtoupper((string) ($profile['environment'] ?? app()->environment())),
             'method' => $sections['request']['summary']['method'] ?? 'GET',
@@ -201,7 +222,7 @@ final class DebugBar extends Component
         ];
     }
 
-    private function refreshHistory(
+    private function refreshHistoryData(
         ProfileStore $store,
         ProfilePresenter $presenter,
         ProfileSummaryPresenter $summaries,

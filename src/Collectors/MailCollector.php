@@ -4,7 +4,7 @@ namespace NewDebugBar\Collectors;
 
 use NewDebugBar\Support\Redactor;
 
-/** Captures mail delivery shape without addresses, subjects, or bodies. */
+/** Captures mail shape and strictly bounded, explicitly enabled previews. */
 final class MailCollector extends AbstractCollector
 {
     /** @var array<int, int> */
@@ -48,7 +48,25 @@ final class MailCollector extends AbstractCollector
         $startedAt = $this->startedAt[$messageId] ?? null;
         $item['duration_ms'] = $startedAt === null ? 0.0 : round((hrtime(true) - $startedAt) / 1_000_000, 2);
         unset($this->startedAt[$messageId]);
-        parent::record($item);
+        $preview = $item['preview'] ?? null;
+        unset($item['preview']);
+
+        /** @var array<string, mixed> $safeItem */
+        $safeItem = $this->redactor->clean($item);
+
+        if (is_array($preview)) {
+            $safeItem['preview'] = $preview;
+        }
+
+        $this->track($safeItem);
+
+        if (count($this->items) >= $this->maxItems) {
+            $this->dropped++;
+
+            return;
+        }
+
+        $this->items[] = $safeItem;
     }
 
     public function summary(): array

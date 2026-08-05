@@ -39,6 +39,10 @@ it('opens every compact toolbar destination and closes cleanly', function () {
 
         assertDebugSectionSelected($page, $section);
 
+        if ($toolbar === 'expand') {
+            $page->assertScript('document.querySelector("[role=dialog][aria-label=\\"Request inspector\\"] > header").textContent.includes("MB peak")');
+        }
+
         $page
             ->click('[data-ndb-inspector-action="close"]')
             ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]');
@@ -189,6 +193,38 @@ it('keeps package asset updates inside Livewire navigation', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('discovers background fetch profiles without switching reloading or flashing the host', function () {
+    $page = visit('/profiled')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                window.__newDebugBarActiveProfile = state.summary.profile_id;
+                window.__newDebugBarFetchSentinel = true;
+                fetch('/api/plain-json');
+
+                return true;
+            })()
+            JS)
+        ->wait(0.3)
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+
+                return window.__newDebugBarFetchSentinel === true
+                    && state.summary.profile_id === window.__newDebugBarActiveProfile
+                    && location.pathname === '/profiled'
+                    && document.querySelectorAll('#new-debug-bar').length === 1;
+            })()
+            JS)
+        ->assertVisible('[data-testid="host-page"]')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="history"]')
+        ->assertSee('A background request was added to History.')
+        ->assertSee('/api/plain-json')
+        ->assertNoJavaScriptErrors();
+});
+
 it('keeps host styles and package styles isolated', function () {
     visit('/hostile-styles')
         ->assertScript(<<<'JS'
@@ -243,6 +279,7 @@ it('filters the timeline without inventing spans for point events', function () 
     $page
         ->assertPresent('[data-ndb-timeline-item="request-start"]')
         ->assertVisible('[data-ndb-timeline-waterfall]')
+        ->assertScript('document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").getBoundingClientRect().left > document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").parentElement.parentElement.getBoundingClientRect().left + 4')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
         ->assertScript(<<<'JS'
             Number(document.querySelector('[data-ndb-section-panel="timeline"] [x-text="visibleTimelineCount"]').textContent)
@@ -308,6 +345,23 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('uses light dividers above expanded shared JSON details', function () {
+    $page = visit('/profiled');
+    $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
+
+    $page
+        ->refresh()
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="models"]')
+        ->click('[data-ndb-section-panel="models"] details:first-of-type summary')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"models\\"] details pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"models\\"] details")).borderTopColor')
+        ->click('[data-ndb-select-section="cache"]')
+        ->click('[data-ndb-section-panel="cache"] details:first-of-type summary')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"cache\\"] details pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"cache\\"] details")).borderTopColor')
+        ->assertNoJavaScriptErrors();
+});
+
 it('shows request sizes presence flags middleware and log call sites', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
@@ -324,6 +378,28 @@ it('shows request sizes presence flags middleware and log call sites', function 
         ->assertNoJavaScriptErrors();
 
     assertDebugSectionSelected($page, 'logs');
+});
+
+it('presents Laravel decisions lifecycle messages and editor links', function () {
+    $page = visit('/profiled-context')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="authorization"]')
+        ->assertSee('inspect-profile')
+        ->assertSee('allowed')
+        ->click('[data-ndb-select-section="lifecycle"]')
+        ->assertSee('Route matching')
+        ->click('[data-ndb-select-section="messages"]')
+        ->assertSee('Checkout checkpoint')
+        ->click('[data-ndb-select-section="views"]')
+        ->click('[data-ndb-section-panel="views"] details summary')
+        ->assertPresent('[data-ndb-section-panel="views"] a[href^="vscode://file/"]')
+        ->click('[data-ndb-select-section="events"]')
+        ->click('[data-ndb-event-item]:first-child summary')
+        ->assertPresent('[data-ndb-section-panel="events"] a[href^="vscode://file/"]')
+        ->assertNoJavaScriptErrors();
+
+    assertDebugSectionSelected($page, 'events');
 });
 
 it('shows relative exception frames and highlighted source context', function () {
@@ -494,7 +570,7 @@ it('highlights query code and expands custom binding details', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('filters searches sorts and expands repeated query evidence', function () {
+it('filters searches sorts and shows repeated query evidence without another disclosure', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
         ->waitForText('Extra runs')
@@ -502,8 +578,7 @@ it('filters searches sorts and expands repeated query evidence', function () {
         ->click('[data-ndb-query-filter="repeated"]')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
-        ->click('[data-ndb-query-group] > summary')
-        ->assertAttribute('[data-ndb-query-group]', 'open', '')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) > div:last-child > article").length', 3)
         ->assertSee('Likely N+1')
         ->click('[data-ndb-query-filter="read"]')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)

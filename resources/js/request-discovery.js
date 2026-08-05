@@ -1,0 +1,102 @@
+const PROFILE_HEADER = 'X-New-Debug-Bar-Profile';
+const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const XHR_URL = Symbol('newDebugBarUrl');
+const XHR_LIVEWIRE = Symbol('newDebugBarLivewire');
+
+const header = (headers, name) => {
+  if (!headers) return null;
+  if (typeof headers.get === 'function') return headers.get(name);
+
+  if (Array.isArray(headers)) {
+    return headers.find(([key]) => String(key).toLowerCase() === name.toLowerCase())?.[1] ?? null;
+  }
+
+  const key = Object.keys(headers).find((candidate) => candidate.toLowerCase() === name.toLowerCase());
+  return key ? headers[key] : null;
+};
+
+const requestFacts = (runtime, input, init = {}) => {
+  try {
+    const rawUrl = typeof input === 'string' || input instanceof URL ? String(input) : input?.url;
+    const url = new URL(rawUrl, runtime.location.href);
+    const livewire = header(init?.headers, 'X-Livewire')
+      ?? header(input?.headers, 'X-Livewire')
+      ?? header(init?.headers, 'X-Livewire-Navigate')
+      ?? header(input?.headers, 'X-Livewire-Navigate');
+
+    return {
+      eligible: url.origin === runtime.location.origin
+        && !url.pathname.startsWith('/__new-debug-bar/')
+        && !url.pathname.includes('/livewire-')
+        && !url.pathname.includes('/livewire/'),
+      livewire: livewire !== null,
+      url,
+    };
+  } catch {
+    return { eligible: false, livewire: false, url: null };
+  }
+};
+
+const notify = (runtime, response, transport, facts) => {
+  try {
+    if (!facts.eligible || facts.livewire) return;
+
+    const responseUrl = response?.url ? new URL(response.url, runtime.location.href) : facts.url;
+    if (!responseUrl || responseUrl.origin !== runtime.location.origin) return;
+
+    const profileId = response.headers?.get?.(PROFILE_HEADER);
+    if (!PROFILE_PATTERN.test(profileId ?? '')) return;
+
+    runtime.dispatchEvent(new runtime.CustomEvent('new-debug-bar-profile-discovered', {
+      detail: { profileId, transport },
+    }));
+  } catch {
+    // Request discovery must never change host request behavior.
+  }
+};
+
+export function installRequestDiscovery(runtime = window) {
+  if (runtime.__newDebugBarRequestDiscovery) return;
+  runtime.__newDebugBarRequestDiscovery = true;
+
+  if (typeof runtime.fetch === 'function') {
+    const originalFetch = runtime.fetch;
+    runtime.fetch = function newDebugBarFetch(input, init) {
+      const facts = requestFacts(runtime, input, init);
+
+      return originalFetch.apply(this, arguments).then((response) => {
+        notify(runtime, response, 'fetch', facts);
+        return response;
+      });
+    };
+  }
+
+  const prototype = runtime.XMLHttpRequest?.prototype;
+  if (!prototype?.open || !prototype?.send || !prototype?.setRequestHeader) return;
+
+  const originalOpen = prototype.open;
+  const originalSend = prototype.send;
+  const originalSetRequestHeader = prototype.setRequestHeader;
+
+  prototype.open = function newDebugBarOpen(_method, url) {
+    this[XHR_URL] = url;
+    this[XHR_LIVEWIRE] = false;
+    return originalOpen.apply(this, arguments);
+  };
+
+  prototype.setRequestHeader = function newDebugBarSetRequestHeader(name) {
+    if (['x-livewire', 'x-livewire-navigate'].includes(String(name).toLowerCase())) this[XHR_LIVEWIRE] = true;
+    return originalSetRequestHeader.apply(this, arguments);
+  };
+
+  prototype.send = function newDebugBarSend() {
+    const facts = requestFacts(runtime, this[XHR_URL]);
+    facts.livewire = this[XHR_LIVEWIRE];
+    this.addEventListener?.('loadend', () => notify(runtime, {
+      url: this.responseURL,
+      headers: { get: (name) => this.getResponseHeader?.(name) },
+    }, 'xhr', facts), { once: true });
+
+    return originalSend.apply(this, arguments);
+  };
+}

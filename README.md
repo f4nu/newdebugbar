@@ -17,15 +17,16 @@ Laravel 12, Livewire 3, production profiling, and Laravel Octane are not support
 
 ## What it captures
 
-- Request, route, middleware, response size, session presence, and authentication presence
-- Query totals, slow queries, repeated patterns, likely N+1 evidence, bindings, and call sites
-- Livewire components, actions, changed field names, validation failures, and payload sizes
-- Models, cache operations, views, events, logs, and exceptions
+- Request, route, controller source, middleware, response size, session shape, and authentication state
+- Authorization decisions, validation rule names, lifecycle milestones, transactions, and developer messages
+- Query totals, slow queries, repeated patterns, likely N+1 evidence, bindings, call sites, and opt-in manual plans
+- Initial and update Livewire renders, component hierarchy, actions, changed field names, validation failures, and payload sizes
+- Models, cache operations, views and composers, dispatched events and listeners, logs, and exceptions with editor links
 - Outbound HTTP results, queue activity, mail shape, notification outcomes, and direct Redis commands
 - Artisan commands, `php artisan test` runs, and individual queue-worker jobs as non-HTTP profiles
 - Retained history, same-path comparison, a relative timeline, and deterministic findings
 
-Profiles stay local in `storage/framework/new-debug-bar`. They are bounded, short-lived JSON files and do not use a database.
+Profiles stay local in `storage/framework/new-debug-bar`. They are bounded, short-lived JSON files and do not use a database. The package profiles application JSON, API, AJAX, redirect, stream, download, Artisan, test, and worker activity without injecting UI into those responses. Same-origin `fetch` and `XMLHttpRequest` profile IDs are added to History without replacing the page profile.
 
 ## Install from a local checkout
 
@@ -68,15 +69,25 @@ php artisan vendor:publish --tag=new-debug-bar-config
 
 Set `NEW_DEBUG_BAR_ENABLED=false` to disable the package. By default it registers only when Laravel's environment is `local`.
 
-String query bindings are masked because positional bindings do not have safe field names. Set `NEW_DEBUG_BAR_QUERY_BINDINGS=full` only when complete local values are knowingly required, or `none` to omit all bindings.
+String query bindings are masked because positional bindings do not have safe field names. Set `NEW_DEBUG_BAR_QUERY_BINDINGS=full` only when complete local values are knowingly required, or `none` to omit all bindings. Manual `EXPLAIN` is local-only, read-only, never automatic, and unavailable unless complete bindings were captured. Mutating SQL, multiple statements, and `EXPLAIN ANALYZE` are rejected.
 
-The config also controls the theme, slow thresholds, retained profile count and age, MCP limits, collector limits, and bounded call-site capture.
+Cache and Redis keys use short hashes by default. Set `NEW_DEBUG_BAR_KEY_POLICY=full` only when raw local keys are knowingly required.
+
+Editor links default to VS Code. `NEW_DEBUG_BAR_EDITOR`, `NEW_DEBUG_BAR_REMOTE_PATH`, and `NEW_DEBUG_BAR_LOCAL_PATH` select the editor and map remote project paths to the local checkout.
+
+Mail content stays hidden by default. `NEW_DEBUG_BAR_MAIL_PREVIEW=true` enables bounded local HTML and text previews plus an attachment-free `.eml` download. HTML opens on a separate package route with a restrictive sandbox policy; it is never inserted into the host page. Recipient lists and body sizes remain bounded, and attachment contents are never retained.
+
+The config also controls the theme, slow thresholds, retained profile count and age, MCP limits, collector limits, nested-array limits, and bounded call-site capture. Each collector may observe at most 500 entries by default; normalized nested arrays independently retain at most 100 items. Sections report retained, dropped, total, and truncation state precisely.
 
 ## Privacy and safety
 
-New Debug Bar is read-only. It does not replay requests, run query plans, retry jobs, send messages, clear caches, or change application state.
+New Debug Bar is read-only. It does not replay requests, automatically run query plans, retry jobs, send messages, clear caches, or change application state. The only database helper is the explicit, local, guarded manual `EXPLAIN` described above.
 
-It excludes uploaded files, cache values, full model attributes, mail bodies and subjects, recipient identities, notification data, Redis arguments, cookies, authorization headers, and common secret fields. Redis keys and cache keys are stored as short hashes. Its own Livewire updates are excluded from profiling.
+It excludes uploaded files, cache values, full model attributes, mail content unless the separate preview option is enabled, notification data, Redis arguments, cookies, authorization headers, authenticated identity values, session values, validation input values, and common secret fields. Redis keys and cache keys are hashed unless the explicit full-key policy is enabled. Its own Livewire updates, assets, previews, and internal routes are excluded from profiling.
+
+Use `NewDebugBar\Debug::message('Checkout checkpoint', ['step' => 3])` for a bounded, redacted local development marker. Message context follows the same redaction and size rules as the collectors.
+
+Lifecycle timings are intentionally honest: Laravel exposes reliable boundaries for the combined route middleware, binding, controller, and response-rendering work, plus transaction durations. The package does not invent separate controller or view durations where Laravel provides no safe hook, and it labels unavailable early-bootstrap or view-cache facts as not measured or not exposed.
 
 The package never calls an AI model. It only captures facts and applies explicit rules.
 

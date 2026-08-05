@@ -91,6 +91,7 @@ final class EventRegistrar
         private readonly SafeUrl $safeUrl,
         private readonly RuntimeProfiler $runtime,
         private readonly Redactor $redactor,
+        private readonly MailPreview $mailPreview,
     ) {}
 
     public function register(): void
@@ -278,6 +279,10 @@ final class EventRegistrar
                 'attachment_count' => count($message->getAttachments()),
                 'has_html' => $message->getHtmlBody() !== null,
                 'has_text' => $message->getTextBody() !== null,
+                'preview' => $this->mailPreview->capture(
+                    $message,
+                    (bool) config('new-debug-bar.mail_preview.enabled', false),
+                ),
             ]);
         });
 

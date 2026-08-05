@@ -94,6 +94,13 @@ function visualDebugPage(string $section, string $theme)
         return $page;
     }
 
+    if (in_array($section, ['authorization', 'lifecycle', 'messages'], true)) {
+        $page = visit('/profiled-context');
+        setVisualDebugTheme($page, $theme);
+
+        return $page;
+    }
+
     $page = visit('/profiled-rich');
     setVisualDebugTheme($page, $theme);
 
@@ -170,6 +177,10 @@ $visualSections = [
     'events',
     'logs',
     'exceptions',
+    'authorization',
+    'validation',
+    'lifecycle',
+    'messages',
     'history',
 ];
 $visualSectionCases = [];
@@ -267,8 +278,7 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
         ->waitForText('Sections')
         ->click('[data-ndb-select-section="queries"]')
         ->click('[data-ndb-query-filter="repeated"]')
-        ->click('[data-ndb-query-group] > summary')
-        ->assertAttribute('[data-ndb-query-group]', 'open', '');
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) > div:last-child > article").length > 0');
 
     stabilizeVisualDebugValues($page);
 

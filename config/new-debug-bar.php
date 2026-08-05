@@ -21,6 +21,11 @@ return [
         'explain' => true,
     ],
 
+    'mail_preview' => [
+        'enabled' => env('NEW_DEBUG_BAR_MAIL_PREVIEW', false),
+        'max_body_bytes' => 50_000,
+    ],
+
     'findings' => [
         'minimum_cache_operations' => 5,
         'high_cache_miss_rate' => 0.8,

@@ -2,6 +2,7 @@ import '../css/new-debug-bar.css';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import sql from 'highlight.js/lib/languages/sql';
+import { installRequestDiscovery } from './request-discovery.js';
 import { createNewDebugBar } from './state.js';
 
 const php = (language) => ({
@@ -56,3 +57,4 @@ const registerLivewireProfileSwitching = () => {
 
 registerLivewireProfileSwitching();
 document.addEventListener('livewire:init', registerLivewireProfileSwitching, { once: true });
+installRequestDiscovery();

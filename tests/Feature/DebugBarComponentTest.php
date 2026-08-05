@@ -141,6 +141,25 @@ it('loads retained history and compares requests from the same path', function (
         ->assertSet('comparison', []);
 });
 
+it('adds a discovered background profile to history without switching profiles', function () {
+    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+    $backgroundId = $this->getJson('/api/plain-json')
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $currentId])
+        ->call('loadDetails')
+        ->call('discoverProfile', $backgroundId)
+        ->assertSet('profileId', $currentId)
+        ->assertSet('discoveredProfileId', $backgroundId)
+        ->assertSet('history.0.is_current', true)
+        ->assertSet('history.1.id', $backgroundId)
+        ->assertSet('history.1.path', '/api/plain-json')
+        ->assertDispatched('new-debug-bar-content-updated');
+});
+
 it('rejects comparisons from a different path', function () {
     $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()

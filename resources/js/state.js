@@ -34,6 +34,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     historyStatus: '',
     historyWarning: 'all',
     visibleHistoryCount: 0,
+    discoveredProfileId: null,
     timelineFilter: 'all',
     timelineSearch: '',
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
@@ -207,6 +208,17 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         this.selected = section;
         this.$nextTick?.(() => this.syncSectionPanels());
       }
+    },
+
+    noticeProfile(profileId) {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(profileId ?? '')) return;
+      if (profileId === this.summary.profile_id) return;
+
+      this.discoveredProfileId = profileId;
+
+      Promise.resolve(this.$wire?.discoverProfile(profileId))
+        .then(() => this.$nextTick?.(() => this.applyHistoryFilters()))
+        .catch(() => {});
     },
 
     copyText(value) {

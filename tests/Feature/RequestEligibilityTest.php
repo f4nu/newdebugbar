@@ -30,7 +30,9 @@ it('profiles application requests and excludes package owned traffic', function 
     'internal Livewire update' => [fn () => livewireEligibilityRequest(['new-debug-bar.toolbar']), false],
     'malformed Livewire update' => [fn () => livewireEligibilityRequest([]), false],
     'package asset' => [fn () => Request::create('/__new-debug-bar/assets/new-debug-bar.js', server: ['HTTP_ACCEPT' => 'text/html']), false],
+    'package Livewire runtime asset' => [fn () => Request::create('/livewire-95508dcc/livewire.js', server: ['HTTP_ACCEPT' => 'text/javascript']), false],
     'ordinary route named like Livewire' => [fn () => Request::create('/livewire/update', server: ['HTTP_ACCEPT' => 'text/html']), true],
+    'ordinary similarly named script' => [fn () => Request::create('/livewire-example/app.js', server: ['HTTP_ACCEPT' => 'text/javascript']), true],
 ]);
 
 it('injects a toolbar only for ordinary html page requests', function (Request $request, bool $allowed) {

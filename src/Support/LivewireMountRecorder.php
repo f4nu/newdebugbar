@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Support;
 
+use Illuminate\Contracts\Container\Container;
 use Livewire\Component;
 use NewDebugBar\ProfileManager;
 
@@ -10,12 +11,14 @@ use function Livewire\on;
 /** Records application Livewire components rendered during a full-page request. */
 final class LivewireMountRecorder
 {
-    public function __construct(private readonly ProfileManager $manager) {}
+    public function __construct(private readonly Container $container) {}
 
     public function register(): void
     {
         on('mount', function (Component $component, array $params, mixed $key, mixed $parent): ?callable {
-            if (! $this->manager->isCollecting() || $component->getName() === 'new-debug-bar.toolbar') {
+            $manager = $this->container->make(ProfileManager::class);
+
+            if (! $manager->isCollecting() || $component->getName() === 'new-debug-bar.toolbar') {
                 return null;
             }
 
@@ -23,8 +26,8 @@ final class LivewireMountRecorder
             $componentName = $component->getName();
             $parentName = $parent instanceof Component ? $parent->getName() : null;
 
-            return function () use ($startedAt, $componentName, $parentName): void {
-                $this->manager->record('livewire', [
+            return function () use ($manager, $startedAt, $componentName, $parentName): void {
+                $manager->record('livewire', [
                     'phase' => 'initial',
                     'kind' => 'initial',
                     'component' => $componentName,
