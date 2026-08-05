@@ -691,6 +691,38 @@ it('highlights query code and expands custom binding details', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('matches repeated query SQL to regular query surfaces in :dataset mode', function (string $theme) {
+    $preferences = json_encode([
+        'theme' => $theme,
+        'favorites' => [],
+    ], JSON_THROW_ON_ERROR);
+
+    visit('/profiled-rich')
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('new-debug-bar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
+        ->refresh()
+        ->assertAttribute('#new-debug-bar', 'data-theme', $theme)
+        ->click('[data-ndb-toolbar="queries"]')
+        ->click('[data-ndb-query-review="repeated"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const repeated = document.querySelector('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] pre');
+                const regular = document.querySelector('[data-ndb-query-item] > pre');
+                const repeatedStyle = getComputedStyle(repeated);
+                const regularStyle = getComputedStyle(regular);
+
+                return repeatedStyle.backgroundColor === regularStyle.backgroundColor
+                    && repeatedStyle.color === regularStyle.color;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('filters searches sorts and shows repeated query evidence without another disclosure', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
