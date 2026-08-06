@@ -1,4 +1,5 @@
 const PROFILE_HEADER = 'X-New-Debug-Bar-Profile';
+const PROFILE_EVENT = 'new-debug-bar-profile-discovered';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const XHR_URL = Symbol('newDebugBarUrl');
 const XHR_LIVEWIRE = Symbol('newDebugBarLivewire');
@@ -47,13 +48,38 @@ const notify = (runtime, response, transport, facts) => {
     const profileId = response.headers?.get?.(PROFILE_HEADER);
     if (!PROFILE_PATTERN.test(profileId ?? '')) return;
 
-    runtime.dispatchEvent(new runtime.CustomEvent('new-debug-bar-profile-discovered', {
+    runtime.dispatchEvent(new runtime.CustomEvent(PROFILE_EVENT, {
       detail: { profileId, transport },
     }));
   } catch {
     // Request discovery must never change host request behavior.
   }
 };
+
+export function installProfileDiscoveryBridge(runtime = window) {
+  if (runtime.__newDebugBarProfileDiscoveryBridge) return;
+  runtime.__newDebugBarProfileDiscoveryBridge = true;
+
+  runtime.addEventListener?.(PROFILE_EVENT, (event) => {
+    try {
+      const profileId = event.detail?.profileId;
+      if (!PROFILE_PATTERN.test(profileId ?? '')) return;
+
+      const root = runtime.document?.getElementById?.('new-debug-bar');
+      const state = root ? runtime.Alpine?.$data?.(root) : null;
+
+      if (typeof state?.noticeProfile === 'function') {
+        state.noticeProfile(profileId);
+        return;
+      }
+
+      const toolbar = runtime.Livewire?.getByName?.('new-debug-bar.toolbar')?.[0];
+      Promise.resolve(toolbar?.discoverProfile?.(profileId)).catch(() => {});
+    } catch {
+      // A stale or unavailable toolbar must never affect the host request.
+    }
+  });
+}
 
 export function installRequestDiscovery(runtime = window) {
   if (runtime.__newDebugBarRequestDiscovery) return;

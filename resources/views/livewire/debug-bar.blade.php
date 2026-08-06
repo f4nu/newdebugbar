@@ -9,7 +9,6 @@
     @keydown.window="handleShortcut($event)"
     @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionPanels(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); window.newDebugBarHighlight?.($root) })"
     @new-debug-bar-profile-switched.window="switchProfile($event.detail.summary)"
-    @new-debug-bar-profile-discovered.window="noticeProfile($event.detail.profileId)"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <div

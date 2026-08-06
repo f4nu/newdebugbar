@@ -309,7 +309,22 @@ it('discovers background fetch profiles without switching reloading or flashing 
                 const state = Alpine.$data(document.getElementById('new-debug-bar'));
                 window.__newDebugBarActiveProfile = state.summary.profile_id;
                 window.__newDebugBarFetchSentinel = true;
-                fetch('/api/plain-json');
+                window.__newDebugBarDiscoveries = [];
+                window.addEventListener('new-debug-bar-profile-discovered', (event) => {
+                    window.__newDebugBarDiscoveries.push({
+                        profileId: event.detail.profileId,
+                        stateProfileId: Alpine.$data(document.getElementById('new-debug-bar')).discoveredProfileId,
+                    });
+                });
+                fetch('/api/plain-json?sequence=first');
+
+                return true;
+            })()
+            JS)
+        ->wait(0.3)
+        ->assertScript(<<<'JS'
+            (() => {
+                fetch('/api/plain-json?sequence=second');
 
                 return true;
             })()
@@ -318,9 +333,13 @@ it('discovers background fetch profiles without switching reloading or flashing 
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                const discoveries = window.__newDebugBarDiscoveries;
 
                 return window.__newDebugBarFetchSentinel === true
                     && state.summary.profile_id === window.__newDebugBarActiveProfile
+                    && discoveries.length === 2
+                    && discoveries[0].profileId !== discoveries[1].profileId
+                    && discoveries[1].stateProfileId === discoveries[1].profileId
                     && location.pathname === '/profiled'
                     && document.querySelectorAll('#new-debug-bar').length === 1;
             })()

@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { installRequestDiscovery } from '../../resources/js/request-discovery.js';
+import { installProfileDiscoveryBridge, installRequestDiscovery } from '../../resources/js/request-discovery.js';
 
 const profileId = '550e8400-e29b-41d4-a716-446655440000';
 
 function runtime() {
   const events = [];
+  const listeners = {};
 
   class CustomEvent {
     constructor(type, options) {
@@ -28,10 +29,17 @@ function runtime() {
 
   return {
     events,
+    addEventListener: (type, callback) => {
+      listeners[type] ??= [];
+      listeners[type].push(callback);
+    },
     location: { href: 'https://viteclinic.test/dashboard', origin: 'https://viteclinic.test' },
     CustomEvent,
     XMLHttpRequest,
-    dispatchEvent: (event) => events.push(event),
+    dispatchEvent: (event) => {
+      events.push(event);
+      listeners[event.type]?.forEach((callback) => callback(event));
+    },
     fetch: async (input) => ({
       input,
       url: new URL(typeof input === 'string' ? input : input.url, 'https://viteclinic.test').href,
@@ -39,6 +47,52 @@ function runtime() {
     }),
   };
 }
+
+test('profile discovery always reaches the current toolbar after a morph', () => {
+  const browser = runtime();
+  const first = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
+  const second = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
+  let state = first;
+  browser.document = { getElementById: () => ({}) };
+  browser.Alpine = { $data: () => state };
+  installProfileDiscoveryBridge(browser);
+
+  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+    detail: { profileId },
+  }));
+  state = second;
+  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+    detail: { profileId: '660e8400-e29b-41d4-a716-446655440000' },
+  }));
+
+  assert.deepEqual(first.discoveries, [profileId]);
+  assert.deepEqual(second.discoveries, ['660e8400-e29b-41d4-a716-446655440000']);
+});
+
+test('profile discovery safely falls back to Livewire while the toolbar initializes', () => {
+  const browser = runtime();
+  const discoveries = [];
+  browser.document = { getElementById: () => null };
+  browser.Livewire = {
+    getByName: () => [{ discoverProfile: (id) => discoveries.push(id) }],
+  };
+  installProfileDiscoveryBridge(browser);
+  installProfileDiscoveryBridge(browser);
+
+  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+    detail: { profileId },
+  }));
+  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+    detail: { profileId: 'not-a-profile-id' },
+  }));
+
+  assert.deepEqual(discoveries, [profileId]);
+
+  browser.Livewire.getByName = () => { throw new Error('toolbar unavailable'); };
+  assert.doesNotThrow(() => browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+    detail: { profileId },
+  })));
+});
 
 test('discovers same origin fetch and xhr profiles without replacing responses', async () => {
   const browser = runtime();
