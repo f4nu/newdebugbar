@@ -136,7 +136,7 @@
                     x-transition.opacity.duration.150ms
                     data-ndb-mobile-sections-backdrop
                     @click="closeMobileSections()"
-                    class="ndb:absolute ndb:inset-y-0 ndb:right-0 ndb:left-[min(82vw,280px)] ndb:z-20 ndb:bg-zinc-950/25 ndb:backdrop-blur-[1px] ndb:sm:hidden ndb:dark:bg-black/55"
+                    class="ndb:absolute ndb:inset-y-0 ndb:right-0 ndb:left-[min(82vw,280px)] ndb:z-20 ndb:bg-transparent ndb:sm:hidden"
                     aria-hidden="true"
                 ></div>
 

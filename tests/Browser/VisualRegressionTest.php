@@ -570,7 +570,17 @@ it('matches the visual baseline for the :dataset narrow section drawer', functio
         ->wait(0.2)
         ->click('[data-ndb-mobile-sections-toggle]')
         ->assertVisible('#new-debug-bar-section-navigation')
-        ->assertVisible('[data-ndb-mobile-sections-backdrop]');
+        ->assertVisible('[data-ndb-mobile-sections-backdrop]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const backdrop = document.querySelector('[data-ndb-mobile-sections-backdrop]');
+                const styles = getComputedStyle(backdrop);
+                const background = styles.backgroundColor.replaceAll(' ', '');
+
+                return ['transparent', 'rgba(0,0,0,0)'].includes(background)
+                    && styles.backdropFilter === 'none';
+            })()
+            JS);
 
     stabilizeVisualDebugValues($page);
 
