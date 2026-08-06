@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
@@ -22,6 +23,18 @@ use NewDebugBar\Tests\ProfiledModel;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+it('preserves Laravel original response metadata while injecting HTML', function () {
+    $view = view()->file(__DIR__.'/../views/original-response.blade.php', [
+        'label' => 'Original response',
+    ]);
+    $response = response($view);
+
+    app(BarInjector::class)->inject($response, (string) Str::uuid());
+
+    expect($response->getOriginalContent())->toBe($view)
+        ->and($response->getContent())->toContain('id="new-debug-bar"');
+});
 
 it('captures a local web request and its Laravel activity', function () {
     $route = app('router')->getRoutes()->match(request()->create('/profiled'));

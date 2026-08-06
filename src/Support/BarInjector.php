@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Support;
 
+use Illuminate\Http\Response as LaravelResponse;
 use Livewire\LivewireManager;
 use Livewire\Mechanisms\FrontendAssets\FrontendAssets;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -43,7 +44,13 @@ final class BarInjector
 
         $html = preg_replace('/<\/body\s*>/i', $body.'$0', $html, 1) ?? $html;
 
+        $original = $response instanceof LaravelResponse ? $response->getOriginalContent() : null;
         $response->setContent($html);
+
+        if ($response instanceof LaravelResponse) {
+            $response->original = $original;
+        }
+
         $response->headers->remove('Content-Length');
         $response->headers->set('X-New-Debug-Bar-Profile', $profileId);
 
