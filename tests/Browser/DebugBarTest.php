@@ -60,7 +60,7 @@ it('opens every compact toolbar destination and closes cleanly', function () {
     $page->assertNoJavaScriptErrors();
 });
 
-it('shows active sections alphabetically and keeps quiet sections in the palette', function () {
+it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
 
@@ -84,9 +84,11 @@ it('shows active sections alphabetically and keeps quiet sections in the palette
             (() => {
                 const labels = Array.from(document.querySelectorAll('[data-ndb-section-visible="true"] .ndb-section-label'))
                     .map((label) => label.textContent.trim());
-                const sorted = [...labels].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+                const remaining = labels.slice(1);
+                const sorted = [...remaining].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
 
-                return JSON.stringify(labels) === JSON.stringify(sorted);
+                return labels[0] === 'Overview'
+                    && JSON.stringify(remaining) === JSON.stringify(sorted);
             })()
             JS)
         ->assertAttribute('[data-ndb-section="validation"]', 'data-ndb-section-visible', 'false')
@@ -855,6 +857,19 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
         ->assertScript(<<<'JS'
             (() => {
+                const toggle = document.querySelector('[data-ndb-mobile-sections-toggle]');
+                const box = toggle.getBoundingClientRect();
+                const styles = getComputedStyle(toggle);
+
+                return box.width >= 44
+                    && box.height >= 44
+                    && Number.parseFloat(styles.borderTopWidth) === 0
+                    && styles.boxShadow === 'none'
+                    && styles.backgroundColor === 'rgba(0, 0, 0, 0)';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const facts = document.querySelector('[data-ndb-header-facts]');
                 const cards = Array.from(facts.querySelectorAll('[data-ndb-header-fact]'));
                 const firstTop = cards[0].getBoundingClientRect().top;
@@ -887,6 +902,15 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Close sections')
         ->assertVisible('#new-debug-bar-section-navigation')
         ->assertVisible('[data-ndb-mobile-sections-backdrop]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const styles = getComputedStyle(document.querySelector('[data-ndb-mobile-sections-toggle]'));
+
+                return Number.parseFloat(styles.borderTopWidth) === 0
+                    && styles.boxShadow === 'none'
+                    && styles.backgroundColor === 'rgba(0, 0, 0, 0)';
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const navigation = document.querySelector('#new-debug-bar-section-navigation');

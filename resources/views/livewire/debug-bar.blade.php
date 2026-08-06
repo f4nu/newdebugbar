@@ -90,8 +90,7 @@
                             :aria-label="mobileSectionsOpen ? 'Close sections' : 'Open sections'"
                             :title="mobileSectionsOpen ? 'Close sections' : 'Open sections'"
                             aria-controls="new-debug-bar-section-navigation"
-                            class="ndb:flex ndb:size-11 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-xl ndb:border ndb:shadow-sm ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden"
-                            :class="mobileSectionsOpen ? 'ndb:border-indigo-200 ndb:bg-indigo-50 ndb:text-indigo-600 ndb:hover:bg-indigo-100 ndb:dark:border-indigo-800 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-900' : 'ndb:border-zinc-200/80 ndb:bg-zinc-50/80 ndb:text-zinc-700 ndb:hover:bg-zinc-100 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/80 ndb:dark:text-zinc-200 ndb:dark:hover:bg-zinc-800'"
+                            class="ndb:flex ndb:size-11 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-xl ndb:text-zinc-500 ndb:transition-colors ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:text-zinc-400 ndb:dark:hover:text-white"
                         >
                             <span x-show.important="! mobileSectionsOpen"><x-new-debug-bar::icon name="sidebar" class="ndb:size-4" /></span>
                             <span x-cloak x-show.important="mobileSectionsOpen"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></span>

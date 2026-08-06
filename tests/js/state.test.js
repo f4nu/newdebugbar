@@ -47,7 +47,7 @@ test('restores safe local preferences', () => {
   });
 });
 
-test('shows active sections alphabetically while keeping selected and favorite quiet sections', () => {
+test('pins overview before alphabetized active sections while keeping selected and favorite quiet sections', () => {
   const browser = runtime();
   const state = createNewDebugBar({
     sections: [
@@ -61,16 +61,16 @@ test('shows active sections alphabetically while keeping selected and favorite q
 
   state.init();
 
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['history', 'overview', 'queries']);
-  assert.equal(state.firstVisibleNonFavoriteKey, 'history');
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'history', 'queries']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.equal(state.isSectionVisible(state.summary.sections[2]), false);
 
   state.selectSection('logs');
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['history', 'logs', 'overview', 'queries']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'history', 'logs', 'queries']);
 
   state.toggleFavorite('cache');
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'history', 'logs', 'overview', 'queries']);
-  assert.equal(state.firstVisibleNonFavoriteKey, 'history');
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'overview', 'history', 'logs', 'queries']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'system',
     favorites: ['cache'],
@@ -91,7 +91,11 @@ test('favorites can be pinned and reordered', () => {
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'logs', 'overview']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'overview', 'logs']);
+
+  state.toggleFavorite('overview');
+  assert.deepEqual(state.favorites, ['queries', 'overview']);
+  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'overview', 'logs']);
 });
 
 test('favorites can be reordered by dragging', () => {

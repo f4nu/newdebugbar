@@ -130,11 +130,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       const allSections = this.summary.sections ?? [];
       const byKey = new Map(allSections.map((section) => [section.key, section]));
       const favorites = this.favorites.map((key) => byKey.get(key)).filter(Boolean);
+      const overview = this.isFavorite('overview') ? null : byKey.get('overview');
       const sections = allSections
-        .filter((section) => !this.isFavorite(section.key))
+        .filter((section) => section.key !== 'overview' && !this.isFavorite(section.key))
         .sort((left, right) => left.label.localeCompare(right.label, undefined, { sensitivity: 'base' }));
 
-      return [...favorites, ...sections];
+      return [...favorites, ...(overview ? [overview] : []), ...sections];
     },
 
     get sidebarSections() {
