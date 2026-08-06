@@ -15,6 +15,18 @@ It adds a thin bottom toolbar and a full-width bottom inspector to local Laravel
 
 Laravel 12, Livewire 3, production profiling, and Laravel Octane are not supported in `0.1.x`. Octane support requires real concurrent-request tests before it can be claimed.
 
+## Verified host lab
+
+The dedicated local compatibility lab at the sibling path `../new-debug-bar-examples` verifies the current package against three independent Laravel 13.24.0 applications:
+
+| Host | App-owned stack | Verified versions |
+| --- | --- | --- |
+| Blade Workbench | Controllers, Blade, forms, ordinary PHP; no app-owned Livewire or Inertia | PHP 8.3+, Laravel 13.24.0 |
+| Livewire Workbench | Livewire components, actions, morphs, URL state, and navigation | Livewire 4.3.5 |
+| Inertia Workbench | Inertia Laravel with the first-party Vue 3 adapter; no app-owned Livewire | Inertia Laravel 3.3.1, Inertia Vue 3.6.1, Vue 3.5.41 |
+
+The lab uses the same deterministic operations dataset and diagnostics in every host. Its PHP, JavaScript, browser, response-safety, and 12 light/dark desktop/narrow visual tests prove that the package's own Livewire dependency does not create a false Livewire ecosystem claim in Blade or Inertia profiles. It also proves current/background profile separation across redirects, JSON, AJAX, Livewire updates, and Inertia visits. The lab is local evidence and is not part of the published package archive.
+
 ## What it captures
 
 - Request, route, controller source, middleware, response size, session shape, and authentication state
