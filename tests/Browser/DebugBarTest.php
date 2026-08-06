@@ -850,6 +850,38 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && Math.abs(window.innerWidth - box.right - 12) <= 1;
             })()
             JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const request = document.querySelector('[data-ndb-toolbar="request"]');
+                const facts = document.querySelector('[data-ndb-toolbar-facts]');
+                const factButtons = Array.from(facts.querySelectorAll('[data-ndb-toolbar]'));
+                const actions = document.querySelector('[data-ndb-toolbar-actions]');
+                const expand = document.querySelector('[data-ndb-toolbar="expand"]');
+                const toolbarBox = toolbar.getBoundingClientRect();
+                const requestBox = request.getBoundingClientRect();
+                const factsBox = facts.getBoundingClientRect();
+                const actionsBox = actions.getBoundingClientRect();
+                const toolbarStyles = getComputedStyle(toolbar);
+
+                return requestBox.width <= 113
+                    && requestBox.width < toolbarBox.width / 3
+                    && factsBox.width > 100
+                    && getComputedStyle(facts).overflowX === 'auto'
+                    && facts.scrollWidth > facts.clientWidth
+                    && factButtons.length === 4
+                    && factButtons.every((button) => {
+                        const styles = getComputedStyle(button);
+
+                        return styles.display === 'flex'
+                            && styles.flexShrink === '0'
+                            && button.getBoundingClientRect().width > 0;
+                    })
+                    && Math.abs(toolbarBox.right - actionsBox.right - Number.parseFloat(toolbarStyles.paddingRight)) <= 1
+                    && Math.abs(actionsBox.right - expand.getBoundingClientRect().right) <= 1
+                    && actionsBox.left >= factsBox.right;
+            })()
+            JS)
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->assertVisible('[data-ndb-header-memory]')
@@ -892,9 +924,21 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const navigation = document.querySelector('#new-debug-bar-section-navigation');
+                const styles = getComputedStyle(navigation);
+                const transitionProperties = styles.transitionProperty.split(',').map((property) => property.trim());
+                const transitionDurations = styles.transitionDuration.split(',').map((duration) => duration.trim());
+                const transitionDelays = styles.transitionDelay.split(',').map((delay) => delay.trim());
+                const transformIndex = transitionProperties.indexOf('transform');
+                const visibilityIndex = transitionProperties.indexOf('visibility');
+                const transformDuration = Number.parseFloat(transitionDurations[transformIndex] ?? transitionDurations[0]);
+                const visibilityDelay = Number.parseFloat(transitionDelays[visibilityIndex] ?? transitionDelays[0]);
 
-                return getComputedStyle(navigation).visibility === 'hidden'
-                    && navigation.getBoundingClientRect().right <= 1;
+                return styles.visibility === 'hidden'
+                    && navigation.getBoundingClientRect().right <= 1
+                    && transformIndex >= 0
+                    && visibilityIndex >= 0
+                    && transformDuration > 0
+                    && visibilityDelay >= transformDuration;
             })()
             JS)
         ->click('[data-ndb-mobile-sections-toggle]')
@@ -927,11 +971,14 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "visible"')
+        ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
         ->click('[data-ndb-mobile-sections-toggle]')
         ->click('[data-ndb-select-section="queries"]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-section-heading]")')
+        ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"');
 
     assertDebugSectionSelected($page, 'queries');
@@ -944,11 +991,13 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
         ->click('[data-ndb-mobile-sections-toggle]')
         ->click('[data-ndb-mobile-sections-backdrop]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
         ->resize(1440, 900)
         ->assertScript(<<<'JS'
