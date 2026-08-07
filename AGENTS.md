@@ -1,46 +1,31 @@
-# New Debug Bar guidance
+# New Debug Bar rules
 
-## Git workflow
+## Commits
 
-- Commit implementation work in small, logical steps as it progresses.
-- Keep each commit focused on one clear change and include its related tests or generated artifacts.
+- Make small commits as you work.
+- Keep each commit about one clear change. Commit its tests and built files with it.
 
-## Product boundary
+## Product choices
 
-- Keep the package Laravel-only. Use package-owned compiled assets and normal DOM so host apps do not need Vite or Tailwind changes.
-- Store profiles locally as bounded JSON files. Do not require a database.
-- Profiling tools must not replay requests, retry jobs, send mail, clear caches, or change the host application's data.
-- Profile JSON, API, AJAX, redirect, stream, download, Artisan, test, and worker activity without changing those responses. Render the toolbar only in eligible HTML responses.
-
-## Public release
-
-- Keep the README short and public-facing: why the package exists, basic install and use, local safety, development, and license.
-- Keep internal compatibility matrices, exhaustive configuration notes, and verification reports out of the README.
-- Keep the project under the MIT License with Benjamin Crozat named as the copyright owner. Copies or substantial portions must retain the copyright and license notice.
-- Treat the first public release as v1. Do not add pre-v1 release notes or a changelog for unreleased history.
-
-## Profile identity
-
-- Treat the full page request as the current profile. Background JSON, AJAX, Livewire, and partial or deferred Inertia requests belong in History and must not replace it.
-- A full Inertia visit may become current. Keep its real request type, including partial visits and Inertia redirects.
-- Opening a retained History profile must not overwrite current-request identity. Always provide a clear way back to the current request.
-- Reset details, filters, comparisons, and pending callbacks together when the selected profile changes. Ignore late responses from an older profile.
+- Build for Laravel only. Do not add support for other PHP frameworks.
+- Keep the public README short. Explain why the package exists and how to start using it.
+- Keep test reports, support tables, and long setup notes out of the README.
+- Treat the first public release as v1. Do not add a changelog for work done before v1.
+- Ask the user before changing the license or copyright owner.
 
 ## Interface
 
-- Never separate adjacent interface facts with standalone characters such as `·`, `•`, or `|`. Use spacing, grouping, labels, icons, or layout instead.
-- Help developers answer: what happened, what is wrong, why, where, and what should I inspect next.
-- Lead with request identity, failures, query count, and duration. Keep framework noise, raw payloads, hashes, middleware lists, CLI profiles, and repeated metadata quiet or on demand.
-- Each finding should state the problem, why it matters, the best available application location, the next step, and a direct action when possible.
-- Do not emit two findings for the same likely cause. Keep low-confidence query and framework activity out of the primary warning path.
-- Fault pages must show bounded useful diagnostics without depending on a later Livewire request.
-- Preserve focus trapping, focus restoration, Escape behavior, body scroll lock, and host-page isolation across Livewire morphs.
-- Keep the main debugging facts and controls usable at a 390px viewport in both themes.
+- Do not use `·`, `•`, or `|` to split facts. Use space, labels, icons, or groups.
+- Help developers answer: What happened? What is wrong? Why? Where? What should I check next?
+- Show the request, errors, query count, and time first.
+- Keep framework details, raw data, hashes, and repeated facts out of the main view.
+- A finding should explain the problem, why it matters, where it came from, and what to do next.
+- Do not show two findings for the same cause.
 
-## Verification
+## Checking interface work
 
-- Use `../new-debug-bar-examples` for realistic Blade, Livewire, and Inertia checks. Do not change those apps merely to make package tests pass.
-- Run PHP and JavaScript tests, rebuild `dist`, and use focused browser tests for the changed workflows.
-- Keep resource use low: run one workbench server or browser suite at a time. The full browser matrix can exceed Composer's process timeout, so run it directly or in named groups when needed.
-- Refresh visual baselines only for intentional UI changes, inspect the changed images, then rerun the same cases without update mode.
-- Recheck profile switching, background discovery, History, focus, console output, light and dark themes, and 390px layouts after UI state changes.
+- Start with the built-in browser.
+- Use `../new-debug-bar-examples` to check Blade, Livewire, and Inertia. Do not change those apps just to make a package test pass.
+- Run one workbench server or browser test group at a time.
+- Check light and dark themes, keyboard use, browser errors, and a 390px-wide screen.
+- Update screenshot baselines only for planned changes. Look at each changed image, then run the same checks again.

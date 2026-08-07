@@ -1,18 +1,18 @@
 # New Debug Bar
 
-New Debug Bar is a modern debug bar for Laravel.
+New Debug Bar helps you understand what your Laravel app did during a request.
 
-It helps you answer five basic questions:
+It helps answer five questions:
 
 - What happened?
 - What went wrong?
 - Why did it happen?
 - Where should I look?
-- What should I inspect next?
+- What should I check next?
 
-The package adds a small toolbar to the bottom of your local Laravel app. Open it to inspect requests, queries, exceptions, logs, events, jobs, mail, cache activity, and more.
+The package adds a small bar to the bottom of your app. Open it to see requests, database queries, errors, logs, events, jobs, mail, cache use, and more.
 
-It works with Blade, Livewire, and Inertia applications.
+It works with Blade, Livewire, and Inertia.
 
 ## Requirements
 
@@ -22,37 +22,37 @@ It works with Blade, Livewire, and Inertia applications.
 
 ## Install
 
-Install the package as a development dependency:
+Add the package as a development tool:
 
 ```bash
 composer require --dev newdebugbar/new-debug-bar
 ```
 
-Laravel discovers the package automatically. Open your app in the `local` environment and the toolbar will appear at the bottom of the page.
+Laravel loads it for you. Visit your app in the `local` environment. The bar will appear at the bottom of the page.
 
 Keep the package in `require-dev` so it is not installed in production.
 
-## Configure
+## Settings
 
-The default settings work without configuration. To publish the optional config file, run:
+The package works without any setup. To change its settings, publish the config file:
 
 ```bash
 php artisan vendor:publish --tag=new-debug-bar-config
 ```
 
-To disable the bar without removing the package, add this to `.env`:
+To turn the bar off, add this to `.env`:
 
 ```dotenv
 NEW_DEBUG_BAR_ENABLED=false
 ```
 
-## Local and safe by default
+## Your data
 
-New Debug Bar runs only in the `local` environment by default. Profiles are stored as short-lived JSON files in `storage/framework/new-debug-bar`; no database is required.
+The package runs only in the `local` environment by default. It saves short-lived profile files in `storage/framework/new-debug-bar`. It does not need a database.
 
-Sensitive values are redacted. The package does not call an AI service, replay requests, retry jobs, send mail, or change your application data.
+Common secrets are hidden. The package does not call an AI service or change your app's data.
 
-## Development
+## Work on the package
 
 ```bash
 composer install
@@ -65,4 +65,4 @@ composer test
 
 Copyright © 2026 Benjamin Crozat.
 
-New Debug Bar is open source software released under the MIT License. Copies or substantial portions of the package must keep the copyright and license notice.
+New Debug Bar uses the MIT License. If you copy or share the package, keep the copyright and license notice.
