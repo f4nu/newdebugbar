@@ -260,7 +260,9 @@ it('loads retained history and compares requests from the same path', function (
         ->assertSet('comparisonProfileId', $firstId)
         ->assertSet('comparison.path', '/profiled')
         ->assertSet('comparison.metrics.0.key', 'duration_ms')
-        ->assertSee('Comparison')
+        ->assertSee('Compare requests')
+        ->assertSee('Earlier request:')
+        ->assertSee('Current request:')
         ->call('clearComparison')
         ->assertSet('comparisonProfileId', null)
         ->assertSet('comparison', []);

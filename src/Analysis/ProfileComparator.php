@@ -29,13 +29,15 @@ final class ProfileComparator
         foreach ($fields as $key => [$label, $unit]) {
             $baselineValue = (float) ($before[$key] ?? 0);
             $currentValue = (float) ($after[$key] ?? 0);
+            $delta = round($currentValue - $baselineValue, 2);
             $metrics[] = [
                 'key' => $key,
                 'label' => $label,
                 'unit' => $unit,
                 'baseline' => $baselineValue,
                 'current' => $currentValue,
-                'delta' => round($currentValue - $baselineValue, 2),
+                'delta' => $delta,
+                'tone' => $this->tone($key, $delta),
             ];
         }
 
@@ -45,5 +47,18 @@ final class ProfileComparator
             'current' => $after,
             'metrics' => $metrics,
         ];
+    }
+
+    private function tone(string $key, float $delta): string
+    {
+        if ($delta === 0.0 || $key === 'query_count') {
+            return 'neutral';
+        }
+
+        if ($key === 'cache_hit_rate') {
+            return $delta > 0 ? 'improved' : 'regressed';
+        }
+
+        return $delta < 0 ? 'improved' : 'regressed';
     }
 }

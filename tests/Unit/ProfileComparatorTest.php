@@ -4,7 +4,7 @@ use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Support\Redactor;
 
-it('compares stable profile metrics without assigning meaning to deltas', function () {
+it('compares stable profile metrics and explains directional changes', function () {
     $comparator = new ProfileComparator(new ProfileSummaryPresenter(new Redactor));
     $profile = fn (string $id, float $duration, int $queries, int $hits, int $misses): array => [
         'id' => $id,
@@ -35,10 +35,16 @@ it('compares stable profile metrics without assigning meaning to deltas', functi
             'baseline' => 100.0,
             'current' => 80.0,
             'delta' => -20.0,
+            'tone' => 'improved',
         ])
         ->and(collect($comparison['metrics'])->keyBy('key')->get('cache_hit_rate'))->toMatchArray([
             'baseline' => 50.0,
             'current' => 75.0,
             'delta' => 25.0,
+            'tone' => 'improved',
+        ])
+        ->and(collect($comparison['metrics'])->keyBy('key')->get('query_count'))->toMatchArray([
+            'delta' => -2.0,
+            'tone' => 'neutral',
         ]);
 });
