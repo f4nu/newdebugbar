@@ -631,7 +631,15 @@ it('reorders favorites with the keyboard and drag and drop', function () {
 
     $page
         ->assertScript('Array.from(document.querySelectorAll("[data-ndb-favorites-heading]")).filter((heading) => heading.offsetParent !== null).length', 1)
-        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-sections-heading]")).filter((heading) => heading.offsetParent !== null).length', 1);
+        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-sections-heading]")).filter((heading) => heading.offsetParent !== null).length', 1)
+        ->assertScript(<<<'JS'
+            (() => {
+                const heading = document.querySelector('[data-ndb-favorites-heading]');
+                const firstFavorite = document.querySelector('[data-ndb-section][data-ndb-favorite="true"]');
+
+                return (heading.compareDocumentPosition(firstFavorite) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+            })()
+            JS);
 
     $page->keys('[data-ndb-select-section="overview"]', 'Shift+ArrowUp');
     assertFavoriteOrder($page, 'overview,request,queries');

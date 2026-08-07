@@ -148,9 +148,9 @@
                     class="ndb-mobile-section-navigation ndb:absolute ndb:inset-y-0 ndb:left-0 ndb:z-30 ndb:flex ndb:w-[82vw] ndb:max-w-[280px] ndb:flex-col ndb:border-r ndb:border-zinc-200/80 ndb:bg-zinc-50/95 ndb:p-3 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:sm:static ndb:sm:z-auto ndb:sm:w-[210px] ndb:sm:max-w-none ndb:sm:shrink-0 ndb:sm:shadow-none ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/95 ndb:sm:dark:bg-zinc-900/60"
                 >
                     <div id="new-debug-bar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:gap-0.5 ndb:overflow-y-auto">
-                        <template x-for="(section, sectionIndex) in orderedSections" :key="'section-' + section.key">
+                        <p data-ndb-favorites-heading x-show.important="favorites.length > 0" class="ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400">Favorites</p>
+                        <template x-for="section in orderedSections" :key="'section-' + section.key">
                             <div x-show.important="isSectionVisible(section)" class="ndb:contents">
-                                <p data-ndb-favorites-heading x-show.important="favorites.length > 0 && sectionIndex === 0" class="ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400">Favorites</p>
                                 <div x-show.important="favorites.length > 0 && section.key === firstVisibleNonFavoriteKey" class="ndb:my-2 ndb:h-px ndb:bg-zinc-200 ndb:dark:bg-zinc-800"></div>
                                 <p data-ndb-sections-heading x-show.important="favorites.length > 0 && section.key === firstVisibleNonFavoriteKey" class="ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400">Sections</p>
                                 <div
