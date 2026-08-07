@@ -8,8 +8,9 @@
 ## Product boundary
 
 - Keep the package Laravel-only. Use package-owned compiled assets and normal DOM so host apps do not need Vite or Tailwind changes.
-- Keep profiling local and read-only. Profiles are bounded JSON files, not database records.
-- Never inject the interface into JSON, redirects, streams, downloads, Artisan commands, tests, or worker responses.
+- Store profiles locally as bounded JSON files. Do not require a database.
+- Profiling tools must not replay requests, retry jobs, send mail, clear caches, or change the host application's data.
+- Profile JSON, API, AJAX, redirect, stream, download, Artisan, test, and worker activity without changing those responses. Render the toolbar only in eligible HTML responses.
 
 ## Public release
 
