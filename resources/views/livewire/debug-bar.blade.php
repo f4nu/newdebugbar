@@ -9,6 +9,7 @@
     @keydown.window="handleShortcut($event)"
     @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionPanels(); applyAuthorizationFilters(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); syncHostLock(); window.newDebugBarHighlight?.($root) })"
     @new-debug-bar-profile-switched.window="switchProfile($event.detail.summary)"
+    @new-debug-bar-select-section.window="selectSection($event.detail.section, $event.detail.filter ?? null, $event.detail.focusHeading ?? false)"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <div

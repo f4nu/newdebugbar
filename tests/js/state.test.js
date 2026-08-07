@@ -459,12 +459,15 @@ test('query finding actions reveal and focus the relevant evidence', () => {
 });
 
 test('authorization controls filter decisions and overview navigation opens denied results', () => {
+  const browser = runtime();
+  let dispatched = null;
+  browser.dispatch = (name, detail) => { dispatched = [name, detail]; };
   const state = createNewDebugBar({
     sections: [
       { key: 'overview', label: 'Overview' },
       { key: 'authorization', label: 'Authorization' },
     ],
-  }, runtime());
+  }, browser);
   let headingFocused = 0;
   const allowed = { dataset: { result: 'allowed' }, hidden: false };
   const denied = { dataset: { result: 'denied' }, hidden: false };
@@ -486,6 +489,11 @@ test('authorization controls filter decisions and overview navigation opens deni
   assert.equal(allowed.hidden, true);
   assert.equal(denied.hidden, false);
   assert.equal(headingFocused, 1);
+  assert.deepEqual(dispatched, ['new-debug-bar-select-section', {
+    section: 'authorization',
+    filter: 'denied',
+    focusHeading: true,
+  }]);
 
   state.setAuthorizationFilter('invalid');
   assert.equal(state.authorizationFilter, 'denied');

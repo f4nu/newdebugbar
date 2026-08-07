@@ -8,6 +8,7 @@ const defaultRuntime = () => ({
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
+  dispatch: (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail })),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('new-debug-bar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
   lockHost: (root) => {
@@ -226,14 +227,22 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         || section.key === this.selected;
     },
 
-    selectSection(section) {
-      const focusContentHeading = this.mobileSectionsOpen;
+    selectSection(section, filter = null, focusHeading = false) {
+      const focusContentHeading = focusHeading || this.mobileSectionsOpen;
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
+      if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) this.queryFilter = filter;
+      if (this.selected === 'authorization' && ['all', 'allowed', 'denied'].includes(filter)) this.authorizationFilter = filter;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.$nextTick?.(() => {
         this.syncSectionPanels();
-        if (this.selected === 'queries') this.applyQueryView();
+        if (this.selected === 'queries') {
+          this.applyQueryView();
+          if (['repeated', 'slow'].includes(filter)) {
+            const list = filter === 'repeated' ? this.$refs?.queryGroups : this.$refs?.queryItems;
+            list?.querySelector?.('[data-ndb-query-group]:not([hidden]), [data-ndb-query-item]:not([hidden])')?.scrollIntoView?.({ block: 'start' });
+          }
+        }
         if (this.selected === 'authorization') this.applyAuthorizationFilters();
         if (this.selected === 'history') this.applyHistoryFilters();
         if (this.selected === 'timeline') this.applyTimelineFilters();
@@ -248,11 +257,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     navigateToSection(section, filter = null) {
       const target = this.sectionKeys.includes(section) ? section : 'overview';
 
-      this.selectSection(target);
-      this.$nextTick?.(() => {
-        if (target === 'queries' && filter !== null) this.reviewQueryEvidence(filter);
-        if (target === 'authorization' && filter !== null) this.setAuthorizationFilter(filter);
-        this.$refs?.sectionHeading?.focus?.();
+      this.selectSection(target, filter, true);
+      browser.dispatch?.('new-debug-bar-select-section', {
+        section: target,
+        filter,
+        focusHeading: true,
       });
     },
 
