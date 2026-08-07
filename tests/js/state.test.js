@@ -5,9 +5,11 @@ import { createNewDebugBar, STORAGE_KEY } from '../../resources/js/state.js';
 
 function runtime(saved = null) {
   const values = new Map(saved ? [[STORAGE_KEY, JSON.stringify(saved)]] : []);
+  const host = { locks: 0, unlocks: 0 };
 
   return {
     values,
+    host,
     storage: {
       getItem: (key) => values.get(key) ?? null,
       setItem: (key, value) => values.set(key, value),
@@ -15,6 +17,9 @@ function runtime(saved = null) {
     matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
     activeElement: () => null,
     highlight: () => {},
+    afterPaint: (callback) => callback(),
+    lockHost: () => host.locks++,
+    unlockHost: () => host.unlocks++,
   };
 }
 
@@ -141,7 +146,7 @@ test('selecting a section resets content and highlights its code', async () => {
   assert.equal(highlighted, 1);
 });
 
-test('a new application profile keeps a valid section and reloads open details', async () => {
+test('a new application profile resets stale section state and reloads open details', async () => {
   const state = createNewDebugBar(summary, runtime());
   let detailsLoaded = 0;
   state.$wire = { loadDetails: async () => detailsLoaded++ };
@@ -151,11 +156,11 @@ test('a new application profile keeps a valid section and reloads open details',
   state.inspectorOpen = true;
   state.detailsRequested = true;
 
-  state.switchProfile({ ...summary, path: '/livewire/update' });
+  state.switchProfile({ ...summary, profile_id: '550e8400-e29b-41d4-a716-446655440000', path: '/livewire/update' });
   await Promise.resolve();
 
   assert.equal(state.summary.path, '/livewire/update');
-  assert.equal(state.selected, 'logs');
+  assert.equal(state.selected, 'overview');
   assert.equal(state.detailsRequested, true);
   assert.equal(detailsLoaded, 1);
 
@@ -184,6 +189,58 @@ test('background profiles refresh loaded history without switching the active pr
   assert.equal(discovered, discoveredProfileId);
 });
 
+test('Escape returns from a retained History profile before closing the inspector', async () => {
+  const state = createNewDebugBar({ ...summary, is_current_profile: false }, runtime());
+  let returned = 0;
+  state.inspectorOpen = true;
+  state.$wire = { returnToCurrent: async () => returned++ };
+
+  state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
+  await Promise.resolve();
+
+  assert.equal(returned, 1);
+  assert.equal(state.inspectorOpen, true);
+});
+
+test('foreground profiles replace the current profile instead of entering background history', async () => {
+  const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
+  const visitProfileId = '550e8400-e29b-41d4-a716-446655440000';
+  const state = createNewDebugBar({ ...summary, profile_id: activeProfileId }, runtime());
+  let switched = null;
+  let discovered = null;
+  state.$wire = {
+    switchProfile: async (id) => { switched = id; },
+    discoverProfile: async (id) => { discovered = id; },
+  };
+
+  state.noticeProfile(visitProfileId, { foreground: true, purpose: 'inertia_visit' });
+  await Promise.resolve();
+
+  assert.equal(switched, visitProfileId);
+  assert.equal(discovered, null);
+  assert.equal(state.discoveredProfileId, null);
+});
+
+test('stale detail responses cannot resync panels for a newer profile', async () => {
+  const pending = [];
+  const state = createNewDebugBar({ ...summary, profile_id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' }, runtime());
+  let synced = 0;
+  state.syncSectionPanels = () => synced++;
+  state.$wire = { loadDetails: () => new Promise((resolve) => pending.push(resolve)) };
+  state.$nextTick = (callback) => callback();
+  state.inspectorOpen = true;
+
+  state.openInspector();
+  state.switchProfile({ ...summary, profile_id: '550e8400-e29b-41d4-a716-446655440000' });
+  const syncsBeforeStaleResponse = synced;
+  pending[0]();
+  await Promise.resolve();
+
+  assert.equal(synced, syncsBeforeStaleResponse);
+  assert.equal(state.summary.profile_id, '550e8400-e29b-41d4-a716-446655440000');
+  assert.equal(state.selected, 'overview');
+});
+
 test('the inspector moves focus inside and returns it when closed', () => {
   let openerFocused = 0;
   let closeFocused = 0;
@@ -196,10 +253,12 @@ test('the inspector moves focus inside and returns it when closed', () => {
 
   state.openInspector();
   assert.equal(closeFocused, 1);
+  assert.equal(browser.host.locks, 1);
 
   state.closeInspector();
   assert.equal(openerFocused, 1);
   assert.equal(state.inspectorReturnFocus, null);
+  assert.equal(browser.host.unlocks, 1);
 });
 
 test('mobile section navigation manages focus and layered dismissal', () => {
@@ -401,17 +460,24 @@ test('query finding actions reveal and focus the relevant evidence', () => {
 
 test('history controls combine path method status and warning filters', () => {
   const state = createNewDebugBar(summary, runtime());
-  const profile = (path, method, status, warning) => ({
-    dataset: { path, method, status: String(status), warning: String(warning) },
+  const profile = (path, method, status, warning, runtimeProfile = false) => ({
+    dataset: { path, method, status: String(status), warning: String(warning), runtime: String(runtimeProfile) },
     hidden: false,
   });
   const current = profile('/profiled', 'GET', 200, false);
   const failed = profile('/profiled', 'POST', 422, true);
   const other = profile('/clinics', 'GET', 200, true);
-  state.$refs = { historyList: { children: [current, failed, other] } };
+  const command = profile('artisan:migrate', 'CLI', 0, false, true);
+  state.$refs = { historyList: { children: [current, failed, other, command] } };
 
   state.applyHistoryFilters();
   assert.equal(state.visibleHistoryCount, 3);
+  assert.equal(command.hidden, true);
+
+  state.toggleHistoryRuntime();
+  assert.equal(state.visibleHistoryCount, 4);
+  assert.equal(command.hidden, false);
+  state.toggleHistoryRuntime();
 
   state.historyPath = 'PROFILED';
   state.historyMethod = 'post';
@@ -443,10 +509,15 @@ test('timeline controls filter sections and search labels', () => {
     ...summary,
     sections: [...summary.sections, { key: 'timeline', label: 'Timeline' }, { key: 'events', label: 'Events' }],
   }, runtime());
-  const item = (section, search) => ({ dataset: { section, search }, hidden: false });
-  const query = item('queries', 'select users');
+  const item = (section, search, key = false) => ({ dataset: { section, search, key: String(key) }, hidden: false });
+  const query = item('queries', 'select users', true);
   const event = item('events', 'clinic ready');
   state.$refs = { timelineList: { children: [query, event] } };
+
+  state.applyTimelineFilters();
+  assert.equal(state.timelineFilter, 'key');
+  assert.equal(query.hidden, false);
+  assert.equal(event.hidden, true);
 
   state.setTimelineFilter('queries');
   assert.equal(query.hidden, false);
@@ -473,7 +544,8 @@ test('event controls separate framework noise from application events', () => {
   const application = item('application', 'clinic ready');
   state.$refs = { eventList: { children: [framework, application] } };
 
-  state.setEventSource('application');
+  state.applyEventFilters();
+  assert.equal(state.eventSource, 'application');
   assert.equal(framework.hidden, true);
   assert.equal(application.hidden, false);
   assert.equal(state.visibleEventCount, 1);
@@ -538,6 +610,35 @@ test('the command palette jumps to sections and changes settings', async () => {
 
   state.runCommand('theme:light');
   assert.equal(state.resolvedTheme, 'light');
+});
+
+test('the command palette keeps quiet collectors behind one reveal action', () => {
+  const state = createNewDebugBar({
+    sections: [
+      { key: 'overview', label: 'Overview', active: true },
+      { key: 'queries', label: 'Queries', active: true },
+      { key: 'livewire', label: 'Livewire', active: false },
+      { key: 'mail', label: 'Mail', active: false },
+    ],
+  }, runtime());
+
+  assert.deepEqual(state.filteredCommands.filter((command) => command.id.startsWith('section:')).map((command) => command.id), [
+    'section:overview',
+    'section:queries',
+  ]);
+  assert.equal(state.filteredCommands.at(-1).id, 'collectors:show');
+
+  state.runCommand('collectors:show');
+  assert.deepEqual(state.filteredCommands.filter((command) => command.id.startsWith('section:')).map((command) => command.id), [
+    'section:overview',
+    'section:queries',
+    'section:livewire',
+    'section:mail',
+  ]);
+
+  state.paletteSearch = 'livewire';
+  state.paletteShowQuiet = false;
+  assert.deepEqual(state.filteredCommands.map((command) => command.id), ['section:livewire']);
 });
 
 test('broken browser preferences never break initialization or persistence', () => {

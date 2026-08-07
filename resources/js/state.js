@@ -9,6 +9,45 @@ const defaultRuntime = () => ({
   activeElement: () => document.activeElement,
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('new-debug-bar')),
+  afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
+  lockHost: (root) => {
+    if (!root || root.__newDebugBarHostLock) return;
+
+    const body = document.body;
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    const previous = {
+      overflow: body.style.overflow,
+      paddingRight: body.style.paddingRight,
+      inert: [],
+    };
+
+    [...body.children].forEach((element) => {
+      if (element === root
+        || element.contains(root)
+        || !(element instanceof HTMLElement)
+        || element.matches('script, style, link')) return;
+
+      previous.inert.push([element, element.inert]);
+      element.inert = true;
+    });
+
+    body.style.overflow = 'hidden';
+
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${Number.parseFloat(window.getComputedStyle(body).paddingRight || '0') + scrollbarWidth}px`;
+    }
+
+    root.__newDebugBarHostLock = previous;
+  },
+  unlockHost: (root) => {
+    const previous = root?.__newDebugBarHostLock;
+    if (!previous) return;
+
+    document.body.style.overflow = previous.overflow;
+    document.body.style.paddingRight = previous.paddingRight;
+    previous.inert.forEach(([element, inert]) => { element.inert = inert; });
+    delete root.__newDebugBarHostLock;
+  },
 });
 
 export function createNewDebugBar(summary = {}, runtime = null) {
@@ -20,6 +59,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     mobileSectionsOpen: false,
     mobileSectionsReturnFocus: null,
     detailsRequested: false,
+    detailsError: false,
+    detailRequestVersion: 0,
     selected: 'overview',
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
@@ -35,12 +76,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     historyMethod: '',
     historyStatus: '',
     historyWarning: 'all',
+    historyShowRuntime: false,
     visibleHistoryCount: 0,
     discoveredProfileId: null,
-    timelineFilter: 'all',
+    timelineFilter: 'key',
     timelineSearch: '',
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
-    eventSource: 'all',
+    eventSource: 'application',
     eventSearch: '',
     visibleEventCount: summary.section_counts?.events ?? 0,
     logLevel: 'all',
@@ -49,6 +91,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
+    paletteShowQuiet: false,
     paletteReturnFocus: null,
     colorScheme: null,
     colorSchemeListener: null,
@@ -61,7 +104,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         if (this.theme === 'system') this.applyTheme();
       };
       this.applyTheme();
-      this.$nextTick?.(() => this.syncSectionPanels());
+      this.$nextTick?.(() => {
+        this.syncSectionPanels();
+        this.syncHostLock();
+      });
       this.colorScheme?.addEventListener?.('change', this.colorSchemeListener);
     },
 
@@ -69,6 +115,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.colorScheme?.removeEventListener?.('change', this.colorSchemeListener);
       this.colorScheme = null;
       this.colorSchemeListener = null;
+      browser.unlockHost?.(this.$root);
     },
 
     restore() {
@@ -104,11 +151,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       const sections = (this.summary.sections ?? []).map((section) => ({
         id: `section:${section.key}`,
         label: `Go to ${section.label}`,
-        hint: 'Section',
+        hint: section.active === false ? 'Other collector' : (section.attention ? 'Needs attention' : 'Active section'),
+        priority: section.attention ? 0 : (section.active === false ? 2 : 1),
       }));
 
       return [
-        ...sections,
+        ...sections.sort((left, right) => left.priority - right.priority || left.label.localeCompare(right.label)),
         { id: 'theme:system', label: 'Use system theme', hint: 'Theme' },
         { id: 'theme:light', label: 'Use light theme', hint: 'Theme' },
         { id: 'theme:dark', label: 'Use dark theme', hint: 'Theme' },
@@ -117,6 +165,15 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
     get filteredCommands() {
       const words = this.paletteSearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+      if (words.length === 0 && !this.paletteShowQuiet) {
+        const active = this.allCommands.filter((command) => command.hint !== 'Other collector');
+        const hidden = this.allCommands.length - active.length;
+
+        return hidden > 0
+          ? [...active, { id: 'collectors:show', label: 'Show other collectors', hint: `${hidden} hidden` }]
+          : active;
+      }
 
       if (words.length === 0) return this.allCommands;
 
@@ -222,6 +279,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
     },
 
+    syncHostLock() {
+      if (this.inspectorOpen || this.paletteOpen) browser.lockHost?.(this.$root);
+      else browser.unlockHost?.(this.$root);
+    },
+
     openInspector(section = this.selected, returnFocus = null) {
       if (!this.inspectorOpen) {
         this.inspectorReturnFocus = returnFocus ?? browser.activeElement?.();
@@ -231,24 +293,46 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.mobileSectionsReturnFocus = null;
       this.selectSection(section);
       this.inspectorOpen = true;
-      this.$nextTick?.(() => this.$refs?.inspectorClose?.focus());
+      this.syncHostLock();
+      this.$nextTick?.(() => {
+        const focus = () => this.$refs?.inspectorClose?.focus();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
 
       if (!this.detailsRequested) {
-        this.detailsRequested = true;
-        Promise.resolve(this.$wire?.loadDetails())
-          .then(() => this.$nextTick?.(() => {
+        this.requestDetails();
+      }
+    },
+
+    requestDetails() {
+      if (this.detailsRequested) return;
+
+      const profileId = this.summary.profile_id;
+      const requestVersion = ++this.detailRequestVersion;
+      this.detailsRequested = true;
+      this.detailsError = false;
+
+      Promise.resolve(this.$wire?.loadDetails())
+        .then(() => {
+          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.profile_id) return;
+
+          this.$nextTick?.(() => {
             this.syncSectionPanels();
             this.applyQueryView();
             this.applyHistoryFilters();
             this.applyTimelineFilters();
             this.applyEventFilters();
             this.applyLogFilters();
+            this.syncHostLock();
             browser.highlight?.();
-          }))
-          .catch(() => {
-            this.detailsRequested = false;
           });
-      }
+        })
+        .catch(() => {
+          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.profile_id) return;
+
+          this.detailsRequested = false;
+          this.detailsError = true;
+        });
     },
 
     closeInspector() {
@@ -257,31 +341,58 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.inspectorReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
-      this.$nextTick?.(() => returnFocus?.focus?.());
+      this.syncHostLock();
+      this.$nextTick?.(() => {
+        const focus = () => returnFocus?.focus?.();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
     },
 
     switchProfile(summary) {
+      this.detailRequestVersion++;
       this.summary = summary ?? {};
       this.detailsRequested = false;
-      const section = this.sectionKeys.includes(this.selected) ? this.selected : 'overview';
+      this.detailsError = false;
+      this.selected = 'overview';
+      this.queryFilter = 'all';
+      this.querySearch = '';
+      this.querySort = 'execution';
+      this.historyPath = '';
+      this.historyMethod = '';
+      this.historyStatus = '';
+      this.historyWarning = 'all';
+      this.discoveredProfileId = null;
 
       if (this.inspectorOpen) {
-        this.openInspector(section);
+        this.openInspector('overview');
       } else {
-        this.selected = section;
         this.$nextTick?.(() => this.syncSectionPanels());
       }
     },
 
-    noticeProfile(profileId) {
+    noticeProfile(profileId, context = {}) {
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(profileId ?? '')) return;
       if (profileId === this.summary.profile_id) return;
+
+      if (context.foreground === true) {
+        Promise.resolve(this.$wire?.switchProfile(profileId)).catch(() => {});
+
+        return;
+      }
 
       this.discoveredProfileId = profileId;
 
       Promise.resolve(this.$wire?.discoverProfile(profileId))
         .then(() => this.$nextTick?.(() => this.applyHistoryFilters()))
         .catch(() => {});
+    },
+
+    returnToCurrentProfile() {
+      if (this.summary.is_current_profile !== false) return false;
+
+      Promise.resolve(this.$wire?.returnToCurrent()).catch(() => {});
+
+      return true;
     },
 
     copyText(value) {
@@ -373,8 +484,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.applyHistoryFilters();
     },
 
+    toggleHistoryRuntime() {
+      this.historyShowRuntime = !this.historyShowRuntime;
+      this.applyHistoryFilters();
+    },
+
     applyHistoryFilters() {
-      const list = this.$refs?.historyList;
+      const list = this.$refs?.historyList ?? this.$root?.querySelector?.('[x-ref="historyList"]');
 
       if (!list?.children) {
         this.visibleHistoryCount = 0;
@@ -391,6 +507,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         const matches = (path === '' || profile.dataset.path?.includes(path))
           && (method === '' || profile.dataset.method === method)
           && (status === '' || profile.dataset.status === status)
+          && (this.historyShowRuntime || profile.dataset.runtime !== 'true')
           && (this.historyWarning === 'all'
             || (this.historyWarning === 'warning' && profile.dataset.warning === 'true')
             || (this.historyWarning === 'clean' && profile.dataset.warning === 'false'));
@@ -402,7 +519,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     setTimelineFilter(filter) {
-      if (!this.sectionKeys.includes(filter) && filter !== 'all') return;
+      if (!this.sectionKeys.includes(filter) && !['all', 'key'].includes(filter)) return;
 
       this.timelineFilter = filter;
       this.applyTimelineFilters();
@@ -421,7 +538,9 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       let visible = 0;
 
       [...list.children].forEach((item) => {
-        const matches = (this.timelineFilter === 'all' || item.dataset.section === this.timelineFilter)
+        const matches = (this.timelineFilter === 'all'
+          || (this.timelineFilter === 'key' && item.dataset.key === 'true')
+          || item.dataset.section === this.timelineFilter)
           && (search === '' || item.dataset.search?.includes(search));
         item.hidden = !matches;
         if (matches) visible++;
@@ -608,9 +727,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.paletteOpen = true;
+      this.syncHostLock();
       this.paletteSearch = '';
       this.paletteIndex = 0;
-      this.$nextTick?.(() => this.$refs?.paletteSearch?.focus());
+      this.paletteShowQuiet = false;
+      this.$nextTick?.(() => {
+        const focus = () => this.$refs?.paletteSearch?.focus();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
     },
 
     closePalette(restoreFocus = true) {
@@ -618,9 +742,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.paletteOpen = false;
       this.paletteSearch = '';
       this.paletteIndex = 0;
+      this.paletteShowQuiet = false;
       this.paletteReturnFocus = null;
+      this.syncHostLock();
 
-      if (restoreFocus) this.$nextTick?.(() => returnFocus?.focus?.());
+      if (restoreFocus) this.$nextTick?.(() => {
+        const focus = () => returnFocus?.focus?.();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
     },
 
     movePalette(direction) {
@@ -648,6 +777,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       if (kind === 'theme') this.setTheme(value);
 
+      if (kind === 'collectors' && value === 'show') {
+        this.paletteShowQuiet = true;
+        this.paletteIndex = 0;
+
+        return;
+      }
+
       this.closePalette();
     },
 
@@ -660,7 +796,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       if (event.key === 'Escape') {
         if (this.paletteOpen) this.closePalette();
         else if (this.mobileSectionsOpen) this.closeMobileSections();
-        else if (this.inspectorOpen) this.closeInspector();
+        else if (this.inspectorOpen && !this.returnToCurrentProfile()) this.closeInspector();
       }
     },
   };

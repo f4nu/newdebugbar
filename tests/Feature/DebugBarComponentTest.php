@@ -33,6 +33,10 @@ it('locks server-owned profile state', function () {
         ->toThrow(Exception::class);
 
     expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
+        ->set('currentProfileId', 'changed'))
+        ->toThrow(Exception::class);
+
+    expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
         ->set('summary.status', 500))
         ->toThrow(Exception::class);
 
@@ -57,7 +61,13 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
             'request' => [
                 'label' => 'Request',
                 'summary' => ['method' => 'POST', 'status' => 500],
-                'payload' => ['path' => '/organizations'],
+                'payload' => [
+                    'method' => 'POST',
+                    'status' => 500,
+                    'path' => '/organizations',
+                    'route' => 'organizations.store',
+                    'action' => 'OrganizationController@store',
+                ],
             ],
             'queries' => [
                 'label' => 'Queries',
@@ -85,7 +95,9 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
         ->assertSet('summary.slow_query_count', 1)
         ->assertSet('summary.duplicate_query_count', 1)
         ->assertSet('summary.extra_query_count', 1)
-        ->assertSet('summary.exception_count', 1);
+        ->assertSet('summary.exception_count', 1)
+        ->assertSet('detailsLoaded', true)
+        ->assertSee('The request returned HTTP 500.');
 });
 
 it('marks active, quiet, truncated, and incomplete sections for disclosure', function () {
@@ -242,6 +254,7 @@ it('loads retained history and compares requests from the same path', function (
         })
         ->call('loadDetails')
         ->assertSet('history.0.is_current', true)
+        ->assertSet('history.0.is_selected', true)
         ->assertSet('history.1.comparable', true)
         ->call('compareWith', $firstId)
         ->assertSet('comparisonProfileId', $firstId)
@@ -299,8 +312,30 @@ it('switches to an exact retained application profile', function () {
         ->assertSet('detailsLoaded', true)
         ->call('switchProfile', $nextId)
         ->assertSet('profileId', $nextId)
+        ->assertSet('currentProfileId', $nextId)
         ->assertSet('summary.path', '/profiled-next')
         ->assertSet('detailsLoaded', false)
         ->assertSet('history', [])
+        ->assertDispatched('new-debug-bar-profile-switched');
+});
+
+it('opens any retained profile without losing the current foreground request', function () {
+    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+    $backgroundId = $this->getJson('/api/plain-json')
+        ->assertOk()
+        ->headers->get('X-New-Debug-Bar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $currentId])
+        ->call('selectProfile', $backgroundId)
+        ->assertSet('profileId', $backgroundId)
+        ->assertSet('currentProfileId', $currentId)
+        ->assertSet('summary.path', '/api/plain-json')
+        ->assertSet('summary.is_current_profile', false)
+        ->call('returnToCurrent')
+        ->assertSet('profileId', $currentId)
+        ->assertSet('currentProfileId', $currentId)
+        ->assertSet('summary.is_current_profile', true)
         ->assertDispatched('new-debug-bar-profile-switched');
 });

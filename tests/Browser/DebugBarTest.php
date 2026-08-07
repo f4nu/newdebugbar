@@ -814,8 +814,8 @@ it('turns query findings into direct evidence actions instead of raw json', func
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
         ->waitForText('Findings')
-        ->assertPresent('[data-ndb-finding="query.repeated"]')
         ->assertPresent('[data-ndb-finding="query.n_plus_one"]')
+        ->assertMissing('[data-ndb-finding="query.repeated"]')
         ->click('[data-ndb-select-section="queries"]');
 
     assertDebugSectionSelected($page, 'queries');

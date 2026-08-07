@@ -19,6 +19,9 @@ final class DebugBar extends Component
     #[Locked]
     public string $profileId;
 
+    #[Locked]
+    public string $currentProfileId;
+
     /** @var array<string, mixed> */
     #[Locked]
     public array $summary = [];
@@ -51,7 +54,11 @@ final class DebugBar extends Component
     public function mount(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
         $this->profileId = $profileId;
-        $this->summary = $this->makeSummary($presenter->present($store->get($profileId) ?? []));
+        $this->currentProfileId = $profileId;
+        $profile = $presenter->present($store->get($profileId) ?? []);
+        $this->summary = $this->makeSummary($profile);
+        $this->detailsLoaded = (int) ($this->summary['status'] ?? 0) >= 400
+            || (int) ($this->summary['exception_count'] ?? 0) > 0;
     }
 
     public function loadDetails(
@@ -138,11 +145,35 @@ final class DebugBar extends Component
 
     public function switchProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
     {
+        $this->activateProfile($profileId, true, $store, $presenter);
+    }
+
+    public function selectProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
+    {
+        $this->activateProfile($profileId, false, $store, $presenter);
+    }
+
+    public function returnToCurrent(ProfileStore $store, ProfilePresenter $presenter): void
+    {
+        $this->activateProfile($this->currentProfileId, false, $store, $presenter);
+    }
+
+    private function activateProfile(
+        string $profileId,
+        bool $makeCurrent,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+    ): void {
         abort_unless($this->validProfileId($profileId), 422);
         $profile = $store->get($profileId);
         abort_if($profile === null, 404);
 
         $this->profileId = $profileId;
+
+        if ($makeCurrent) {
+            $this->currentProfileId = $profileId;
+        }
+
         $this->summary = $this->makeSummary($presenter->present($profile));
         $this->detailsLoaded = false;
         $this->history = [];
@@ -234,6 +265,8 @@ final class DebugBar extends Component
 
         return [
             'profile_id' => $profile['id'] ?? $this->profileId,
+            'current_profile_id' => $this->currentProfileId,
+            'is_current_profile' => ($profile['id'] ?? $this->profileId) === $this->currentProfileId,
             'theme' => config('new-debug-bar.theme', 'system'),
             'environment' => (string) ($profile['environment'] ?? app()->environment()),
             'method' => $sections['request']['summary']['method'] ?? 'GET',
@@ -268,10 +301,11 @@ final class DebugBar extends Component
                 continue;
             }
 
-            $summary['is_current'] = ($summary['id'] ?? null) === $this->profileId;
-            $summary['comparable'] = ! $summary['is_current'] && ($summary['path'] ?? null) === $currentPath;
+            $summary['is_current'] = ($summary['id'] ?? null) === $this->currentProfileId;
+            $summary['is_selected'] = ($summary['id'] ?? null) === $this->profileId;
+            $summary['comparable'] = ! $summary['is_selected'] && ($summary['path'] ?? null) === $currentPath;
 
-            if ($summary['is_current']) {
+            if ($summary['is_selected']) {
                 array_unshift($history, $summary);
             } else {
                 $history[] = $summary;
