@@ -7,7 +7,7 @@
     x-data="newDebugBar(@js($summary))"
     :data-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
-    @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionPanels(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); syncHostLock(); window.newDebugBarHighlight?.($root) })"
+    @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionPanels(); applyAuthorizationFilters(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); syncHostLock(); window.newDebugBarHighlight?.($root) })"
     @new-debug-bar-profile-switched.window="switchProfile($event.detail.summary)"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
@@ -254,7 +254,8 @@
                                         @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
                                         @php($runtimeSummary = array_values(array_filter([isset($runtimeFacts['environment']) ? (string) $runtimeFacts['environment'] : null, isset($runtimeFacts['php']) ? 'PHP '.$runtimeFacts['php'] : null, isset($runtimeFacts['laravel']) ? 'Laravel '.$runtimeFacts['laravel'] : null])))
                                         @php($activitySections = array_values(array_filter($summary['sections'] ?? [], fn (array $link): bool => ! in_array($link['key'], ['overview', 'request', 'history'], true) && $link['count'] !== null && ($link['active'] ?? true))))
-                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" />
+                                        @php($overviewSectionLabels = collect($summary['sections'] ?? [])->mapWithKeys(fn (array $link): array => [$link['key'] => $link['label']])->all())
+                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" :overview="true" :section-labels="$overviewSectionLabels" />
                                         @if ($sectionFindings === [])
                                             <div data-ndb-no-high-confidence-finding class="ndb:flex ndb:items-start ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-emerald-200 ndb:bg-emerald-50/55 ndb:px-4 ndb:py-3.5 ndb:dark:border-emerald-950 ndb:dark:bg-emerald-950/20"><span class="ndb:mt-1 ndb:size-2 ndb:shrink-0 ndb:rounded-full ndb:bg-emerald-500"></span><div><p class="ndb:text-xs ndb:font-bold ndb:text-emerald-900 ndb:dark:text-emerald-200">No high-confidence issue detected</p><p class="ndb:mt-1 ndb:text-[11px] ndb:leading-relaxed ndb:text-emerald-800/80 ndb:dark:text-emerald-300/80">Review the activity below when you are checking a specific request detail.</p></div></div>
                                         @endif
@@ -266,7 +267,7 @@
                                                 <div class="ndb:mb-2 ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"><h3 class="ndb:text-xs ndb:font-bold">Activity</h3><span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ count($activitySections) }} relevant sections</span></div>
                                                 <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-4">
                                                     @foreach ($activitySections as $link)
-                                                        <button type="button" data-ndb-overview-activity-section="{{ $link['key'] }}" @click="selectSection(@js($link['key']))" class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-2 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:hover:border-indigo-300 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-800 ndb:dark:hover:border-indigo-800 ndb:dark:hover:bg-indigo-950/50"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $link['label'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $link['count'] }}</span></button>
+                                                        <button type="button" data-ndb-overview-activity-section="{{ $link['key'] }}" @click="navigateToSection(@js($link['key']))" class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-2 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:hover:border-indigo-300 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-800 ndb:dark:hover:border-indigo-800 ndb:dark:hover:bg-indigo-950/50"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $link['label'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $link['count'] }}</span></button>
                                                     @endforeach
                                                 </div>
                                             </div>
@@ -688,19 +689,35 @@
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'authorization')
-                                        <div class="ndb:space-y-2">
-                                            @forelse ($section['payload']['items'] as $index => $item)
-                                                <article wire:key="authorization-{{ $index }}" class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 {{ $item['result'] === 'allowed' ? 'ndb:border-emerald-200 ndb:bg-emerald-50/35 ndb:dark:border-emerald-950 ndb:dark:bg-emerald-950/15' : 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' }}">
+                                        @php($authorizationItems = $section['payload']['items'])
+                                        @if ($authorizationItems !== [])
+                                            @php($authorizationCounts = array_count_values(array_column($authorizationItems, 'result')))
+                                            <div>
+                                                <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Filter</p>
+                                                <div class="ndb:flex ndb:gap-1 ndb:overflow-x-auto" role="group" aria-label="Filter authorization decisions">
+                                                    @foreach (['all' => count($authorizationItems), 'allowed' => $authorizationCounts['allowed'] ?? 0, 'denied' => $authorizationCounts['denied'] ?? 0] as $filter => $count)
+                                                        <button type="button" data-ndb-authorization-filter="{{ $filter }}" @click="setAuthorizationFilter(@js($filter))" :aria-pressed="authorizationFilter === @js($filter)" class="ndb:rounded-lg ndb:border ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:capitalize ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500" :class="authorizationFilter === @js($filter) ? 'ndb:border-indigo-200 ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:border-indigo-900 ndb:dark:bg-indigo-950/60 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:hover:border-zinc-200 ndb:hover:bg-white/70 ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:border-zinc-700 ndb:dark:hover:bg-zinc-900/70 ndb:dark:hover:text-white'">{{ $filter }} <span class="ndb:tabular-nums ndb:text-zinc-400">{{ $count }}</span></button>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            <p data-ndb-authorization-result-count class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleAuthorizationCount"></span> results</p>
+                                            <div x-ref="authorizationItems" class="ndb:space-y-2">
+                                                @foreach ($authorizationItems as $index => $item)
+                                                    <article data-ndb-authorization-item data-result="{{ $item['result'] }}" wire:key="authorization-{{ $index }}" class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 {{ $item['result'] === 'allowed' ? 'ndb:border-emerald-200 ndb:bg-emerald-50/35 ndb:dark:border-emerald-950 ndb:dark:bg-emerald-950/15' : 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' }}">
                                                     <span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wider {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-700 ndb:dark:text-emerald-300' : 'ndb:text-red-700 ndb:dark:text-red-300' }}">{{ $item['result'] }}</span>
                                                     <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $item['ability'] }}</code>
                                                     <span title="{{ $item['handler'] }}" class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ str($item['handler'])->afterLast('\\') }}</span>
                                                     <p class="ndb:w-full ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ implode(', ', array_filter([$item['user_type'] ?? null, ...($item['argument_types'] ?? [])])) ?: 'No typed arguments' }}</p>
                                                     @if (is_array($item['callsite'] ?? null))<p class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:text-zinc-400"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $item['callsite']['copy'] ?? (($item['callsite']['file'] ?? 'Unknown source').':'.($item['callsite']['line'] ?? '?')) }}</span>@if (is_string($item['callsite']['editor_url'] ?? null))<a href="{{ $item['callsite']['editor_url'] }}" class="ndb:shrink-0 ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a>@endif</p>@endif
-                                                </article>
-                                            @empty
-                                                <x-new-debug-bar::empty-state label="No authorization decisions were captured." />
-                                            @endforelse
-                                        </div>
+                                                    </article>
+                                                @endforeach
+                                            </div>
+                                            <div x-show.important="visibleAuthorizationCount === 0">
+                                                <x-new-debug-bar::empty-state label="No authorization decisions match this filter." />
+                                            </div>
+                                        @else
+                                            <x-new-debug-bar::empty-state label="No authorization decisions were captured." />
+                                        @endif
                                     @elseif ($sectionKey === 'validation')
                                         <div class="ndb:space-y-3">
                                             @forelse ($section['payload']['items'] as $index => $item)

@@ -126,7 +126,9 @@ abstract class TestCase extends Orchestra
 
         $router->middleware(ProfileRequest::class)->get('/profiled-context', function () {
             Gate::define('inspect-profile', fn (mixed $user, ProfiledModel $model): bool => $user === null && $model instanceof ProfiledModel);
+            Gate::define('delete-profile', fn (): bool => false);
             Gate::allows('inspect-profile', [new ProfiledModel]);
+            Gate::allows('delete-profile', [new ProfiledModel]);
             Debug::message('Checkout checkpoint', [
                 'step' => 2,
                 'token' => 'private-developer-token',

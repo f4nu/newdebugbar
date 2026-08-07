@@ -72,6 +72,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     querySearch: '',
     querySort: 'execution',
     visibleQueryCount: summary.query_count ?? 0,
+    authorizationFilter: 'all',
+    visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
     historyPath: '',
     historyMethod: '',
     historyStatus: '',
@@ -232,6 +234,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => {
         this.syncSectionPanels();
         if (this.selected === 'queries') this.applyQueryView();
+        if (this.selected === 'authorization') this.applyAuthorizationFilters();
         if (this.selected === 'history') this.applyHistoryFilters();
         if (this.selected === 'timeline') this.applyTimelineFilters();
         if (this.selected === 'events') this.applyEventFilters();
@@ -239,6 +242,17 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         if (focusContentHeading) this.$refs?.sectionHeading?.focus?.();
         browser.highlight?.();
+      });
+    },
+
+    navigateToSection(section, filter = null) {
+      const target = this.sectionKeys.includes(section) ? section : 'overview';
+
+      this.selectSection(target);
+      this.$nextTick?.(() => {
+        if (target === 'queries' && filter !== null) this.reviewQueryEvidence(filter);
+        if (target === 'authorization' && filter !== null) this.setAuthorizationFilter(filter);
+        this.$refs?.sectionHeading?.focus?.();
       });
     },
 
@@ -319,6 +333,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
           this.$nextTick?.(() => {
             this.syncSectionPanels();
             this.applyQueryView();
+            this.applyAuthorizationFilters();
             this.applyHistoryFilters();
             this.applyTimelineFilters();
             this.applyEventFilters();
@@ -357,6 +372,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
+      this.authorizationFilter = 'all';
       this.historyPath = '';
       this.historyMethod = '';
       this.historyStatus = '';
@@ -475,6 +491,35 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       }
 
       return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+    },
+
+    setAuthorizationFilter(filter) {
+      if (!['all', 'allowed', 'denied'].includes(filter)) return;
+
+      this.authorizationFilter = filter;
+      this.applyAuthorizationFilters();
+    },
+
+    applyAuthorizationFilters() {
+      const list = this.$refs?.authorizationItems
+        ?? this.$root?.querySelector?.('[x-ref="authorizationItems"]');
+
+      if (!list?.children) {
+        this.visibleAuthorizationCount = 0;
+
+        return;
+      }
+
+      let visible = 0;
+
+      [...list.children].forEach((item) => {
+        const matches = this.authorizationFilter === 'all'
+          || item.dataset.result === this.authorizationFilter;
+        item.hidden = !matches;
+        if (matches) visible++;
+      });
+
+      this.visibleAuthorizationCount = visible;
     },
 
     setHistoryWarning(filter) {

@@ -157,6 +157,7 @@ it('promotes explicit HTTP authorization and validation failures before heuristi
         'validation.failed',
     ])->and($findings[0]['summary'])->toBe('GET request to api.example.test failed.')
         ->and($findings[1]['why'])->toBe('WorkOrderPolicy@delete returned a denied result.')
+        ->and($findings[1]['action']['filter'])->toBe('denied')
         ->and($findings[2]['summary'])->toBe('Validation failed for title, facility_id.');
 });
 

@@ -1,6 +1,8 @@
 @props([
     'findings',
     'title' => 'Findings',
+    'overview' => false,
+    'sectionLabels' => [],
 ])
 
 @if ($findings !== [])
@@ -8,7 +10,23 @@
         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:border-b ndb:border-zinc-200/80 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800"><h3 class="ndb:text-xs ndb:font-bold">{{ $title }}</h3><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ count($findings) }}</span></div>
         <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-800">
             @foreach ($findings as $index => $finding)
-                <article data-ndb-finding="{{ $finding['rule_id'] }}" class="ndb:px-4 ndb:py-3.5">
+                @if ($overview)
+                    @php($destination = $finding['action']['section'] ?? $finding['section'] ?? 'overview')
+                    @php($filter = is_string($finding['action']['filter'] ?? null) ? $finding['action']['filter'] : null)
+                    <button
+                        type="button"
+                        data-ndb-finding="{{ $finding['rule_id'] }}"
+                        data-ndb-overview-finding-destination="{{ $destination }}"
+                        @click="navigateToSection(@js($destination), @js($filter))"
+                        class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3.5 ndb:text-left ndb:transition ndb:hover:bg-indigo-50/70 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-[-2px] ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-indigo-950/35"
+                    >
+                        <span class="ndb:size-2 ndb:shrink-0 ndb:rounded-full {{ $finding['severity'] === 'error' ? 'ndb:bg-red-500' : ($finding['severity'] === 'warning' ? 'ndb:bg-amber-500' : 'ndb:bg-indigo-500') }}"></span>
+                        <span class="ndb:min-w-0 ndb:flex-1 ndb:text-xs ndb:font-bold">{{ $finding['summary'] }}</span>
+                        <span class="ndb:hidden ndb:shrink-0 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:inline">Open {{ $sectionLabels[$destination] ?? str($destination)->replace('_', ' ')->title() }}</span>
+                        <x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:shrink-0 ndb:-rotate-90 ndb:text-zinc-400" />
+                    </button>
+                @else
+                    <article data-ndb-finding="{{ $finding['rule_id'] }}" class="ndb:px-4 ndb:py-3.5">
                     <div class="ndb:flex ndb:items-start ndb:gap-3">
                         <span class="ndb:mt-1.5 ndb:size-2 ndb:shrink-0 ndb:rounded-full {{ $finding['severity'] === 'error' ? 'ndb:bg-red-500' : ($finding['severity'] === 'warning' ? 'ndb:bg-amber-500' : 'ndb:bg-indigo-500') }}"></span>
                         <div class="ndb:min-w-0 ndb:flex-1">
@@ -24,7 +42,7 @@
                             @endif
                             <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-3">
                                 @if (is_array($finding['action'] ?? null) && is_string($finding['action']['section'] ?? null))
-                                    <button type="button" data-ndb-finding-action="{{ $finding['rule_id'] }}" @click="selectSection(@js($finding['action']['section'])); @if (is_string($finding['action']['filter'] ?? null)) $nextTick(() => reviewQueryEvidence(@js($finding['action']['filter']))) @endif" class="ndb:rounded-lg ndb:bg-zinc-900 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-zinc-100 ndb:dark:text-zinc-900 ndb:dark:hover:bg-indigo-300">{{ $finding['action']['label'] }}</button>
+                                    <button type="button" data-ndb-finding-action="{{ $finding['rule_id'] }}" @click="navigateToSection(@js($finding['action']['section']), @js(is_string($finding['action']['filter'] ?? null) ? $finding['action']['filter'] : null))" class="ndb:rounded-lg ndb:bg-zinc-900 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-zinc-100 ndb:dark:text-zinc-900 ndb:dark:hover:bg-indigo-300">{{ $finding['action']['label'] }}</button>
                                 @endif
                                 <details class="ndb:group">
                                     <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-1.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span>Technical evidence</span><x-new-debug-bar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3 ndb:transition" /></summary>
@@ -33,7 +51,8 @@
                             </div>
                         </div>
                     </div>
-                </article>
+                    </article>
+                @endif
             @endforeach
         </div>
     </div>

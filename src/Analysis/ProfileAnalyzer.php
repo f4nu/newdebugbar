@@ -115,7 +115,7 @@ final class ProfileAnalyzer
                     'why' => sprintf('%s returned a denied result.', $handler),
                     'location' => $denied['callsite'] ?? null,
                     'next' => 'Check the actor, model, policy method, and expected permission for this action.',
-                    'action' => ['label' => 'Inspect authorization', 'section' => 'authorization'],
+                    'action' => ['label' => 'Inspect authorization', 'section' => 'authorization', 'filter' => 'denied'],
                 ],
             );
         }

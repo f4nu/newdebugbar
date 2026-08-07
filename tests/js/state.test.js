@@ -458,6 +458,39 @@ test('query finding actions reveal and focus the relevant evidence', () => {
   assert.equal(state.queryFilter, 'slow');
 });
 
+test('authorization controls filter decisions and overview navigation opens denied results', () => {
+  const state = createNewDebugBar({
+    sections: [
+      { key: 'overview', label: 'Overview' },
+      { key: 'authorization', label: 'Authorization' },
+    ],
+  }, runtime());
+  let headingFocused = 0;
+  const allowed = { dataset: { result: 'allowed' }, hidden: false };
+  const denied = { dataset: { result: 'denied' }, hidden: false };
+  state.$root = { querySelectorAll: () => [] };
+  state.$refs = {
+    authorizationItems: { children: [allowed, denied] },
+    sectionHeading: { focus: () => headingFocused++ },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.setAuthorizationFilter('allowed');
+  assert.equal(allowed.hidden, false);
+  assert.equal(denied.hidden, true);
+  assert.equal(state.visibleAuthorizationCount, 1);
+
+  state.navigateToSection('authorization', 'denied');
+  assert.equal(state.selected, 'authorization');
+  assert.equal(state.authorizationFilter, 'denied');
+  assert.equal(allowed.hidden, true);
+  assert.equal(denied.hidden, false);
+  assert.equal(headingFocused, 1);
+
+  state.setAuthorizationFilter('invalid');
+  assert.equal(state.authorizationFilter, 'denied');
+});
+
 test('history controls combine path method status and warning filters', () => {
   const state = createNewDebugBar(summary, runtime());
   const profile = (path, method, status, warning, runtimeProfile = false) => ({
