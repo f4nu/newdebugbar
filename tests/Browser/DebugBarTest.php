@@ -107,19 +107,25 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-header-toolbar]").parentElement).backgroundColor', 'rgb(255, 255, 255)')
         ->assertMissing('[data-ndb-section-attention]')
         ->assertVisible('[data-ndb-section="queries"] .ndb-section-count')
-        ->assertScript('document.querySelector("[data-ndb-overview-environment]").open === false')
         ->assertScript(<<<'JS'
             document.querySelector('[data-ndb-findings]').getBoundingClientRect().top
                 < document.querySelector('[data-ndb-overview-activity]').getBoundingClientRect().top
-            JS)
-        ->click('[data-ndb-overview-environment] summary')
-        ->assertAttribute('[data-ndb-overview-environment]', 'open', '');
+            JS);
 
     selectDebugSectionViaPalette($page, 'validation');
     assertDebugSectionSelected($page, 'validation');
 
     $page
         ->assertAttribute('[data-ndb-section="validation"]', 'data-ndb-section-visible', 'true')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows environment details without another click', function () {
+    visit('/profiled-rich')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->assertVisible('[data-ndb-overview-environment-content]')
+        ->assertMissing('[data-ndb-overview-environment] summary')
         ->assertNoJavaScriptErrors();
 });
 

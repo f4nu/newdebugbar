@@ -322,56 +322,6 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
     assertVisualDebugBaseline($page, "progressive-overview-narrow-{$theme}");
 })->with(['light', 'dark']);
 
-it('matches the visual baseline for the :dataset expanded environment details', function (string $theme) {
-    $page = visit('/profiled-rich');
-    setVisualDebugTheme($page, $theme);
-
-    $page
-        ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details')
-        ->click('[data-ndb-overview-environment] summary')
-        ->assertAttribute('[data-ndb-overview-environment]', 'open', '')
-        ->assertScript(<<<'JS'
-            (() => {
-                document.querySelector('[data-ndb-overview-environment-content]').scrollIntoView({ block: 'start' });
-
-                return true;
-            })()
-            JS)
-        ->wait(0.1)
-        ->assertNoJavaScriptErrors();
-
-    stabilizeVisualDebugValues($page);
-
-    assertVisualDebugBaseline($page, "progressive-environment-expanded-{$theme}");
-})->with(['light', 'dark']);
-
-it('matches the visual baseline for the :dataset narrow expanded environment details', function (string $theme) {
-    $page = visit('/profiled-rich');
-    setVisualDebugTheme($page, $theme);
-
-    $page
-        ->resize(390, 844)
-        ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details')
-        ->click('[data-ndb-overview-environment] summary')
-        ->assertAttribute('[data-ndb-overview-environment]', 'open', '')
-        ->assertScript(<<<'JS'
-            (() => {
-                document.querySelector('[data-ndb-overview-environment-content]').scrollIntoView({ block: 'start' });
-
-                return true;
-            })()
-            JS)
-        ->wait(0.1)
-        ->assertNoJavaScriptErrors();
-
-    stabilizeVisualDebugValues($page);
-
-    assertVisualDebugBaseline($page, "progressive-environment-expanded-narrow-{$theme}");
-})->with(['light', 'dark']);
-
 it('matches the visual baseline for the :dataset toolbar', function (string $theme) {
     $page = visit('/profiled-rich');
 

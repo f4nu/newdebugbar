@@ -252,7 +252,6 @@
                                         @php($runtimeDrivers = is_array($section['payload']['drivers'] ?? null) ? $section['payload']['drivers'] : [])
                                         @php($runtimeCacheState = is_array($section['payload']['cache_state'] ?? null) ? $section['payload']['cache_state'] : [])
                                         @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
-                                        @php($runtimeSummary = array_values(array_filter([isset($runtimeFacts['environment']) ? (string) $runtimeFacts['environment'] : null, isset($runtimeFacts['php']) ? 'PHP '.$runtimeFacts['php'] : null, isset($runtimeFacts['laravel']) ? 'Laravel '.$runtimeFacts['laravel'] : null])))
                                         @php($activitySections = array_values(array_filter($summary['sections'] ?? [], fn (array $link): bool => ! in_array($link['key'], ['overview', 'request', 'history'], true) && $link['count'] !== null && ($link['active'] ?? true))))
                                         @php($overviewSectionLabels = collect($summary['sections'] ?? [])->mapWithKeys(fn (array $link): array => [$link['key'] => $link['label']])->all())
                                         <x-new-debug-bar::finding-list :findings="$sectionFindings" :overview="true" :section-labels="$overviewSectionLabels" />
@@ -272,12 +271,10 @@
                                                 </div>
                                             </div>
                                         @endif
-                                        <details data-ndb-overview-environment class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3.5 ndb:transition ndb:hover:bg-zinc-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900">
-                                                <span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Environment details</span>@if ($runtimeSummary !== [])<span class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-0.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">@foreach ($runtimeSummary as $runtimeSummaryFact)<span>{{ $runtimeSummaryFact }}</span>@endforeach</span>@endif</span>
-                                                <span class="ndb:hidden ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:inline">Runtime, drivers, ecosystem</span>
-                                                <x-new-debug-bar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition" />
-                                            </summary>
+                                        <div data-ndb-overview-environment class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
+                                            <div class="ndb:px-4 ndb:py-3.5">
+                                                <h3 class="ndb:text-xs ndb:font-bold">Environment details</h3>
+                                            </div>
                                             <div data-ndb-overview-environment-content class="ndb:space-y-5 ndb:border-t ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
                                                 <div>
                                                     <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Runtime</h3>
@@ -324,7 +321,7 @@
                                                     @endif
                                                 </div>
                                             </div>
-                                        </details>
+                                        </div>
                                     @elseif ($sectionKey !== 'queries')
                                         <x-new-debug-bar::finding-list :findings="$sectionFindings" title="Related findings" />
                                     @endif
