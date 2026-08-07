@@ -79,7 +79,7 @@
                         <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
                         <span class="ndb:min-w-0">
                             <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
-                            <span class="ndb:flex ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"><span data-ndb-header-status x-text="summary.status"></span><span x-text="summary.is_current_profile ? 'Current request' : 'History profile'"></span></span>
+                            <span class="ndb:flex ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"><span data-ndb-header-status x-text="summary.status"></span><span x-text="summary.is_current_profile ? '' : 'History profile'"></span></span>
                         </span>
                     </x-new-debug-bar::toolbar-button>
 
