@@ -3,7 +3,7 @@
     "name": "newdebugbar/new-debug-bar",
     "description": "A modern Laravel debug bar built with Livewire.",
     "type": "library",
-    "license": "MIT",
+    "license": "Apache-2.0",
     "authors": [
         {
             "name": "Benjamin Crozat"

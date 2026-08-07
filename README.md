@@ -63,6 +63,4 @@ composer test
 
 ## License
 
-Copyright © 2026 Benjamin Crozat.
-
-New Debug Bar uses the MIT License. If you copy or share the package, keep the copyright and license notice.
+New Debug Bar uses the Apache License 2.0.
