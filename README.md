@@ -2,6 +2,8 @@
 
 New Debug Bar helps you understand what your Laravel app did during a request.
 
+It is made to look clean and modern, so it feels at home on the page while you work.
+
 It helps answer five questions:
 
 - What happened?

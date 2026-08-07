@@ -15,6 +15,7 @@
 
 ## Interface
 
+- Make the bar look clean and modern. It should feel at home on the page while a developer works.
 - Do not use `·`, `•`, or `|` to split facts. Use space, labels, icons, or groups.
 - Help developers answer: What happened? What is wrong? Why? Where? What should I check next?
 - Show the request, errors, query count, and time first.
