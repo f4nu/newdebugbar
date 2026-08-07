@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Presentation;
 
+use Carbon\CarbonImmutable;
 use NewDebugBar\Support\Redactor;
 
 /** Produces one stable summary for history, comparison, UI, and MCP. */
@@ -23,7 +24,10 @@ final class ProfileSummaryPresenter
         /** @var array<string, mixed> $summary */
         $summary = $this->redactor->clean([
             'id' => $profile['id'] ?? null,
+            'short_id' => is_string($profile['id'] ?? null) ? substr($profile['id'], 0, 8) : null,
             'recorded_at' => $profile['recorded_at'] ?? null,
+            'recorded_time' => $this->recordedTime($profile['recorded_at'] ?? null),
+            'profile_type' => $profile['profile_type'] ?? 'http',
             'request_type' => $this->requestType($request),
             'method' => $request['summary']['method'] ?? null,
             'path' => $request['payload']['path'] ?? null,
@@ -55,12 +59,29 @@ final class ProfileSummaryPresenter
         }
 
         $status = (int) ($request['summary']['status'] ?? 0);
+        $capturedType = $request['payload']['request_type'] ?? null;
+
+        if (is_string($capturedType) && $capturedType !== '') {
+            return $capturedType;
+        }
 
         if ($status >= 300 && $status < 400) {
             return 'redirect';
         }
 
-        return (string) ($request['payload']['request_type']
-            ?? (($request['payload']['headers']['x-livewire'] ?? null) !== null ? 'livewire' : 'full_page'));
+        return ($request['payload']['headers']['x-livewire'] ?? null) !== null ? 'livewire' : 'full_page';
+    }
+
+    private function recordedTime(mixed $recordedAt): ?string
+    {
+        if (! is_string($recordedAt) || $recordedAt === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($recordedAt)->format('H:i:s');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

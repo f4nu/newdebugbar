@@ -50,8 +50,8 @@ function runtime() {
 
 test('profile discovery always reaches the current toolbar after a morph', () => {
   const browser = runtime();
-  const first = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
-  const second = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
+  const first = { discoveries: [], noticeProfile(id, context) { this.discoveries.push([id, context.foreground]); } };
+  const second = { discoveries: [], noticeProfile(id, context) { this.discoveries.push([id, context.foreground]); } };
   let state = first;
   browser.document = { getElementById: () => ({}) };
   browser.Alpine = { $data: () => state };
@@ -65,8 +65,8 @@ test('profile discovery always reaches the current toolbar after a morph', () =>
     detail: { profileId: '660e8400-e29b-41d4-a716-446655440000' },
   }));
 
-  assert.deepEqual(first.discoveries, [profileId]);
-  assert.deepEqual(second.discoveries, ['660e8400-e29b-41d4-a716-446655440000']);
+  assert.deepEqual(first.discoveries, [[profileId, undefined]]);
+  assert.deepEqual(second.discoveries, [['660e8400-e29b-41d4-a716-446655440000', undefined]]);
 });
 
 test('profile discovery safely falls back to Livewire while the toolbar initializes', () => {
@@ -105,8 +105,32 @@ test('discovers same origin fetch and xhr profiles without replacing responses',
 
   assert.equal(response.input, '/api/search');
   assert.deepEqual(browser.events.map((event) => event.detail), [
-    { profileId, transport: 'fetch' },
-    { profileId, transport: 'xhr' },
+    { profileId, transport: 'fetch', foreground: false, purpose: 'background' },
+    { profileId, transport: 'xhr', foreground: false, purpose: 'background' },
+  ]);
+});
+
+test('marks Inertia visits as foreground and distinguishes partial reloads', async () => {
+  const browser = runtime();
+  installRequestDiscovery(browser);
+
+  await browser.fetch('/work-orders', { headers: { 'X-Inertia': 'true' } });
+  await browser.fetch('/work-orders', {
+    headers: {
+      'X-Inertia': 'true',
+      'X-Inertia-Partial-Component': 'WorkOrders/Index',
+    },
+  });
+  const xhr = new browser.XMLHttpRequest();
+  xhr.open('GET', '/work-orders');
+  xhr.setRequestHeader('X-Inertia', 'true');
+  xhr.setRequestHeader('X-Inertia-Partial-Component', 'WorkOrders/Index');
+  xhr.send();
+
+  assert.deepEqual(browser.events.map((event) => event.detail), [
+    { profileId, transport: 'fetch', foreground: true, purpose: 'inertia_visit' },
+    { profileId, transport: 'fetch', foreground: false, purpose: 'inertia_partial' },
+    { profileId, transport: 'xhr', foreground: false, purpose: 'inertia_partial' },
   ]);
 });
 

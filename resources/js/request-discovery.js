@@ -3,6 +3,8 @@ const PROFILE_EVENT = 'new-debug-bar-profile-discovered';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const XHR_URL = Symbol('newDebugBarUrl');
 const XHR_LIVEWIRE = Symbol('newDebugBarLivewire');
+const XHR_INERTIA = Symbol('newDebugBarInertia');
+const XHR_INERTIA_PARTIAL = Symbol('newDebugBarInertiaPartial');
 
 const header = (headers, name) => {
   if (!headers) return null;
@@ -24,6 +26,10 @@ const requestFacts = (runtime, input, init = {}) => {
       ?? header(input?.headers, 'X-Livewire')
       ?? header(init?.headers, 'X-Livewire-Navigate')
       ?? header(input?.headers, 'X-Livewire-Navigate');
+    const inertia = header(init?.headers, 'X-Inertia')
+      ?? header(input?.headers, 'X-Inertia');
+    const inertiaPartial = header(init?.headers, 'X-Inertia-Partial-Component')
+      ?? header(input?.headers, 'X-Inertia-Partial-Component');
 
     return {
       eligible: url.origin === runtime.location.origin
@@ -31,10 +37,12 @@ const requestFacts = (runtime, input, init = {}) => {
         && !url.pathname.includes('/livewire-')
         && !url.pathname.includes('/livewire/'),
       livewire: livewire !== null,
+      foreground: inertia !== null && inertiaPartial === null,
+      purpose: inertia !== null ? (inertiaPartial !== null ? 'inertia_partial' : 'inertia_visit') : 'background',
       url,
     };
   } catch {
-    return { eligible: false, livewire: false, url: null };
+    return { eligible: false, livewire: false, foreground: false, purpose: 'background', url: null };
   }
 };
 
@@ -49,7 +57,12 @@ const notify = (runtime, response, transport, facts) => {
     if (!PROFILE_PATTERN.test(profileId ?? '')) return;
 
     runtime.dispatchEvent(new runtime.CustomEvent(PROFILE_EVENT, {
-      detail: { profileId, transport },
+      detail: {
+        profileId,
+        transport,
+        foreground: facts.foreground,
+        purpose: facts.purpose,
+      },
     }));
   } catch {
     // Request discovery must never change host request behavior.
@@ -69,12 +82,13 @@ export function installProfileDiscoveryBridge(runtime = window) {
       const state = root ? runtime.Alpine?.$data?.(root) : null;
 
       if (typeof state?.noticeProfile === 'function') {
-        state.noticeProfile(profileId);
+        state.noticeProfile(profileId, event.detail);
         return;
       }
 
       const toolbar = runtime.Livewire?.getByName?.('new-debug-bar.toolbar')?.[0];
-      Promise.resolve(toolbar?.discoverProfile?.(profileId)).catch(() => {});
+      const action = event.detail?.foreground ? toolbar?.switchProfile : toolbar?.discoverProfile;
+      Promise.resolve(action?.call?.(toolbar, profileId)).catch(() => {});
     } catch {
       // A stale or unavailable toolbar must never affect the host request.
     }
@@ -107,17 +121,24 @@ export function installRequestDiscovery(runtime = window) {
   prototype.open = function newDebugBarOpen(_method, url) {
     this[XHR_URL] = url;
     this[XHR_LIVEWIRE] = false;
+    this[XHR_INERTIA] = false;
+    this[XHR_INERTIA_PARTIAL] = false;
     return originalOpen.apply(this, arguments);
   };
 
   prototype.setRequestHeader = function newDebugBarSetRequestHeader(name) {
-    if (['x-livewire', 'x-livewire-navigate'].includes(String(name).toLowerCase())) this[XHR_LIVEWIRE] = true;
+    const normalized = String(name).toLowerCase();
+    if (['x-livewire', 'x-livewire-navigate'].includes(normalized)) this[XHR_LIVEWIRE] = true;
+    if (normalized === 'x-inertia') this[XHR_INERTIA] = true;
+    if (normalized === 'x-inertia-partial-component') this[XHR_INERTIA_PARTIAL] = true;
     return originalSetRequestHeader.apply(this, arguments);
   };
 
   prototype.send = function newDebugBarSend() {
     const facts = requestFacts(runtime, this[XHR_URL]);
     facts.livewire = this[XHR_LIVEWIRE];
+    facts.foreground = this[XHR_INERTIA] && !this[XHR_INERTIA_PARTIAL];
+    facts.purpose = this[XHR_INERTIA_PARTIAL] ? 'inertia_partial' : (this[XHR_INERTIA] ? 'inertia_visit' : 'background');
     this.addEventListener?.('loadend', () => notify(runtime, {
       url: this.responseURL,
       headers: { get: (name) => this.getResponseHeader?.(name) },

@@ -220,6 +220,7 @@ final class ProfileManager
         $this->record('validation', [
             'fields' => array_values(array_map('strval', array_keys($failed))),
             'rules' => $rules,
+            'messages' => $exception->validator->errors()->toArray(),
             'error_bag' => (string) $exception->errorBag,
             'exception_status' => (int) $exception->status,
             'redirect_requested' => is_string($exception->redirectTo) && $exception->redirectTo !== '',
@@ -498,6 +499,16 @@ final class ProfileManager
         }
 
         $status = $response?->getStatusCode() ?? 500;
+
+        if ($request->headers->has('X-Inertia')) {
+            if ($status >= 300 && $status < 400) {
+                return 'inertia_redirect';
+            }
+
+            return $request->headers->has('X-Inertia-Partial-Component')
+                ? 'inertia_partial'
+                : 'inertia_visit';
+        }
 
         if ($status >= 300 && $status < 400) {
             return 'redirect';
