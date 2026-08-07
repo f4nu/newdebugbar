@@ -166,15 +166,18 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       ];
     },
 
+    get hiddenCommandCount() {
+      return this.allCommands.filter((command) => command.hint === 'Other collector').length;
+    },
+
     get filteredCommands() {
       const words = this.paletteSearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
 
       if (words.length === 0 && !this.paletteShowQuiet) {
         const active = this.allCommands.filter((command) => command.hint !== 'Other collector');
-        const hidden = this.allCommands.length - active.length;
 
-        return hidden > 0
-          ? [...active, { id: 'collectors:show', label: 'Show other collectors', hint: `${hidden} hidden` }]
+        return this.hiddenCommandCount > 0
+          ? [...active, { id: 'collectors:show', label: 'Show other collectors', hint: `${this.hiddenCommandCount} hidden` }]
           : active;
       }
 
@@ -811,6 +814,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       if (count === 0) return;
 
       this.paletteIndex = (this.paletteIndex + direction + count) % count;
+    },
+
+    commandIndex(id) {
+      return this.filteredCommands.findIndex((command) => command.id === id);
     },
 
     runActiveCommand() {

@@ -25,6 +25,8 @@ function selectDebugSectionViaPalette($page, string $section): void
     $page
         ->click('[data-ndb-inspector-action="palette"]')
         ->assertVisible('[role="dialog"][aria-label="Command palette"]')
+        ->click('[data-ndb-command="collectors:show"]')
+        ->wait(0.1)
         ->click("[data-ndb-command=\"section:{$section}\"]")
         ->wait(0.1);
 }
