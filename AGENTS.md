@@ -8,6 +8,7 @@
 ## Product choices
 
 - Build for Laravel only. Do not add support for other PHP frameworks.
+- Treat the local MCP server as a main product feature. Explain that coding agents can read exact debug data instead of guessing from a web page.
 - Keep the public README short. Explain why the package exists and how to start using it.
 - Keep test reports, support tables, and long setup notes out of the README.
 - Treat the first public release as v1. Do not add a changelog for work done before v1.

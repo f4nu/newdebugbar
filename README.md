@@ -1,10 +1,24 @@
 # New Debug Bar
 
-New Debug Bar is a modern debugging tool for Laravel. It helps you understand each request and find problems without cluttering your local app.
+New Debug Bar is a modern debugging tool for Laravel, built for developers and coding agents. It helps you understand each request and find problems without cluttering your local app.
 
 A compact bar at the bottom of the page gives you quick access to database queries, errors, logs, events, jobs, mail, cache use, and more.
 
 It works with Blade, Livewire, and Inertia.
+
+## Built for coding agents
+
+New Debug Bar includes a local Model Context Protocol (MCP) server for tools such as Codex. It gives an agent the same request facts shown in the debug bar as clear, structured data.
+
+An agent can list recent profiles, open any captured section, inspect database queries, and read findings. The `X-New-Debug-Bar-Profile` response header can link a browser request to its exact profile. Private values are hidden, results are kept small, and the tools only read saved profiles.
+
+Start the server with:
+
+```bash
+php artisan mcp:start new-debug-bar
+```
+
+Then add that command as a local MCP server in your coding tool.
 
 ## Requirements
 

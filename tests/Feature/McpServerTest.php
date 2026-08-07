@@ -32,7 +32,7 @@ it('registers one local read only server with four schema backed tools', functio
     expect(Mcp::getLocalServer('new-debug-bar'))->toBeCallable()
         ->and(Mcp::getWebServer('new-debug-bar'))->toBeNull()
         ->and(Mcp::servers())->toHaveKey('new-debug-bar')
-        ->and($version->value)->toBe('0.1.0');
+        ->and($version->value)->toBe('1.0.0');
 
     foreach ([
         ListDebugProfiles::class => 'list-debug-profiles',
