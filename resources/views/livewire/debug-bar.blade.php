@@ -272,11 +272,9 @@
                                                 </div>
                                             </div>
                                         @endif
-                                        <div data-ndb-overview-environment class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                            <div class="ndb:px-4 ndb:py-3.5">
-                                                <h3 class="ndb:text-xs ndb:font-bold">Environment details</h3>
-                                            </div>
-                                            <div data-ndb-overview-environment-content class="ndb:space-y-5 ndb:border-t ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
+                                        <div data-ndb-overview-environment>
+                                            <h3 class="ndb:mb-2 ndb:text-xs ndb:font-bold">Environment details</h3>
+                                            <div data-ndb-overview-environment-content class="ndb:space-y-5">
                                                 <div>
                                                     <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Runtime</h3>
                                                     <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:lg:grid-cols-5">
