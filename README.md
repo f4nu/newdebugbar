@@ -25,7 +25,7 @@ Your coding tool starts the MCP server when it needs it. Follow the [MCP setup g
 Add the package as a development tool:
 
 ```bash
-composer require --dev newdebugbar/new-debug-bar
+composer require --dev newdebugbar/newdebugbar
 ```
 
 Laravel loads it for you. Visit your app in the `local` environment. The bar will appear at the bottom of the page.

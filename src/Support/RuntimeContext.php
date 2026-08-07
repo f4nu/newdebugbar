@@ -64,7 +64,7 @@ final class RuntimeContext
                 'broadcasting' => $this->driver('broadcasting.default'),
             ], fn (?string $driver): bool => $driver !== null),
             'ecosystem' => $ecosystem,
-            'package' => InstalledVersions::getPrettyVersion('newdebugbar/new-debug-bar') ?? 'dev',
+            'package' => InstalledVersions::getPrettyVersion('newdebugbar/newdebugbar') ?? 'dev',
         ];
     }
 

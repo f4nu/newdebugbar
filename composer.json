@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "newdebugbar/new-debug-bar",
+    "name": "newdebugbar/newdebugbar",
     "description": "A modern Laravel debug bar built with Livewire.",
     "type": "library",
     "license": "Apache-2.0",

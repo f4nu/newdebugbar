@@ -151,7 +151,7 @@ final class ExceptionNormalizer
         }
 
         if (str_starts_with($file, $package)) {
-            return 'vendor/newdebugbar/new-debug-bar/'.substr($file, strlen($package));
+            return 'vendor/newdebugbar/newdebugbar/'.substr($file, strlen($package));
         }
 
         return basename($file);
