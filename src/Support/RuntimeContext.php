@@ -64,8 +64,19 @@ final class RuntimeContext
                 'broadcasting' => $this->driver('broadcasting.default'),
             ], fn (?string $driver): bool => $driver !== null),
             'ecosystem' => $ecosystem,
-            'package' => InstalledVersions::getPrettyVersion('newdebugbar/newdebugbar') ?? 'dev',
+            'package' => $this->packageVersion(),
         ];
+    }
+
+    private function packageVersion(): string
+    {
+        foreach (['newdebugbar/newdebugbar', 'newdebugbar/new-debug-bar'] as $package) {
+            if (InstalledVersions::isInstalled($package)) {
+                return InstalledVersions::getPrettyVersion($package) ?? 'dev';
+            }
+        }
+
+        return 'dev';
     }
 
     /** @return list<array{key: string, label: string, version: string}> */
