@@ -108,7 +108,7 @@ it('captures a local web request and its Laravel activity', function () {
 
     foreach ($profile['sections'] as $section) {
         foreach ($section['payload']['items'] ?? [] as $item) {
-            expect($item['at_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0);
+            expect($item['at_ms'])->toBeNumeric()->toBeGreaterThanOrEqual(0);
         }
     }
 });
