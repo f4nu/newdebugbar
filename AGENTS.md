@@ -16,6 +16,7 @@
 - Keep the README short and public-facing: why the package exists, basic install and use, local safety, development, and license.
 - Keep internal compatibility matrices, exhaustive configuration notes, and verification reports out of the README.
 - Keep the project under the MIT License with Benjamin Crozat named as the copyright owner. Copies or substantial portions must retain the copyright and license notice.
+- Treat the first public release as v1. Do not add pre-v1 release notes or a changelog for unreleased history.
 
 ## Profile identity
 
