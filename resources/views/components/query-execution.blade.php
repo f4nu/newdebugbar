@@ -25,7 +25,7 @@
 >
     <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:bg-zinc-50/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70 {{ $grouped ? '' : 'ndb:border-b ndb:border-zinc-200/80 ndb:dark:border-zinc-800' }}">
         <span data-ndb-query-execution-number class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $query['execution'] }}</span>
-        <span class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $query['connection'] }}</span>
+        <span data-ndb-query-connection class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $query['connection'] }}</span>
         <span class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $query['query_type'] }}</span>
         @if ($query['repeated'] && ! $grouped)
             <span data-ndb-query-repeat-count class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Repeated {{ $query['repeated_count'] }}×</span>

@@ -795,6 +795,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] code[data-ndb-language=sql]").length', 1)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article").length', 3)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-connection]").length', 3)
         ->assertScript(<<<'JS'
             document.querySelector('[data-ndb-query-group]:not([hidden])').getBoundingClientRect().top
                 >= document.querySelector('[data-ndb-section-heading]').parentElement.getBoundingClientRect().bottom - 1

@@ -528,10 +528,11 @@
                                                             <div class="ndb:min-w-0 ndb:flex-1"><h3 data-ndb-query-group-count class="ndb:text-sm ndb:font-bold">{{ $group['count'] }} matching executions</h3><p data-ndb-query-group-extra class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $group['extra_executions'] }} extra {{ $group['extra_executions'] === 1 ? 'execution' : 'executions' }} from one query pattern</p></div>
                                                             <div class="ndb:shrink-0 ndb:text-right"><p data-ndb-query-group-duration class="ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $group['duration_ms'] }} ms</p><p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">Total query time</p></div>
                                                         </div>
-                                                        <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
-                                                            @if ($group['likely_n_plus_one'])<span class="ndb:rounded-full ndb:bg-rose-100 ndb:px-2.5 ndb:py-1 ndb:text-[10px] ndb:font-bold ndb:text-rose-700 ndb:dark:bg-rose-900/50 ndb:dark:text-rose-300">Likely N+1</span>@endif
-                                                            <span class="ndb:rounded-full ndb:bg-violet-100 ndb:px-2.5 ndb:py-1 ndb:text-[10px] ndb:font-bold ndb:text-violet-700 ndb:dark:bg-violet-900/50 ndb:dark:text-violet-300">{{ $group['connection'] }} connection</span>
-                                                        </div>
+                                                        @if ($group['likely_n_plus_one'])
+                                                            <div class="ndb:mt-3">
+                                                                <span class="ndb:rounded-full ndb:bg-rose-100 ndb:px-2.5 ndb:py-1 ndb:text-[10px] ndb:font-bold ndb:text-rose-700 ndb:dark:bg-rose-900/50 ndb:dark:text-rose-300">Likely N+1</span>
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                     <div data-ndb-query-group-pattern class="ndb:border-y ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/70">
                                                         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-4 ndb:py-2 ndb:text-zinc-600 ndb:dark:text-zinc-300"><span class="ndb:text-[10px] ndb:font-bold">Query pattern</span><button type="button" @click="copyText(@js($group['sql']))" class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-200/70 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-violet-400 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white" aria-label="Copy repeated query pattern" title="Copy query pattern"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button></div>
