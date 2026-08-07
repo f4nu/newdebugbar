@@ -863,9 +863,17 @@ it('filters retained history and compares the current path', function () {
 
     $page
         ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length >= 2')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-history-profile][data-runtime="true"]'))
+                .every((profile) => getComputedStyle(profile).display === 'none')
+            JS)
         ->type('[data-ndb-history-method]', 'POST')
         ->wait(0.2)
         ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length', 0)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-history-profile]'))
+                .every((profile) => getComputedStyle(profile).display === 'none')
+            JS)
         ->clear('[data-ndb-history-method]')
         ->wait(0.2)
         ->click('[data-ndb-compare-profile]')

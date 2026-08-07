@@ -75,7 +75,8 @@
     display: none !important;
 }
 
-#new-debug-bar [data-ndb-section-panel][hidden] {
+#new-debug-bar [data-ndb-section-panel][hidden],
+#new-debug-bar [data-ndb-history-profile][hidden] {
     display: none !important;
 }
 
