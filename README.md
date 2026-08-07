@@ -63,4 +63,6 @@ composer test
 
 ## License
 
-New Debug Bar is open source software released under the MIT License.
+Copyright © 2026 Benjamin Crozat.
+
+New Debug Bar is open source software released under the MIT License. Copies or substantial portions of the package must keep the copyright and license notice.

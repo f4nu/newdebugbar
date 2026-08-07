@@ -4,6 +4,11 @@
     "description": "A modern Laravel debug bar built with Livewire.",
     "type": "library",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Benjamin Crozat"
+        }
+    ],
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",

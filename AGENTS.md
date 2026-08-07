@@ -11,6 +11,12 @@
 - Keep profiling local and read-only. Profiles are bounded JSON files, not database records.
 - Never inject the interface into JSON, redirects, streams, downloads, Artisan commands, tests, or worker responses.
 
+## Public release
+
+- Keep the README short and public-facing: why the package exists, basic install and use, local safety, development, and license.
+- Keep internal compatibility matrices, exhaustive configuration notes, and verification reports out of the README.
+- Keep the project under the MIT License with Benjamin Crozat named as the copyright owner. Copies or substantial portions must retain the copyright and license notice.
+
 ## Profile identity
 
 - Treat the full page request as the current profile. Background JSON, AJAX, Livewire, and partial or deferred Inertia requests belong in History and must not replace it.
