@@ -323,7 +323,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    @elseif ($sectionKey !== 'queries')
+                                    @elseif (! in_array($sectionKey, ['queries', 'authorization'], true))
                                         <x-new-debug-bar::finding-list :findings="$sectionFindings" title="Related findings" />
                                     @endif
 
