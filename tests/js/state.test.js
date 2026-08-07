@@ -134,12 +134,14 @@ test('selecting a section resets content and highlights its code', async () => {
     { dataset: { ndbSectionPanel: 'queries' }, hidden: true },
   ];
   state.$root = { querySelectorAll: () => panels };
-  state.$refs = { content: { scrollTop: 60 } };
+  state.$refs = { content: { scrollTop: 60 }, sectionHeading: { textContent: '' } };
   state.$nextTick = (callback) => callback();
 
   state.selectSection('queries');
+  state.syncSectionHeading();
 
   assert.equal(state.selected, 'queries');
+  assert.equal(state.$refs.sectionHeading.textContent, 'Queries');
   assert.equal(panels[0].hidden, true);
   assert.equal(panels[1].hidden, false);
   assert.equal(state.$refs.content.scrollTop, 0);
@@ -163,6 +165,15 @@ test('a new application profile resets stale section state and reloads open deta
   assert.equal(state.selected, 'overview');
   assert.equal(state.detailsRequested, true);
   assert.equal(detailsLoaded, 1);
+
+  state.selected = 'history';
+  state.historyPath = '/profiled';
+  state.switchProfile({ ...summary, profile_id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' });
+  await Promise.resolve();
+
+  assert.equal(state.selected, 'history');
+  assert.equal(state.historyPath, '/profiled');
+  assert.equal(detailsLoaded, 2);
 
   state.inspectorOpen = false;
   state.selected = 'missing';

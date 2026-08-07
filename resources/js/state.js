@@ -305,6 +305,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
     },
 
+    syncSectionHeading() {
+      if (this.$refs?.sectionHeading) {
+        this.$refs.sectionHeading.textContent = this.selectedSection.label;
+      }
+    },
+
     syncHostLock() {
       if (this.inspectorOpen || this.paletteOpen) browser.lockHost?.(this.$root);
       else browser.unlockHost?.(this.$root);
@@ -376,23 +382,34 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     switchProfile(summary) {
+      const keepHistoryOpen = this.inspectorOpen && this.selected === 'history';
       this.detailRequestVersion++;
       this.summary = summary ?? {};
       this.detailsRequested = false;
       this.detailsError = false;
-      this.selected = 'overview';
+      this.selected = keepHistoryOpen ? 'history' : 'overview';
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
       this.authorizationFilter = 'all';
-      this.historyPath = '';
-      this.historyMethod = '';
-      this.historyStatus = '';
-      this.historyWarning = 'all';
+      if (!keepHistoryOpen) {
+        this.historyPath = '';
+        this.historyMethod = '';
+        this.historyStatus = '';
+        this.historyWarning = 'all';
+      }
       this.discoveredProfileId = null;
 
       if (this.inspectorOpen) {
-        this.openInspector('overview');
+        if (keepHistoryOpen) {
+          this.$nextTick?.(() => {
+            this.syncSectionHeading();
+            this.syncSectionPanels();
+          });
+          this.requestDetails();
+        } else {
+          this.openInspector('overview');
+        }
       } else {
         this.$nextTick?.(() => this.syncSectionPanels());
       }

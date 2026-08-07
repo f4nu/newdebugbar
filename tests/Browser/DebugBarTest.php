@@ -888,6 +888,16 @@ it('filters retained history and compares the current path', function () {
         ->waitForText('Comparison')
         ->assertPresent('[data-ndb-comparison]')
         ->assertVisible('[data-ndb-section-panel="history"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "History"')
+        ->click('[data-ndb-open-profile]')
+        ->waitForText('Back to current request')
+        ->assertVisible('[data-ndb-section-panel="history"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "History"')
+        ->click('[data-ndb-return-current]')
+        ->wait(0.3)
+        ->assertMissing('[data-ndb-return-current]')
+        ->assertVisible('[data-ndb-section-panel="history"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "History"')
         ->assertNoJavaScriptErrors();
 });
 
