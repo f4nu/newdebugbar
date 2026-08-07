@@ -1,18 +1,8 @@
 # New Debug Bar
 
-New Debug Bar helps you understand what your Laravel app did during a request.
+New Debug Bar is a modern debugging tool for Laravel. It helps you understand each request and find problems without cluttering your local app.
 
-It is made to look clean and modern, so it feels at home on the page while you work.
-
-It helps answer five questions:
-
-- What happened?
-- What went wrong?
-- Why did it happen?
-- Where should I look?
-- What should I check next?
-
-The package adds a small bar to the bottom of your app. Open it to see requests, database queries, errors, logs, events, jobs, mail, cache use, and more.
+A compact bar at the bottom of the page gives you quick access to database queries, errors, logs, events, jobs, mail, cache use, and more.
 
 It works with Blade, Livewire, and Inertia.
 
