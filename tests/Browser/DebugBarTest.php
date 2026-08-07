@@ -185,8 +185,8 @@ it('keeps keyboard focus inside the command palette', function () {
         ->wait(0.2)
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
         ->keys('[data-ndb-palette-search]', 'Shift+Tab')
-        ->assertScript('document.activeElement?.dataset.ndbCommand === "theme:dark"')
-        ->keys('[data-ndb-command="theme:dark"]', 'Tab')
+        ->assertScript('document.activeElement?.dataset.ndbCommand === "collectors:show"')
+        ->keys('[data-ndb-command="collectors:show"]', 'Tab')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
         ->assertNoJavaScriptErrors();
 });
@@ -514,7 +514,7 @@ it('shows request sizes presence flags middleware and log call sites', function 
         ->assertSee('Request size')
         ->assertSee('Response size')
         ->assertSee('Authentication')
-        ->assertSee('Configured middleware order')
+        ->assertSee('Middleware pipeline')
         ->click('[data-ndb-select-section="logs"]')
         ->assertSee('tests/TestCase.php')
         ->click('[data-ndb-log-item] > summary')
