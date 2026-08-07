@@ -292,7 +292,8 @@ final class DebugBar extends Component
         ProfileSummaryPresenter $summaries,
     ): void {
         $currentPath = $this->summary['path'] ?? null;
-        $history = [];
+        $current = [];
+        $retained = [];
 
         foreach ($store->recent() as $profile) {
             try {
@@ -305,14 +306,14 @@ final class DebugBar extends Component
             $summary['is_selected'] = ($summary['id'] ?? null) === $this->profileId;
             $summary['comparable'] = ! $summary['is_selected'] && ($summary['path'] ?? null) === $currentPath;
 
-            if ($summary['is_selected']) {
-                array_unshift($history, $summary);
+            if ($summary['is_current']) {
+                $current[] = $summary;
             } else {
-                $history[] = $summary;
+                $retained[] = $summary;
             }
         }
 
-        $this->history = $history;
+        $this->history = [...$current, ...$retained];
     }
 
     private function validProfileId(string $profileId): bool

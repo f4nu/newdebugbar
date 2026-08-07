@@ -875,6 +875,7 @@ it('filters retained history and compares the current path', function () {
             Array.from(document.querySelectorAll('[data-ndb-history-profile][data-runtime="true"]'))
                 .every((profile) => getComputedStyle(profile).display === 'none')
             JS)
+        ->click('[data-ndb-history-filters] summary')
         ->type('[data-ndb-history-method]', 'POST')
         ->wait(0.2)
         ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length', 0)

@@ -3,6 +3,7 @@
 namespace NewDebugBar\Presentation;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use NewDebugBar\Support\Redactor;
 
 /** Produces one stable summary for history, comparison, UI, and MCP. */
@@ -20,6 +21,7 @@ final class ProfileSummaryPresenter
         $exceptionCount = (int) ($profile['sections']['exceptions']['summary']['count'] ?? 0);
         $exitCode = $request['summary']['exit_code'] ?? null;
         $cacheReads = (int) ($cache['hits'] ?? 0) + (int) ($cache['misses'] ?? 0);
+        $requestType = $this->requestType($request);
 
         /** @var array<string, mixed> $summary */
         $summary = $this->redactor->clean([
@@ -28,7 +30,8 @@ final class ProfileSummaryPresenter
             'recorded_at' => $profile['recorded_at'] ?? null,
             'recorded_time' => $this->recordedTime($profile['recorded_at'] ?? null),
             'profile_type' => $profile['profile_type'] ?? 'http',
-            'request_type' => $this->requestType($request),
+            'request_type' => $requestType,
+            'activity' => $this->activity($profile, $request, $requestType),
             'method' => $request['summary']['method'] ?? null,
             'path' => $request['payload']['path'] ?? null,
             'status' => $status,
@@ -70,6 +73,83 @@ final class ProfileSummaryPresenter
         }
 
         return ($request['payload']['headers']['x-livewire'] ?? null) !== null ? 'livewire' : 'full_page';
+    }
+
+    /** @param array<string, mixed> $profile @param array<string, mixed> $request */
+    private function activity(array $profile, array $request, string $requestType): ?string
+    {
+        if ($requestType === 'livewire') {
+            return $this->livewireActivity($profile['sections']['livewire']['payload']['items'] ?? []);
+        }
+
+        if ($requestType === 'inertia_partial') {
+            $props = $this->header($request, 'x-inertia-partial-data');
+
+            return $props === null ? 'Partial reload' : 'Partial reload: '.$props;
+        }
+
+        if (in_array($requestType, ['redirect', 'inertia_redirect'], true)) {
+            $location = $this->header($request, 'location', 'response_headers');
+
+            return $location === null ? 'Redirect response' : 'Redirected to '.$location;
+        }
+
+        if ($requestType === 'download') {
+            $path = $request['payload']['path'] ?? null;
+
+            return is_string($path) && $path !== '' ? 'Downloaded '.basename($path) : 'File download';
+        }
+
+        return null;
+    }
+
+    private function livewireActivity(mixed $items): string
+    {
+        if (! is_array($items)) {
+            return 'Livewire update';
+        }
+
+        $item = collect($items)->first(fn (mixed $item): bool => is_array($item) && ($item['phase'] ?? null) === 'response')
+            ?? collect($items)->first(fn (mixed $item): bool => is_array($item));
+
+        if (! is_array($item)) {
+            return 'Livewire update';
+        }
+
+        $component = is_string($item['component'] ?? null)
+            ? Str::headline($item['component'])
+            : 'Livewire';
+        $validationFields = array_values(array_filter(array_map('strval', (array) ($item['validation_fields'] ?? []))));
+        $actions = array_values(array_filter(array_map('strval', (array) ($item['actions'] ?? []))));
+        $properties = array_values(array_filter(array_map('strval', (array) ($item['updated_properties'] ?? []))));
+
+        if ($validationFields !== []) {
+            return $component.' → Validation failed: '.implode(', ', $validationFields);
+        }
+
+        if ($actions !== []) {
+            return $component.' → '.$actions[0].'()'.(count($actions) > 1 ? ' and '.(count($actions) - 1).' more' : '');
+        }
+
+        if ($properties !== []) {
+            return $component.' → '.(count($properties) === 1
+                ? $properties[0].' changed'
+                : 'Changed: '.implode(', ', $properties));
+        }
+
+        return $component.' updated';
+    }
+
+    /** @param array<string, mixed> $request */
+    private function header(array $request, string $name, string $group = 'headers'): ?string
+    {
+        $value = $request['payload'][$group][$name] ?? null;
+
+        if (is_array($value)) {
+            $value = $value[0] ?? null;
+        }
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     private function recordedTime(mixed $recordedAt): ?string
