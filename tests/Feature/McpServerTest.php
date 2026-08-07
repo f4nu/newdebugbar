@@ -76,7 +76,7 @@ it('correlates the exact response profile while unrelated profiles exist', funct
         ->data->repeated_groups->toHaveCount(1)
         ->data->repeated_groups->{0}->count->toBe(3)
         ->and(array_column($findings['data']['findings'], 'rule_id'))
-        ->toContain('query.repeated', 'query.n_plus_one')
+        ->not->toContain('query.repeated', 'query.n_plus_one')
         ->and(count(File::files(config('new-debug-bar.storage.path'))))->toBe($profileCount);
 });
 

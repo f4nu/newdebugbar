@@ -98,7 +98,7 @@ final class ProfilePresenter
             );
         }
 
-        foreach (['queries', 'logs'] as $section) {
+        foreach (['queries', 'logs', 'authorization', 'http_client'] as $section) {
             foreach ($profile['sections'][$section]['payload']['items'] ?? [] as $index => $item) {
                 $profile['sections'][$section]['payload']['items'][$index]['callsite'] = $this->editor->enrich($item['callsite'] ?? null);
 

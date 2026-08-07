@@ -102,6 +102,7 @@ final class EventRegistrar
         $this->listen(ResponsePrepared::class, fn () => $this->manager()->lifecycle('response_prepared'));
 
         $this->listen(GateEvaluated::class, function (GateEvaluated $event): void {
+            $location = $this->callSites->capture();
             $this->manager()->record('authorization', [
                 'ability' => $event->ability,
                 'result' => $event->result === true ? 'allowed' : 'denied',
@@ -111,6 +112,7 @@ final class EventRegistrar
                     fn (mixed $argument): string => is_object($argument) ? $argument::class : get_debug_type($argument),
                     $event->arguments,
                 )),
+                'callsite' => $location['callsite'],
             ]);
         });
 
@@ -182,19 +184,23 @@ final class EventRegistrar
         $this->listen(ResponseReceived::class, function (ResponseReceived $event): void {
             $handlerStats = $event->response->handlerStats();
             $totalTime = $handlerStats['total_time'] ?? null;
+            $location = $this->callSites->capture();
+            $status = $event->response->status();
 
             $this->manager()->record('http_client', [
                 'phase' => 'completed',
                 'request_id' => spl_object_id($event->request),
                 'method' => strtoupper($event->request->method()),
                 'url' => $this->safeUrl->clean($event->request->url()),
-                'status' => $event->response->status(),
+                'status' => $status,
                 'duration_ms' => is_numeric($totalTime) ? round((float) $totalTime * 1_000, 2) : null,
-                'failed' => false,
+                'failed' => $status >= 400,
+                'callsite' => $location['callsite'],
             ]);
         });
 
         $this->listen(ConnectionFailed::class, function (ConnectionFailed $event): void {
+            $location = $this->callSites->capture();
             $this->manager()->record('http_client', [
                 'phase' => 'failed',
                 'request_id' => spl_object_id($event->request),
@@ -204,6 +210,8 @@ final class EventRegistrar
                 'duration_ms' => null,
                 'failed' => true,
                 'exception_class' => $event->exception::class,
+                'exception_message' => $event->exception->getMessage(),
+                'callsite' => $location['callsite'],
             ]);
         });
 

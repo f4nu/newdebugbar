@@ -135,6 +135,21 @@ it('includes dropped items in cache and log summaries', function () {
     ]);
 });
 
+it('collapses duplicate MIME mail logs into a link to the Mail collector', function () {
+    $logs = new LogCollector(new Redactor, maxItems: 5);
+
+    $logs->record([
+        'level' => 'debug',
+        'message' => "Message-ID: <local@example.test>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=private\n\nprivate body",
+        'context' => ['private' => 'duplicate'],
+    ]);
+
+    expect($logs->payload()['items'][0])->toMatchArray([
+        'message' => 'Mail content captured. Open the Mail section for its preview.',
+        'context' => ['linked_section' => 'mail', 'collapsed' => 'mime_message'],
+    ])->and($logs->payload()['items'][0]['message'])->not->toContain('private body');
+});
+
 it('removes a cache command even after the Redis item limit is reached', function () {
     $redis = new RedisCollector(new Redactor, maxItems: 1);
     $redis->record(['command' => 'GET', 'duration_ms' => 1.25, 'failed' => false]);

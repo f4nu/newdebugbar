@@ -38,22 +38,20 @@ it('produces stable bounded findings with supporting evidence', function () {
 
     expect($ruleIds)->toBe([
         'request.error',
-        'collector.truncated',
         'request.slow',
         'query.slow',
-        'query.repeated',
         'query.n_plus_one',
         'cache.high_miss_rate',
-    ])->and($findings[4])->toMatchArray([
+        'collector.truncated',
+    ])->and($findings[3])->toMatchArray([
         'severity' => 'warning',
         'section' => 'queries',
-    ])->and($findings[4]['evidence']['count'])->toBe(3)
-        ->and($findings[4]['evidence']['extra_executions'])->toBe(2)
-        ->and($findings[5]['evidence']['shared_callsite'])->toBe([
+    ])->and($findings[3]['evidence']['count'])->toBe(3)
+        ->and($findings[3]['evidence']['shared_callsite'])->toBe([
             'file' => 'app/A.php',
             'line' => 1,
         ])
-        ->and($findings[1])->toMatchArray([
+        ->and($findings[5])->toMatchArray([
             'summary' => 'Showing 3 of 5 queries.',
             'evidence' => ['collector' => 'queries', 'retained' => 3, 'total' => 5, 'dropped' => 2],
         ]);
@@ -74,7 +72,7 @@ it('limits the number of findings', function () {
         ->and($findings[0]['rule_id'])->toBe('request.error');
 });
 
-it('keeps collector omissions ahead of lower priority query findings', function () {
+it('keeps diagnostic query findings ahead of collector-limit notes', function () {
     $analyzer = new ProfileAnalyzer(new QueryAnalyzer, maxFindings: 2);
 
     $findings = $analyzer->analyze([
@@ -97,9 +95,69 @@ it('keeps collector omissions ahead of lower priority query findings', function 
     ]);
 
     expect(array_column($findings, 'rule_id'))->toBe([
+        'query.n_plus_one',
         'collector.truncated',
-        'query.repeated',
     ]);
+});
+
+it('suppresses expected infrastructure and tiny repeated queries while keeping useful groups', function () {
+    $findings = (new ProfileAnalyzer(new QueryAnalyzer))->analyze([
+        'metrics' => ['duration_ms' => 20],
+        'sections' => [
+            'request' => ['summary' => ['status' => 200]],
+            'queries' => ['payload' => ['items' => [
+                ['sql' => 'select * from "sessions" where "id" = ?', 'bindings' => [1]],
+                ['sql' => 'select * from "sessions" where "id" = ?', 'bindings' => [1]],
+                ['sql' => 'select * from "cache" where "key" in (?)', 'bindings' => ['a']],
+                ['sql' => 'select * from "cache" where "key" in (?)', 'bindings' => ['b']],
+                ['sql' => 'select * from "work_orders" where "status" = ?', 'bindings' => ['active']],
+                ['sql' => 'select * from "work_orders" where "status" = ?', 'bindings' => ['active']],
+                ['sql' => 'select * from "facilities" where "active" = ?', 'bindings' => [1], 'duration_ms' => 2],
+                ['sql' => 'select * from "facilities" where "active" = ?', 'bindings' => [1], 'duration_ms' => 2],
+                ['sql' => 'select * from "facilities" where "active" = ?', 'bindings' => [1], 'duration_ms' => 2],
+            ]]],
+        ],
+    ]);
+
+    expect($findings)->toHaveCount(1)
+        ->and($findings[0])->toMatchArray([
+            'rule_id' => 'query.repeated',
+            'summary' => '3 identical query executions added 6.0 ms.',
+            'action' => ['label' => 'Review grouped queries', 'section' => 'queries', 'filter' => 'repeated'],
+        ]);
+});
+
+it('promotes explicit HTTP authorization and validation failures before heuristics', function () {
+    $findings = (new ProfileAnalyzer(new QueryAnalyzer))->analyze([
+        'metrics' => ['duration_ms' => 20],
+        'sections' => [
+            'request' => ['summary' => ['status' => 200]],
+            'http_client' => ['payload' => ['items' => [[
+                'method' => 'GET',
+                'url' => 'https://api.example.test/orders',
+                'failed' => true,
+                'exception_message' => 'Connection timed out',
+                'callsite' => ['file' => 'app/Orders/Client.php', 'line' => 20],
+            ]]]],
+            'authorization' => ['payload' => ['items' => [[
+                'ability' => 'delete',
+                'result' => 'denied',
+                'handler' => 'App\\Policies\\WorkOrderPolicy@delete',
+            ]]]],
+            'validation' => ['payload' => ['items' => [[
+                'fields' => ['title', 'facility_id'],
+                'rules' => ['title' => ['Required']],
+            ]]]],
+        ],
+    ]);
+
+    expect(array_column($findings, 'rule_id'))->toBe([
+        'http.failed',
+        'authorization.denied',
+        'validation.failed',
+    ])->and($findings[0]['summary'])->toBe('GET request to api.example.test failed.')
+        ->and($findings[1]['why'])->toBe('WorkOrderPolicy@delete returned a denied result.')
+        ->and($findings[2]['summary'])->toBe('Validation failed for title, facility_id.');
 });
 
 it('reports omitted query transaction events as collector evidence', function () {
