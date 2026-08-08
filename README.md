@@ -10,7 +10,7 @@ It works with Blade, Livewire, and Inertia.
 
 New Debug Bar saves a clear profile for each request. A coding agent can use it to understand what happened, spot errors or slow work, explain the likely cause, and point you to what to inspect next. Common secrets are hidden, and the agent can only read the saved profiles.
 
-Instead of giving the agent large logs, browser dumps, or a broad codebase and asking it to guess, it can request the small, relevant, structured summary or finding from a saved profile. This reduces irrelevant input and helps the agent investigate faster.
+Instead of giving the agent large logs, browser dumps, or a broad codebase and asking it to guess, it can request the small, relevant, structured summary or finding from a saved profile. Across nine representative profiles, focused MCP reads used a median 68% fewer tokens than compact full-profile dumps, reducing irrelevant input and helping the agent investigate faster.
 
 ### Codex plugin
 
