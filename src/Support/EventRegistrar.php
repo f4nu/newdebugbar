@@ -20,6 +20,7 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Http\Client\Events\ResponseReceived;
@@ -205,6 +206,7 @@ final class EventRegistrar
         });
 
         $this->listen(ConnectionFailed::class, function (ConnectionFailed $event): void {
+            $exception = $event->exception ?? null;
             $location = $this->callSites->capture();
             $this->manager()->record('http_client', [
                 'phase' => 'failed',
@@ -214,8 +216,8 @@ final class EventRegistrar
                 'status' => null,
                 'duration_ms' => null,
                 'failed' => true,
-                'exception_class' => $event->exception::class,
-                'exception_message' => $event->exception->getMessage(),
+                'exception_class' => $exception instanceof Throwable ? $exception::class : ConnectionException::class,
+                'exception_message' => $exception instanceof Throwable ? $exception->getMessage() : 'Connection failed.',
                 'callsite' => $location['callsite'],
             ]);
         });
