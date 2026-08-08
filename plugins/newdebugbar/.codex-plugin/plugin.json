@@ -1,6 +1,6 @@
 {
   "name": "newdebugbar",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Inspect Laravel requests with New Debug Bar's local MCP server.",
   "author": {
     "name": "Benjamin Crozat",

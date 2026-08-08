@@ -1,11 +1,11 @@
 ---
 name: use-new-debug-bar
-description: Install, set up, and use New Debug Bar in a Laravel app. Use when Codex needs to add the package, connect its local MCP server, inspect a browser request or saved profile, investigate findings or queries, or explain what happened, what is wrong, why, where, and what to inspect next.
+description: Install, set up, and use New Debug Bar in a Laravel app. Use when Codex needs to add the package, connect its local MCP server, inspect a browser request or saved profile, compare request performance, investigate findings or queries, or explain what happened, what is wrong, why, where, and what to inspect next.
 ---
 
 # Use New Debug Bar
 
-Use the package's local MCP tools to read exact, saved Laravel request data. Keep the answer short and lead with the useful result.
+Use the package's local MCP tools directly to read exact, saved Laravel request data. Do not start another Codex process or agent just to call the MCP server. Keep tool responses small, keep the answer short, and lead with the useful result.
 
 ## Set up the package
 
@@ -14,15 +14,34 @@ Use the package's local MCP tools to read exact, saved Laravel request data. Kee
 3. If the package is missing, explain that it is a development-only dependency and ask before running `composer require --dev newdebugbar/newdebugbar`.
 4. Do not publish the config file by default. The package works without it. Run `php artisan vendor:publish --tag=newdebugbar-config` only when the user asks to change a setting.
 5. Confirm the app uses the `local` environment and New Debug Bar is enabled.
-6. If the MCP server tried to start before the package was installed, restart the Codex task after installation.
+6. Start a fresh Codex task after installing the plugin, or when the MCP server tried to start before the package was installed. A task's tool list does not refresh after plugin installation.
+7. Retry the first MCP call once if it fails while the local server starts. If it fails again, confirm `artisan`, the package, the environment, and the enabled setting before restarting the task.
+8. When the user asks to avoid a local package, check `composer.json` and `composer.lock` for a `path` repository and confirm the package under `vendor` is not a symlink. A GitHub ZIP URL is normal for a package installed through Packagist.
 
 ## Inspect a request
 
 1. Make the request in the browser when the user wants live proof.
 2. Use the `X-NewDebugBar-Profile` response header when it is available.
 3. Otherwise, list recent profiles and match the method, path, status, request kind, and time. Do not trust the newest item when background requests may have run.
-4. Read findings and the smallest useful sections. Inspect query details only when the request points to a database problem.
-5. Separate confirmed facts from guesses.
+4. Set small limits instead of accepting maximums. Start with 10 profile summaries, 10 findings, and 5 items from a section or query search. Increase a limit or continue from a cursor only when the answer needs more evidence.
+5. Read findings first, then the smallest useful section. Inspect query details only when the request points to a database problem. Prefer `slow` or `repeated`, sort by duration, and return 5 items. Do not request every query by default.
+6. Inspect no more than three profiles deeply unless the user asks for a broader review.
+7. Separate confirmed facts from guesses.
+
+## Compare page performance
+
+1. Use the same browser, account, and session for every page.
+2. Load each page twice and record the exact profile, path, request kind, status, and duration. Rank the second load so startup work does not decide the result.
+3. Stay below the profile retention limit. With the default limit of 20, testing up to eight pages twice leaves room for login and background requests.
+4. Compare profile summaries first. Read findings and small sections only for the three slowest second-load profiles.
+5. Treat local debug timings as relative evidence. Collector work affects the total, so confirm an important performance claim without the profiler before calling it an application benchmark.
+
+## Interpret the evidence
+
+- Treat a finding as a lead, not a verdict. Repeated chunk or pagination queries can look like an N+1 problem.
+- Read pagination and truncation fields. A collector limit does not mean application data is missing.
+- Compare query time with total request time. If queries are a small share, inspect lifecycle, models, events, and views before blaming the database.
+- Check the request outcome before calling a denied permission a failure. A denied check on a successful `200` page may only hide an optional control.
 
 ## Explain the result
 

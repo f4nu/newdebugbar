@@ -77,7 +77,7 @@ test('the repository exposes the plugin without adding it to Composer archives',
     expect($manifest)
         ->toMatchArray([
             'name' => 'newdebugbar',
-            'version' => '1.0.0',
+            'version' => '1.0.1',
             'license' => 'Apache-2.0',
             'skills' => './skills/',
             'mcpServers' => './.mcp.json',
