@@ -8,17 +8,17 @@ It works with Blade, Livewire, and Inertia.
 
 ## Use with coding agents
 
+New Debug Bar saves a clear profile for each request. A coding agent can use it to understand what happened, spot errors or slow work, explain the likely cause, and point you to what to inspect next. Common secrets are hidden, and the agent can only read the saved profiles.
+
 ### Codex plugin
 
-The optional Codex plugin is the simplest way to use New Debug Bar with Codex. It starts the local MCP connection and adds a debugging skill, so Codex can inspect the request profiles saved by the Laravel app you have open.
+The optional Codex plugin is the simplest path for Codex users. It gives Codex a New Debug Bar skill and access to profiles from the Laravel app you have open, without manual MCP setup.
 
 [Set up the Codex plugin](docs/mcp.md#codex-plugin).
 
 ### Other MCP tools
 
-New Debug Bar also includes an optional local Model Context Protocol (MCP) server for other AI tools that support MCP. It gives an assistant focused, structured, read-only access to saved and redacted request profiles. The assistant can investigate what happened and recommend where to look next without guessing from logs or asking you to copy debug data by hand.
-
-The Codex plugin uses this MCP connection automatically. For non-Codex tools, MCP is optional. Follow the [MCP setup guide](docs/mcp.md) for Claude Code, Cursor, VS Code, and other local MCP clients.
+Other compatible AI tools can use the same focused, read-only profile data through optional Model Context Protocol (MCP) support. Follow the [MCP setup guide](docs/mcp.md) for Claude Code, Cursor, VS Code, and other local MCP clients.
 
 ## Requirements
 
