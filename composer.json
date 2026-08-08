@@ -44,8 +44,7 @@
             "npm run build",
             "pest --testsuite=Browser"
         ],
-        "test:php": "pest --testsuite=Package",
-        "benchmark": "php benchmarks/profile-overhead.php"
+        "test:php": "pest --testsuite=Package"
     },
     "extra": {
         "laravel": {
@@ -61,7 +60,6 @@
             "/.github",
             "/.gitignore",
             "/.phpunit.cache",
-            "/benchmarks",
             "/composer.lock",
             "/node_modules",
             "/package-lock.json",
