@@ -9,6 +9,13 @@ use Laravel\Mcp\Server\Tool;
 
 abstract class DebugTool extends Tool
 {
+    protected const DESCRIPTION = '';
+
+    final public function description(): string
+    {
+        return static::DESCRIPTION;
+    }
+
     /** @return array<string, mixed> */
     public function outputSchema(JsonSchema $schema): array
     {

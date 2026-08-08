@@ -1,8 +1,13 @@
 <?php
 
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Promise\Create;
+use Illuminate\Cache\Events\CacheEvent;
+use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -135,9 +140,16 @@ it('records initial application Livewire renders and then reports Livewire in th
 });
 
 it('captures outbound HTTP results without private URLs or bodies', function () {
+    $failedConnection = method_exists(Factory::class, 'failedConnection')
+        ? Http::failedConnection('private connection details')
+        : fn ($request) => Create::rejectionFor(new ConnectException(
+            'private connection details',
+            $request->toPsrRequest(),
+        ));
+
     Http::fake([
         'api.example.test/*' => Http::response(['private' => 'response-body'], 202),
-        'down.example.test/*' => Http::failedConnection('private connection details'),
+        'down.example.test/*' => $failedConnection,
     ]);
 
     $response = $this->get('/profiled-http-client', ['Accept' => 'text/html'])->assertOk();
@@ -231,21 +243,17 @@ it('captures direct Redis commands and removes cache command duplicates', functi
     $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $redis = $profile['sections']['redis'];
     $cache = $profile['sections']['cache'];
+    $storeAware = property_exists(CacheEvent::class, 'storeName');
 
     expect($redis['summary'])
-        ->count->toBe(2)
-        ->duration_ms->toBe(1.25)
-        ->failed_count->toBe(1)
+        ->count->toBe($storeAware ? 2 : 3)
+        ->duration_ms->toBe($storeAware ? 1.25 : 2.15)
+        ->failed_count->toBe($storeAware ? 1 : 0)
         ->and($redis['payload']['items'][0])
         ->command->toBe('GET')
         ->connection->toBe('default')
         ->key_count->toBe(1)
         ->key_hashes->toBe([substr(hash('sha256', 'private-direct-key'), 0, 16)])
-        ->and($redis['payload']['items'][1])
-        ->command->toBe('HGET')
-        ->failed->toBeTrue()
-        ->exception_class->toBe(RuntimeException::class)
-        ->and(array_column($cache['payload']['items'], 'operation'))->toContain('write', 'flush')
         ->and($cache['payload']['items'][0])
         ->tag_count->toBe(2)
         ->tag_hashes->toBe([
@@ -263,6 +271,17 @@ it('captures direct Redis commands and removes cache command duplicates', functi
             'private-field',
             'private Redis failure',
         );
+
+    if ($storeAware) {
+        expect($redis['payload']['items'][1])
+            ->command->toBe('HGET')
+            ->failed->toBeTrue()
+            ->exception_class->toBe(RuntimeException::class)
+            ->and(array_column($cache['payload']['items'], 'operation'))->toContain('write', 'flush');
+    } else {
+        expect(array_column($redis['payload']['items'], 'command'))->toBe(['GET', 'SETEX', 'FLUSHDB'])
+            ->and(array_column($cache['payload']['items'], 'operation'))->toBe(['write']);
+    }
 });
 
 it('keeps direct Redis commands when a non Redis cache store emits a similar operation', function () {
@@ -291,12 +310,17 @@ it('reveals bounded cache and Redis keys only under the explicit full key policy
         ->key_policy->toBe('full')
         ->key->toBe('private-cache-key')
         ->tags->toBe(['tenant:private-clinic', 'patient:private-patient'])
-        ->and($cacheFlush)
-        ->key_policy->toBe('full')
-        ->tags->toBe(['tenant:private-clinic'])
         ->and($redisGet)
         ->key_policy->toBe('full')
         ->keys->toBe(['private-direct-key']);
+
+    if (class_exists(CacheFlushed::class)) {
+        expect($cacheFlush)
+            ->key_policy->toBe('full')
+            ->tags->toBe(['tenant:private-clinic']);
+    } else {
+        expect($cacheFlush)->toBeNull();
+    }
 });
 
 it('isolates mutable collector state between application lifecycles', function () {

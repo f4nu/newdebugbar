@@ -6,16 +6,16 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\ResponseFactory;
-use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use NewDebugBar\Presentation\McpProfilePresenter;
 
-#[Description('Return deterministic finding rule IDs and supporting evidence for one debug profile.')]
 #[IsReadOnly]
 #[IsOpenWorld(false)]
 final class GetDebugFindings extends DebugTool
 {
+    protected const DESCRIPTION = 'Return deterministic finding rule IDs and supporting evidence for one debug profile.';
+
     public function __construct(private readonly McpProfilePresenter $profiles) {}
 
     /** @return array<string, Type> */

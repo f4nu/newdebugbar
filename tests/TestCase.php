@@ -3,6 +3,7 @@
 namespace NewDebugBar\Tests;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -102,7 +103,7 @@ abstract class TestCase extends Orchestra
         $router->middleware(ProfileRequest::class)->get('/profiled-rich', function () use ($profiledPage) {
             Http::fake(['api.example.test/*' => Http::response(['private' => 'body'], 202)]);
             Http::get('https://api.example.test/v1/status?token=private&limit=5');
-            Event::dispatch(new JobQueued('redis', 'emails', 'job-visual', new ProfiledJob('private'), '{}', 5));
+            Event::dispatch($this->queuedEvent('job-visual', new ProfiledJob('private')));
             Bus::dispatchSync(new ProfiledJob('private'));
             Mail::raw('private body', fn ($message) => $message
                 ->from('sender@example.test')
@@ -265,14 +266,7 @@ abstract class TestCase extends Orchestra
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-queue', function () {
-            Event::dispatch(new JobQueued(
-                'redis',
-                'emails',
-                'job-1',
-                new ProfiledJob('private queued value'),
-                json_encode(['private' => 'queued payload'], JSON_THROW_ON_ERROR),
-                5,
-            ));
+            Event::dispatch($this->queuedEvent('job-1', new ProfiledJob('private queued value')));
             Bus::dispatchSync(new ProfiledJob('private sync value'));
 
             try {
@@ -306,16 +300,16 @@ abstract class TestCase extends Orchestra
             $connection = new ProfiledRedisConnection;
             Event::dispatch(new CommandExecuted('get', ['private-direct-key'], 1.25, $connection));
             Event::dispatch(new CommandExecuted('setex', ['private-cache-key', 60, 'private-cache-value'], 0.4, $connection));
-            Event::dispatch(new KeyWritten(
-                'redis',
-                'private-cache-key',
-                'private-cache-value',
-                60,
-                ['tenant:private-clinic', 'patient:private-patient'],
-            ));
+            Event::dispatch($this->keyWrittenEvent());
             Event::dispatch(new CommandExecuted('flushdb', [], 0.5, $connection));
-            Event::dispatch(new CacheFlushed('redis', ['tenant:private-clinic']));
-            Event::dispatch(new CommandFailed('hget', ['private-hash', 'private-field'], new \RuntimeException('private Redis failure'), $connection));
+
+            if (class_exists(CacheFlushed::class)) {
+                Event::dispatch(new CacheFlushed('redis', ['tenant:private-clinic']));
+            }
+
+            if (class_exists(CommandFailed::class)) {
+                Event::dispatch(new CommandFailed('hget', ['private-hash', 'private-field'], new \RuntimeException('private Redis failure'), $connection));
+            }
 
             return response('<!doctype html><html><body>Redis</body></html>');
         });
@@ -331,6 +325,34 @@ abstract class TestCase extends Orchestra
             '/profiled-input',
             fn (Request $request) => response('<!doctype html><html><body>'.$request->input('clinic.name').'</body></html>'),
         );
+    }
+
+    private function queuedEvent(string $id, ProfiledJob $job): JobQueued
+    {
+        $job->onQueue('emails')->delay(5);
+        $payload = json_encode(['private' => 'queued payload'], JSON_THROW_ON_ERROR);
+
+        if (property_exists(JobQueued::class, 'queue')) {
+            return new JobQueued('redis', 'emails', $id, $job, $payload, 5);
+        }
+
+        return new JobQueued('redis', $id, $job, $payload);
+    }
+
+    private function keyWrittenEvent(): KeyWritten
+    {
+        $arguments = [
+            'private-cache-key',
+            'private-cache-value',
+            60,
+            ['tenant:private-clinic', 'patient:private-patient'],
+        ];
+
+        if (property_exists(CacheEvent::class, 'storeName')) {
+            array_unshift($arguments, 'redis');
+        }
+
+        return new KeyWritten(...$arguments);
     }
 
     protected function setUp(): void

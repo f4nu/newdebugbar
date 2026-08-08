@@ -33,7 +33,8 @@ use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Controllers\MailPreviewController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
-use NewDebugBar\Mcp\NewDebugBarServer;
+use NewDebugBar\Mcp\Legacy\NewDebugBarServer as LegacyNewDebugBarServer;
+use NewDebugBar\Mcp\NewDebugBarServer as ModernNewDebugBarServer;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
@@ -184,7 +185,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $exceptions = $this->app->make(ExceptionHandler::class);
 
         if (method_exists($exceptions, 'renderable')) {
-            $exceptions->renderable(function (ValidationException $exception, Request $request): null {
+            $exceptions->renderable(function (ValidationException $exception, Request $request) {
                 $this->app->make(ProfileManager::class)->recordValidationException($exception);
 
                 return null;
@@ -196,7 +197,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         );
         Livewire::component('newdebugbar.toolbar', DebugBar::class);
         $this->app->make(LivewireMountRecorder::class)->register();
-        Mcp::local('newdebugbar', NewDebugBarServer::class);
+        $this->registerMcpServer();
         $router->get('/__newdebugbar/assets/{path}', AssetController::class)
             ->where('path', '.*')
             ->name('newdebugbar.asset');
@@ -219,5 +220,16 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         return config('newdebugbar.enabled', true)
             && is_array($environments)
             && $this->app->environment($environments);
+    }
+
+    private function registerMcpServer(): void
+    {
+        if (class_exists(Mcp::class)) {
+            Mcp::local('newdebugbar', ModernNewDebugBarServer::class);
+
+            return;
+        }
+
+        \Laravel\Mcp\Server\Facades\Mcp::local('newdebugbar', LegacyNewDebugBarServer::class);
     }
 }

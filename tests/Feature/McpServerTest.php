@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Mcp\Facades\Mcp;
-use Laravel\Mcp\Server\Attributes\Version;
+use Laravel\Mcp\ResponseFactory;
 use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Mcp\Tools\GetDebugFindings;
 use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
@@ -18,21 +18,36 @@ function captureStructuredContent($response): array
 {
     $content = [];
 
-    $response->assertStructuredContent(function (AssertableJson $json) use (&$content): void {
-        $content = $json->toArray();
-        $json->etc();
-    });
+    if (method_exists($response, 'assertStructuredContent')) {
+        $response->assertStructuredContent(function (AssertableJson $json) use (&$content): void {
+            $content = $json->toArray();
+            $json->etc();
+        });
+
+        return $content;
+    }
+
+    $property = (new ReflectionClass($response))->getProperty('response');
+    $payload = $property->getValue($response)->toArray();
+    $content = $payload['result']['structuredContent']
+        ?? json_decode($payload['result']['content'][0]['text'], true, flags: JSON_THROW_ON_ERROR);
 
     return $content;
 }
 
+beforeEach(function () {
+    if (! class_exists(ResponseFactory::class)) {
+        $this->markTestSkipped('These assertions cover Laravel MCP 0.2 and newer.');
+    }
+});
+
 it('registers one local read only server with four schema backed tools', function () {
-    $version = (new ReflectionClass(NewDebugBarServer::class))->getAttributes(Version::class)[0]->newInstance();
+    $version = (new ReflectionClass(NewDebugBarServer::class))->getDefaultProperties()['version'];
 
     expect(Mcp::getLocalServer('newdebugbar'))->toBeCallable()
         ->and(Mcp::getWebServer('newdebugbar'))->toBeNull()
         ->and(Mcp::servers())->toHaveKey('newdebugbar')
-        ->and($version->value)->toBe('1.0.0');
+        ->and($version)->toBe('1.0.0');
 
     foreach ([
         ListDebugProfiles::class => 'list-debug-profiles',

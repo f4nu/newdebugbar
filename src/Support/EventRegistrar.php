@@ -144,7 +144,12 @@ final class EventRegistrar
 
             if (config('newdebugbar.collection.query_bindings') === 'full') {
                 try {
-                    $runnableSql = $event->toRawSql();
+                    $runnableSql = method_exists($event, 'toRawSql')
+                        ? $event->toRawSql()
+                        : $event->connection->query()->getGrammar()->substituteBindingsIntoRawSql(
+                            $event->sql,
+                            $event->connection->prepareBindings($event->bindings),
+                        );
                 } catch (Throwable) {
                     $runnableSql = null;
                 }
@@ -156,7 +161,7 @@ final class EventRegistrar
                 'runnable_sql' => $runnableSql,
                 'duration_ms' => round((float) $event->time, 2),
                 'connection' => $event->connectionName,
-                'type' => $event->readWriteType,
+                'type' => $event->readWriteType ?? null,
                 ...$location,
             ]);
         });
@@ -216,13 +221,16 @@ final class EventRegistrar
         });
 
         $this->listen(JobQueued::class, function (JobQueued $event): void {
+            $jobQueue = is_object($event->job) ? ($event->job->queue ?? null) : null;
+            $jobDelay = is_object($event->job) ? ($event->job->delay ?? null) : null;
+
             $this->manager()->record('queue', [
                 'kind' => 'queued',
                 'job' => $this->jobName($event->job),
                 'connection' => $event->connectionName,
-                'queue' => $event->queue,
+                'queue' => $event->queue ?? $jobQueue,
                 'job_id' => $event->id,
-                'delay_seconds' => $event->delay,
+                'delay_seconds' => is_numeric($event->delay ?? $jobDelay) ? (int) ($event->delay ?? $jobDelay) : null,
                 'duration_ms' => 0.0,
             ]);
         });
@@ -359,20 +367,22 @@ final class EventRegistrar
         $this->listenForCacheEvent(CacheMissed::class, 'miss');
         $this->listenForCacheEvent(KeyWritten::class, 'write');
         $this->listenForCacheEvent(KeyForgotten::class, 'forget');
-        $this->listen(CacheFlushed::class, function (CacheFlushed $event): void {
-            $this->manager()->record('cache', [
-                'operation' => 'flush',
-                'key_hash' => null,
-                'key_policy' => $this->keyPolicy(),
-                'store' => $event->storeName,
-                ...$this->cacheTags($event->tags),
-                'seconds' => null,
-            ]);
+        if (class_exists(CacheFlushed::class)) {
+            $this->listen(CacheFlushed::class, function (CacheFlushed $event): void {
+                $this->manager()->record('cache', [
+                    'operation' => 'flush',
+                    'key_hash' => null,
+                    'key_policy' => $this->keyPolicy(),
+                    'store' => $event->storeName,
+                    ...$this->cacheTags($event->tags),
+                    'seconds' => null,
+                ]);
 
-            if ($this->cacheStoreUsesRedis($event->storeName)) {
-                $this->manager()->excludeRedisCacheOperation('flush');
-            }
-        });
+                if ($this->cacheStoreUsesRedis($event->storeName)) {
+                    $this->manager()->excludeRedisCacheOperation('flush');
+                }
+            });
+        }
 
         $this->listen('composing: *', function (string $name, array $payload): void {
             $view = $payload[0] ?? null;
@@ -428,16 +438,18 @@ final class EventRegistrar
     private function listenForCacheEvent(string $eventClass, string $operation): void
     {
         $this->listen($eventClass, function (CacheEvent $event) use ($operation): void {
+            $storeName = $event->storeName ?? null;
+
             $this->manager()->record('cache', [
                 'operation' => $operation,
                 'key_hash' => $this->redactor->cleanKey($event->key),
                 'key' => $this->keyPolicy() === 'full' ? $this->redactor->cleanKey($event->key, 'full') : null,
                 'key_policy' => $this->keyPolicy(),
-                'store' => $event->storeName,
+                'store' => $storeName,
                 ...$this->cacheTags($event->tags),
                 'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
             ]);
-            if ($this->cacheStoreUsesRedis($event->storeName)) {
+            if ($this->cacheStoreUsesRedis($storeName)) {
                 $this->manager()->excludeRedisCacheOperation($operation);
             }
         });
