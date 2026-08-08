@@ -88,7 +88,7 @@ final class RequestContext
     private function identifier(Authenticatable $user): string
     {
         $value = (string) $user->getAuthIdentifier();
-        $key = (string) config('app.key', 'new-debug-bar-local');
+        $key = (string) config('app.key', 'newdebugbar-local');
 
         return 'hmac:'.substr(hash_hmac('sha256', $user::class."\0".$value, $key), 0, 16);
     }

@@ -48,8 +48,8 @@ final class ProfileFinalizer
             return;
         }
 
-        $event->request->attributes->set('new-debug-bar.profile-id', $id);
-        $event->response->headers->set('X-New-Debug-Bar-Profile', $id);
+        $event->request->attributes->set('newdebugbar.profile-id', $id);
+        $event->response->headers->set('X-NewDebugBar-Profile', $id);
 
         if (! $livewire && $this->injector->supports($event->response)) {
             try {

@@ -23,7 +23,7 @@ function runtime() {
     open(_method, url) { this.url = url; }
     setRequestHeader() {}
     addEventListener(type, callback) { this.listeners[type] = callback; }
-    getResponseHeader(name) { return name === 'X-New-Debug-Bar-Profile' ? profileId : null; }
+    getResponseHeader(name) { return name === 'X-NewDebugBar-Profile' ? profileId : null; }
     send() { this.listeners.loadend?.(); }
   }
 
@@ -43,7 +43,7 @@ function runtime() {
     fetch: async (input) => ({
       input,
       url: new URL(typeof input === 'string' ? input : input.url, 'https://viteclinic.test').href,
-      headers: { get: (name) => name === 'X-New-Debug-Bar-Profile' ? profileId : null },
+      headers: { get: (name) => name === 'X-NewDebugBar-Profile' ? profileId : null },
     }),
   };
 }
@@ -57,11 +57,11 @@ test('profile discovery always reaches the current toolbar after a morph', () =>
   browser.Alpine = { $data: () => state };
   installProfileDiscoveryBridge(browser);
 
-  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+  browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
     detail: { profileId },
   }));
   state = second;
-  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+  browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
     detail: { profileId: '660e8400-e29b-41d4-a716-446655440000' },
   }));
 
@@ -79,17 +79,17 @@ test('profile discovery safely falls back to Livewire while the toolbar initiali
   installProfileDiscoveryBridge(browser);
   installProfileDiscoveryBridge(browser);
 
-  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+  browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
     detail: { profileId },
   }));
-  browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+  browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
     detail: { profileId: 'not-a-profile-id' },
   }));
 
   assert.deepEqual(discoveries, [profileId]);
 
   browser.Livewire.getByName = () => { throw new Error('toolbar unavailable'); };
-  assert.doesNotThrow(() => browser.dispatchEvent(new browser.CustomEvent('new-debug-bar-profile-discovered', {
+  assert.doesNotThrow(() => browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
     detail: { profileId },
   })));
 });
@@ -139,7 +139,7 @@ test('ignores external package and Livewire requests', async () => {
   installRequestDiscovery(browser);
 
   await browser.fetch('https://example.test/api');
-  await browser.fetch('/__new-debug-bar/assets/new-debug-bar.js');
+  await browser.fetch('/__newdebugbar/assets/newdebugbar.js');
   await browser.fetch('/livewire/update');
   await browser.fetch('/custom-update', { headers: { 'X-Livewire': 'true' } });
   await browser.fetch('/profiled-next', { headers: { 'X-Livewire-Navigate': 'true' } });

@@ -1,4 +1,4 @@
-import '../css/new-debug-bar.css';
+import '../css/newdebugbar.css';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import sql from 'highlight.js/lib/languages/sql';
@@ -43,13 +43,13 @@ const registerLivewireProfileSwitching = () => {
     let profileId = null;
 
     onResponse(({ response }) => {
-      profileId = response.headers.get('X-New-Debug-Bar-Profile');
+      profileId = response.headers.get('X-NewDebugBar-Profile');
     });
 
     onFinish(() => {
       if (!profileId) return;
 
-      const debugBar = window.Livewire.getByName('new-debug-bar.toolbar')[0];
+      const debugBar = window.Livewire.getByName('newdebugbar.toolbar')[0];
       Promise.resolve(debugBar?.switchProfile?.(profileId)).catch(() => {});
     });
   });

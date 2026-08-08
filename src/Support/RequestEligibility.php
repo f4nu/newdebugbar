@@ -9,11 +9,11 @@ final class RequestEligibility
 {
     public function allows(Request $request): bool
     {
-        if (! config('new-debug-bar.enabled', true)) {
+        if (! config('newdebugbar.enabled', true)) {
             return false;
         }
 
-        if ($request->is('__new-debug-bar/*') || $this->isLivewireAsset($request)) {
+        if ($request->is('__newdebugbar/*') || $this->isLivewireAsset($request)) {
             return false;
         }
 
@@ -26,7 +26,7 @@ final class RequestEligibility
 
         return $this->isLivewireRequest($request)
             && $names !== null
-            && collect($names)->contains(fn (string $name): bool => $name !== 'new-debug-bar.toolbar');
+            && collect($names)->contains(fn (string $name): bool => $name !== 'newdebugbar.toolbar');
     }
 
     private function isLivewireRequest(Request $request): bool

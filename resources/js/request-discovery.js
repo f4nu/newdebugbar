@@ -1,5 +1,5 @@
-const PROFILE_HEADER = 'X-New-Debug-Bar-Profile';
-const PROFILE_EVENT = 'new-debug-bar-profile-discovered';
+const PROFILE_HEADER = 'X-NewDebugBar-Profile';
+const PROFILE_EVENT = 'newdebugbar-profile-discovered';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const XHR_URL = Symbol('newDebugBarUrl');
 const XHR_LIVEWIRE = Symbol('newDebugBarLivewire');
@@ -33,7 +33,7 @@ const requestFacts = (runtime, input, init = {}) => {
 
     return {
       eligible: url.origin === runtime.location.origin
-        && !url.pathname.startsWith('/__new-debug-bar/')
+        && !url.pathname.startsWith('/__newdebugbar/')
         && !url.pathname.includes('/livewire-')
         && !url.pathname.includes('/livewire/'),
       livewire: livewire !== null,
@@ -78,7 +78,7 @@ export function installProfileDiscoveryBridge(runtime = window) {
       const profileId = event.detail?.profileId;
       if (!PROFILE_PATTERN.test(profileId ?? '')) return;
 
-      const root = runtime.document?.getElementById?.('new-debug-bar');
+      const root = runtime.document?.getElementById?.('newdebugbar');
       const state = root ? runtime.Alpine?.$data?.(root) : null;
 
       if (typeof state?.noticeProfile === 'function') {
@@ -86,7 +86,7 @@ export function installProfileDiscoveryBridge(runtime = window) {
         return;
       }
 
-      const toolbar = runtime.Livewire?.getByName?.('new-debug-bar.toolbar')?.[0];
+      const toolbar = runtime.Livewire?.getByName?.('newdebugbar.toolbar')?.[0];
       const action = event.detail?.foreground ? toolbar?.switchProfile : toolbar?.discoverProfile;
       Promise.resolve(action?.call?.(toolbar, profileId)).catch(() => {});
     } catch {

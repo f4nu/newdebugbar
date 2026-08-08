@@ -78,7 +78,7 @@ final class MailPreview
 
         if ($message->getAttachments() !== []) {
             $copy->getHeaders()->addTextHeader(
-                'X-New-Debug-Bar-Attachments-Omitted',
+                'X-NewDebugBar-Attachments-Omitted',
                 (string) count($message->getAttachments()),
             );
         }

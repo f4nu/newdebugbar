@@ -142,7 +142,7 @@ final class EventRegistrar
             $location = $this->callSites->capture();
             $runnableSql = null;
 
-            if (config('new-debug-bar.collection.query_bindings') === 'full') {
+            if (config('newdebugbar.collection.query_bindings') === 'full') {
                 try {
                     $runnableSql = $event->toRawSql();
                 } catch (Throwable) {
@@ -289,7 +289,7 @@ final class EventRegistrar
                 'has_text' => $message->getTextBody() !== null,
                 'preview' => $this->mailPreview->capture(
                     $message,
-                    (bool) config('new-debug-bar.mail_preview.enabled', false),
+                    (bool) config('newdebugbar.mail_preview.enabled', false),
                 ),
             ]);
         });
@@ -653,7 +653,7 @@ final class EventRegistrar
 
     private function keyPolicy(): string
     {
-        return config('new-debug-bar.collection.key_policy') === 'full' ? 'full' : 'hash';
+        return config('newdebugbar.collection.key_policy') === 'full' ? 'full' : 'hash';
     }
 
     private function cacheStoreUsesRedis(?string $store): bool
@@ -688,6 +688,6 @@ final class EventRegistrar
 
     private function nestedItemLimit(): int
     {
-        return max(0, (int) config('new-debug-bar.collection.max_items_per_array', 100));
+        return max(0, (int) config('newdebugbar.collection.max_items_per_array', 100));
     }
 }

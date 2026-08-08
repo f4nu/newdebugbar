@@ -9,14 +9,14 @@ use NewDebugBar\Storage\ProfileStore;
 it('loads full profile details only after the inspector asks', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
 
-    $file = File::files(config('new-debug-bar.storage.path'))[0];
+    $file = File::files(config('newdebugbar.storage.path'))[0];
     $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
 
     Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
         ->assertSet('detailsLoaded', false)
         ->call('loadDetails')
         ->assertSet('detailsLoaded', true)
-        ->assertDispatched('new-debug-bar-content-updated')
+        ->assertDispatched('newdebugbar-content-updated')
         ->assertSee('Profiled request completed')
         ->assertSeeHtml('data-ndb-lifecycle-scope')
         ->assertSee('Early Laravel bootstrap is not measured.');
@@ -25,7 +25,7 @@ it('loads full profile details only after the inspector asks', function () {
 it('locks server-owned profile state', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
 
-    $file = File::files(config('new-debug-bar.storage.path'))[0];
+    $file = File::files(config('newdebugbar.storage.path'))[0];
     $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
 
     expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
@@ -240,10 +240,10 @@ it('uses the shared presenter for deferred query details and findings', function
 it('loads retained history and compares requests from the same path', function () {
     $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
     $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $currentId])
         ->assertSet('summary.sections', function (array $sections): bool {
@@ -271,10 +271,10 @@ it('loads retained history and compares requests from the same path', function (
 it('adds a discovered background profile to history without switching profiles', function () {
     $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
     $backgroundId = $this->getJson('/api/plain-json')
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $currentId])
         ->call('loadDetails')
@@ -284,16 +284,16 @@ it('adds a discovered background profile to history without switching profiles',
         ->assertSet('history.0.is_current', true)
         ->assertSet('history.1.id', $backgroundId)
         ->assertSet('history.1.path', '/api/plain-json')
-        ->assertDispatched('new-debug-bar-content-updated');
+        ->assertDispatched('newdebugbar-content-updated');
 });
 
 it('rejects comparisons from a different path', function () {
     $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
     $otherId = $this->get('/profiled-next', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $currentId])
         ->call('loadDetails')
@@ -304,10 +304,10 @@ it('rejects comparisons from a different path', function () {
 it('switches to an exact retained application profile', function () {
     $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
     $nextId = $this->get('/profiled-next', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $firstId])
         ->call('loadDetails')
@@ -318,16 +318,16 @@ it('switches to an exact retained application profile', function () {
         ->assertSet('summary.path', '/profiled-next')
         ->assertSet('detailsLoaded', false)
         ->assertSet('history', [])
-        ->assertDispatched('new-debug-bar-profile-switched');
+        ->assertDispatched('newdebugbar-profile-switched');
 });
 
 it('opens any retained profile without losing the current foreground request', function () {
     $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
     $backgroundId = $this->getJson('/api/plain-json')
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $currentId])
         ->call('selectProfile', $backgroundId)
@@ -344,5 +344,5 @@ it('opens any retained profile without losing the current foreground request', f
         ->assertSet('profileId', $currentId)
         ->assertSet('currentProfileId', $currentId)
         ->assertSet('summary.is_current_profile', true)
-        ->assertDispatched('new-debug-bar-profile-switched');
+        ->assertDispatched('newdebugbar-profile-switched');
 });

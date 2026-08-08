@@ -500,7 +500,7 @@ test('authorization controls filter decisions and overview navigation opens deni
   assert.equal(allowed.hidden, true);
   assert.equal(denied.hidden, false);
   assert.equal(headingFocused, 1);
-  assert.deepEqual(dispatched, ['new-debug-bar-select-section', {
+  assert.deepEqual(dispatched, ['newdebugbar-select-section', {
     section: 'authorization',
     filter: 'denied',
     focusHeading: true,

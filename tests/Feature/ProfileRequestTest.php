@@ -34,7 +34,7 @@ it('preserves Laravel original response metadata while injecting HTML', function
     app(BarInjector::class)->inject($response, (string) Str::uuid());
 
     expect($response->getOriginalContent())->toBe($view)
-        ->and($response->getContent())->toContain('id="new-debug-bar"');
+        ->and($response->getContent())->toContain('id="newdebugbar"');
 });
 
 it('captures a local web request and its Laravel activity', function () {
@@ -42,7 +42,7 @@ it('captures a local web request and its Laravel activity', function () {
 
     expect(app()->environment())->toBe('testing')
         ->and(app()->bound('middleware.disable'))->toBeFalse()
-        ->and(config('new-debug-bar.environments'))->toBe(['testing'])
+        ->and(config('newdebugbar.environments'))->toBe(['testing'])
         ->and(app('router')->gatherRouteMiddleware($route))->toContain(ProfileRequest::class);
 
     $response = $this->get('/profiled?token=visible', [
@@ -52,20 +52,20 @@ it('captures a local web request and its Laravel activity', function () {
 
     $response
         ->assertOk()
-        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertHeader('X-NewDebugBar-Profile')
         ->assertSee('data-testid="host-page"', false)
-        ->assertSee('id="new-debug-bar"', false)
-        ->assertSee('/__new-debug-bar/assets/new-debug-bar.css', false)
-        ->assertSee('/__new-debug-bar/assets/new-debug-bar.js', false)
-        ->assertSee('id="new-debug-bar-critical-css"', false)
+        ->assertSee('id="newdebugbar"', false)
+        ->assertSee('/__newdebugbar/assets/newdebugbar.css', false)
+        ->assertSee('/__newdebugbar/assets/newdebugbar.js', false)
+        ->assertSee('id="newdebugbar-critical-css"', false)
         ->assertDontSee('data-navigate-track', false)
-        ->assertSee('wire:key="new-debug-bar-toolbar"', false)
+        ->assertSee('wire:key="newdebugbar-toolbar"', false)
         ->assertSee('data-update-uri', false);
 
     expect(substr_count((string) $response->getContent(), '<!-- Livewire Styles -->'))->toBe(1)
         ->and(substr_count((string) $response->getContent(), 'data-update-uri='))->toBe(1);
 
-    $files = File::files(config('new-debug-bar.storage.path'));
+    $files = File::files(config('newdebugbar.storage.path'));
 
     expect($files)->toHaveCount(1);
 
@@ -115,7 +115,7 @@ it('captures a local web request and its Laravel activity', function () {
 
 it('records initial application Livewire renders and then reports Livewire in the ecosystem', function () {
     $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $section = $profile['sections']['livewire'];
 
     expect(substr_count((string) $response->getContent(), '<!-- Livewire Styles -->'))->toBe(1)
@@ -141,7 +141,7 @@ it('captures outbound HTTP results without private URLs or bodies', function () 
     ]);
 
     $response = $this->get('/profiled-http-client', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $section = $profile['sections']['http_client'];
 
     expect($section['summary'])
@@ -164,7 +164,7 @@ it('captures outbound HTTP results without private URLs or bodies', function () 
 
 it('captures queued dispatches and synchronous execution without job data', function () {
     $response = $this->get('/profiled-queue', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $section = $profile['sections']['queue'];
 
     expect($section['summary'])
@@ -191,7 +191,7 @@ it('captures queued dispatches and synchronous execution without job data', func
 
 it('captures mail and notification shape without private content or identities', function () {
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $mail = $profile['sections']['mail'];
     $notifications = $profile['sections']['notifications'];
 
@@ -228,7 +228,7 @@ it('captures mail and notification shape without private content or identities',
 
 it('captures direct Redis commands and removes cache command duplicates', function () {
     $response = $this->get('/profiled-redis', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $redis = $profile['sections']['redis'];
     $cache = $profile['sections']['cache'];
 
@@ -267,7 +267,7 @@ it('captures direct Redis commands and removes cache command duplicates', functi
 
 it('keeps direct Redis commands when a non Redis cache store emits a similar operation', function () {
     $response = $this->get('/profiled-redis-independent-cache', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $redis = $profile['sections']['redis'];
     $cache = $profile['sections']['cache'];
 
@@ -279,10 +279,10 @@ it('keeps direct Redis commands when a non Redis cache store emits a similar ope
 });
 
 it('reveals bounded cache and Redis keys only under the explicit full key policy', function () {
-    config()->set('new-debug-bar.collection.key_policy', 'full');
+    config()->set('newdebugbar.collection.key_policy', 'full');
 
     $response = $this->get('/profiled-redis', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $cacheWrite = collect($profile['sections']['cache']['payload']['items'])->firstWhere('operation', 'write');
     $cacheFlush = collect($profile['sections']['cache']['payload']['items'])->firstWhere('operation', 'flush');
     $redisGet = collect($profile['sections']['redis']['payload']['items'])->firstWhere('command', 'GET');
@@ -304,7 +304,7 @@ it('isolates mutable collector state between application lifecycles', function (
 
     $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
-        ->assertHeader('X-New-Debug-Bar-Profile');
+        ->assertHeader('X-NewDebugBar-Profile');
 
     app()->forgetScopedInstances();
     $second = app(ProfileManager::class);
@@ -314,9 +314,9 @@ it('isolates mutable collector state between application lifecycles', function (
 
     $this->get('/profiled-next', ['Accept' => 'text/html'])
         ->assertOk()
-        ->assertHeader('X-New-Debug-Bar-Profile');
+        ->assertHeader('X-NewDebugBar-Profile');
 
-    $profiles = collect(File::files(config('new-debug-bar.storage.path')))
+    $profiles = collect(File::files(config('newdebugbar.storage.path')))
         ->map(fn ($file) => json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR));
 
     expect($profiles)->toHaveCount(2)
@@ -325,7 +325,7 @@ it('isolates mutable collector state between application lifecycles', function (
 });
 
 it('serves its compiled assets through local package routes', function () {
-    $response = $this->get('/__new-debug-bar/assets/new-debug-bar.css')
+    $response = $this->get('/__newdebugbar/assets/newdebugbar.css')
         ->assertOk()
         ->assertHeader('Content-Type', 'text/css; charset=UTF-8')
         ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -341,18 +341,18 @@ it('serves its compiled assets through local package routes', function () {
 it('injects assets into an html document that has no head', function () {
     $this->get('/html-without-head', ['Accept' => 'text/html'])
         ->assertOk()
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertSee('<html><head><style id="new-debug-bar-critical-css"', false)
-        ->assertSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertSee('<html><head><style id="newdebugbar-critical-css"', false)
+        ->assertSee('id="newdebugbar"', false);
 });
 
 it('leaves response types that cannot host the bar untouched', function (string $path, int $status) {
     $response = $this->get($path, ['Accept' => 'text/html'])
         ->assertStatus($status)
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertDontSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertDontSee('id="newdebugbar"', false);
 
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
     expect($profile)->not->toBeNull()
         ->and($profile['sections']['request']['payload']['request_type'])->toBe(match ($path) {
@@ -368,17 +368,17 @@ it('leaves response types that cannot host the bar untouched', function (string 
 it('profiles an html error response', function () {
     $this->get('/failed-html', ['Accept' => 'text/html'])
         ->assertUnprocessable()
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertSee('id="newdebugbar"', false);
 });
 
 it('preserves a profile when the application throws', function () {
     $response = $this->get('/profiled-exception', ['Accept' => 'text/html'])
         ->assertInternalServerError()
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertSee('id="newdebugbar"', false);
 
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
     expect($profile['sections']['request']['summary']['status'])->toBe(500)
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(1)
@@ -391,7 +391,7 @@ it('preserves a profile when the application throws', function () {
 });
 
 it('rejects unknown and unsafe package assets', function () {
-    $this->get('/__new-debug-bar/assets/unknown.txt')->assertNotFound();
+    $this->get('/__newdebugbar/assets/unknown.txt')->assertNotFound();
 
     expect(fn () => app(AssetController::class)('../composer.json'))
         ->toThrow(NotFoundHttpException::class)
@@ -403,10 +403,10 @@ it('profiles JSON without changing its body or injecting the toolbar', function 
     $response = $this->getJson('/plain-json')
         ->assertOk()
         ->assertExactJson(['ready' => true])
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertDontSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertDontSee('id="newdebugbar"', false);
 
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
     expect($profile['sections']['request']['payload']['request_type'])->toBe('json')
         ->and($profile['sections']['request']['payload']['response_size_bytes'])
@@ -417,7 +417,7 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
     $api = $this->getJson('/api/plain-json')
         ->assertOk()
         ->assertExactJson(['source' => 'api'])
-        ->assertHeader('X-New-Debug-Bar-Profile');
+        ->assertHeader('X-NewDebugBar-Profile');
 
     $ajax = $this->get('/ajax-fragment', [
         'Accept' => 'text/html',
@@ -425,23 +425,23 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
     ])
         ->assertOk()
         ->assertContent('<div data-fragment>Search result</div>')
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertDontSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertDontSee('id="newdebugbar"', false);
 
     $redirect = $this->get('/profile-redirect', ['Accept' => 'text/html'])
         ->assertRedirect('/profiled')
-        ->assertHeader('X-New-Debug-Bar-Profile')
-        ->assertDontSee('id="new-debug-bar"', false);
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertDontSee('id="newdebugbar"', false);
 
     $stream = $this->get('/streamed-response', ['Accept' => 'text/plain'])
         ->assertOk()
-        ->assertHeader('X-New-Debug-Bar-Profile')
+        ->assertHeader('X-NewDebugBar-Profile')
         ->assertStreamedContent('streamed-body');
 
     $binary = $this->get('/binary-response')
         ->assertOk()
         ->assertDownload('profiled-counter.txt')
-        ->assertHeader('X-New-Debug-Bar-Profile');
+        ->assertHeader('X-NewDebugBar-Profile');
 
     $profiles = collect([
         'json' => $api,
@@ -450,7 +450,7 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
         'stream' => $stream,
         'download' => $binary,
     ])->map(fn ($response) => app(ProfileStore::class)->get(
-        $response->headers->get('X-New-Debug-Bar-Profile'),
+        $response->headers->get('X-NewDebugBar-Profile'),
     ));
 
     expect($profiles->map(fn (array $profile): string => $profile['sections']['request']['payload']['request_type'])->all())
@@ -479,7 +479,7 @@ it('labels Inertia foreground visits partial reloads and redirects distinctly', 
     ])->assertRedirect('/profiled');
 
     $profiles = collect([$visit, $partial, $redirect])->map(function ($response): array {
-        $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+        $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
         return $profile;
     });
@@ -499,7 +499,7 @@ it('captures nested input without retaining uploaded files', function () {
         ],
     ], ['Accept' => 'text/html'])->assertOk();
 
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
     expect($profile['sections']['request']['payload']['input'])->toBe([
         'clinic' => ['name' => 'Example Clinic'],
@@ -517,7 +517,7 @@ it('profiles partial models without requiring their primary key', function () {
         Model::preventAccessingMissingAttributes(false);
     }
 
-    $files = File::files(config('new-debug-bar.storage.path'));
+    $files = File::files(config('newdebugbar.storage.path'));
     $profile = json_decode(File::get($files[0]->getPathname()), true, flags: JSON_THROW_ON_ERROR);
     $models = $profile['sections']['models']['payload']['items'];
     $partialModel = collect($models)->first(
@@ -542,7 +542,7 @@ it('returns the application response when a collector fails', function () {
     $this->get('/profiled-collector-failure')
         ->assertOk()
         ->assertContent('<!doctype html><html><body>Application response</body></html>')
-        ->assertHeaderMissing('X-New-Debug-Bar-Profile');
+        ->assertHeaderMissing('X-NewDebugBar-Profile');
 
     expect($manager->isCollecting())->toBeFalse();
 });
@@ -594,7 +594,7 @@ it('discards request state when Livewire response collection fails', function ()
     $finalizer->handle(new RequestHandled($request, $response));
 
     expect($manager->isCollecting())->toBeFalse()
-        ->and($response->headers->has('X-New-Debug-Bar-Profile'))->toBeFalse();
+        ->and($response->headers->has('X-NewDebugBar-Profile'))->toBeFalse();
 });
 
 final class CollectorThatFailsDuringSummary implements Collector

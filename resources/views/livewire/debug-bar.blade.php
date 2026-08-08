@@ -3,13 +3,13 @@
 @endphp
 
 <div
-    id="new-debug-bar"
+    id="newdebugbar"
     x-data="newDebugBar(@js($summary))"
     :data-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
-    @new-debug-bar-content-updated.window="$nextTick(() => { syncSectionHeading(); syncSectionPanels(); applyAuthorizationFilters(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); syncHostLock(); window.newDebugBarHighlight?.($root) })"
-    @new-debug-bar-profile-switched.window="switchProfile($event.detail.summary)"
-    @new-debug-bar-select-section.window="selectSection($event.detail.section, $event.detail.filter ?? null, $event.detail.focusHeading ?? false)"
+    @newdebugbar-content-updated.window="$nextTick(() => { syncSectionHeading(); syncSectionPanels(); applyAuthorizationFilters(); applyHistoryFilters(); applyTimelineFilters(); applyEventFilters(); applyLogFilters(); syncHostLock(); window.newDebugBarHighlight?.($root) })"
+    @newdebugbar-profile-switched.window="switchProfile($event.detail.summary)"
+    @newdebugbar-select-section.window="selectSection($event.detail.section, $event.detail.filter ?? null, $event.detail.focusHeading ?? false)"
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <div
@@ -20,39 +20,39 @@
         aria-label="Debug toolbar"
         class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:w-auto ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
     >
-        <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="request" class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-52" aria-label="Open request details">
+        <x-newdebugbar::toolbar-button section="request" data-ndb-toolbar="request" class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-52" aria-label="Open request details">
             <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
             <span class="ndb:min-w-0">
                 <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
                 <span class="ndb:block ndb:text-[10px] ndb:font-medium ndb:text-zinc-400" x-text="summary.status"></span>
             </span>
-        </x-new-debug-bar::toolbar-button>
+        </x-newdebugbar::toolbar-button>
 
         <div data-ndb-toolbar-facts class="ndb-toolbar-facts ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:sm:flex-none ndb:sm:overflow-visible">
-            <x-new-debug-bar::toolbar-button section="overview" data-ndb-toolbar="environment" class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0">
+            <x-newdebugbar::toolbar-button section="overview" data-ndb-toolbar="environment" class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0">
                 <span class="ndb:size-2 ndb:shrink-0 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
                 <span><span class="ndb:hidden ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:block">Environment</span><span class="ndb:block ndb:max-w-24 ndb:truncate ndb:text-[10px] ndb:font-bold ndb:sm:text-xs" x-text="summary.environment"></span></span>
-            </x-new-debug-bar::toolbar-button>
+            </x-newdebugbar::toolbar-button>
 
-            <x-new-debug-bar::toolbar-button section="request" data-ndb-toolbar="duration" class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0">
-                <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+            <x-newdebugbar::toolbar-button section="request" data-ndb-toolbar="duration" class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0">
+                <x-newdebugbar::icon name="clock" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
                 <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></span>
-            </x-new-debug-bar::toolbar-button>
+            </x-newdebugbar::toolbar-button>
 
-            <x-new-debug-bar::toolbar-button section="overview" data-ndb-toolbar="memory" class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0">
-                <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+            <x-newdebugbar::toolbar-button section="overview" data-ndb-toolbar="memory" class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0">
+                <x-newdebugbar::icon name="memory" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
                 <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
-            </x-new-debug-bar::toolbar-button>
+            </x-newdebugbar::toolbar-button>
 
-            <x-new-debug-bar::toolbar-button section="queries" data-ndb-toolbar="queries" class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0">
-                <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+            <x-newdebugbar::toolbar-button section="queries" data-ndb-toolbar="queries" class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0">
+                <x-newdebugbar::icon name="database" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
                 <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span x-text="summary.query_count"></span><span class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:sm:inline" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
-            </x-new-debug-bar::toolbar-button>
+            </x-newdebugbar::toolbar-button>
         </div>
 
         <div data-ndb-toolbar-actions class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5 ndb:sm:ml-0.5">
-            <x-new-debug-bar::icon-button name="search" :dark-surface="true" data-ndb-toolbar="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)" />
-            <x-new-debug-bar::icon-button name="expand" :dark-surface="true" data-ndb-toolbar="expand" @click="openInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector" />
+            <x-newdebugbar::icon-button name="search" :dark-surface="true" data-ndb-toolbar="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" title="Command palette (Command or Control + Shift + P)" />
+            <x-newdebugbar::icon-button name="expand" :dark-surface="true" data-ndb-toolbar="expand" @click="openInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Expand inspector" title="Expand inspector" />
         </div>
     </div>
 
@@ -75,13 +75,13 @@
         >
             <header class="ndb:shrink-0 ndb:border-b ndb:border-zinc-200/80 ndb:bg-white ndb:p-1.5 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950">
                 <div data-ndb-header-toolbar class="ndb:flex ndb:flex-wrap ndb:items-stretch ndb:gap-1 ndb:sm:flex-nowrap">
-                    <x-new-debug-bar::toolbar-button section="request" data-ndb-header-request class="ndb:flex ndb:min-w-0 ndb:flex-1" aria-label="Open request details">
+                    <x-newdebugbar::toolbar-button section="request" data-ndb-header-request class="ndb:flex ndb:min-w-0 ndb:flex-1" aria-label="Open request details">
                         <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300" x-text="summary.method"></span>
                         <span class="ndb:min-w-0">
                             <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
                             <span class="ndb:flex ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"><span data-ndb-header-status x-text="summary.status"></span><span x-text="summary.is_current_profile ? '' : 'History profile'"></span></span>
                         </span>
-                    </x-new-debug-bar::toolbar-button>
+                    </x-newdebugbar::toolbar-button>
 
                     <div data-ndb-header-mobile-row class="ndb:order-3 ndb:flex ndb:w-full ndb:min-w-0 ndb:items-stretch ndb:gap-2 ndb:sm:contents">
                         <button
@@ -91,40 +91,40 @@
                             :aria-expanded="mobileSectionsOpen"
                             :aria-label="mobileSectionsOpen ? 'Close sections' : 'Open sections'"
                             :title="mobileSectionsOpen ? 'Close sections' : 'Open sections'"
-                            aria-controls="new-debug-bar-section-navigation"
+                            aria-controls="newdebugbar-section-navigation"
                             class="ndb:flex ndb:size-11 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-xl ndb:text-zinc-500 ndb:transition-colors ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:text-zinc-400 ndb:dark:hover:text-white"
                         >
-                            <span x-show.important="! mobileSectionsOpen"><x-new-debug-bar::icon name="sidebar" class="ndb:size-4" /></span>
-                            <span x-cloak x-show.important="mobileSectionsOpen"><x-new-debug-bar::icon name="close" class="ndb:size-4" /></span>
+                            <span x-show.important="! mobileSectionsOpen"><x-newdebugbar::icon name="sidebar" class="ndb:size-4" /></span>
+                            <span x-cloak x-show.important="mobileSectionsOpen"><x-newdebugbar::icon name="close" class="ndb:size-4" /></span>
                         </button>
 
                         <div data-ndb-header-facts class="ndb-scrollbar ndb:flex ndb:min-w-0 ndb:flex-1 ndb:gap-2 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:pb-0.5 ndb:sm:order-none ndb:sm:w-auto ndb:sm:flex-none ndb:sm:gap-1 ndb:sm:overflow-visible ndb:sm:pb-0">
-                            <x-new-debug-bar::toolbar-button section="overview" data-ndb-header-fact="environment" class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0">
+                            <x-newdebugbar::toolbar-button section="overview" data-ndb-header-fact="environment" class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0">
                                 <span class="ndb:size-2 ndb:shrink-0 ndb:rounded-full" :class="summary.warning ? 'ndb:bg-amber-500' : 'ndb:bg-emerald-500'"></span>
                                 <span class="ndb:min-w-0"><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Environment</span><span data-ndb-header-environment class="ndb:block ndb:max-w-24 ndb:truncate ndb:text-xs ndb:font-bold" x-text="summary.environment"></span></span>
-                            </x-new-debug-bar::toolbar-button>
+                            </x-newdebugbar::toolbar-button>
 
-                            <x-new-debug-bar::toolbar-button section="request" data-ndb-header-fact="duration" class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0">
-                                <x-new-debug-bar::icon name="clock" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                            <x-newdebugbar::toolbar-button section="request" data-ndb-header-fact="duration" class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <x-newdebugbar::icon name="clock" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
                                 <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</span><span class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></span></span>
-                            </x-new-debug-bar::toolbar-button>
+                            </x-newdebugbar::toolbar-button>
 
-                            <x-new-debug-bar::toolbar-button section="overview" data-ndb-header-fact="memory" class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0">
-                                <x-new-debug-bar::icon name="memory" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                            <x-newdebugbar::toolbar-button section="overview" data-ndb-header-fact="memory" class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <x-newdebugbar::icon name="memory" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
                                 <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Peak</span><span data-ndb-header-memory class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums" x-text="summary.memory_mb + ' MB'"></span></span>
-                            </x-new-debug-bar::toolbar-button>
+                            </x-newdebugbar::toolbar-button>
 
-                            <x-new-debug-bar::toolbar-button section="queries" data-ndb-header-fact="queries" class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0">
-                                <x-new-debug-bar::icon name="database" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
+                            <x-newdebugbar::toolbar-button section="queries" data-ndb-header-fact="queries" class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0">
+                                <x-newdebugbar::icon name="database" class="ndb:size-3.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400" />
                                 <span><span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</span><span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"><span data-ndb-header-query-count x-text="summary.query_count"></span><span data-ndb-header-query-duration class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:sm:inline" x-text="summary.query_duration_ms + ' ms'"></span></span></span>
-                            </x-new-debug-bar::toolbar-button>
+                            </x-newdebugbar::toolbar-button>
                         </div>
                     </div>
 
                     <div class="ndb:ml-auto ndb:flex ndb:items-center ndb:gap-0.5">
-                        <x-new-debug-bar::icon-button name="search" data-ndb-inspector-action="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" />
-                        <x-new-debug-bar::icon-button data-ndb-inspector-action="theme" @click="toggleTheme()" class="ndb:size-9 ndb:rounded-xl" ::aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" ::title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-new-debug-bar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-new-debug-bar::icon name="sun" class="ndb:size-4" /></span></x-new-debug-bar::icon-button>
-                        <x-new-debug-bar::icon-button name="close" data-ndb-inspector-action="close" x-ref="inspectorClose" @click="closeInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Close inspector" />
+                        <x-newdebugbar::icon-button name="search" data-ndb-inspector-action="palette" @click="openPalette()" class="ndb:size-9 ndb:rounded-xl" aria-label="Open command palette" />
+                        <x-newdebugbar::icon-button data-ndb-inspector-action="theme" @click="toggleTheme()" class="ndb:size-9 ndb:rounded-xl" ::aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" ::title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"><span x-show.important="resolvedTheme !== 'dark'"><x-newdebugbar::icon name="moon" class="ndb:size-4" /></span><span x-show.important="resolvedTheme === 'dark'"><x-newdebugbar::icon name="sun" class="ndb:size-4" /></span></x-newdebugbar::icon-button>
+                        <x-newdebugbar::icon-button name="close" data-ndb-inspector-action="close" x-ref="inspectorClose" @click="closeInspector()" class="ndb:size-9 ndb:rounded-xl" aria-label="Close inspector" />
                     </div>
                 </div>
             </header>
@@ -141,13 +141,13 @@
                 ></div>
 
                 <nav
-                    id="new-debug-bar-section-navigation"
+                    id="newdebugbar-section-navigation"
                     x-ref="mobileSectionsNav"
                     aria-label="Debug sections"
                     :data-ndb-mobile-open="mobileSectionsOpen ? 'true' : 'false'"
                     class="ndb-mobile-section-navigation ndb:absolute ndb:inset-y-0 ndb:left-0 ndb:z-30 ndb:flex ndb:w-[82vw] ndb:max-w-[280px] ndb:flex-col ndb:border-r ndb:border-zinc-200/80 ndb:bg-zinc-50/95 ndb:p-3 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:sm:static ndb:sm:z-auto ndb:sm:w-[210px] ndb:sm:max-w-none ndb:sm:shrink-0 ndb:sm:shadow-none ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-900/95 ndb:sm:dark:bg-zinc-900/60"
                 >
-                    <div id="new-debug-bar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:gap-0.5 ndb:overflow-y-auto">
+                    <div id="newdebugbar-section-list" class="ndb-scrollbar ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col ndb:gap-0.5 ndb:overflow-y-auto">
                         <p data-ndb-favorites-heading x-show.important="favorites.length > 0" class="ndb:px-2 ndb:pb-1.5 ndb:pt-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.14em] ndb:text-zinc-400">Favorites</p>
                         <template x-for="section in orderedSections" :key="'section-' + section.key">
                             <div x-show.important="isSectionVisible(section)" class="ndb:contents">
@@ -197,8 +197,8 @@
                                         class="ndb-star-button ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-400 ndb:transition ndb:hover:scale-105 ndb:hover:text-blue-600 ndb:focus-visible:opacity-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-blue-500 ndb:sm:opacity-0 ndb:sm:group-focus-within:opacity-100 ndb:sm:group-hover:opacity-100 ndb:dark:text-zinc-500 ndb:dark:hover:text-blue-300"
                                         :class="isFavorite(section.key) || selected === section.key ? 'ndb:sm:opacity-100' : ''"
                                     >
-                                        <span x-show.important="! isFavorite(section.key)" class="ndb-section-star-outline"><x-new-debug-bar::icon name="star" class="ndb:size-3.5" /></span>
-                                        <span x-show.important="isFavorite(section.key)"><x-new-debug-bar::icon name="star-filled" class="ndb-favorite-star ndb:size-3.5" /></span>
+                                        <span x-show.important="! isFavorite(section.key)" class="ndb-section-star-outline"><x-newdebugbar::icon name="star" class="ndb:size-3.5" /></span>
+                                        <span x-show.important="isFavorite(section.key)"><x-newdebugbar::icon name="star-filled" class="ndb-favorite-star ndb:size-3.5" /></span>
                                     </button>
                                 </div>
                             </div>
@@ -217,7 +217,7 @@
                             <div class="ndb:px-3 ndb:py-3"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Duration</p><p class="ndb:mt-1 ndb:text-sm ndb:font-bold ndb:tabular-nums" x-text="summary.duration_ms + ' ms'"></p></div>
                             <div class="ndb:px-3 ndb:py-3"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Queries</p><p class="ndb:mt-1 ndb:text-sm ndb:font-bold ndb:tabular-nums" x-text="summary.query_count"></p></div>
                         </div>
-                        <div class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30"><span class="ndb-loading-pulse ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-indigo-50 ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"><x-new-debug-bar::icon name="clock" class="ndb:size-4" /></span><span><span class="ndb:block ndb:text-sm ndb:font-semibold">Loading collector details…</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">The request summary is ready. Larger sections will appear next.</span></span></div>
+                        <div class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30"><span class="ndb-loading-pulse ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-indigo-50 ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"><x-newdebugbar::icon name="clock" class="ndb:size-4" /></span><span><span class="ndb:block ndb:text-sm ndb:font-semibold">Loading collector details…</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">The request summary is ready. Larger sections will appear next.</span></span></div>
                     </div>
 
                     <div x-cloak x-show.important="detailsError" role="alert" class="ndb:m-4 ndb:rounded-xl ndb:border ndb:border-red-200 ndb:bg-red-50/70 ndb:p-4 ndb:dark:border-red-950 ndb:dark:bg-red-950/25 ndb:sm:m-6">
@@ -255,7 +255,7 @@
                                         @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
                                         @php($activitySections = array_values(array_filter($summary['sections'] ?? [], fn (array $link): bool => ! in_array($link['key'], ['overview', 'request', 'history'], true) && $link['count'] !== null && ($link['active'] ?? true))))
                                         @php($overviewSectionLabels = collect($summary['sections'] ?? [])->mapWithKeys(fn (array $link): array => [$link['key'] => $link['label']])->all())
-                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" :overview="true" :section-labels="$overviewSectionLabels" />
+                                        <x-newdebugbar::finding-list :findings="$sectionFindings" :overview="true" :section-labels="$overviewSectionLabels" />
                                         @if ($sectionFindings === [])
                                             <div data-ndb-no-high-confidence-finding class="ndb:flex ndb:items-start ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-emerald-200 ndb:bg-emerald-50/55 ndb:px-4 ndb:py-3.5 ndb:dark:border-emerald-950 ndb:dark:bg-emerald-950/20"><span class="ndb:mt-1 ndb:size-2 ndb:shrink-0 ndb:rounded-full ndb:bg-emerald-500"></span><div><p class="ndb:text-xs ndb:font-bold ndb:text-emerald-900 ndb:dark:text-emerald-200">No high-confidence issue detected</p><p class="ndb:mt-1 ndb:text-[11px] ndb:leading-relaxed ndb:text-emerald-800/80 ndb:dark:text-emerald-300/80">Review the activity below when you are checking a specific request detail.</p></div></div>
                                         @endif
@@ -322,7 +322,7 @@
                                             </div>
                                         </div>
                                     @elseif (! in_array($sectionKey, ['queries', 'authorization'], true))
-                                        <x-new-debug-bar::finding-list :findings="$sectionFindings" title="Related findings" />
+                                        <x-newdebugbar::finding-list :findings="$sectionFindings" title="Related findings" />
                                     @endif
 
                                     @if ($sectionKey === 'timeline')
@@ -399,7 +399,7 @@
                                                 </ol>
                                             </div>
                                         </div>
-                                        <div x-show.important="visibleTimelineCount === 0"><x-new-debug-bar::empty-state label="No timeline events match these filters." /></div>
+                                        <div x-show.important="visibleTimelineCount === 0"><x-newdebugbar::empty-state label="No timeline events match these filters." /></div>
                                     @elseif ($sectionKey === 'request')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:lg:grid-cols-4">
                                             @foreach (['method' => 'Method', 'status' => 'Status', 'route' => 'Route', 'action' => 'Controller'] as $key => $label)
@@ -432,7 +432,7 @@
                                             </div>
                                         </div>
                                         <details class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Middleware pipeline</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">{{ count($section['payload']['middleware'] ?? []) }} configured steps</span></span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
+                                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Middleware pipeline</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">{{ count($section['payload']['middleware'] ?? []) }} configured steps</span></span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
                                             <ol class="ndb:list-none ndb:space-y-2 ndb:border-t ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800">
                                                 @forelse ($section['payload']['middleware'] ?? [] as $position => $middleware)
                                                     <li class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:text-xs"><span class="ndb:w-5 ndb:shrink-0 ndb:text-right ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $position + 1 }}</span><code class="ndb:truncate">{{ $middleware }}</code></li>
@@ -441,7 +441,7 @@
                                                 @endforelse
                                             </ol>
                                         </details>
-                                        <details class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Raw request data</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">Headers, inputs, session shape, and internal capture fields</span></span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($section['payload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
+                                        <details class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Raw request data</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">Headers, inputs, session shape, and internal capture fields</span></span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($section['payload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
                                     @elseif ($sectionKey === 'queries')
                                         @php($querySummary = $section['summary'])
                                         @php($queryNPlusOneCount = count(array_filter($sectionFindings, fn (array $finding): bool => $finding['rule_id'] === 'query.n_plus_one')))
@@ -506,7 +506,7 @@
 
                                         <div x-ref="queryItems" class="ndb:space-y-3">
                                             @foreach ($section['payload']['items'] as $query)
-                                                <x-new-debug-bar::query-execution :query="$query" :identity="'item-'.$query['execution']" :explain="$queryExplains[$query['execution']] ?? null" :explain-error="$queryExplainErrors[$query['execution']] ?? null" filterable />
+                                                <x-newdebugbar::query-execution :query="$query" :identity="'item-'.$query['execution']" :explain="$queryExplains[$query['execution']] ?? null" :explain-error="$queryExplainErrors[$query['execution']] ?? null" filterable />
                                             @endforeach
                                         </div>
 
@@ -523,7 +523,7 @@
                                                 >
                                                     <div class="ndb:bg-gradient-to-br ndb:from-violet-50 ndb:via-white ndb:to-rose-50/70 ndb:p-4 ndb:dark:from-violet-950/45 ndb:dark:via-zinc-950 ndb:dark:to-rose-950/25">
                                                         <div class="ndb:flex ndb:items-start ndb:gap-3">
-                                                            <span class="ndb:grid ndb:size-10 ndb:shrink-0 ndb:place-items-center ndb:rounded-xl ndb:bg-violet-100 ndb:text-violet-700 ndb:dark:bg-violet-900/60 ndb:dark:text-violet-300"><x-new-debug-bar::icon name="database" class="ndb:size-5" /></span>
+                                                            <span class="ndb:grid ndb:size-10 ndb:shrink-0 ndb:place-items-center ndb:rounded-xl ndb:bg-violet-100 ndb:text-violet-700 ndb:dark:bg-violet-900/60 ndb:dark:text-violet-300"><x-newdebugbar::icon name="database" class="ndb:size-5" /></span>
                                                             <div class="ndb:min-w-0 ndb:flex-1"><h3 data-ndb-query-group-count class="ndb:text-sm ndb:font-bold">{{ $group['count'] }} matching executions</h3><p data-ndb-query-group-extra class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $group['extra_executions'] }} extra {{ $group['extra_executions'] === 1 ? 'execution' : 'executions' }} from one query pattern</p></div>
                                                             <div class="ndb:shrink-0 ndb:text-right"><p data-ndb-query-group-duration class="ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $group['duration_ms'] }} ms</p><p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">Total query time</p></div>
                                                         </div>
@@ -534,13 +534,13 @@
                                                         @endif
                                                     </div>
                                                     <div data-ndb-query-group-pattern class="ndb:border-y ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/70">
-                                                        <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-4 ndb:py-2 ndb:text-zinc-600 ndb:dark:text-zinc-300"><span class="ndb:text-[10px] ndb:font-bold">Query pattern</span><button type="button" @click="copyText(@js($group['sql']))" class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-200/70 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-violet-400 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white" aria-label="Copy repeated query pattern" title="Copy query pattern"><x-new-debug-bar::icon name="copy" class="ndb:size-3.5" /></button></div>
+                                                        <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-4 ndb:py-2 ndb:text-zinc-600 ndb:dark:text-zinc-300"><span class="ndb:text-[10px] ndb:font-bold">Query pattern</span><button type="button" @click="copyText(@js($group['sql']))" class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-lg ndb:text-zinc-500 ndb:transition ndb:hover:bg-zinc-200/70 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-violet-400 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white" aria-label="Copy repeated query pattern" title="Copy query pattern"><x-newdebugbar::icon name="copy" class="ndb:size-3.5" /></button></div>
                                                         <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800"><code data-ndb-language="sql">{{ $group['sql'] }}</code></pre>
                                                     </div>
                                                     <div data-ndb-query-group-executions class="ndb:space-y-2 ndb:p-3">
                                                         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-1"><h4 class="ndb:text-xs ndb:font-bold">Executions</h4><span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Ordered by the selected sort</span></div>
                                                         @foreach ($group['executions'] as $execution)
-                                                            <x-new-debug-bar::query-execution :query="$execution" :identity="'group-'.$group['fingerprint'].'-'.$execution['execution']" :explain="$queryExplains[$execution['execution']] ?? null" :explain-error="$queryExplainErrors[$execution['execution']] ?? null" grouped />
+                                                            <x-newdebugbar::query-execution :query="$execution" :identity="'group-'.$group['fingerprint'].'-'.$execution['execution']" :explain="$queryExplains[$execution['execution']] ?? null" :explain-error="$queryExplainErrors[$execution['execution']] ?? null" grouped />
                                                         @endforeach
                                                     </div>
                                                 </article>
@@ -548,7 +548,7 @@
                                         </div>
 
                                         <div x-show.important="visibleQueryCount === 0">
-                                            <x-new-debug-bar::empty-state label="No queries match these filters." />
+                                            <x-newdebugbar::empty-state label="No queries match these filters." />
                                         </div>
                                     @elseif ($sectionKey === 'livewire')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
@@ -583,7 +583,7 @@
                                                     @endif
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No application Livewire updates were captured." />
+                                                <x-newdebugbar::empty-state label="No application Livewire updates were captured." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'http_client')
@@ -600,7 +600,7 @@
                                                     <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No outbound HTTP requests were captured." />
+                                                <x-newdebugbar::empty-state label="No outbound HTTP requests were captured." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'queue')
@@ -617,7 +617,7 @@
                                                     @if (($item['kind'] ?? null) !== 'queued')<span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>@elseif (($item['delay_seconds'] ?? null) !== null)<span class="ndb:shrink-0 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ $item['delay_seconds'] }} s delay</span>@endif
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No queue activity was captured." />
+                                                <x-newdebugbar::empty-state label="No queue activity was captured." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'mail')
@@ -638,9 +638,9 @@
                                                             <p class="ndb:text-xs ndb:font-semibold">{{ $item['preview']['subject'] ?: '(No subject)' }}</p>
                                                             <p class="ndb:break-all ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">To: {{ implode(', ', $item['preview']['to']) ?: '(none)' }}</p>
                                                             <div class="ndb:flex ndb:flex-wrap ndb:gap-2">
-                                                                @if (is_string($item['preview']['html'] ?? null))<a href="{{ route('new-debug-bar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'html']) }}" target="_blank" rel="noreferrer" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Open HTML preview</a>@endif
-                                                                @if (is_string($item['preview']['text'] ?? null))<a href="{{ route('new-debug-bar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'text']) }}" target="_blank" rel="noreferrer" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Open text preview</a>@endif
-                                                                <a href="{{ route('new-debug-bar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'eml']) }}" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Download .eml</a>
+                                                                @if (is_string($item['preview']['html'] ?? null))<a href="{{ route('newdebugbar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'html']) }}" target="_blank" rel="noreferrer" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Open HTML preview</a>@endif
+                                                                @if (is_string($item['preview']['text'] ?? null))<a href="{{ route('newdebugbar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'text']) }}" target="_blank" rel="noreferrer" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Open text preview</a>@endif
+                                                                <a href="{{ route('newdebugbar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'eml']) }}" class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-semibold ndb:hover:bg-zinc-100 ndb:dark:border-zinc-700 ndb:dark:hover:bg-zinc-800">Download .eml</a>
                                                             </div>
                                                             @if (($item['preview']['attachments_omitted'] ?? 0) > 0 || ($item['preview']['addresses_omitted'] ?? 0) > 0 || ($item['preview']['truncated'] ?? false))
                                                                 <p class="ndb:text-[10px] ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">@if (($item['preview']['attachments_omitted'] ?? 0) > 0){{ $item['preview']['attachments_omitted'] }} attachments omitted.@endif @if (($item['preview']['addresses_omitted'] ?? 0) > 0){{ $item['preview']['addresses_omitted'] }} addresses omitted.@endif @if ($item['preview']['truncated'] ?? false)Preview content was bounded.@endif</p>
@@ -649,7 +649,7 @@
                                                     @endif
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No mail was sent." />
+                                                <x-newdebugbar::empty-state label="No mail was sent." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'notifications')
@@ -665,7 +665,7 @@
                                                     <div class="ndb:min-w-0 ndb:flex-1"><code title="{{ $item['notification'] }}" class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ class_basename($item['notification']) }}</code><p class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span>{{ $item['channel'] }}</span><span title="{{ $item['notifiable_type'] }}">{{ class_basename($item['notifiable_type']) }}</span></p></div>
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No notifications were sent." />
+                                                <x-newdebugbar::empty-state label="No notifications were sent." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'redis')
@@ -682,7 +682,7 @@
                                                     <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No direct Redis commands were captured." />
+                                                <x-newdebugbar::empty-state label="No direct Redis commands were captured." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'authorization')
@@ -710,10 +710,10 @@
                                                 @endforeach
                                             </div>
                                             <div x-show.important="visibleAuthorizationCount === 0">
-                                                <x-new-debug-bar::empty-state label="No authorization decisions match this filter." />
+                                                <x-newdebugbar::empty-state label="No authorization decisions match this filter." />
                                             </div>
                                         @else
-                                            <x-new-debug-bar::empty-state label="No authorization decisions were captured." />
+                                            <x-newdebugbar::empty-state label="No authorization decisions were captured." />
                                         @endif
                                     @elseif ($sectionKey === 'validation')
                                         <div class="ndb:space-y-3">
@@ -721,10 +721,10 @@
                                                 <article wire:key="validation-{{ $index }}" class="ndb:rounded-xl ndb:border ndb:border-amber-200 ndb:bg-amber-50/35 ndb:p-4 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/15">
                                                     <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2"><span class="ndb:text-xs ndb:font-bold">{{ count($item['fields']) }} invalid fields</span><span class="ndb:ml-auto ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"><span>{{ $item['error_bag'] }} bag</span><span>HTTP {{ $item['response_status'] }}</span></span></div>
                                                     <dl class="ndb:mt-3 ndb:space-y-2">@foreach ($item['rules'] as $field => $rules)<div class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:gap-2"><dt class="ndb:min-w-24 ndb:font-mono ndb:text-[10px] ndb:font-bold">{{ $field }}</dt><dd class="ndb:flex ndb:flex-wrap ndb:gap-1">@foreach ($rules as $rule)<span class="ndb:rounded-md ndb:bg-amber-100 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-semibold ndb:text-amber-800 ndb:dark:bg-amber-950 ndb:dark:text-amber-300">{{ $rule }}</span>@endforeach</dd></div>@endforeach</dl>
-                                                    @if (($item['messages'] ?? []) !== [])<details class="ndb:group ndb:mt-3 ndb:border-t ndb:border-amber-200 ndb:pt-3 ndb:dark:border-amber-950"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-bold ndb:text-amber-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-amber-500 ndb:dark:text-amber-300"><span class="ndb:flex-1">Show validation messages</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><dl class="ndb:mt-2 ndb:space-y-2">@foreach ($item['messages'] as $field => $messages)<div><dt class="ndb:font-mono ndb:text-[10px] ndb:font-bold">{{ $field }}</dt><dd class="ndb:mt-0.5 ndb:text-xs">{{ implode(' ', (array) $messages) }}</dd></div>@endforeach</dl></details>@endif
+                                                    @if (($item['messages'] ?? []) !== [])<details class="ndb:group ndb:mt-3 ndb:border-t ndb:border-amber-200 ndb:pt-3 ndb:dark:border-amber-950"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-bold ndb:text-amber-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-amber-500 ndb:dark:text-amber-300"><span class="ndb:flex-1">Show validation messages</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><dl class="ndb:mt-2 ndb:space-y-2">@foreach ($item['messages'] as $field => $messages)<div><dt class="ndb:font-mono ndb:text-[10px] ndb:font-bold">{{ $field }}</dt><dd class="ndb:mt-0.5 ndb:text-xs">{{ implode(' ', (array) $messages) }}</dd></div>@endforeach</dl></details>@endif
                                                 </article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No validation failures were captured." success />
+                                                <x-newdebugbar::empty-state label="No validation failures were captured." success />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'lifecycle')
@@ -735,7 +735,7 @@
                                             @forelse ($section['payload']['items'] as $index => $item)
                                                 <article wire:key="lifecycle-{{ $index }}" class="ndb:flex ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:px-3.5 ndb:py-3 ndb:dark:border-zinc-800"><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:text-xs ndb:font-semibold">{{ $item['name'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span></article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="Laravel did not expose lifecycle spans for this profile." />
+                                                <x-newdebugbar::empty-state label="Laravel did not expose lifecycle spans for this profile." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'messages')
@@ -743,33 +743,33 @@
                                             @forelse ($section['payload']['items'] as $index => $item)
                                                 <article wire:key="message-{{ $index }}" class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><div class="ndb:flex ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1 ndb:text-xs ndb:font-bold">{{ $item['label'] }}</span><span class="ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">{{ $item['at_ms'] }} ms</span></div>@if (($item['context'] ?? []) !== [])<pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>@endif</article>
                                             @empty
-                                                <x-new-debug-bar::empty-state label="No developer messages were recorded." />
+                                                <x-newdebugbar::empty-state label="No developer messages were recorded." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'models')
                                         <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3"><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Model classes</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $section['summary']['model_classes'] }}</p></div><div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800"><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Lifecycle events</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ count($section['summary']['lifecycle_events']) }}</p></div></div>
                                         @forelse ($section['payload']['groups'] as $index => $group)
-                                            <details data-ndb-model-group data-count="{{ $group['count'] }}" wire:key="model-group-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1"><span title="{{ $group['model'] }}" class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ class_basename($group['model']) }}</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ str($group['event'])->title() }}</span></span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $group['count'] }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($group['items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
+                                            <details data-ndb-model-group data-count="{{ $group['count'] }}" wire:key="model-group-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1"><span title="{{ $group['model'] }}" class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ class_basename($group['model']) }}</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ str($group['event'])->title() }}</span></span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $group['count'] }}</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($group['items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
                                         @empty
-                                            <x-new-debug-bar::empty-state label="No model activity was captured." />
+                                            <x-newdebugbar::empty-state label="No model activity was captured." />
                                         @endforelse
                                     @elseif ($sectionKey === 'cache')
                                         <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-zinc-200 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">@foreach ([['Hit rate', $section['summary']['hit_rate'].'%'], ['Hits', $section['summary']['hits']], ['Misses', $section['summary']['misses']], ['Writes', $section['summary']['writes']]] as [$label, $value])<div class="ndb:px-3 ndb:py-2.5"><dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">{{ $label }}</dt><dd class="ndb:mt-0.5 ndb:text-sm ndb:font-bold ndb:tabular-nums">{{ $value }}</dd></div>@endforeach</dl>
                                         @if ($section['payload']['repeated_misses'] !== [])<div class="ndb:rounded-xl ndb:border ndb:border-amber-200 ndb:bg-amber-50/40 ndb:p-4 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20"><h3 class="ndb:text-xs ndb:font-bold">Repeated misses</h3><div class="ndb:mt-3 ndb:space-y-2">@foreach ($section['payload']['repeated_misses'] as $miss)<div class="ndb:flex ndb:items-center ndb:gap-3"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">Protected key #{{ substr($miss['key_hash'], 0, 8) }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $miss['count'] }} misses</span></div>@endforeach</div></div>@endif
-                                        <div class="ndb:space-y-2">@foreach ($section['payload']['items'] as $index => $item)<details wire:key="cache-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-semibold"><span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['operation'] }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">{{ ($item['key_policy'] ?? 'hash') === 'full' ? ($item['key'] ?? 'No key') : (isset($item['key_hash']) ? 'Protected key #'.substr($item['key_hash'], 0, 8) : 'No key') }}</span><span class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400">Details</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>@endforeach</div>
+                                        <div class="ndb:space-y-2">@foreach ($section['payload']['items'] as $index => $item)<details wire:key="cache-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-semibold"><span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['operation'] }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">{{ ($item['key_policy'] ?? 'hash') === 'full' ? ($item['key'] ?? 'No key') : (isset($item['key_hash']) ? 'Protected key #'.substr($item['key_hash'], 0, 8) : 'No key') }}</span><span class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400">Details</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>@endforeach</div>
                                     @elseif ($sectionKey === 'views')
                                         <div class="ndb:flex ndb:items-end ndb:justify-between ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:dark:border-zinc-800"><div><p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Unique views</p><p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $section['summary']['unique_views'] }}</p></div><p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Timing appears when Laravel exposes reliable render spans.</p></div>
                                         @forelse ($section['payload']['groups'] as $index => $group)
                                             <details wire:key="view-group-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $group['name'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $group['count'] }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
+                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $group['name'] }}</span><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $group['count'] }}</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
                                                 <div class="ndb:space-y-2 ndb:border-t ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">@foreach ($group['items'] as $view)<article class="ndb:rounded-lg ndb:bg-zinc-50/70 ndb:p-3 ndb:dark:bg-zinc-900/60"><div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3"><span class="ndb:text-[9px] ndb:font-bold ndb:text-zinc-400">#{{ $view['render_order'] }}</span><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">{{ $view['source']['file'] ?? 'Source not exposed' }}@if (isset($view['source']['line'])):{{ $view['source']['line'] }}@endif</code>@if (is_string($view['source']['editor_url'] ?? null))<a href="{{ $view['source']['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a>@endif</div><p class="ndb:mt-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">Data keys: {{ implode(', ', $view['data_keys'] ?? []) ?: 'none' }}</p>@if (($view['composers'] ?? []) !== [])<div class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-2">@foreach ($view['composers'] as $composer)<span class="ndb:text-[10px] ndb:font-semibold">{{ $composer['name'] }} @if (is_string($composer['source']['editor_url'] ?? null))<a href="{{ $composer['source']['editor_url'] }}" class="ndb:text-indigo-600 ndb:dark:text-indigo-300">Open</a>@endif</span>@endforeach</div>@endif</article>@endforeach</div>
                                             </details>
                                         @empty
-                                            <x-new-debug-bar::empty-state label="No views were captured." />
+                                            <x-newdebugbar::empty-state label="No views were captured." />
                                         @endforelse
                                     @elseif ($sectionKey === 'events')
                                         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800"><div class="ndb:flex-1"><p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Source</p><div class="ndb:flex" role="group" aria-label="Filter events by source">@foreach (['application' => 'Application', 'all' => 'All', 'framework' => 'Framework'] as $source => $label)<button type="button" data-ndb-event-source="{{ $source }}" @click="setEventSource(@js($source))" :aria-pressed="eventSource === @js($source)" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold" :class="eventSource === @js($source) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'">{{ $label }}</button>@endforeach</div></div><label class="ndb:sm:w-72"><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Search</span><input data-ndb-event-search x-model="eventSearch" @input.debounce.100ms="applyEventFilters()" type="search" placeholder="Event name" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label></div><p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleEventCount"></span> events <span x-show.important="eventSource === 'application'">from application code</span></p>
-                                        <div x-ref="eventList" x-init="$nextTick(() => applyEventFilters())" class="ndb:space-y-2">@foreach ($section['payload']['items'] as $index => $item)<details data-ndb-event-item data-source="{{ $item['source'] }}" data-search="{{ mb_strtolower($item['name']) }}" wire:key="event-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $item['name'] }}</span>@if ($item['broadcast'] ?? false)<span class="ndb:text-[9px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Broadcast</span>@endif<span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['source'] }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><div class="ndb:space-y-2 ndb:border-t ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">@forelse ($item['listeners'] ?? [] as $listener)<div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3"><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">{{ $listener['name'] }}</code>@if (is_string($listener['source']['editor_url'] ?? null))<a href="{{ $listener['source']['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a>@endif</div>@empty<p class="ndb:text-[10px] ndb:text-zinc-400">No application listener source was exposed.</p>@endforelse</div></details>@endforeach</div><div x-show.important="visibleEventCount === 0"><x-new-debug-bar::empty-state label="No events match these filters." /></div>
+                                        <div x-ref="eventList" x-init="$nextTick(() => applyEventFilters())" class="ndb:space-y-2">@foreach ($section['payload']['items'] as $index => $item)<details data-ndb-event-item data-source="{{ $item['source'] }}" data-search="{{ mb_strtolower($item['name']) }}" wire:key="event-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $item['name'] }}</span>@if ($item['broadcast'] ?? false)<span class="ndb:text-[9px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Broadcast</span>@endif<span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['source'] }}</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><div class="ndb:space-y-2 ndb:border-t ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">@forelse ($item['listeners'] ?? [] as $listener)<div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3"><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">{{ $listener['name'] }}</code>@if (is_string($listener['source']['editor_url'] ?? null))<a href="{{ $listener['source']['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a>@endif</div>@empty<p class="ndb:text-[10px] ndb:text-zinc-400">No application listener source was exposed.</p>@endforelse</div></details>@endforeach</div><div x-show.important="visibleEventCount === 0"><x-newdebugbar::empty-state label="No events match these filters." /></div>
                                     @elseif ($sectionKey === 'logs')
                                         @php($logLevels = array_values(array_unique(array_column($section['payload']['items'], 'level'))))
                                         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800"><div class="ndb:min-w-0 ndb:flex-1"><p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Level</p><div class="ndb:flex ndb:overflow-x-auto"><button type="button" data-ndb-log-level="all" @click="setLogLevel('all')" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold" :class="logLevel === 'all' ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'">All</button>@foreach ($logLevels as $level)<button type="button" data-ndb-log-level="{{ $level }}" @click="setLogLevel(@js($level))" class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold" :class="logLevel === @js($level) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'">{{ strtoupper($level) }}</button>@endforeach</div></div><label class="ndb:sm:w-72"><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Search</span><input data-ndb-log-search x-model="logSearch" @input.debounce.100ms="applyLogFilters()" type="search" placeholder="Log message" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label></div><p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"><span x-text="visibleLogCount"></span> logs</p>
@@ -777,16 +777,16 @@
                                             @foreach ($section['payload']['items'] as $index => $item)
                                                 @php($logCallsite = $item['callsite'] ?? null)
                                                 <details data-ndb-log-item data-level="{{ $item['level'] }}" data-search="{{ mb_strtolower($item['message']) }}" wire:key="log-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['level'] }}</span><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold">{{ $item['message'] }}</span>@if ($logCallsite)<span class="ndb:mt-0.5 ndb:block ndb:truncate ndb:text-[10px] ndb:text-zinc-400">{{ $logCallsite['file'] }}:{{ $logCallsite['line'] }}</span>@endif</span><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $item['at_ms'] }} ms</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
+                                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3"><span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['level'] }}</span><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold">{{ $item['message'] }}</span>@if ($logCallsite)<span class="ndb:mt-0.5 ndb:block ndb:truncate ndb:text-[10px] ndb:text-zinc-400">{{ $logCallsite['file'] }}:{{ $logCallsite['line'] }}</span>@endif</span><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $item['at_ms'] }} ms</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
                                                     @if ($logCallsite)<div class="ndb:flex ndb:justify-end ndb:gap-3 ndb:border-t ndb:border-zinc-200 ndb:px-3 ndb:py-2 ndb:dark:border-zinc-800"><button type="button" data-ndb-copy-log-callsite="{{ $index }}" @click="copyText(@js($logCallsite['file'].':'.$logCallsite['line']))" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Copy file and line</button>@if (is_string($logCallsite['editor_url'] ?? null))<a href="{{ $logCallsite['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a>@endif</div>@endif
                                                     <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
                                                 </details>
                                             @endforeach
-                                        </div><div x-show.important="visibleLogCount === 0"><x-new-debug-bar::empty-state label="No logs match these filters." /></div>
+                                        </div><div x-show.important="visibleLogCount === 0"><x-newdebugbar::empty-state label="No logs match these filters." /></div>
                                     @elseif ($sectionKey === 'exceptions')
                                         @forelse ($section['payload']['items'] as $index => $exception)
                                             <article wire:key="exception-{{ $index }}" class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-red-200 ndb:dark:border-red-950">
-                                                <div class="ndb:flex ndb:items-start ndb:gap-3 ndb:bg-red-50 ndb:p-4 ndb:dark:bg-red-950/50"><span class="ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-red-100 ndb:text-red-600 ndb:dark:bg-red-950 ndb:dark:text-red-300"><x-new-debug-bar::icon name="warning" class="ndb:size-4" /></span><div class="ndb:min-w-0 ndb:flex-1"><p class="ndb:truncate ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">{{ $exception['class'] }}</p><p class="ndb:mt-1 ndb:text-sm ndb:font-semibold">{{ $exception['message'] ?: 'No message' }}</p><div class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3"><button type="button" data-ndb-copy-exception-callsite="{{ $index }}" @click="copyText(@js($exception['file'].':'.$exception['line']))" class="ndb:min-w-0 ndb:truncate ndb:text-left ndb:text-[10px] ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500">{{ $exception['file'] }}:{{ $exception['line'] }}</button>@if (is_string($exception['location']['editor_url'] ?? null))<a href="{{ $exception['location']['editor_url'] }}" class="ndb:shrink-0 ndb:text-[10px] ndb:font-bold ndb:text-red-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-red-300">Open in editor</a>@endif</div></div></div>
+                                                <div class="ndb:flex ndb:items-start ndb:gap-3 ndb:bg-red-50 ndb:p-4 ndb:dark:bg-red-950/50"><span class="ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-red-100 ndb:text-red-600 ndb:dark:bg-red-950 ndb:dark:text-red-300"><x-newdebugbar::icon name="warning" class="ndb:size-4" /></span><div class="ndb:min-w-0 ndb:flex-1"><p class="ndb:truncate ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">{{ $exception['class'] }}</p><p class="ndb:mt-1 ndb:text-sm ndb:font-semibold">{{ $exception['message'] ?: 'No message' }}</p><div class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3"><button type="button" data-ndb-copy-exception-callsite="{{ $index }}" @click="copyText(@js($exception['file'].':'.$exception['line']))" class="ndb:min-w-0 ndb:truncate ndb:text-left ndb:text-[10px] ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500">{{ $exception['file'] }}:{{ $exception['line'] }}</button>@if (is_string($exception['location']['editor_url'] ?? null))<a href="{{ $exception['location']['editor_url'] }}" class="ndb:shrink-0 ndb:text-[10px] ndb:font-bold ndb:text-red-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-red-300">Open in editor</a>@endif</div></div></div>
                                                 @if ($exception['source'] ?? null)
                                                     @php($sourceText = implode("\n", array_map(fn (array $line): string => sprintf('%4d%s %s', $line['number'], $line['focus'] ? '>' : ' ', $line['code']), $exception['source']['lines'])))
                                                     <pre class="ndb-code ndb-scrollbar ndb:max-h-72 ndb:rounded-none ndb:border-b ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="php">{{ $sourceText }}</code></pre>
@@ -794,20 +794,20 @@
                                                 <div class="ndb:p-4">
                                                     <h3 class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Application frames</h3>
                                                     <ol class="ndb:mt-3 ndb:list-none ndb:space-y-2">@forelse ($exception['frames']['application'] ?? [] as $frame)<li class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:text-xs"><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $frame['file'] }}:{{ $frame['line'] }}</code><span class="ndb:max-w-[35%] ndb:truncate ndb:text-zinc-400">{{ $frame['function'] }}</span>@if (is_string($frame['editor_url'] ?? null))<a href="{{ $frame['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Open</a>@endif</li>@empty<li class="ndb:text-xs ndb:text-zinc-400">No application frames were captured.</li>@endforelse</ol>
-                                                    <details class="ndb:group ndb:mt-4 ndb:border-t ndb:border-zinc-200 ndb:pt-3 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"><span class="ndb:flex-1">Vendor frames ({{ count($exception['frames']['vendor'] ?? []) }})</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><ol class="ndb:mt-3 ndb:list-none ndb:space-y-2">@foreach ($exception['frames']['vendor'] ?? [] as $frame)<li class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:text-xs"><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $frame['file'] }}:{{ $frame['line'] }}</code><span class="ndb:max-w-[35%] ndb:truncate ndb:text-zinc-400">{{ $frame['function'] }}</span>@if (is_string($frame['editor_url'] ?? null))<a href="{{ $frame['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Open</a>@endif</li>@endforeach</ol></details>
+                                                    <details class="ndb:group ndb:mt-4 ndb:border-t ndb:border-zinc-200 ndb:pt-3 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"><span class="ndb:flex-1">Vendor frames ({{ count($exception['frames']['vendor'] ?? []) }})</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:transition ndb:group-open:rotate-180" /></summary><ol class="ndb:mt-3 ndb:list-none ndb:space-y-2">@foreach ($exception['frames']['vendor'] ?? [] as $frame)<li class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:text-xs"><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $frame['file'] }}:{{ $frame['line'] }}</code><span class="ndb:max-w-[35%] ndb:truncate ndb:text-zinc-400">{{ $frame['function'] }}</span>@if (is_string($frame['editor_url'] ?? null))<a href="{{ $frame['editor_url'] }}" class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Open</a>@endif</li>@endforeach</ol></details>
                                                 </div>
                                             </article>
                                         @empty
-                                            <x-new-debug-bar::empty-state label="No exceptions were reported." success />
+                                            <x-newdebugbar::empty-state label="No exceptions were reported." success />
                                         @endforelse
                                     @elseif ($sectionKey !== 'overview')
                                         @forelse ($section['payload']['items'] as $index => $item)
                                             <details wire:key="{{ $sectionKey }}-{{ $index }}" class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800">
-                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:transition ndb:hover:bg-zinc-50 ndb:dark:hover:bg-zinc-900"><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $item['model'] ?? $item['name'] ?? $item['event'] ?? $item['level'] ?? $item['operation'] ?? $section['label'] }}</span><x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
+                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:transition ndb:hover:bg-zinc-50 ndb:dark:hover:bg-zinc-900"><span class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">#{{ $index + 1 }}</span><span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $item['model'] ?? $item['name'] ?? $item['event'] ?? $item['level'] ?? $item['operation'] ?? $section['label'] }}</span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary>
                                                 <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
                                             </details>
                                         @empty
-                                            <x-new-debug-bar::empty-state :label="'No '.strtolower($section['label']).' were captured.'" />
+                                            <x-newdebugbar::empty-state :label="'No '.strtolower($section['label']).' were captured.'" />
                                         @endforelse
                                     @endif
                                 </section>
@@ -820,7 +820,7 @@
                                     <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-indigo-200 ndb:bg-indigo-50/50 ndb:px-3.5 ndb:py-3 ndb:dark:border-indigo-950 ndb:dark:bg-indigo-950/20"><div class="ndb:min-w-0 ndb:flex-1"><p class="ndb:text-xs ndb:font-bold">Inspecting an earlier request</p><p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">The compact bar and sections show this selected request.</p></div><button type="button" data-ndb-return-current wire:click="returnToCurrent" wire:loading.attr="disabled" wire:loading.attr="aria-busy" class="ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50"><span wire:loading.remove wire:target="returnToCurrent">Back to current request</span><span wire:loading wire:target="returnToCurrent">Returning…</span></button></div>
                                 @endif
                                 <details data-ndb-history-filters class="ndb:group ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/40 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25">
-                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:flex-1">Filters</span><span x-show.important="historyPath !== '' || historyMethod !== '' || historyStatus !== ''" class="ndb:text-[10px] ndb:text-indigo-600 ndb:dark:text-indigo-300">Active</span><x-new-debug-bar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition" /></summary>
+                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:flex-1">Filters</span><span x-show.important="historyPath !== '' || historyMethod !== '' || historyStatus !== ''" class="ndb:text-[10px] ndb:text-indigo-600 ndb:dark:text-indigo-300">Active</span><x-newdebugbar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition" /></summary>
                                     <div class="ndb:grid ndb:gap-3 ndb:border-t ndb:border-zinc-200/80 ndb:p-3.5 ndb:md:grid-cols-3 ndb:dark:border-zinc-800">
                                         <label><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Path</span><input data-ndb-history-path x-model="historyPath" @input.debounce.100ms="applyHistoryFilters()" type="search" placeholder="Filter by path" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
                                         <label><span class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Method</span><input data-ndb-history-method x-model="historyMethod" @input.debounce.100ms="applyHistoryFilters()" type="search" placeholder="GET" class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:uppercase ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70" /></label>
@@ -868,7 +868,7 @@
                                         </article>
                                     @endforeach
                                 </div>
-                                <div x-show.important="visibleHistoryCount === 0"><x-new-debug-bar::empty-state label="No requests match these filters." /></div>
+                                <div x-show.important="visibleHistoryCount === 0"><x-newdebugbar::empty-state label="No requests match these filters." /></div>
                             </section>
                         </div>
                     @elseif ($detailsLoaded)
@@ -881,7 +881,7 @@
 
     <div x-cloak x-show.important="paletteOpen" class="ndb:pointer-events-auto ndb:fixed ndb:inset-0 ndb:z-50 ndb:grid ndb:justify-items-center ndb:bg-zinc-950/45 ndb:px-3 ndb:pt-[12vh] ndb:backdrop-blur-sm" @click.self="closePalette()">
         <div x-show.important="paletteOpen" x-transition @keydown="keepFocusWithin($event, $el)" class="ndb:w-full ndb:max-w-xl ndb:self-start ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-white/70 ndb:bg-white/90 ndb:shadow-2xl ndb:backdrop-blur-2xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/90" role="dialog" aria-modal="true" aria-label="Command palette">
-            <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:dark:border-zinc-800"><x-new-debug-bar::icon name="search" class="ndb:size-5 ndb:text-zinc-400" /><input data-ndb-palette-search x-ref="paletteSearch" x-model="paletteSearch" @input="paletteIndex = 0" @keydown.down.prevent="movePalette(1)" @keydown.up.prevent="movePalette(-1)" @keydown.enter.prevent="runActiveCommand()" type="search" placeholder="Jump to a section or change a setting…" class="ndb:h-14 ndb:min-w-0 ndb:flex-1 ndb:border-0 ndb:bg-transparent ndb:text-sm ndb:font-medium ndb:outline-none ndb:placeholder:text-zinc-400" /><kbd class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-1.5 ndb:py-1 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-800">ESC</kbd></div>
+            <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:dark:border-zinc-800"><x-newdebugbar::icon name="search" class="ndb:size-5 ndb:text-zinc-400" /><input data-ndb-palette-search x-ref="paletteSearch" x-model="paletteSearch" @input="paletteIndex = 0" @keydown.down.prevent="movePalette(1)" @keydown.up.prevent="movePalette(-1)" @keydown.enter.prevent="runActiveCommand()" type="search" placeholder="Jump to a section or change a setting…" class="ndb:h-14 ndb:min-w-0 ndb:flex-1 ndb:border-0 ndb:bg-transparent ndb:text-sm ndb:font-medium ndb:outline-none ndb:placeholder:text-zinc-400" /><kbd class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-1.5 ndb:py-1 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-800">ESC</kbd></div>
             <div class="ndb-scrollbar ndb:max-h-[min(420px,60vh)] ndb:overflow-y-auto ndb:p-2">
                 <template x-for="command in allCommands" :key="command.id">
                     <button x-show.important="commandIndex(command.id) !== -1" type="button" :data-ndb-command="command.id" @mouseenter="paletteIndex = commandIndex(command.id)" @click="runCommand(command.id)" class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition" :class="filteredCommands[paletteIndex]?.id === command.id ? 'ndb:bg-blue-100/60 ndb:text-blue-700 ndb:dark:bg-indigo-950/60 ndb:dark:text-indigo-200' : 'ndb:text-zinc-700 ndb:dark:text-zinc-300'"><span class="ndb:flex-1 ndb:text-sm ndb:font-semibold" x-text="command.label"></span><span class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400" x-text="command.hint"></span></button>

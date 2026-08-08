@@ -8,10 +8,10 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\QueryExplainer;
 
 it('offers runnable SQL and runs manual SQLite explain only with complete full bindings', function () {
-    config()->set('new-debug-bar.collection.query_bindings', 'full');
+    config()->set('newdebugbar.collection.query_bindings', 'full');
     $this->app->forgetInstance(ProfileManager::class);
     $response = $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
-    $id = $response->headers->get('X-New-Debug-Bar-Profile');
+    $id = $response->headers->get('X-NewDebugBar-Profile');
     $stored = app(ProfileStore::class)->get($id);
     $profile = app(ProfilePresenter::class)->present($stored);
     $query = $profile['sections']['queries']['payload']['items'][0];

@@ -35,7 +35,7 @@ final class LivewireUpdateRecorder
             $snapshot = $this->decode($requestComponent['snapshot'] ?? null);
             $name = $snapshot['memo']['name'] ?? null;
 
-            if (! is_string($name) || $name === '' || $name === 'new-debug-bar.toolbar') {
+            if (! is_string($name) || $name === '' || $name === 'newdebugbar.toolbar') {
                 continue;
             }
 

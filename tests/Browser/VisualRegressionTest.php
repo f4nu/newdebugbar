@@ -7,10 +7,10 @@ function assertVisualDebugBaseline($page, string $name): void
 {
     $page->assertScript(<<<'JS'
         (() => {
-            if (document.getElementById('new-debug-bar-snapshot-style')) return true;
+            if (document.getElementById('newdebugbar-snapshot-style')) return true;
 
             const style = document.createElement('style');
-            style.id = 'new-debug-bar-snapshot-style';
+            style.id = 'newdebugbar-snapshot-style';
             style.textContent = `
                 * {
                     animation: none !important;
@@ -29,7 +29,7 @@ function assertVisualDebugBaseline($page, string $name): void
         JS)
         ->wait(0.1);
 
-    $filename = 'new-debug-bar-visual-'.bin2hex(random_bytes(8));
+    $filename = 'newdebugbar-visual-'.bin2hex(random_bytes(8));
     $page->screenshot(false, $filename);
     $actual = Screenshot::path($filename);
     expect($actual)->toBeFile();
@@ -115,13 +115,13 @@ function setVisualDebugTheme($page, string $theme, array $favorites = []): void
     ], JSON_THROW_ON_ERROR);
     $page->assertScript(<<<JS
         (() => {
-            localStorage.setItem('new-debug-bar.preferences.v1', '{$preferences}');
+            localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
 
             return true;
         })()
         JS)
         ->refresh()
-        ->assertAttribute('#new-debug-bar', 'data-theme', $theme);
+        ->assertAttribute('#newdebugbar', 'data-theme', $theme);
 }
 
 function selectVisualDebugSection($page, string $section): void
@@ -141,7 +141,7 @@ function stabilizeVisualDebugValues($page): void
         (() => {
             let numericIndex = 0;
             const walker = document.createTreeWalker(
-                document.getElementById('new-debug-bar'),
+                document.getElementById('newdebugbar'),
                 NodeFilter.SHOW_TEXT,
             );
 
@@ -218,10 +218,10 @@ function stabilizeVisualDebugValues($page): void
                 if (summary) summary.textContent = `${visibleItems} events across 10 ms`;
             }
 
-            if (! document.getElementById('new-debug-bar-visual-stability')) {
+            if (! document.getElementById('newdebugbar-visual-stability')) {
                 const style = document.createElement('style');
-                style.id = 'new-debug-bar-visual-stability';
-                style.textContent = '#new-debug-bar * { caret-color: transparent !important; }';
+                style.id = 'newdebugbar-visual-stability';
+                style.textContent = '#newdebugbar * { caret-color: transparent !important; }';
                 document.head.appendChild(style);
             }
 
@@ -231,7 +231,7 @@ function stabilizeVisualDebugValues($page): void
                 const mask = document.createElement('div');
                 mask.dataset.ndbVisualBottomMask = '';
                 mask.style.cssText = 'position:absolute;z-index:30;inset:auto 0 0;height:2px;pointer-events:none';
-                mask.style.backgroundColor = getComputedStyle(document.querySelector('#new-debug-bar main')).backgroundColor;
+                mask.style.backgroundColor = getComputedStyle(document.querySelector('#newdebugbar main')).backgroundColor;
                 inspector.appendChild(mask);
             }
 
@@ -383,7 +383,7 @@ it('matches the visual baseline for :dataset expanded query bindings', function 
         ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '')
         ->assertScript(<<<'JS'
             (() => {
-                const content = document.querySelector('#new-debug-bar main');
+                const content = document.querySelector('#newdebugbar main');
                 content.scrollTop = 0;
 
                 return content.scrollTop === 0;
@@ -521,7 +521,7 @@ it('matches the visual baseline for the :dataset narrow section drawer', functio
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-mobile-sections-toggle]')
-        ->assertVisible('#new-debug-bar-section-navigation')
+        ->assertVisible('#newdebugbar-section-navigation')
         ->assertVisible('[data-ndb-mobile-sections-backdrop]')
         ->assertScript(<<<'JS'
             (() => {

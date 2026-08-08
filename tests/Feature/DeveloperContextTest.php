@@ -17,7 +17,7 @@ use NewDebugBar\Tests\ProfiledModel;
 
 it('captures Laravel decisions lifecycle sources transactions and redacted messages', function () {
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
-    $stored = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $profile = app(ProfilePresenter::class)->present($stored);
 
     expect($profile['sections']['authorization']['payload']['items'][0])
@@ -63,8 +63,8 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
 it('captures validation field and rule names with the rendered redirect status', function () {
     $response = $this->from('/form')->post('/profiled-validation');
 
-    $response->assertRedirect('/form')->assertHeader('X-New-Debug-Bar-Profile');
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $response->assertRedirect('/form')->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $validation = $profile['sections']['validation']['payload']['items'][0];
 
     expect($validation)
@@ -75,7 +75,7 @@ it('captures validation field and rule names with the rendered redirect status',
         ->response_status->toBe(302)
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(0);
 
-    Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-New-Debug-Bar-Profile')])
+    Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-NewDebugBar-Profile')])
         ->call('loadDetails')
         ->assertSee('2 invalid fields')
         ->assertSee('signup bag')

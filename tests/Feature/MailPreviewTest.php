@@ -5,9 +5,9 @@ use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Storage\ProfileStore;
 
 it('stores and serves explicitly enabled local previews without attachments', function () {
-    config()->set('new-debug-bar.mail_preview.enabled', true);
+    config()->set('newdebugbar.mail_preview.enabled', true);
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
     $profile = app(ProfileStore::class)->get($profileId);
     $preview = $profile['sections']['mail']['payload']['items'][0]['preview'];
 
@@ -23,7 +23,7 @@ it('stores and serves explicitly enabled local previews without attachments', fu
     $profile['sections']['mail']['payload']['items'][0]['preview']['html'] = '<script>window.top.location="https://example.test"</script><h1>Safe preview</h1>';
     app(ProfileStore::class)->put($profile);
 
-    $this->get(route('new-debug-bar.mail-preview', [
+    $this->get(route('newdebugbar.mail-preview', [
         'profile' => $profileId,
         'index' => 0,
         'format' => 'html',
@@ -32,7 +32,7 @@ it('stores and serves explicitly enabled local previews without attachments', fu
         ->assertHeader('Content-Security-Policy', "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'")
         ->assertSee('Safe preview');
 
-    $textResponse = $this->get(route('new-debug-bar.mail-preview', [
+    $textResponse = $this->get(route('newdebugbar.mail-preview', [
         'profile' => $profileId,
         'index' => 0,
         'format' => 'text',
@@ -40,7 +40,7 @@ it('stores and serves explicitly enabled local previews without attachments', fu
     $textResponse->assertOk()->assertSeeText('private body');
     expect($textResponse->headers->get('Cache-Control'))->toContain('no-store', 'private');
 
-    $this->get(route('new-debug-bar.mail-preview', [
+    $this->get(route('newdebugbar.mail-preview', [
         'profile' => $profileId,
         'index' => 0,
         'format' => 'eml',
@@ -58,10 +58,10 @@ it('stores and serves explicitly enabled local previews without attachments', fu
 
 it('keeps preview routes unavailable when capture is disabled', function () {
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
     expect(app(ProfileStore::class)->get($profileId)['sections']['mail']['payload']['items'][0])
         ->not->toHaveKey('preview');
 
-    $this->get('/__new-debug-bar/mail/'.$profileId.'/0/text')->assertNotFound();
+    $this->get('/__newdebugbar/mail/'.$profileId.'/0/text')->assertNotFound();
 });

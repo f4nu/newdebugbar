@@ -18,7 +18,7 @@ final class LivewireMountRecorder
         on('mount', function (Component $component, array $params, mixed $key, mixed $parent): ?callable {
             $manager = $this->container->make(ProfileManager::class);
 
-            if (! $manager->isCollecting() || $component->getName() === 'new-debug-bar.toolbar') {
+            if (! $manager->isCollecting() || $component->getName() === 'newdebugbar.toolbar') {
                 return null;
             }
 

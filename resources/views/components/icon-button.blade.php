@@ -13,7 +13,7 @@
     ]) }}
 >
     @if ($name)
-        <x-new-debug-bar::icon :name="$name" :class="$iconClass" />
+        <x-newdebugbar::icon :name="$name" :class="$iconClass" />
     @else
         {{ $slot }}
     @endif

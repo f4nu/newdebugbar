@@ -58,55 +58,55 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/new-debug-bar.php', 'new-debug-bar');
+        $this->mergeConfigFrom(__DIR__.'/../config/newdebugbar.php', 'newdebugbar');
 
         $this->app->singleton(Redactor::class, fn (): Redactor => new Redactor(
-            maxDepth: (int) config('new-debug-bar.collection.max_depth', 5),
-            maxStringLength: (int) config('new-debug-bar.collection.max_string_length', 2_000),
-            maxArrayItems: (int) config('new-debug-bar.collection.max_items_per_array', 100),
+            maxDepth: (int) config('newdebugbar.collection.max_depth', 5),
+            maxStringLength: (int) config('newdebugbar.collection.max_string_length', 2_000),
+            maxArrayItems: (int) config('newdebugbar.collection.max_items_per_array', 100),
         ));
 
         $this->app->singleton(QueryAnalyzer::class, fn (): QueryAnalyzer => new QueryAnalyzer(
-            (float) config('new-debug-bar.slow_query_ms', 100),
+            (float) config('newdebugbar.slow_query_ms', 100),
         ));
         $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
             queries: $app->make(QueryAnalyzer::class),
-            slowRequestMs: (float) config('new-debug-bar.slow_request_ms', 1_000),
-            minimumCacheOperations: (int) config('new-debug-bar.findings.minimum_cache_operations', 5),
-            highCacheMissRate: (float) config('new-debug-bar.findings.high_cache_miss_rate', 0.8),
-            maxFindings: (int) config('new-debug-bar.findings.max_findings', 50),
+            slowRequestMs: (float) config('newdebugbar.slow_request_ms', 1_000),
+            minimumCacheOperations: (int) config('newdebugbar.findings.minimum_cache_operations', 5),
+            highCacheMissRate: (float) config('newdebugbar.findings.high_cache_miss_rate', 0.8),
+            maxFindings: (int) config('newdebugbar.findings.max_findings', 50),
         ));
         $this->app->singleton(ProfileSummaryPresenter::class);
         $this->app->singleton(ProfileComparator::class);
         $this->app->singleton(SectionAnalyzer::class);
         $this->app->singleton(TimelineBuilder::class);
         $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(
-            projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
+            projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
             packagePath: dirname(__DIR__),
-            enabled: (bool) config('new-debug-bar.collection.call_sites', true),
-            maxFrames: (int) config('new-debug-bar.collection.call_site_frames', 5),
-            scanLimit: (int) config('new-debug-bar.collection.call_site_scan_limit', 40),
+            enabled: (bool) config('newdebugbar.collection.call_sites', true),
+            maxFrames: (int) config('newdebugbar.collection.call_site_frames', 5),
+            scanLimit: (int) config('newdebugbar.collection.call_site_scan_limit', 40),
         ));
         $this->app->singleton(ExceptionNormalizer::class, fn (): ExceptionNormalizer => new ExceptionNormalizer(
-            projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
+            projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
             packagePath: dirname(__DIR__),
-            maxApplicationFrames: (int) config('new-debug-bar.collection.exception_application_frames', 12),
-            maxVendorFrames: (int) config('new-debug-bar.collection.exception_vendor_frames', 12),
-            sourceContextLines: (int) config('new-debug-bar.collection.exception_source_context_lines', 9),
+            maxApplicationFrames: (int) config('newdebugbar.collection.exception_application_frames', 12),
+            maxVendorFrames: (int) config('newdebugbar.collection.exception_vendor_frames', 12),
+            sourceContextLines: (int) config('newdebugbar.collection.exception_source_context_lines', 9),
         ));
         $this->app->singleton(EditorLink::class, fn (): EditorLink => new EditorLink(
-            projectPath: (string) (config('new-debug-bar.collection.application_path') ?: base_path()),
-            editor: (string) config('new-debug-bar.editor.name', 'vscode'),
-            remotePath: config('new-debug-bar.editor.remote_path'),
-            localPath: config('new-debug-bar.editor.local_path'),
+            projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
+            editor: (string) config('newdebugbar.editor.name', 'vscode'),
+            remotePath: config('newdebugbar.editor.remote_path'),
+            localPath: config('newdebugbar.editor.local_path'),
         ));
         $this->app->singleton(RequestContext::class, fn (): RequestContext => new RequestContext(
-            maxKeys: (int) config('new-debug-bar.collection.max_items_per_array', 100),
+            maxKeys: (int) config('newdebugbar.collection.max_items_per_array', 100),
         ));
         $this->app->singleton(QueryExplainer::class);
         $this->app->singleton(MailPreview::class, fn (): MailPreview => new MailPreview(
-            maxBodyBytes: (int) config('new-debug-bar.mail_preview.max_body_bytes', 50_000),
-            maxRecipients: (int) config('new-debug-bar.collection.max_items_per_array', 100),
+            maxBodyBytes: (int) config('newdebugbar.mail_preview.max_body_bytes', 50_000),
+            maxRecipients: (int) config('newdebugbar.collection.max_items_per_array', 100),
         ));
         $this->app->scoped(LivewireUpdateRecorder::class);
         $this->app->scoped(LivewireMountRecorder::class);
@@ -115,14 +115,14 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(SafeUrl::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
-            $maxItems = (int) config('new-debug-bar.collection.max_items_per_collector', 500);
+            $maxItems = (int) config('newdebugbar.collection.max_items_per_collector', 500);
             $redactor = $app->make(Redactor::class);
 
             return new ProfileManager([
                 new QueryCollector(
                     $redactor,
                     $maxItems,
-                    (string) config('new-debug-bar.collection.query_bindings', 'safe'),
+                    (string) config('newdebugbar.collection.query_bindings', 'safe'),
                 ),
                 new LivewireCollector($redactor, $maxItems),
                 new OutboundHttpCollector($redactor, $maxItems),
@@ -145,9 +145,9 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
         $this->app->singleton(ProfileStore::class, fn ($app): ProfileStore => new ProfileStore(
             files: $app->make(Filesystem::class),
-            path: config('new-debug-bar.storage.path') ?: storage_path('framework/new-debug-bar'),
-            maxProfiles: (int) config('new-debug-bar.storage.max_profiles', 20),
-            maxAgeMinutes: (int) config('new-debug-bar.storage.max_age_minutes', 60),
+            path: config('newdebugbar.storage.path') ?: storage_path('framework/newdebugbar'),
+            maxProfiles: (int) config('newdebugbar.storage.max_profiles', 20),
+            maxAgeMinutes: (int) config('newdebugbar.storage.max_age_minutes', 60),
         ));
         $this->app->singleton(McpProfilePresenter::class, fn ($app): McpProfilePresenter => new McpProfilePresenter(
             store: $app->make(ProfileStore::class),
@@ -155,18 +155,18 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             summaries: $app->make(ProfileSummaryPresenter::class),
             redactor: $app->make(Redactor::class),
             projectPath: base_path(),
-            maxItems: (int) config('new-debug-bar.mcp.max_items', 50),
-            maxBytes: (int) config('new-debug-bar.mcp.max_bytes', 100_000),
+            maxItems: (int) config('newdebugbar.mcp.max_items', 50),
+            maxBytes: (int) config('newdebugbar.mcp.max_bytes', 100_000),
         ));
     }
 
     public function boot(Router $router, Dispatcher $events): void
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'new-debug-bar');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'newdebugbar');
 
         $this->publishes([
-            __DIR__.'/../config/new-debug-bar.php' => config_path('new-debug-bar.php'),
-        ], 'new-debug-bar-config');
+            __DIR__.'/../config/newdebugbar.php' => config_path('newdebugbar.php'),
+        ], 'newdebugbar-config');
 
         if (! $this->isEnabledEnvironment()) {
             return;
@@ -194,17 +194,17 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             RequestHandled::class,
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),
         );
-        Livewire::component('new-debug-bar.toolbar', DebugBar::class);
+        Livewire::component('newdebugbar.toolbar', DebugBar::class);
         $this->app->make(LivewireMountRecorder::class)->register();
-        Mcp::local('new-debug-bar', NewDebugBarServer::class);
-        $router->get('/__new-debug-bar/assets/{path}', AssetController::class)
+        Mcp::local('newdebugbar', NewDebugBarServer::class);
+        $router->get('/__newdebugbar/assets/{path}', AssetController::class)
             ->where('path', '.*')
-            ->name('new-debug-bar.asset');
-        $router->get('/__new-debug-bar/mail/{profile}/{index}/{format}', MailPreviewController::class)
+            ->name('newdebugbar.asset');
+        $router->get('/__newdebugbar/mail/{profile}/{index}/{format}', MailPreviewController::class)
             ->whereUuid('profile')
             ->whereNumber('index')
             ->whereIn('format', ['html', 'text', 'eml'])
-            ->name('new-debug-bar.mail-preview');
+            ->name('newdebugbar.mail-preview');
         $kernel = $this->app->make(HttpKernel::class);
 
         if (method_exists($kernel, 'pushMiddleware')) {
@@ -214,9 +214,9 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
     private function isEnabledEnvironment(): bool
     {
-        $environments = config('new-debug-bar.environments', ['local']);
+        $environments = config('newdebugbar.environments', ['local']);
 
-        return config('new-debug-bar.enabled', true)
+        return config('newdebugbar.enabled', true)
             && is_array($environments)
             && $this->app->environment($environments);
     }

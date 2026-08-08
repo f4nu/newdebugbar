@@ -21,7 +21,7 @@ it('builds bounded attachment free html text and eml previews only when enabled'
         ->html->toBe('<h1>HTML preview</h1>')
         ->attachments_omitted->toBe(1)
         ->and($preview['eml'])
-        ->toContain('Plain preview', 'HTML preview', 'X-New-Debug-Bar-Attachments-Omitted: 1')
+        ->toContain('Plain preview', 'HTML preview', 'X-NewDebugBar-Attachments-Omitted: 1')
         ->not->toContain('private attachment', 'private.txt');
 
     expect($preview['eml'])->toEndWith("\r\n");

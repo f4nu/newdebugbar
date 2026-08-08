@@ -5,16 +5,16 @@ use Illuminate\Support\Facades\File;
 function assertDebugSectionSelected($page, string $section): void
 {
     $page
-        ->assertCount('#new-debug-bar [data-ndb-select-section][aria-current="page"]', 1)
-        ->assertAttribute("#new-debug-bar [data-ndb-select-section=\"{$section}\"]", 'aria-current', 'page')
-        ->assertCount('#new-debug-bar [data-ndb-section-panel]:not([hidden])', 1)
-        ->assertVisible("#new-debug-bar [data-ndb-section-panel=\"{$section}\"]");
+        ->assertCount('#newdebugbar [data-ndb-select-section][aria-current="page"]', 1)
+        ->assertAttribute("#newdebugbar [data-ndb-select-section=\"{$section}\"]", 'aria-current', 'page')
+        ->assertCount('#newdebugbar [data-ndb-section-panel]:not([hidden])', 1)
+        ->assertVisible("#newdebugbar [data-ndb-section-panel=\"{$section}\"]");
 }
 
 function assertFavoriteOrder($page, string $order): void
 {
     $page->assertScript(<<<'JS'
-        Array.from(document.querySelectorAll('#new-debug-bar [data-ndb-section][data-ndb-favorite="true"]'))
+        Array.from(document.querySelectorAll('#newdebugbar [data-ndb-section][data-ndb-favorite="true"]'))
             .map((section) => section.dataset.ndbSection)
             .join(',')
         JS, $order);
@@ -64,7 +64,7 @@ it('opens every compact toolbar destination and closes cleanly', function () {
 
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
-    $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
+    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
 
     $page
         ->refresh()
@@ -76,7 +76,7 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertDontSee('quiet hidden')
         ->assertScript(<<<'JS'
             (() => {
-                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
 
                 return state.sidebarSections.length < state.summary.sections.length
                     && state.sidebarSections.every((section) => section.active !== false || state.favorites.includes(section.key) || section.key === state.selected);
@@ -146,8 +146,8 @@ it('profiles application Livewire updates without profiling itself', function ()
     $page = visit('/profiled-livewire')
         ->click('[data-testid="profiled-increment"]')
         ->waitForText('1')
-        ->assertScript('Alpine.$data(document.getElementById("new-debug-bar")).summary.path.includes("/livewire-")');
-    $profiles = collect(File::files(config('new-debug-bar.storage.path')))
+        ->assertScript('Alpine.$data(document.getElementById("newdebugbar")).summary.path.includes("/livewire-")');
+    $profiles = collect(File::files(config('newdebugbar.storage.path')))
         ->map(fn ($file) => json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR));
     $livewireProfile = $profiles->first(
         fn (array $profile): bool => str_contains($profile['sections']['request']['payload']['path'], '/livewire-'),
@@ -200,20 +200,20 @@ it('uses translucent command palette hover colors in :dataset mode', function (s
     visit('/profiled-rich')
         ->assertScript(<<<JS
             (() => {
-                localStorage.setItem('new-debug-bar.preferences.v1', '{$preferences}');
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
 
                 return true;
             })()
             JS)
         ->refresh()
-        ->assertAttribute('#new-debug-bar', 'data-theme', $theme)
+        ->assertAttribute('#newdebugbar', 'data-theme', $theme)
         ->click('[data-ndb-toolbar="palette"]')
         ->hover('[data-ndb-command="section:request"]')
         ->assertScript(<<<'JS'
             (() => {
                 const command = document.querySelector('[data-ndb-command="section:request"]');
                 const background = getComputedStyle(command).backgroundColor;
-                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const alpha = Number(
                     background.match(/\/\s*([\d.]+)\s*\)$/)?.[1]
                         ?? background.match(/,\s*([\d.]+)\s*\)$/)?.[1]
@@ -231,7 +231,7 @@ it('uses translucent command palette hover colors in :dataset mode', function (s
 it('uses one metric color and balanced glass toolbar spacing', function () {
     visit('/profiled')
         ->assertScript(<<<'JS'
-            getComputedStyle(document.getElementById('new-debug-bar')).fontFamily.includes('Outfit Variable')
+            getComputedStyle(document.getElementById('newdebugbar')).fontFamily.includes('Outfit Variable')
             JS)
         ->assertScript(<<<'JS'
             getComputedStyle(document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]')).borderRadius
@@ -298,7 +298,7 @@ it('keeps package asset updates inside Livewire navigation', function () {
 
     $page->script(<<<'JS'
         window.__newDebugBarNavigationSentinel = true;
-        const stylesheet = document.querySelector('link[href*="/__new-debug-bar/assets/new-debug-bar.css"]');
+        const stylesheet = document.querySelector('link[href*="/__newdebugbar/assets/newdebugbar.css"]');
         stylesheet.href = stylesheet.href.replace(/id=[^&]+/, 'id=stale-test-build');
         JS);
 
@@ -306,7 +306,7 @@ it('keeps package asset updates inside Livewire navigation', function () {
         ->click('[data-testid="host-navigation"]')
         ->waitForText('Second request')
         ->assertScript('window.__newDebugBarNavigationSentinel === true')
-        ->assertCount('#new-debug-bar', 1)
+        ->assertCount('#newdebugbar', 1)
         ->assertNoJavaScriptErrors();
 });
 
@@ -314,14 +314,14 @@ it('discovers background fetch profiles without switching reloading or flashing 
     $page = visit('/profiled')
         ->assertScript(<<<'JS'
             (() => {
-                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
                 window.__newDebugBarActiveProfile = state.summary.profile_id;
                 window.__newDebugBarFetchSentinel = true;
                 window.__newDebugBarDiscoveries = [];
-                window.addEventListener('new-debug-bar-profile-discovered', (event) => {
+                window.addEventListener('newdebugbar-profile-discovered', (event) => {
                     window.__newDebugBarDiscoveries.push({
                         profileId: event.detail.profileId,
-                        stateProfileId: Alpine.$data(document.getElementById('new-debug-bar')).discoveredProfileId,
+                        stateProfileId: Alpine.$data(document.getElementById('newdebugbar')).discoveredProfileId,
                     });
                 });
                 fetch('/api/plain-json?sequence=first');
@@ -340,7 +340,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
         ->wait(0.3)
         ->assertScript(<<<'JS'
             (() => {
-                const state = Alpine.$data(document.getElementById('new-debug-bar'));
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const discoveries = window.__newDebugBarDiscoveries;
 
                 return window.__newDebugBarFetchSentinel === true
@@ -349,7 +349,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
                     && discoveries[0].profileId !== discoveries[1].profileId
                     && discoveries[1].stateProfileId === discoveries[1].profileId
                     && location.pathname === '/profiled'
-                    && document.querySelectorAll('#new-debug-bar').length === 1;
+                    && document.querySelectorAll('#newdebugbar').length === 1;
             })()
             JS)
         ->assertVisible('[data-testid="host-page"]')
@@ -382,7 +382,7 @@ it('keeps host styles and package styles isolated', function () {
                     && style.height === '36px';
             })()
             JS)
-        ->assertScript("getComputedStyle(document.getElementById('new-debug-bar')).fontFamily.includes('Outfit Variable')")
+        ->assertScript("getComputedStyle(document.getElementById('newdebugbar')).fontFamily.includes('Outfit Variable')")
         ->assertNoJavaScriptErrors();
 });
 
@@ -491,7 +491,7 @@ it('presents grouped Laravel activity with useful controls', function () {
 
 it('uses light dividers above expanded shared JSON details', function () {
     $page = visit('/profiled');
-    $page->script("localStorage.setItem('new-debug-bar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
+    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
 
     $page
         ->refresh()
@@ -573,7 +573,7 @@ it('shows relative exception frames and highlighted source context', function ()
         ->assertSee('tests/TestCase.php')
         ->assertDontSee('/Users/benjamin/Sites/new-debug-bar/tests/TestCase.php')
         ->assertPresent('[data-ndb-copy-exception-callsite="0"]')
-        ->assertScript('document.querySelectorAll("#new-debug-bar code[data-ndb-language=php][data-highlighted]").length > 0')
+        ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=php][data-highlighted]").length > 0')
         ->assertNoJavaScriptErrors();
 });
 
@@ -699,7 +699,7 @@ it('shows the favorite source and insertion point while dragging', function () {
 
 it('uses the command palette, theme preference, and escape layers', function () {
     $page = visit('/profiled')
-        ->assertAttribute('#new-debug-bar', 'data-theme', 'light')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'light')
         ->click('[data-ndb-toolbar="palette"]')
         ->assertVisible('[role="dialog"][aria-label="Command palette"]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
@@ -713,9 +713,9 @@ it('uses the command palette, theme preference, and escape layers', function () 
         ->click('[data-ndb-inspector-action="palette"]')
         ->type('[data-ndb-palette-search]', 'dark theme')
         ->keys('[data-ndb-palette-search]', 'Enter')
-        ->assertAttribute('#new-debug-bar', 'data-theme', 'dark')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
         ->refresh()
-        ->assertAttribute('#new-debug-bar', 'data-theme', 'dark')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->keys('[data-ndb-inspector-action="palette"]', 'Meta+Shift+P')
@@ -733,7 +733,7 @@ it('highlights query code and expands custom binding details', function () {
         ->click('[data-ndb-toolbar="queries"]')
         ->waitForText('Bindings')
         ->assertSee('Repeated 3×')
-        ->assertScript('document.querySelectorAll("#new-debug-bar code[data-ndb-language=sql][data-highlighted]").length > 0')
+        ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=sql][data-highlighted]").length > 0')
         ->click('[data-ndb-query-bindings="item-1"] summary')
         ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '')
         ->assertNoJavaScriptErrors();
@@ -748,13 +748,13 @@ it('matches repeated query SQL to regular query surfaces in :dataset mode', func
     visit('/profiled-rich')
         ->assertScript(<<<JS
             (() => {
-                localStorage.setItem('new-debug-bar.preferences.v1', '{$preferences}');
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
 
                 return true;
             })()
             JS)
         ->refresh()
-        ->assertAttribute('#new-debug-bar', 'data-theme', $theme)
+        ->assertAttribute('#newdebugbar', 'data-theme', $theme)
         ->click('[data-ndb-toolbar="queries"]')
         ->click('[data-ndb-query-review="repeated"]')
         ->assertScript(<<<'JS'
@@ -993,7 +993,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
             JS)
         ->assertScript(<<<'JS'
             (() => {
-                const navigation = document.querySelector('#new-debug-bar-section-navigation');
+                const navigation = document.querySelector('#newdebugbar-section-navigation');
                 const styles = getComputedStyle(navigation);
                 const transitionProperties = styles.transitionProperty.split(',').map((property) => property.trim());
                 const transitionDurations = styles.transitionDuration.split(',').map((duration) => duration.trim());
@@ -1014,7 +1014,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->click('[data-ndb-mobile-sections-toggle]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'true')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Close sections')
-        ->assertVisible('#new-debug-bar-section-navigation')
+        ->assertVisible('#newdebugbar-section-navigation')
         ->assertVisible('[data-ndb-mobile-sections-backdrop]')
         ->assertScript(<<<'JS'
             (() => {
@@ -1027,7 +1027,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
             JS)
         ->assertScript(<<<'JS'
             (() => {
-                const navigation = document.querySelector('#new-debug-bar-section-navigation');
+                const navigation = document.querySelector('#newdebugbar-section-navigation');
                 const box = navigation.getBoundingClientRect();
 
                 return getComputedStyle(navigation).position === 'absolute'
@@ -1041,15 +1041,15 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
-        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "visible"')
+        ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "visible"')
         ->wait(0.25)
-        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
+        ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"')
         ->click('[data-ndb-mobile-sections-toggle]')
         ->click('[data-ndb-select-section="queries"]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-section-heading]")')
         ->wait(0.25)
-        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"');
+        ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"');
 
     assertDebugSectionSelected($page, 'queries');
 
@@ -1062,18 +1062,18 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
         ->wait(0.25)
-        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
+        ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"')
         ->click('[data-ndb-mobile-sections-toggle]')
         ->click('[data-ndb-mobile-sections-backdrop]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
         ->wait(0.25)
-        ->assertScript('getComputedStyle(document.querySelector("#new-debug-bar-section-navigation")).visibility === "hidden"')
+        ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"')
         ->resize(1440, 900)
         ->assertScript(<<<'JS'
             (() => {
                 const toggle = document.querySelector('[data-ndb-mobile-sections-toggle]');
-                const navigation = document.querySelector('#new-debug-bar-section-navigation');
+                const navigation = document.querySelector('#newdebugbar-section-navigation');
 
                 return getComputedStyle(toggle).display === 'none'
                     && getComputedStyle(navigation).position === 'static'

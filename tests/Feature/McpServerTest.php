@@ -29,9 +29,9 @@ function captureStructuredContent($response): array
 it('registers one local read only server with four schema backed tools', function () {
     $version = (new ReflectionClass(NewDebugBarServer::class))->getAttributes(Version::class)[0]->newInstance();
 
-    expect(Mcp::getLocalServer('new-debug-bar'))->toBeCallable()
-        ->and(Mcp::getWebServer('new-debug-bar'))->toBeNull()
-        ->and(Mcp::servers())->toHaveKey('new-debug-bar')
+    expect(Mcp::getLocalServer('newdebugbar'))->toBeCallable()
+        ->and(Mcp::getWebServer('newdebugbar'))->toBeNull()
+        ->and(Mcp::servers())->toHaveKey('newdebugbar')
         ->and($version->value)->toBe('1.0.0');
 
     foreach ([
@@ -55,9 +55,9 @@ it('registers one local read only server with four schema backed tools', functio
 it('correlates the exact response profile while unrelated profiles exist', function () {
     $first = $this->get('/profiled?patient=private-marker', ['Accept' => 'text/html'])
         ->assertOk()
-        ->headers->get('X-New-Debug-Bar-Profile');
+        ->headers->get('X-NewDebugBar-Profile');
     $this->get('/profiled-next', ['Accept' => 'text/html'])->assertOk();
-    $profileCount = count(File::files(config('new-debug-bar.storage.path')));
+    $profileCount = count(File::files(config('newdebugbar.storage.path')));
 
     $queries = captureStructuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
         'profile_id' => $first,
@@ -77,7 +77,7 @@ it('correlates the exact response profile while unrelated profiles exist', funct
         ->data->repeated_groups->{0}->count->toBe(3)
         ->and(array_column($findings['data']['findings'], 'rule_id'))
         ->not->toContain('query.repeated', 'query.n_plus_one')
-        ->and(count(File::files(config('new-debug-bar.storage.path'))))->toBe($profileCount);
+        ->and(count(File::files(config('newdebugbar.storage.path'))))->toBe($profileCount);
 });
 
 it('lists and filters bounded profile summaries', function () {
@@ -106,7 +106,7 @@ it('lists and filters bounded profile summaries', function () {
 
 it('exposes every recorded context section through the bounded section tool', function () {
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
     foreach (['authorization', 'validation', 'lifecycle', 'messages'] as $section) {
         $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
@@ -120,9 +120,9 @@ it('exposes every recorded context section through the bounded section tool', fu
 });
 
 it('keeps explicitly enabled mail content out of MCP responses', function () {
-    config()->set('new-debug-bar.mail_preview.enabled', true);
+    config()->set('newdebugbar.mail_preview.enabled', true);
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
     $mail = NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
@@ -149,10 +149,10 @@ it('keeps explicitly enabled mail content out of MCP responses', function () {
 });
 
 it('masks full query bindings and log labels again at the MCP boundary', function () {
-    config()->set('new-debug-bar.collection.query_bindings', 'full');
+    config()->set('newdebugbar.collection.query_bindings', 'full');
     app()->forgetInstance(ProfileManager::class);
     $response = $this->get('/profiled-private-query', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
     expect(json_encode(app(ProfileStore::class)->get($profileId)['sections']['queries']))
         ->toContain('private-alpha', 'private-beta', 'private-gamma');
@@ -183,7 +183,7 @@ it('paginates one section and hides private request values', function () {
         'clinic' => ['name' => 'patient-secret'],
         'token' => 'token-secret',
     ], ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
     $request = NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
@@ -216,7 +216,7 @@ it('exposes relative exception evidence without messages or source code', functi
         ->assertInternalServerError();
 
     $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
-        'profile_id' => $response->headers->get('X-New-Debug-Bar-Profile'),
+        'profile_id' => $response->headers->get('X-NewDebugBar-Profile'),
         'section' => 'exceptions',
     ])->assertOk());
     $item = $content['data']['payload']['items'][0];
@@ -250,15 +250,15 @@ it('returns stable not found results and validation errors', function () {
 });
 
 it('enforces byte depth and item limits without exposing corrupt profiles', function () {
-    config()->set('new-debug-bar.mcp.max_items', 2);
-    config()->set('new-debug-bar.mcp.max_bytes', 700);
+    config()->set('newdebugbar.mcp.max_items', 2);
+    config()->set('newdebugbar.mcp.max_bytes', 700);
     app()->forgetInstance(McpProfilePresenter::class);
 
     $response = $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-New-Debug-Bar-Profile');
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
     $this->get('/failed-html', ['Accept' => 'text/html'])->assertUnprocessable();
     $corruptId = (string) Str::uuid();
-    File::put(config('new-debug-bar.storage.path').'/'.$corruptId.'.json', '{broken');
+    File::put(config('newdebugbar.storage.path').'/'.$corruptId.'.json', '{broken');
 
     $events = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
@@ -283,7 +283,7 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
 });
 
 it('advances past an item that cannot fit within the MCP byte limit', function () {
-    config()->set('new-debug-bar.mcp.max_bytes', 700);
+    config()->set('newdebugbar.mcp.max_bytes', 700);
     app()->forgetInstance(McpProfilePresenter::class);
     $profileId = (string) Str::uuid();
     app(ProfileStore::class)->put([
@@ -315,7 +315,7 @@ it('advances past an item that cannot fit within the MCP byte limit', function (
 });
 
 it('falls back to bounded identity metadata when section metadata is oversized', function () {
-    config()->set('new-debug-bar.mcp.max_bytes', 700);
+    config()->set('newdebugbar.mcp.max_bytes', 700);
     app()->forgetInstance(McpProfilePresenter::class);
     $profileId = (string) Str::uuid();
     app(ProfileStore::class)->put([
@@ -373,7 +373,7 @@ it('bounds deeply nested MCP values and treats malformed profiles as missing', f
         ->assertDontSee('private-deep-value');
 
     $malformedId = (string) Str::uuid();
-    File::put(config('new-debug-bar.storage.path').'/'.$malformedId.'.json', json_encode([
+    File::put(config('newdebugbar.storage.path').'/'.$malformedId.'.json', json_encode([
         'id' => $malformedId,
         'sections' => ['queries' => ['payload' => ['items' => ['not-an-item']]]],
     ]));

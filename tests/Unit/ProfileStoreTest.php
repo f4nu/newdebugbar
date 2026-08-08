@@ -5,7 +5,7 @@ use Illuminate\Support\Str;
 use NewDebugBar\Storage\ProfileStore;
 
 beforeEach(function () {
-    $this->profilePath = sys_get_temp_dir().'/new-debug-bar-profile-store-tests';
+    $this->profilePath = sys_get_temp_dir().'/newdebugbar-profile-store-tests';
     $this->files = new Filesystem;
     $this->files->deleteDirectory($this->profilePath);
 });

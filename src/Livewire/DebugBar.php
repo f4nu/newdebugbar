@@ -70,7 +70,7 @@ final class DebugBar extends Component
 
         $this->detailsLoaded = true;
         $this->refreshHistoryData($store, $presenter, $summaries);
-        $this->dispatch('new-debug-bar-content-updated');
+        $this->dispatch('newdebugbar-content-updated');
     }
 
     public function compareWith(
@@ -94,14 +94,14 @@ final class DebugBar extends Component
 
         $this->comparisonProfileId = $profileId;
         $this->comparison = $comparator->compare($baseline, $current);
-        $this->dispatch('new-debug-bar-content-updated');
+        $this->dispatch('newdebugbar-content-updated');
     }
 
     public function clearComparison(): void
     {
         $this->comparisonProfileId = null;
         $this->comparison = [];
-        $this->dispatch('new-debug-bar-content-updated');
+        $this->dispatch('newdebugbar-content-updated');
     }
 
     public function discoverProfile(
@@ -116,7 +116,7 @@ final class DebugBar extends Component
 
         if ($this->detailsLoaded) {
             $this->refreshHistoryData($store, $presenter, $summaries);
-            $this->dispatch('new-debug-bar-content-updated');
+            $this->dispatch('newdebugbar-content-updated');
         }
     }
 
@@ -140,7 +140,7 @@ final class DebugBar extends Component
             $this->queryExplainErrors[$execution] = $exception->getMessage();
         }
 
-        $this->dispatch('new-debug-bar-content-updated');
+        $this->dispatch('newdebugbar-content-updated');
     }
 
     public function switchProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
@@ -182,7 +182,7 @@ final class DebugBar extends Component
         $this->queryExplains = [];
         $this->queryExplainErrors = [];
         $this->discoveredProfileId = null;
-        $this->dispatch('new-debug-bar-profile-switched', summary: $this->summary);
+        $this->dispatch('newdebugbar-profile-switched', summary: $this->summary);
     }
 
     /** @return array<string, mixed> */
@@ -198,7 +198,7 @@ final class DebugBar extends Component
 
     public function render(): View
     {
-        return view('new-debug-bar::livewire.debug-bar');
+        return view('newdebugbar::livewire.debug-bar');
     }
 
     /**
@@ -267,7 +267,7 @@ final class DebugBar extends Component
             'profile_id' => $profile['id'] ?? $this->profileId,
             'current_profile_id' => $this->currentProfileId,
             'is_current_profile' => ($profile['id'] ?? $this->profileId) === $this->currentProfileId,
-            'theme' => config('new-debug-bar.theme', 'system'),
+            'theme' => config('newdebugbar.theme', 'system'),
             'environment' => (string) ($profile['environment'] ?? app()->environment()),
             'method' => $sections['request']['summary']['method'] ?? 'GET',
             'path' => $sections['request']['payload']['path'] ?? '/',

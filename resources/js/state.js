@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'new-debug-bar.preferences.v1';
+const STORAGE_KEY = 'newdebugbar.preferences.v1';
 
 const defaultRuntime = () => ({
   storage: {
@@ -9,7 +9,7 @@ const defaultRuntime = () => ({
   activeElement: () => document.activeElement,
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
   dispatch: (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail })),
-  highlight: () => window.newDebugBarHighlight?.(document.getElementById('new-debug-bar')),
+  highlight: () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
   lockHost: (root) => {
     if (!root || root.__newDebugBarHostLock) return;
@@ -261,7 +261,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       const target = this.sectionKeys.includes(section) ? section : 'overview';
 
       this.selectSection(target, filter, true);
-      browser.dispatch?.('new-debug-bar-select-section', {
+      browser.dispatch?.('newdebugbar-select-section', {
         section: target,
         filter,
         focusHeading: true,

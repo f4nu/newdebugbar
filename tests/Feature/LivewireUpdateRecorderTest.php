@@ -18,7 +18,7 @@ it('records safe application Livewire facts and skips internal components', func
                 'calls' => [['method' => 'save', 'params' => ['private-parameter']]],
             ],
             [
-                'snapshot' => json_encode(['memo' => ['name' => 'new-debug-bar.toolbar']], JSON_THROW_ON_ERROR),
+                'snapshot' => json_encode(['memo' => ['name' => 'newdebugbar.toolbar']], JSON_THROW_ON_ERROR),
                 'updates' => [],
                 'calls' => [['method' => 'loadDetails', 'params' => []]],
             ],
@@ -63,7 +63,7 @@ it('records safe application Livewire facts and skips internal components', func
 it('resolves the active request manager for mounts after earlier requests', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
     $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-New-Debug-Bar-Profile'));
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
     expect($profile['sections']['livewire']['summary'])
         ->count->toBe(1)

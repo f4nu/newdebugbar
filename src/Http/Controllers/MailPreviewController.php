@@ -10,9 +10,9 @@ final class MailPreviewController
 {
     public function __invoke(string $profile, int $index, string $format, ProfileStore $store): Response
     {
-        $environments = config('new-debug-bar.environments', ['local']);
+        $environments = config('newdebugbar.environments', ['local']);
 
-        if (! config('new-debug-bar.mail_preview.enabled', false)
+        if (! config('newdebugbar.mail_preview.enabled', false)
             || ! is_array($environments)
             || ! app()->environment($environments)) {
             abort(404);

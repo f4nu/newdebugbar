@@ -70,10 +70,8 @@ final class RuntimeContext
 
     private function packageVersion(): string
     {
-        foreach (['newdebugbar/newdebugbar', 'newdebugbar/new-debug-bar'] as $package) {
-            if (InstalledVersions::isInstalled($package)) {
-                return InstalledVersions::getPrettyVersion($package) ?? 'dev';
-            }
+        if (InstalledVersions::isInstalled('newdebugbar/newdebugbar')) {
+            return InstalledVersions::getPrettyVersion('newdebugbar/newdebugbar') ?? 'dev';
         }
 
         return 'dev';

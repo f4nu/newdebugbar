@@ -1,6 +1,5 @@
 <?php
 
-use Composer\InstalledVersions;
 use NewDebugBar\Support\RuntimeContext;
 
 it('reports host runtime facts without claiming unused Livewire activity', function () {
@@ -17,20 +16,4 @@ it('reports host runtime facts without claiming unused Livewire activity', funct
         ->and($inactive['drivers'])->toHaveKeys(['database', 'cache', 'queue', 'session', 'mail'])
         ->and(array_column($inactive['ecosystem'], 'key'))->not->toContain('livewire')
         ->and(array_column($active['ecosystem'], 'key'))->toContain('livewire');
-});
-
-it('keeps profiling when a path dependency still has the old package name', function () {
-    $originalInstalled = InstalledVersions::getRawData();
-    $installed = $originalInstalled;
-    $oldPackage = $installed['versions']['newdebugbar/newdebugbar'];
-    unset($installed['versions']['newdebugbar/newdebugbar']);
-    $installed['versions']['newdebugbar/new-debug-bar'] = $oldPackage;
-    InstalledVersions::reload($installed);
-
-    try {
-        expect(app(RuntimeContext::class)->build(false)['package'])
-            ->toBe($oldPackage['pretty_version']);
-    } finally {
-        InstalledVersions::reload($originalInstalled);
-    }
 });

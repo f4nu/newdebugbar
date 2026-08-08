@@ -406,7 +406,7 @@ final class ProfileManager
             $snapshot = json_decode($component['snapshot'], true);
             $name = is_array($snapshot) ? ($snapshot['memo']['name'] ?? null) : null;
 
-            if (! is_string($name) || $name === '' || $name === 'new-debug-bar.toolbar') {
+            if (! is_string($name) || $name === '' || $name === 'newdebugbar.toolbar') {
                 continue;
             }
 

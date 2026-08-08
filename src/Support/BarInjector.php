@@ -25,14 +25,14 @@ final class BarInjector
 
         $html = (string) $response->getContent();
 
-        $stylesheet = e($this->assets->for('new-debug-bar.css'));
-        $script = e($this->assets->for('new-debug-bar.js'));
-        $component = $this->livewire->mount('new-debug-bar.toolbar', ['profileId' => $profileId], 'new-debug-bar-toolbar');
+        $stylesheet = e($this->assets->for('newdebugbar.css'));
+        $script = e($this->assets->for('newdebugbar.js'));
+        $component = $this->livewire->mount('newdebugbar.toolbar', ['profileId' => $profileId], 'newdebugbar-toolbar');
         $livewireStyles = FrontendAssets::styles();
         $livewireScripts = FrontendAssets::scripts();
 
         $head = $livewireStyles
-            .'<style id="new-debug-bar-critical-css" data-navigate-once="true">#new-debug-bar [x-cloak]{display:none!important}</style>'
+            .'<style id="newdebugbar-critical-css" data-navigate-once="true">#newdebugbar [x-cloak]{display:none!important}</style>'
             .'<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true">';
         $body = $livewireScripts
             .'<script src="'.$script.'" data-navigate-once="true"></script>'.$component;
@@ -52,7 +52,7 @@ final class BarInjector
         }
 
         $response->headers->remove('Content-Length');
-        $response->headers->set('X-New-Debug-Bar-Profile', $profileId);
+        $response->headers->set('X-NewDebugBar-Profile', $profileId);
 
         return $response;
     }

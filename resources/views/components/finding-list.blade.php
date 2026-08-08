@@ -23,7 +23,7 @@
                         <span class="ndb:size-2 ndb:shrink-0 ndb:rounded-full {{ $finding['severity'] === 'error' ? 'ndb:bg-red-500' : ($finding['severity'] === 'warning' ? 'ndb:bg-amber-500' : 'ndb:bg-indigo-500') }}"></span>
                         <span class="ndb:min-w-0 ndb:flex-1 ndb:text-xs ndb:font-bold">{{ $finding['summary'] }}</span>
                         <span class="ndb:hidden ndb:shrink-0 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:inline">Open {{ $sectionLabels[$destination] ?? str($destination)->replace('_', ' ')->title() }}</span>
-                        <x-new-debug-bar::icon name="chevron-down" class="ndb:size-3.5 ndb:shrink-0 ndb:-rotate-90 ndb:text-zinc-400" />
+                        <x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:shrink-0 ndb:-rotate-90 ndb:text-zinc-400" />
                     </button>
                 @else
                     <article data-ndb-finding="{{ $finding['rule_id'] }}" class="ndb:px-4 ndb:py-3.5">
@@ -45,7 +45,7 @@
                                     <button type="button" data-ndb-finding-action="{{ $finding['rule_id'] }}" @click="navigateToSection(@js($finding['action']['section']), @js(is_string($finding['action']['filter'] ?? null) ? $finding['action']['filter'] : null))" class="ndb:rounded-lg ndb:bg-zinc-900 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-zinc-100 ndb:dark:text-zinc-900 ndb:dark:hover:bg-indigo-300">{{ $finding['action']['label'] }}</button>
                                 @endif
                                 <details class="ndb:group">
-                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-1.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span>Technical evidence</span><x-new-debug-bar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3 ndb:transition" /></summary>
+                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-1.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span>Technical evidence</span><x-newdebugbar::icon name="chevron-down" class="ndb-details-chevron ndb:size-3 ndb:transition" /></summary>
                                     <div class="ndb:mt-2"><p class="ndb:mb-1 ndb:font-mono ndb:text-[9px] ndb:text-zinc-400">{{ $finding['rule_id'] }}</p><pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json">{{ json_encode($finding['evidence'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></div>
                                 </details>
                             </div>

@@ -17,13 +17,13 @@ final class QueryExplainer
     /** @param array<string, mixed> $query @return array<string, mixed> */
     public function explain(array $query): array
     {
-        $environments = config('new-debug-bar.environments', ['local']);
+        $environments = config('newdebugbar.environments', ['local']);
 
         if (! is_array($environments) || ! app()->environment($environments)) {
             throw new InvalidArgumentException('Manual EXPLAIN is not available in this environment.');
         }
 
-        if (! config('new-debug-bar.queries.explain', true)) {
+        if (! config('newdebugbar.queries.explain', true)) {
             throw new InvalidArgumentException('Manual EXPLAIN is disabled.');
         }
 

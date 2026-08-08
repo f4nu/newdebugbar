@@ -48,9 +48,9 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('new-debug-bar.environments', ['testing']);
-        $app['config']->set('new-debug-bar.storage.path', storage_path('framework/testing-new-debug-bar'));
-        $app['config']->set('new-debug-bar.collection.application_path', dirname(__DIR__));
+        $app['config']->set('newdebugbar.environments', ['testing']);
+        $app['config']->set('newdebugbar.storage.path', storage_path('framework/testing-newdebugbar'));
+        $app['config']->set('newdebugbar.collection.application_path', dirname(__DIR__));
         $app['config']->set('cache.default', 'array');
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
@@ -339,12 +339,12 @@ abstract class TestCase extends Orchestra
 
         view()->addLocation(__DIR__.'/views');
         Livewire::component('profiled-counter', ProfiledCounter::class);
-        $this->app['files']->deleteDirectory(config('new-debug-bar.storage.path'));
+        $this->app['files']->deleteDirectory(config('newdebugbar.storage.path'));
     }
 
     protected function tearDown(): void
     {
-        $this->app['files']->deleteDirectory(config('new-debug-bar.storage.path'));
+        $this->app['files']->deleteDirectory(config('newdebugbar.storage.path'));
 
         parent::tearDown();
     }

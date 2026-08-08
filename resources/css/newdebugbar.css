@@ -11,14 +11,14 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-#new-debug-bar,
-#new-debug-bar *,
-#new-debug-bar *::before,
-#new-debug-bar *::after {
+#newdebugbar,
+#newdebugbar *,
+#newdebugbar *::before,
+#newdebugbar *::after {
     box-sizing: border-box;
 }
 
-#new-debug-bar {
+#newdebugbar {
     --ndb-accent: #4f46e5;
     color: #18181b;
     font-family: "Outfit Variable", Outfit, ui-sans-serif, system-ui, sans-serif;
@@ -27,13 +27,13 @@
     text-rendering: optimizeLegibility;
 }
 
-#new-debug-bar .ndb-favorite-dragging {
+#newdebugbar .ndb-favorite-dragging {
     opacity: 0.4;
     transform: scale(0.98);
     box-shadow: inset 0 0 0 1px rgb(129 140 248 / 70%);
 }
 
-#new-debug-bar .ndb-loading-pulse {
+#newdebugbar .ndb-loading-pulse {
     animation: ndb-debug-bar-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -43,26 +43,26 @@
     }
 }
 
-#new-debug-bar[data-theme="dark"] {
+#newdebugbar[data-theme="dark"] {
     --ndb-accent: #818cf8;
     color: #f4f4f5;
 }
 
-#new-debug-bar :where(h1, h2, h3, p, pre, dl, dd, dt) {
+#newdebugbar :where(h1, h2, h3, p, pre, dl, dd, dt) {
     margin: 0;
 }
 
-#new-debug-bar :where(button, input) {
+#newdebugbar :where(button, input) {
     letter-spacing: inherit;
 }
 
-#new-debug-bar button,
-#new-debug-bar input {
+#newdebugbar button,
+#newdebugbar input {
     color: inherit;
     font: inherit;
 }
 
-#new-debug-bar button {
+#newdebugbar button {
     appearance: none;
     background: transparent;
     border: 0;
@@ -71,20 +71,20 @@
     padding: 0;
 }
 
-#new-debug-bar [x-cloak] {
+#newdebugbar [x-cloak] {
     display: none !important;
 }
 
-#new-debug-bar [data-ndb-section-panel][hidden],
-#new-debug-bar [data-ndb-history-profile][hidden] {
+#newdebugbar [data-ndb-section-panel][hidden],
+#newdebugbar [data-ndb-history-profile][hidden] {
     display: none !important;
 }
 
-#new-debug-bar details[open] > summary .ndb-details-chevron {
+#newdebugbar details[open] > summary .ndb-details-chevron {
     transform: rotate(180deg);
 }
 
-#new-debug-bar .ndb-code {
+#newdebugbar .ndb-code {
     background: #f4f4f5;
     border-radius: 0.75rem;
     color: #3f3f46;
@@ -98,7 +98,7 @@
     white-space: pre;
 }
 
-#new-debug-bar .ndb-code code {
+#newdebugbar .ndb-code code {
     background: transparent;
     color: inherit;
     display: block;
@@ -106,98 +106,98 @@
     padding: 0;
 }
 
-#new-debug-bar .hljs-keyword,
-#new-debug-bar .hljs-literal,
-#new-debug-bar .hljs-selector-tag {
+#newdebugbar .hljs-keyword,
+#newdebugbar .hljs-literal,
+#newdebugbar .hljs-selector-tag {
     color: #6d28d9;
 }
 
-#new-debug-bar .hljs-string,
-#new-debug-bar .hljs-attr,
-#new-debug-bar .hljs-template-variable {
+#newdebugbar .hljs-string,
+#newdebugbar .hljs-attr,
+#newdebugbar .hljs-template-variable {
     color: #15803d;
 }
 
-#new-debug-bar .hljs-number,
-#new-debug-bar .hljs-built_in,
-#new-debug-bar .hljs-type {
+#newdebugbar .hljs-number,
+#newdebugbar .hljs-built_in,
+#newdebugbar .hljs-type {
     color: #b45309;
 }
 
-#new-debug-bar .hljs-title,
-#new-debug-bar .hljs-property,
-#new-debug-bar .hljs-variable {
+#newdebugbar .hljs-title,
+#newdebugbar .hljs-property,
+#newdebugbar .hljs-variable {
     color: #0369a1;
 }
 
-#new-debug-bar .hljs-comment,
-#new-debug-bar .hljs-meta {
+#newdebugbar .hljs-comment,
+#newdebugbar .hljs-meta {
     color: #71717a;
     font-style: italic;
 }
 
-#new-debug-bar[data-theme="dark"] .ndb-code {
+#newdebugbar[data-theme="dark"] .ndb-code {
     background: #09090b;
     color: #d4d4d8;
 }
 
-#new-debug-bar[data-theme="dark"] :is(.hljs-keyword, .hljs-literal, .hljs-selector-tag) {
+#newdebugbar[data-theme="dark"] :is(.hljs-keyword, .hljs-literal, .hljs-selector-tag) {
     color: #c4b5fd;
 }
 
-#new-debug-bar[data-theme="dark"] :is(.hljs-string, .hljs-attr, .hljs-template-variable) {
+#newdebugbar[data-theme="dark"] :is(.hljs-string, .hljs-attr, .hljs-template-variable) {
     color: #86efac;
 }
 
-#new-debug-bar[data-theme="dark"] :is(.hljs-number, .hljs-built_in, .hljs-type) {
+#newdebugbar[data-theme="dark"] :is(.hljs-number, .hljs-built_in, .hljs-type) {
     color: #fcd34d;
 }
 
-#new-debug-bar[data-theme="dark"] :is(.hljs-title, .hljs-property, .hljs-variable) {
+#newdebugbar[data-theme="dark"] :is(.hljs-title, .hljs-property, .hljs-variable) {
     color: #7dd3fc;
 }
 
-#new-debug-bar summary::-webkit-details-marker {
+#newdebugbar summary::-webkit-details-marker {
     display: none;
 }
 
-#new-debug-bar .ndb-section-active {
+#newdebugbar .ndb-section-active {
     background: linear-gradient(110deg, rgba(219, 234, 254, 0.96), rgba(224, 231, 255, 0.92)) !important;
 }
 
-#new-debug-bar[data-theme="dark"] .ndb-section-active {
+#newdebugbar[data-theme="dark"] .ndb-section-active {
     background: linear-gradient(110deg, rgba(30, 58, 138, 0.58), rgba(49, 46, 129, 0.52)) !important;
 }
 
-#new-debug-bar .ndb-section-active :is(.ndb-section-label, .ndb-section-star-outline) {
+#newdebugbar .ndb-section-active :is(.ndb-section-label, .ndb-section-star-outline) {
     color: #1d4ed8 !important;
 }
 
-#new-debug-bar .ndb-section-active .ndb-section-count {
+#newdebugbar .ndb-section-active .ndb-section-count {
     color: rgba(30, 64, 175, 0.62) !important;
 }
 
-#new-debug-bar[data-theme="dark"] .ndb-section-active :is(.ndb-section-label, .ndb-section-star-outline) {
+#newdebugbar[data-theme="dark"] .ndb-section-active :is(.ndb-section-label, .ndb-section-star-outline) {
     color: #dbeafe !important;
 }
 
-#new-debug-bar[data-theme="dark"] .ndb-section-active .ndb-section-count {
+#newdebugbar[data-theme="dark"] .ndb-section-active .ndb-section-count {
     color: rgba(191, 219, 254, 0.7) !important;
 }
 
-#new-debug-bar .ndb-favorite-star {
+#newdebugbar .ndb-favorite-star {
     color: #f59e0b !important;
 }
 
-#new-debug-bar .ndb-toolbar-facts {
+#newdebugbar .ndb-toolbar-facts {
     scrollbar-width: none;
 }
 
-#new-debug-bar .ndb-toolbar-facts::-webkit-scrollbar {
+#newdebugbar .ndb-toolbar-facts::-webkit-scrollbar {
     display: none;
 }
 
-#new-debug-bar .ndb-mobile-section-navigation {
+#newdebugbar .ndb-mobile-section-navigation {
     pointer-events: none;
     transform: translateX(-100%);
     transition:
@@ -206,7 +206,7 @@
     visibility: hidden;
 }
 
-#new-debug-bar .ndb-mobile-section-navigation[data-ndb-mobile-open="true"] {
+#newdebugbar .ndb-mobile-section-navigation[data-ndb-mobile-open="true"] {
     pointer-events: auto;
     transform: translateX(0);
     transition-delay: 0s;
@@ -214,8 +214,8 @@
 }
 
 @media (min-width: 40rem) {
-    #new-debug-bar .ndb-mobile-section-navigation,
-    #new-debug-bar .ndb-mobile-section-navigation[data-ndb-mobile-open] {
+    #newdebugbar .ndb-mobile-section-navigation,
+    #newdebugbar .ndb-mobile-section-navigation[data-ndb-mobile-open] {
         pointer-events: auto;
         transform: none;
         transition: none;
@@ -223,39 +223,39 @@
     }
 }
 
-#new-debug-bar .ndb-star-button:hover {
+#newdebugbar .ndb-star-button:hover {
     background: transparent !important;
 }
 
-#new-debug-bar .ndb-scrollbar {
+#newdebugbar .ndb-scrollbar {
     scrollbar-color: #d4d4d8 transparent;
     scrollbar-width: thin;
 }
 
-#new-debug-bar[data-theme="dark"] .ndb-scrollbar {
+#newdebugbar[data-theme="dark"] .ndb-scrollbar {
     scrollbar-color: #3f3f46 transparent;
 }
 
-#new-debug-bar .ndb-scrollbar::-webkit-scrollbar {
+#newdebugbar .ndb-scrollbar::-webkit-scrollbar {
     height: 8px;
     width: 8px;
 }
 
-#new-debug-bar .ndb-scrollbar::-webkit-scrollbar-thumb {
+#newdebugbar .ndb-scrollbar::-webkit-scrollbar-thumb {
     background: #d4d4d8;
     border: 2px solid transparent;
     border-radius: 999px;
     background-clip: padding-box;
 }
 
-#new-debug-bar[data-theme="dark"] .ndb-scrollbar::-webkit-scrollbar-thumb {
+#newdebugbar[data-theme="dark"] .ndb-scrollbar::-webkit-scrollbar-thumb {
     background: #3f3f46;
     background-clip: padding-box;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    #new-debug-bar,
-    #new-debug-bar * {
+    #newdebugbar,
+    #newdebugbar * {
         animation-duration: 0.001ms !important;
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;

@@ -16,6 +16,6 @@ final class AssetUrl
             throw new RuntimeException("New Debug Bar asset [{$asset}] is missing. Run npm run build in the package.");
         }
 
-        return url('/__new-debug-bar/assets/'.$asset).'?id='.substr(hash_file('sha256', $path), 0, 12);
+        return url('/__newdebugbar/assets/'.$asset).'?id='.substr(hash_file('sha256', $path), 0, 12);
     }
 }
