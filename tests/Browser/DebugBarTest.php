@@ -94,6 +94,16 @@ it('keeps the AI activity panel clear at desktop and phone widths', function (st
         ->assertVisible('[data-ndb-ai-run]')
         ->assertScript('document.documentElement.scrollWidth === window.innerWidth')
         ->assertNoJavaScriptErrors();
+
+    $page->resize(1440, 900);
+    selectDebugSectionViaPalette($page, 'request');
+    assertDebugSectionSelected($page, 'request');
+
+    $page
+        ->assertVisible('[data-ndb-stream-boundary]')
+        ->assertSee('Not measured')
+        ->assertSee('buffered or inspected live.')
+        ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {

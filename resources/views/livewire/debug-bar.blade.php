@@ -1004,7 +1004,7 @@
                                             @foreach ([
                                                 ['Content type', ($section['payload']['content_type'] ?? null) ?: '—'],
                                                 ['Request size', number_format($section['payload']['request_size_bytes'] ?? 0).' B'],
-                                                ['Response size', number_format($section['payload']['response_size_bytes'] ?? 0).' B'],
+                                                ['Response size', is_numeric($section['payload']['response_size_bytes'] ?? null) ? number_format($section['payload']['response_size_bytes']).' B' : 'Not measured'],
                                                 ['Session', ($section['payload']['session_present'] ?? false) ? 'Present' : 'None'],
                                                 ['Authentication', ($section['payload']['authenticated'] ?? false) ? 'Present' : 'None'],
                                             ] as [$label, $value])
@@ -1018,6 +1018,15 @@
                                                 </div>
                                             @endforeach
                                         </dl>
+                                        @if (($section['payload']['stream_completed'] ?? false) === true)
+                                            <div
+                                                data-ndb-stream-boundary
+                                                class="ndb:rounded-xl ndb:border ndb:border-indigo-200 ndb:bg-indigo-50/55 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:text-indigo-950 ndb:dark:border-indigo-900 ndb:dark:bg-indigo-950/25 ndb:dark:text-indigo-100"
+                                            >
+                                                Saved after the response stream completed. The response body was not
+                                                buffered or inspected live.
+                                            </div>
+                                        @endif
                                         <div class="ndb:grid ndb:gap-3 ndb:lg:grid-cols-2">
                                             @php($authentication = $section['payload']['authentication'] ?? [])
                                             @php($sessionShape = $section['payload']['session'] ?? [])

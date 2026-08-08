@@ -113,7 +113,12 @@ abstract class TestCase extends Orchestra
                             'path' => '/assistant',
                             'route' => 'assistant.reply',
                             'action' => 'AssistantController@reply',
-                            'request_type' => 'full_page',
+                            'request_type' => 'stream',
+                            'content_type' => 'text/event-stream',
+                            'request_size_bytes' => 0,
+                            'response_size_bytes' => null,
+                            'stream_completed' => true,
+                            'stream_body_captured' => false,
                         ],
                     ],
                     'ai' => [
@@ -257,11 +262,35 @@ abstract class TestCase extends Orchestra
 
         $router->get('/profile-redirect', fn () => redirect('/profiled'));
 
-        $router->get('/streamed-response', fn () => response()->stream(
-            static fn () => print 'streamed-body',
-            200,
-            ['Content-Type' => 'text/plain'],
-        ));
+        $router->get('/streamed-response', fn () => response()->stream(function (): void {
+            echo 'streamed-body';
+            Debug::message('Stream callback completed', ['token' => 'private-stream-token']);
+        }, 200, ['Content-Type' => 'text/plain']));
+
+        $router->get('/streamed-json-response', function () {
+            abort_unless(method_exists(response(), 'streamJson'), 404);
+            $items = (static function () {
+                yield ['id' => 1];
+                yield ['id' => 2];
+                Debug::message('Streamed JSON callback completed', ['token' => 'private-json-token']);
+            })();
+
+            return response()->streamJson(['items' => $items]);
+        });
+
+        $router->get('/event-stream-response', function () {
+            abort_unless(method_exists(response(), 'eventStream'), 404);
+
+            return response()->eventStream(static function () {
+                yield 'first event';
+                Debug::message('Event stream callback completed', ['token' => 'private-event-token']);
+            });
+        });
+
+        $router->get('/streamed-download', fn () => response()->streamDownload(function (): void {
+            echo 'streamed-download-body';
+            Debug::message('Streamed download callback completed', ['token' => 'private-download-token']);
+        }, 'streamed-report.txt'));
 
         $router->get('/binary-response', fn () => response()->download(
             __DIR__.'/views/profiled-counter.blade.php',

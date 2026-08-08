@@ -278,6 +278,8 @@ final class McpProfilePresenter
             'content_type' => $payload['content_type'] ?? null,
             'request_size_bytes' => $payload['request_size_bytes'] ?? null,
             'response_size_bytes' => $payload['response_size_bytes'] ?? null,
+            'stream_completed' => $payload['stream_completed'] ?? null,
+            'stream_body_captured' => $payload['stream_body_captured'] ?? null,
             'session_present' => $payload['session_present'] ?? false,
             'authenticated' => $payload['authenticated'] ?? false,
             'request_header_names' => array_keys(is_array($payload['headers'] ?? null) ? $payload['headers'] : []),

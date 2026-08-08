@@ -5,6 +5,7 @@ namespace NewDebugBar\Support;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /** Stores and injects a profile after Laravel has rendered the final response. */
@@ -16,11 +17,30 @@ final class ProfileFinalizer
         private readonly BarInjector $injector,
         private readonly RequestEligibility $eligibility,
         private readonly LivewireUpdateRecorder $livewireUpdates,
+        private readonly StreamedProfileCapture $streamedProfiles,
     ) {}
 
     public function handle(RequestHandled $event): void
     {
         if (! $this->manager->isCollecting()) {
+            return;
+        }
+
+        if ($event->response instanceof StreamedResponse) {
+            if (! config('newdebugbar.capture_streamed', false)) {
+                $this->manager->discard();
+
+                return;
+            }
+
+            try {
+                if (! $this->streamedProfiles->prepare($event->request, $event->response)) {
+                    $this->manager->discard();
+                }
+            } catch (Throwable) {
+                $this->manager->discard();
+            }
+
             return;
         }
 

@@ -26,6 +26,7 @@ use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestEligibility;
+use NewDebugBar\Support\StreamedProfileCapture;
 use NewDebugBar\Tests\ProfiledModel;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -472,7 +473,7 @@ it('profiles JSON without changing its body or injecting the toolbar', function 
         ->toBe(strlen(json_encode(['ready' => true])));
 });
 
-it('profiles API AJAX redirect streamed and binary responses without body injection', function () {
+it('profiles API AJAX redirect and binary responses while skipping streams by default', function () {
     $api = $this->getJson('/api/plain-json')
         ->assertOk()
         ->assertExactJson(['source' => 'api'])
@@ -494,7 +495,7 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
 
     $stream = $this->get('/streamed-response', ['Accept' => 'text/plain'])
         ->assertOk()
-        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertHeaderMissing('X-NewDebugBar-Profile')
         ->assertStreamedContent('streamed-body');
 
     $binary = $this->get('/binary-response')
@@ -506,7 +507,6 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
         'json' => $api,
         'ajax' => $ajax,
         'redirect' => $redirect,
-        'stream' => $stream,
         'download' => $binary,
     ])->map(fn ($response) => app(ProfileStore::class)->get(
         $response->headers->get('X-NewDebugBar-Profile'),
@@ -517,9 +517,12 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
             'json' => 'json',
             'ajax' => 'ajax',
             'redirect' => 'redirect',
-            'stream' => 'stream',
             'download' => 'download',
         ]);
+
+    expect(collect(app(ProfileStore::class)->recent())->contains(
+        fn (array $profile): bool => ($profile['sections']['request']['payload']['path'] ?? null) === '/streamed-response',
+    ))->toBeFalse();
 });
 
 it('labels Inertia foreground visits partial reloads and redirects distinctly', function () {
@@ -611,6 +614,7 @@ it('discards request state when profiling setup fails', function () {
     $middleware = new ProfileRequest(
         $manager,
         app(RequestEligibility::class),
+        app(StreamedProfileCapture::class),
     );
     $request = Request::create('/setup-failure', 'POST', [
         'value' => new StringableThatFails,
@@ -648,6 +652,7 @@ it('discards request state when Livewire response collection fails', function ()
         app(BarInjector::class),
         app(RequestEligibility::class),
         new LivewireUpdateRecorder($manager),
+        app(StreamedProfileCapture::class),
     );
 
     $finalizer->handle(new RequestHandled($request, $response));

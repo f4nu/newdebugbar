@@ -205,6 +205,10 @@ final class ProfileManager
                 'session' => $session,
                 'timing_scope' => 'global_middleware_entry',
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
+                ...($response instanceof StreamedResponse ? [
+                    'stream_completed' => true,
+                    'stream_body_captured' => false,
+                ] : []),
             ];
 
             return $this->buildProfile();
@@ -346,7 +350,7 @@ final class ProfileManager
         }
     }
 
-    private function responseSize(?Response $response): int
+    private function responseSize(?Response $response): ?int
     {
         $contentLength = $response?->headers->get('Content-Length');
 
@@ -361,7 +365,7 @@ final class ProfileManager
         }
 
         if ($response instanceof StreamedResponse) {
-            return 0;
+            return null;
         }
 
         $content = $response?->getContent();

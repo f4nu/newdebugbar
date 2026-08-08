@@ -3,6 +3,8 @@
 return [
     'enabled' => env('NEWDEBUGBAR_ENABLED', true),
 
+    'capture_streamed' => env('NEWDEBUGBAR_CAPTURE_STREAMED', false),
+
     'environments' => ['local'],
 
     'theme' => 'system',

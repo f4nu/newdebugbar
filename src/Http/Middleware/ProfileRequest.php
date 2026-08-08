@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Support\RequestEligibility;
+use NewDebugBar\Support\StreamedProfileCapture;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -16,6 +17,7 @@ final class ProfileRequest
     public function __construct(
         private readonly ProfileManager $manager,
         private readonly RequestEligibility $eligibility,
+        private readonly StreamedProfileCapture $streamedProfiles,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -41,5 +43,10 @@ final class ProfileRequest
 
             throw $exception;
         }
+    }
+
+    public function terminate(Request $request, Response $response): void
+    {
+        $this->streamedProfiles->terminate($request, $response);
     }
 }

@@ -55,6 +55,7 @@ use NewDebugBar\Support\RequestContext;
 use NewDebugBar\Support\RuntimeContext;
 use NewDebugBar\Support\RuntimeProfiler;
 use NewDebugBar\Support\SafeUrl;
+use NewDebugBar\Support\StreamedProfileCapture;
 
 /** Registers profiling services only in explicitly allowed environments. */
 final class NewDebugBarServiceProvider extends ServiceProvider
@@ -114,6 +115,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->scoped(LivewireUpdateRecorder::class);
         $this->app->scoped(LivewireMountRecorder::class);
         $this->app->scoped(RuntimeProfiler::class);
+        $this->app->scoped(StreamedProfileCapture::class);
         $this->app->singleton(RuntimeContext::class);
         $this->app->singleton(SafeUrl::class);
 
