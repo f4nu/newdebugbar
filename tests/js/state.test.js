@@ -440,35 +440,6 @@ test('query controls filter search and sort captured evidence', () => {
   assert.equal(state.querySort, 'duration');
 });
 
-test('query finding actions reveal and focus the relevant evidence', () => {
-  const state = createNewDebugBar(summary, runtime());
-  let scrolled = null;
-  const repeated = { scrollIntoView: (options) => { scrolled = ['repeated', options]; } };
-  const slow = { scrollIntoView: (options) => { scrolled = ['slow', options]; } };
-  state.$refs = {
-    queryItems: {
-      children: [],
-      querySelector: () => slow,
-    },
-    queryGroups: {
-      children: [],
-      querySelector: () => repeated,
-    },
-  };
-  state.$nextTick = (callback) => callback();
-
-  state.reviewQueryEvidence('repeated');
-  assert.equal(state.queryFilter, 'repeated');
-  assert.deepEqual(scrolled, ['repeated', { block: 'start' }]);
-
-  state.reviewQueryEvidence('slow');
-  assert.equal(state.queryFilter, 'slow');
-  assert.deepEqual(scrolled, ['slow', { block: 'start' }]);
-
-  state.reviewQueryEvidence('invalid');
-  assert.equal(state.queryFilter, 'slow');
-});
-
 test('authorization controls filter decisions and overview navigation opens denied results', () => {
   const browser = runtime();
   let dispatched = null;

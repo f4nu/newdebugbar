@@ -97,7 +97,7 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
         ->assertSet('summary.extra_query_count', 1)
         ->assertSet('summary.exception_count', 1)
         ->assertSet('detailsLoaded', true)
-        ->assertSee('The request returned HTTP 500.');
+        ->assertSet('profile.findings.0.summary', 'The request returned HTTP 500.');
 });
 
 it('marks active, quiet, truncated, and incomplete sections for disclosure', function () {
@@ -162,6 +162,7 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
                 && $sections['history']['active'] === true;
         })
         ->call('loadDetails')
+        ->assertDontSeeHtml('data-ndb-findings')
         ->assertSeeHtml('data-ndb-collection-status="views"')
         ->assertSee('Showing 0 of 2 views.')
         ->assertSeeHtml('data-ndb-timeline-incomplete')

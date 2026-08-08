@@ -109,10 +109,7 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-header-toolbar]").parentElement).backgroundColor', 'rgb(255, 255, 255)')
         ->assertMissing('[data-ndb-section-attention]')
         ->assertVisible('[data-ndb-section="queries"] .ndb-section-count')
-        ->assertScript(<<<'JS'
-            document.querySelector('[data-ndb-findings]').getBoundingClientRect().top
-                < document.querySelector('[data-ndb-overview-activity]').getBoundingClientRect().top
-            JS);
+        ->assertMissing('[data-ndb-findings]');
 
     selectDebugSectionViaPalette($page, 'validation');
     assertDebugSectionSelected($page, 'validation');
@@ -528,13 +525,12 @@ it('presents Laravel decisions lifecycle messages and editor links', function ()
     $page = visit('/profiled-context')
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
-        ->assertPresent('[data-ndb-overview-finding-destination="authorization"]')
-        ->assertCount('[data-ndb-section-panel="overview"] [data-ndb-findings] details', 0)
-        ->click('[data-ndb-overview-finding-destination="authorization"]')
+        ->assertMissing('[data-ndb-findings]')
+        ->click('[data-ndb-select-section="authorization"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Authorization"')
         ->assertAttribute('[data-ndb-select-section="authorization"]', 'aria-current', 'page')
+        ->click('[data-ndb-authorization-filter="denied"]')
         ->assertAttribute('[data-ndb-authorization-filter="denied"]', 'aria-pressed', 'true')
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-section-heading]")')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
         ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.result === "denied"')
         ->assertSee('delete-profile')
@@ -756,7 +752,7 @@ it('matches repeated query SQL to regular query surfaces in :dataset mode', func
         ->refresh()
         ->assertAttribute('#newdebugbar', 'data-theme', $theme)
         ->click('[data-ndb-toolbar="queries"]')
-        ->click('[data-ndb-query-review="repeated"]')
+        ->click('[data-ndb-query-filter="repeated"]')
         ->assertScript(<<<'JS'
             (() => {
                 const repeated = document.querySelector('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] pre');
@@ -775,7 +771,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
         ->waitForText('Extra runs')
-        ->assertPresent('[data-ndb-query-findings]')
+        ->assertMissing('[data-ndb-findings]')
         ->assertScript(<<<'JS'
             (() => {
                 const buttons = Array.from(document.querySelectorAll('[data-ndb-query-filter]'));
@@ -801,7 +797,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
             })()
             JS)
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
-        ->click('[data-ndb-query-review="repeated"]')
+        ->click('[data-ndb-query-filter="repeated"]')
         ->assertAttribute('[data-ndb-query-filter="repeated"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
@@ -835,28 +831,6 @@ it('filters searches sorts and shows repeated query evidence without another dis
         ->type('[data-ndb-query-search]', 'no query can match this')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertSee('No queries match these filters.')
-        ->assertNoJavaScriptErrors();
-});
-
-it('turns query findings into direct evidence actions instead of raw json', function () {
-    $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Findings')
-        ->assertPresent('[data-ndb-finding="query.n_plus_one"]')
-        ->assertMissing('[data-ndb-finding="query.repeated"]')
-        ->click('[data-ndb-select-section="queries"]');
-
-    assertDebugSectionSelected($page, 'queries');
-
-    $page
-        ->assertSee('Query findings')
-        ->assertPresent('[data-ndb-query-review="repeated"]')
-        ->assertCount('[data-ndb-query-findings] details', 0)
-        ->assertCount('[data-ndb-query-findings] code', 0)
-        ->assertMissing('[data-ndb-section-panel="queries"] [data-ndb-finding]')
-        ->click('[data-ndb-query-review="repeated"]')
-        ->assertAttribute('[data-ndb-query-filter="repeated"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-query-group]:not([hidden])')
         ->assertNoJavaScriptErrors();
 });
 

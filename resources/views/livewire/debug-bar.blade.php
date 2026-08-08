@@ -235,7 +235,6 @@
                                     wire:key="section-{{ $sectionKey }}"
                                     class="ndb:space-y-4"
                                 >
-                                    @php($sectionFindings = array_values(array_filter($profile['findings'] ?? [], fn (array $finding): bool => $finding['rule_id'] !== 'collector.truncated' && ($sectionKey === 'overview' || $finding['section'] === $sectionKey))))
                                     @php($collectionDropped = (int) ($section['payload']['dropped'] ?? 0))
                                     @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? $section['payload']['retained'] ?? count($section['payload']['items'] ?? [])))
                                     @php($collectionTotal = (int) ($section['summary']['count'] ?? $section['payload']['total'] ?? ($collectionRetained + $collectionDropped)))
@@ -254,11 +253,6 @@
                                         @php($runtimeCacheState = is_array($section['payload']['cache_state'] ?? null) ? $section['payload']['cache_state'] : [])
                                         @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
                                         @php($activitySections = array_values(array_filter($summary['sections'] ?? [], fn (array $link): bool => ! in_array($link['key'], ['overview', 'request', 'history'], true) && $link['count'] !== null && ($link['active'] ?? true))))
-                                        @php($overviewSectionLabels = collect($summary['sections'] ?? [])->mapWithKeys(fn (array $link): array => [$link['key'] => $link['label']])->all())
-                                        <x-newdebugbar::finding-list :findings="$sectionFindings" :overview="true" :section-labels="$overviewSectionLabels" />
-                                        @if ($sectionFindings === [])
-                                            <div data-ndb-no-high-confidence-finding class="ndb:flex ndb:items-start ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-emerald-200 ndb:bg-emerald-50/55 ndb:px-4 ndb:py-3.5 ndb:dark:border-emerald-950 ndb:dark:bg-emerald-950/20"><span class="ndb:mt-1 ndb:size-2 ndb:shrink-0 ndb:rounded-full ndb:bg-emerald-500"></span><div><p class="ndb:text-xs ndb:font-bold ndb:text-emerald-900 ndb:dark:text-emerald-200">No high-confidence issue detected</p><p class="ndb:mt-1 ndb:text-[11px] ndb:leading-relaxed ndb:text-emerald-800/80 ndb:dark:text-emerald-300/80">Review the activity below when you are checking a specific request detail.</p></div></div>
-                                        @endif
                                         @if (is_string($section['payload']['action_location']['editor_url'] ?? null))
                                             <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:dark:border-zinc-800"><span class="ndb:font-semibold ndb:text-zinc-400">Controller source</span><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $section['payload']['action_location']['copy'] }}</code><a href="{{ $section['payload']['action_location']['editor_url'] }}" class="ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">Open in editor</a></div>
                                         @endif
@@ -321,8 +315,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    @elseif (! in_array($sectionKey, ['queries', 'authorization'], true))
-                                        <x-newdebugbar::finding-list :findings="$sectionFindings" title="Related findings" />
                                     @endif
 
                                     @if ($sectionKey === 'timeline')
@@ -444,30 +436,6 @@
                                         <details class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"><summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"><span class="ndb:min-w-0 ndb:flex-1"><span class="ndb:block ndb:text-xs ndb:font-bold">Raw request data</span><span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">Headers, inputs, session shape, and internal capture fields</span></span><x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180" /></summary><pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($section['payload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre></details>
                                     @elseif ($sectionKey === 'queries')
                                         @php($querySummary = $section['summary'])
-                                        @php($queryNPlusOneCount = count(array_filter($sectionFindings, fn (array $finding): bool => $finding['rule_id'] === 'query.n_plus_one')))
-                                        @if ($sectionFindings !== [])
-                                            <div data-ndb-query-findings class="ndb:flex ndb:flex-col ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:p-4 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30">
-                                                <div class="ndb:min-w-0 ndb:flex-1">
-                                                    <h3 class="ndb:text-sm ndb:font-bold">Query findings</h3>
-                                                    <p data-ndb-query-finding-summary class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-600 ndb:dark:text-zinc-300">
-                                                        @if (($querySummary['repeated_pattern_count'] ?? 0) > 0)
-                                                            {{ $querySummary['repeated_pattern_count'] }} repeated {{ ($querySummary['repeated_pattern_count'] ?? 0) === 1 ? 'pattern' : 'patterns' }} found.
-                                                            @if ($queryNPlusOneCount > 0)
-                                                                {{ $queryNPlusOneCount }} {{ $queryNPlusOneCount === 1 ? 'has' : 'have' }} likely N+1 evidence.
-                                                            @endif
-                                                        @elseif (($querySummary['slow_count'] ?? 0) > 0)
-                                                            {{ $querySummary['slow_count'] }} slow {{ ($querySummary['slow_count'] ?? 0) === 1 ? 'query needs' : 'queries need' }} review.
-                                                        @else
-                                                            Review the matching query evidence below.
-                                                        @endif
-                                                    </p>
-                                                </div>
-                                                <div class="ndb:flex ndb:flex-wrap ndb:gap-2">
-                                                    @if (($querySummary['repeated_pattern_count'] ?? 0) > 0)<button type="button" data-ndb-query-review="repeated" @click="reviewQueryEvidence('repeated')" class="ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-indigo-500 ndb:dark:text-indigo-950 ndb:dark:hover:bg-indigo-400">Review repeated</button>@endif
-                                                    @if (($querySummary['slow_count'] ?? 0) > 0)<button type="button" data-ndb-query-review="slow" @click="reviewQueryEvidence('slow')" class="ndb:rounded-lg ndb:border ndb:border-violet-200 ndb:bg-white/70 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-violet-700 ndb:transition ndb:hover:bg-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-violet-500 ndb:dark:border-violet-900 ndb:dark:bg-violet-950/40 ndb:dark:text-violet-300 ndb:dark:hover:bg-violet-950/70">Review slow</button>@endif
-                                                </div>
-                                            </div>
-                                        @endif
                                         <div class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
                                             <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-zinc-200/80 ndb:sm:grid-cols-5 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800">
                                                 @foreach ([

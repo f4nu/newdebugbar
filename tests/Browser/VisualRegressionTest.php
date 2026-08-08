@@ -407,7 +407,7 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
     selectVisualDebugSection($page, 'queries');
 
     $page
-        ->click('[data-ndb-query-review="repeated"]')
+        ->click('[data-ndb-query-filter="repeated"]')
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article").length > 0');
 
     stabilizeVisualDebugValues($page);

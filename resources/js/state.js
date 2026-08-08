@@ -455,18 +455,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.applyQueryView();
     },
 
-    reviewQueryEvidence(filter) {
-      if (!['repeated', 'slow'].includes(filter)) return;
-
-      this.setQueryFilter(filter);
-      this.$nextTick?.(() => {
-        const list = filter === 'repeated' ? this.$refs?.queryGroups : this.$refs?.queryItems;
-        const target = list?.querySelector?.('[data-ndb-query-group]:not([hidden]), [data-ndb-query-item]:not([hidden])');
-
-        target?.scrollIntoView?.({ block: 'start' });
-      });
-    },
-
     setQuerySort(sort) {
       if (!['execution', 'duration'].includes(sort)) return;
 
