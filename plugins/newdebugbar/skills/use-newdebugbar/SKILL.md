@@ -32,8 +32,8 @@ Use the package's local MCP tools directly to read exact, saved Laravel request 
 
 1. Use the same browser, account, and session for every page.
 2. Load each page twice and record the exact profile, path, request kind, status, and duration. Rank the second load so startup work does not decide the result.
-3. Stay below the profile retention limit. With the default limit of 20, testing up to eight pages twice leaves room for login and background requests.
-4. Compare profile summaries first. Read findings and small sections only for the three slowest second-load profiles.
+3. Do not cap the number of pages. When the review is larger than the profile retention limit, work in retention-safe batches. Save each page's second-load summary, inspect the useful profiles before they can be removed, then continue with the next batch.
+4. Compare all saved profile summaries first. Read findings and small sections only for the slowest or most useful second-load profiles.
 5. Treat local debug timings as relative evidence. Collector work affects the total, so confirm an important performance claim without the profiler before calling it an application benchmark.
 
 ## Interpret the evidence
