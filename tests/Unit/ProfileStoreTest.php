@@ -51,6 +51,7 @@ it('lists valid recent profiles within the retention limit', function () {
 
     $store->put(['id' => $first]);
     touch($this->profilePath.'/'.$first.'.json', now()->subSecond()->getTimestamp());
+    clearstatcache(true, $this->profilePath.'/'.$first.'.json');
     $store->put(['id' => $latest]);
 
     expect(array_column($store->recent(), 'id'))->toBe([$latest, $first])
@@ -64,6 +65,7 @@ it('deletes an expired profile when it is read', function () {
 
     $store->put(['id' => $id]);
     touch($this->profilePath.'/'.$id.'.json', now()->subMinutes(2)->getTimestamp());
+    clearstatcache(true, $this->profilePath.'/'.$id.'.json');
 
     expect($store->get($id))->toBeNull()
         ->and($this->files->exists($this->profilePath.'/'.$id.'.json'))->toBeFalse();
@@ -77,8 +79,10 @@ it('prunes old and excess profiles', function () {
 
     $store->put(['id' => $old]);
     touch($this->profilePath.'/'.$old.'.json', now()->subMinutes(2)->getTimestamp());
+    clearstatcache(true, $this->profilePath.'/'.$old.'.json');
     $store->put(['id' => $first]);
     touch($this->profilePath.'/'.$first.'.json', now()->subSeconds(10)->getTimestamp());
+    clearstatcache(true, $this->profilePath.'/'.$first.'.json');
     $store->put(['id' => $latest]);
 
     expect($store->get($old))->toBeNull()
