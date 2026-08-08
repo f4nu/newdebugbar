@@ -1,0 +1,34 @@
+{
+  "name": "newdebugbar",
+  "version": "1.0.0",
+  "description": "Inspect Laravel requests with New Debug Bar's local MCP server.",
+  "author": {
+    "name": "Benjamin Crozat",
+    "url": "https://github.com/newdebugbar"
+  },
+  "homepage": "https://github.com/newdebugbar/newdebugbar",
+  "repository": "https://github.com/newdebugbar/newdebugbar",
+  "license": "Apache-2.0",
+  "keywords": [
+    "laravel",
+    "debugging",
+    "mcp",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "New Debug Bar",
+    "shortDescription": "Give Codex exact Laravel request data.",
+    "longDescription": "Connect Codex to New Debug Bar's local, read-only request profiles and add a skill for setup and debugging.",
+    "developerName": "New Debug Bar",
+    "category": "Developer Tools",
+    "capabilities": [
+      "MCP",
+      "Skills"
+    ],
+    "defaultPrompt": [
+      "Inspect the latest Laravel request and explain what needs attention."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}
