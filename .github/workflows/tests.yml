@@ -8,13 +8,37 @@ permissions:
   contents: read
 
 jobs:
-  php:
-    name: PHP ${{ matrix.php }}
+  package:
+    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.3', '8.4', '8.5']
+        include:
+          - laravel: '10'
+            php: '8.1'
+            framework: '^10.49'
+            mcp: '0.1.1'
+            testbench: '^8.36'
+            pest: '2.36.0'
+          - laravel: '11'
+            php: '8.2'
+            framework: '^11.45'
+            mcp: '0.4.2'
+            testbench: '^9.0'
+            pest: '^3.8'
+          - laravel: '12'
+            php: '8.2'
+            framework: '^12.41'
+            mcp: '^0.9'
+            testbench: '^10.0'
+            pest: '^3.8'
+          - laravel: '13'
+            php: '8.5'
+            framework: '^13.0'
+            mcp: '^0.9'
+            testbench: '^11.1'
+            pest: '^4.4'
 
     steps:
       - uses: actions/checkout@v7
@@ -22,10 +46,19 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - run: composer install --prefer-dist --no-interaction --no-progress
-      - run: composer validate --strict
-      - run: composer audit
-      - run: composer lint:check
+      - run: composer remove --dev pestphp/pest-plugin-browser --no-update
+      - run: composer config platform.php ${{ matrix.php }}.0
+      - if: matrix.laravel == '10'
+        run: composer config policy.advisories.block false
+      - run: composer require --no-update "laravel/framework:${{ matrix.framework }}" "laravel/mcp:${{ matrix.mcp }}" "livewire/livewire:^4.1"
+      - run: composer require --dev --no-update "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}"
+      - run: composer update --with-all-dependencies --prefer-dist --no-interaction --no-progress
+      - if: matrix.laravel == '13'
+        run: composer validate --strict
+      - if: matrix.laravel == '13'
+        run: composer audit
+      - if: matrix.laravel == '13'
+        run: composer lint:check
       - run: composer test:php
 
   frontend:
