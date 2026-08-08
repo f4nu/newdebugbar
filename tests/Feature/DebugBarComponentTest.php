@@ -12,14 +12,16 @@ it('loads full profile details only after the inspector asks', function () {
     $file = File::files(config('newdebugbar.storage.path'))[0];
     $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
 
-    Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
+    $component = Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
         ->assertSet('detailsLoaded', false)
         ->call('loadDetails')
         ->assertSet('detailsLoaded', true)
         ->assertDispatched('newdebugbar-content-updated')
         ->assertSee('Profiled request completed')
-        ->assertSeeHtml('data-ndb-lifecycle-scope')
-        ->assertSee('Early Laravel bootstrap is not measured.');
+        ->assertSeeHtml('data-ndb-lifecycle-scope');
+
+    expect(preg_replace('/\s+/', ' ', $component->html()))
+        ->toContain('Early Laravel bootstrap is not measured.');
 });
 
 it('locks server-owned profile state', function () {
@@ -142,7 +144,7 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
         ],
     ]);
 
-    Livewire::test(DebugBar::class, ['profileId' => $id])
+    $component = Livewire::test(DebugBar::class, ['profileId' => $id])
         ->assertSet('summary.warning', true)
         ->assertSet('summary.sections', function (array $sections): bool {
             $sections = collect($sections)->keyBy('key');
@@ -165,8 +167,10 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
         ->assertDontSeeHtml('data-ndb-findings')
         ->assertSeeHtml('data-ndb-collection-status="views"')
         ->assertSee('Showing 0 of 2 views.')
-        ->assertSeeHtml('data-ndb-timeline-incomplete')
-        ->assertSee('Timeline incomplete: 2 source events were omitted.');
+        ->assertSeeHtml('data-ndb-timeline-incomplete');
+
+    expect(preg_replace('/\s+/', ' ', $component->html()))
+        ->toContain('Timeline incomplete: 2 source events were omitted.');
 });
 
 it('marks secondary query transaction omissions as truncated', function () {
@@ -197,7 +201,7 @@ it('marks secondary query transaction omissions as truncated', function () {
         ],
     ]);
 
-    Livewire::test(DebugBar::class, ['profileId' => $id])
+    $component = Livewire::test(DebugBar::class, ['profileId' => $id])
         ->assertSet('summary.sections', function (array $sections): bool {
             $queries = collect($sections)->firstWhere('key', 'queries');
 
@@ -206,8 +210,10 @@ it('marks secondary query transaction omissions as truncated', function () {
                 && $queries['truncated'] === true;
         })
         ->call('loadDetails')
-        ->assertSeeHtml('data-ndb-collection-status="query-transactions"')
-        ->assertSee('Showing 1 of 3 query transaction events.');
+        ->assertSeeHtml('data-ndb-collection-status="query-transactions"');
+
+    expect(preg_replace('/\s+/', ' ', $component->html()))
+        ->toContain('Showing 1 of 3 query transaction events.');
 });
 
 it('uses the shared presenter for deferred query details and findings', function () {

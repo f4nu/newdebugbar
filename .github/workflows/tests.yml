@@ -47,6 +47,8 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
       - run: composer remove --dev pestphp/pest-plugin-browser --no-update
+      - if: matrix.php == '8.1'
+        run: composer remove --dev laravel/pint --no-update
       - run: composer config platform.php ${{ matrix.php }}.0
       - if: matrix.laravel == '10' || matrix.laravel == '11'
         run: composer config policy.advisories.block false
@@ -57,8 +59,6 @@ jobs:
         run: composer validate --strict
       - if: matrix.laravel == '13'
         run: composer audit
-      - if: matrix.laravel == '13'
-        run: composer lint:check
       - run: composer test:php
 
   frontend:
@@ -92,5 +92,6 @@ jobs:
           cache: npm
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: npm ci
+      - run: composer lint:check
       - run: npx playwright install --with-deps chromium
       - run: composer test:browser
