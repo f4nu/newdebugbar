@@ -7,6 +7,7 @@ function historySummaryProfile(string $requestType, array $request = [], array $
 {
     return [
         'id' => '550e8400-e29b-41d4-a716-446655440000',
+        'environment' => 'testing',
         'metrics' => ['duration_ms' => 10, 'peak_memory_mb' => 8],
         'findings' => [],
         'sections' => [
@@ -37,7 +38,8 @@ it('summarizes the application event behind Livewire requests', function () {
         ]]], 'summary' => ['count' => 1]],
     ]));
 
-    expect($summary['activity'])->toBe('Work Order Board → advance()');
+    expect($summary['activity'])->toBe('Work Order Board → advance()')
+        ->and($summary['environment'])->toBe('testing');
 });
 
 it('summarizes Inertia partial reloads and redirects', function () {

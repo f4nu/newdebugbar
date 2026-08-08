@@ -29,6 +29,7 @@ final class ProfileSummaryPresenter
             'short_id' => is_string($profile['id'] ?? null) ? substr($profile['id'], 0, 8) : null,
             'recorded_at' => $profile['recorded_at'] ?? null,
             'recorded_time' => $this->recordedTime($profile['recorded_at'] ?? null),
+            'environment' => $profile['environment'] ?? null,
             'profile_type' => $profile['profile_type'] ?? 'http',
             'request_type' => $requestType,
             'activity' => $this->activity($profile, $request, $requestType),

@@ -112,7 +112,7 @@
                         >Peak</span
                     ><span
                         class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                        x-text="summary.memory_mb + ' MB'"
+                        x-text="summary.peak_memory_mb + ' MB'"
                     ></span
                 ></span>
             </x-newdebugbar::toolbar-button>
@@ -135,7 +135,7 @@
                         ><span x-text="summary.query_count"></span
                         ><span
                             class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:sm:inline"
-                            x-text="summary.query_duration_ms + ' ms'"
+                            x-text="summary.query_time_ms + ' ms'"
                         ></span></span
                 ></span>
             </x-newdebugbar::toolbar-button>
@@ -305,7 +305,7 @@
                                     ><span
                                         data-ndb-header-memory
                                         class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                                        x-text="summary.memory_mb + ' MB'"
+                                        x-text="summary.peak_memory_mb + ' MB'"
                                     ></span
                                 ></span>
                             </x-newdebugbar::toolbar-button>
@@ -329,7 +329,7 @@
                                         ><span
                                             data-ndb-header-query-duration
                                             class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:sm:inline"
-                                            x-text="summary.query_duration_ms + ' ms'"
+                                            x-text="summary.query_time_ms + ' ms'"
                                         ></span></span
                                 ></span>
                             </x-newdebugbar::toolbar-button>

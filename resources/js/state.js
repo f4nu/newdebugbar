@@ -339,14 +339,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     requestDetails() {
       if (this.detailsRequested) return;
 
-      const profileId = this.summary.profile_id;
+      const profileId = this.summary.id;
       const requestVersion = ++this.detailRequestVersion;
       this.detailsRequested = true;
       this.detailsError = false;
 
       Promise.resolve(this.$wire?.loadDetails())
         .then(() => {
-          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.profile_id) return;
+          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.id) return;
 
           this.$nextTick?.(() => {
             this.syncSectionPanels();
@@ -361,7 +361,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
           });
         })
         .catch(() => {
-          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.profile_id) return;
+          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.id) return;
 
           this.detailsRequested = false;
           this.detailsError = true;
@@ -417,7 +417,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
     noticeProfile(profileId, context = {}) {
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(profileId ?? '')) return;
-      if (profileId === this.summary.profile_id) return;
+      if (profileId === this.summary.id) return;
 
       if (context.foreground === true) {
         Promise.resolve(this.$wire?.switchProfile(profileId)).catch(() => {});

@@ -51,12 +51,16 @@ final class DebugBar extends Component
     #[Locked]
     public ?string $discoveredProfileId = null;
 
-    public function mount(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
-    {
+    public function mount(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
         $this->profileId = $profileId;
         $this->currentProfileId = $profileId;
         $profile = $presenter->present($store->get($profileId) ?? []);
-        $this->summary = $this->makeSummary($profile);
+        $this->summary = $this->makeSummary($profile, $summaries);
         $this->detailsLoaded = (int) ($this->summary['status'] ?? 0) >= 400
             || (int) ($this->summary['exception_count'] ?? 0) > 0;
     }
@@ -143,19 +147,30 @@ final class DebugBar extends Component
         $this->dispatch('newdebugbar-content-updated');
     }
 
-    public function switchProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
-    {
-        $this->activateProfile($profileId, true, $store, $presenter);
+    public function switchProfile(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        $this->activateProfile($profileId, true, $store, $presenter, $summaries);
     }
 
-    public function selectProfile(string $profileId, ProfileStore $store, ProfilePresenter $presenter): void
-    {
-        $this->activateProfile($profileId, false, $store, $presenter);
+    public function selectProfile(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        $this->activateProfile($profileId, false, $store, $presenter, $summaries);
     }
 
-    public function returnToCurrent(ProfileStore $store, ProfilePresenter $presenter): void
-    {
-        $this->activateProfile($this->currentProfileId, false, $store, $presenter);
+    public function returnToCurrent(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        $this->activateProfile($this->currentProfileId, false, $store, $presenter, $summaries);
     }
 
     private function activateProfile(
@@ -163,6 +178,7 @@ final class DebugBar extends Component
         bool $makeCurrent,
         ProfileStore $store,
         ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
     ): void {
         abort_unless($this->validProfileId($profileId), 422);
         $profile = $store->get($profileId);
@@ -174,7 +190,7 @@ final class DebugBar extends Component
             $this->currentProfileId = $profileId;
         }
 
-        $this->summary = $this->makeSummary($presenter->present($profile));
+        $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
         $this->detailsLoaded = false;
         $this->history = [];
         $this->comparison = [];
@@ -205,10 +221,11 @@ final class DebugBar extends Component
      * @param  array<string, mixed>  $profile
      * @return array<string, mixed>
      */
-    private function makeSummary(array $profile): array
+    private function makeSummary(array $profile, ProfileSummaryPresenter $summaries): array
     {
         $sections = $profile['sections'] ?? [];
         $findings = is_array($profile['findings'] ?? null) ? $profile['findings'] : [];
+        $summary = $summaries->present($profile);
         $findingCounts = [];
         $sectionLinks = [];
         $sectionCounts = [];
@@ -259,28 +276,14 @@ final class DebugBar extends Component
         ];
         $sectionCounts['history'] = null;
 
-        $status = (int) ($sections['request']['summary']['status'] ?? 0);
-        $exceptionCount = (int) ($sections['exceptions']['summary']['count'] ?? 0);
-        $querySummary = $sections['queries']['summary'] ?? [];
-
         return [
-            'profile_id' => $profile['id'] ?? $this->profileId,
-            'current_profile_id' => $this->currentProfileId,
-            'is_current_profile' => ($profile['id'] ?? $this->profileId) === $this->currentProfileId,
+            ...$summary,
+            'id' => $summary['id'] ?? $this->profileId,
+            'is_current_profile' => ($summary['id'] ?? $this->profileId) === $this->currentProfileId,
             'theme' => config('newdebugbar.theme', 'system'),
-            'environment' => (string) ($profile['environment'] ?? app()->environment()),
-            'method' => $sections['request']['summary']['method'] ?? 'GET',
-            'path' => $sections['request']['payload']['path'] ?? '/',
-            'status' => $status,
-            'duration_ms' => $profile['metrics']['duration_ms'] ?? 0,
-            'memory_mb' => $profile['metrics']['peak_memory_mb'] ?? 0,
-            'query_count' => $sections['queries']['summary']['count'] ?? 0,
-            'query_duration_ms' => $sections['queries']['summary']['duration_ms'] ?? 0,
-            'exception_count' => $exceptionCount,
-            'slow_query_count' => $querySummary['slow_count'] ?? 0,
-            'duplicate_query_count' => $querySummary['repeated_pattern_count'] ?? 0,
-            'extra_query_count' => $querySummary['extra_execution_count'] ?? 0,
-            'warning' => $status >= 400 || $exceptionCount > 0 || $findings !== [],
+            'environment' => (string) ($summary['environment'] ?? app()->environment()),
+            'method' => $summary['method'] ?? 'GET',
+            'path' => $summary['path'] ?? '/',
             'sections' => $sectionLinks,
             'section_counts' => $sectionCounts,
         ];

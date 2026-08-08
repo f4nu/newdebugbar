@@ -89,14 +89,16 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
     ]);
 
     Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->assertSet('summary.id', $id)
         ->assertSet('summary.environment', 'testing')
         ->assertSet('summary.method', 'POST')
         ->assertSet('summary.path', '/organizations')
         ->assertSet('summary.status', 500)
         ->assertSet('summary.warning', true)
+        ->assertSet('summary.peak_memory_mb', 8.5)
+        ->assertSet('summary.query_time_ms', 130.5)
         ->assertSet('summary.slow_query_count', 1)
-        ->assertSet('summary.duplicate_query_count', 1)
-        ->assertSet('summary.extra_query_count', 1)
+        ->assertSet('summary.repeated_pattern_count', 1)
         ->assertSet('summary.exception_count', 1)
         ->assertSet('detailsLoaded', true)
         ->assertSet('profile.findings.0.summary', 'The request returned HTTP 500.');

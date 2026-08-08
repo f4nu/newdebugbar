@@ -312,7 +312,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
-                window.__newDebugBarActiveProfile = state.summary.profile_id;
+                window.__newDebugBarActiveProfile = state.summary.id;
                 window.__newDebugBarFetchSentinel = true;
                 window.__newDebugBarDiscoveries = [];
                 window.addEventListener('newdebugbar-profile-discovered', (event) => {
@@ -341,7 +341,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
                 const discoveries = window.__newDebugBarDiscoveries;
 
                 return window.__newDebugBarFetchSentinel === true
-                    && state.summary.profile_id === window.__newDebugBarActiveProfile
+                    && state.summary.id === window.__newDebugBarActiveProfile
                     && discoveries.length === 2
                     && discoveries[0].profileId !== discoveries[1].profileId
                     && discoveries[1].stateProfileId === discoveries[1].profileId

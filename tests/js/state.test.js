@@ -158,7 +158,7 @@ test('a new application profile resets stale section state and reloads open deta
   state.inspectorOpen = true;
   state.detailsRequested = true;
 
-  state.switchProfile({ ...summary, profile_id: '550e8400-e29b-41d4-a716-446655440000', path: '/livewire/update' });
+  state.switchProfile({ ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/livewire/update' });
   await Promise.resolve();
 
   assert.equal(state.summary.path, '/livewire/update');
@@ -168,7 +168,7 @@ test('a new application profile resets stale section state and reloads open deta
 
   state.selected = 'history';
   state.historyPath = '/profiled';
-  state.switchProfile({ ...summary, profile_id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' });
+  state.switchProfile({ ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' });
   await Promise.resolve();
 
   assert.equal(state.selected, 'history');
@@ -184,7 +184,7 @@ test('a new application profile resets stale section state and reloads open deta
 test('background profiles refresh loaded history without switching the active profile', async () => {
   const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
   const discoveredProfileId = '550e8400-e29b-41d4-a716-446655440000';
-  const state = createNewDebugBar({ ...summary, profile_id: activeProfileId }, runtime());
+  const state = createNewDebugBar({ ...summary, id: activeProfileId }, runtime());
   let discovered = null;
   state.$wire = { discoverProfile: async (id) => { discovered = id; } };
   state.$nextTick = (callback) => callback();
@@ -194,7 +194,7 @@ test('background profiles refresh loaded history without switching the active pr
 
   assert.equal(discovered, discoveredProfileId);
   assert.equal(state.discoveredProfileId, discoveredProfileId);
-  assert.equal(state.summary.profile_id, activeProfileId);
+  assert.equal(state.summary.id, activeProfileId);
 
   state.noticeProfile('not-a-profile');
   assert.equal(discovered, discoveredProfileId);
@@ -216,7 +216,7 @@ test('Escape returns from a retained History profile before closing the inspecto
 test('foreground profiles replace the current profile instead of entering background history', async () => {
   const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
   const visitProfileId = '550e8400-e29b-41d4-a716-446655440000';
-  const state = createNewDebugBar({ ...summary, profile_id: activeProfileId }, runtime());
+  const state = createNewDebugBar({ ...summary, id: activeProfileId }, runtime());
   let switched = null;
   let discovered = null;
   state.$wire = {
@@ -234,7 +234,7 @@ test('foreground profiles replace the current profile instead of entering backgr
 
 test('stale detail responses cannot resync panels for a newer profile', async () => {
   const pending = [];
-  const state = createNewDebugBar({ ...summary, profile_id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' }, runtime());
+  const state = createNewDebugBar({ ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' }, runtime());
   let synced = 0;
   state.syncSectionPanels = () => synced++;
   state.$wire = { loadDetails: () => new Promise((resolve) => pending.push(resolve)) };
@@ -242,13 +242,13 @@ test('stale detail responses cannot resync panels for a newer profile', async ()
   state.inspectorOpen = true;
 
   state.openInspector();
-  state.switchProfile({ ...summary, profile_id: '550e8400-e29b-41d4-a716-446655440000' });
+  state.switchProfile({ ...summary, id: '550e8400-e29b-41d4-a716-446655440000' });
   const syncsBeforeStaleResponse = synced;
   pending[0]();
   await Promise.resolve();
 
   assert.equal(synced, syncsBeforeStaleResponse);
-  assert.equal(state.summary.profile_id, '550e8400-e29b-41d4-a716-446655440000');
+  assert.equal(state.summary.id, '550e8400-e29b-41d4-a716-446655440000');
   assert.equal(state.selected, 'overview');
 });
 
