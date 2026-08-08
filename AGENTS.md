@@ -30,7 +30,11 @@
 ## Checking interface work
 
 - Start with the built-in browser.
-- Use `../new-debug-bar-examples` to check Blade, Livewire, and Inertia. Do not change those apps just to make a package test pass.
+- Use these public, real applications as the canonical verification and benchmark targets:
+  - [Northline Proofs](https://github.com/newdebugbar/northline-proofs) for conventional Laravel Blade.
+  - [CommonGround Markets](https://github.com/newdebugbar/commonground-markets) for Laravel Livewire.
+  - [Meridian Launch](https://github.com/newdebugbar/meridian-launch) for Laravel Inertia and Vue.
+- Check all three when verifying the package across Blade, Livewire, and Inertia or running comparable benchmarks. Do not change an example app just to make a package test pass.
 - Run one workbench server or browser test group at a time.
 - Check light and dark themes, keyboard use, browser errors, and a 390px-wide screen.
 - Update screenshot baselines only for planned changes. Look at each changed image, then run the same checks again.
