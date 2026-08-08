@@ -1,5 +1,5 @@
 ---
-name: use-new-debug-bar
+name: use-newdebugbar
 description: Install, set up, and use New Debug Bar in a Laravel app. Use when Codex needs to add the package, connect its local MCP server, inspect a browser request or saved profile, compare request performance, investigate findings or queries, or explain what happened, what is wrong, why, where, and what to inspect next.
 ---
 
