@@ -115,9 +115,6 @@ final class QueryCollector extends AbstractCollector
         return [
             ...parent::payload(),
             'transactions' => $this->transactions,
-            'transaction_retained' => count($this->transactions),
-            'transaction_dropped' => $this->droppedTransactions,
-            'transaction_total' => $this->transactionCount,
         ];
     }
 

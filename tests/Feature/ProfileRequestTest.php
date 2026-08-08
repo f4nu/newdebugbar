@@ -113,6 +113,16 @@ it('captures a local web request and its Laravel activity', function () {
         ->and($profile['sections']['logs']['payload']['items'][0]['stack'])->not->toBeEmpty();
 
     foreach ($profile['sections'] as $section) {
+        expect($section['payload'])->not->toHaveKeys([
+            'dropped',
+            'retained',
+            'total',
+            'truncated',
+            'transaction_retained',
+            'transaction_dropped',
+            'transaction_total',
+        ]);
+
         foreach ($section['payload']['items'] ?? [] as $item) {
             expect($item['at_ms'])->toBeNumeric()->toBeGreaterThanOrEqual(0);
         }
@@ -666,7 +676,7 @@ final class CollectorThatFailsDuringSummary implements Collector
 
     public function payload(): array
     {
-        return ['items' => [], 'dropped' => 0];
+        return ['items' => []];
     }
 }
 
@@ -696,7 +706,7 @@ final class CollectorThatFailsDuringRecord implements Collector
 
     public function payload(): array
     {
-        return ['items' => [], 'dropped' => 0];
+        return ['items' => []];
     }
 }
 

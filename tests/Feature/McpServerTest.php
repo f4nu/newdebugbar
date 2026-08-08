@@ -320,7 +320,7 @@ it('advances past an item that cannot fit within the MCP byte limit', function (
                 'summary' => ['count' => 1],
                 'payload' => ['items' => [[
                     'name' => str_repeat('oversized-event-', 180),
-                ]], 'dropped' => 0],
+                ]]],
             ],
         ],
     ]);
@@ -384,7 +384,7 @@ it('bounds deeply nested MCP values and treats malformed profiles as missing', f
                 'payload' => ['items' => [[
                     'name' => 'nested.event',
                     'nested' => ['one' => ['two' => ['three' => ['four' => ['five' => 'private-deep-value']]]]],
-                ]], 'dropped' => 0],
+                ]]],
             ],
         ],
     ]);

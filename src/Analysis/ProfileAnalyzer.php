@@ -266,7 +266,7 @@ final class ProfileAnalyzer
         }
 
         foreach ($sections as $key => $section) {
-            $dropped = (int) ($section['payload']['dropped'] ?? 0);
+            $dropped = (int) ($section['summary']['dropped_count'] ?? 0);
 
             if ($dropped > 0) {
                 $retained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? []));
@@ -282,11 +282,11 @@ final class ProfileAnalyzer
                 );
             }
 
-            $transactionDropped = (int) ($section['payload']['transaction_dropped'] ?? 0);
+            $transactionDropped = (int) ($section['summary']['transaction_dropped_count'] ?? 0);
 
             if ($transactionDropped > 0) {
-                $transactionRetained = (int) ($section['payload']['transaction_retained'] ?? count($section['payload']['transactions'] ?? []));
-                $transactionTotal = (int) ($section['payload']['transaction_total'] ?? ($transactionRetained + $transactionDropped));
+                $transactionRetained = (int) ($section['summary']['transaction_retained_count'] ?? count($section['payload']['transactions'] ?? []));
+                $transactionTotal = (int) ($section['summary']['transaction_count'] ?? ($transactionRetained + $transactionDropped));
                 $findings[] = $this->finding(
                     'collector.truncated',
                     'info',

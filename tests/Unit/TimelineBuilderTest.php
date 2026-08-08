@@ -92,9 +92,9 @@ it('keeps timeline geometry bounded when events exceed the reported duration', f
 it('reports every collector source omitted from the timeline', function () {
     $omitted = (new TimelineBuilder)->omittedSources([
         'sections' => [
-            'queries' => ['payload' => ['dropped' => 2]],
-            'views' => ['payload' => ['dropped' => 17]],
-            'logs' => ['payload' => ['dropped' => 0]],
+            'queries' => ['summary' => ['dropped_count' => 2]],
+            'views' => ['summary' => ['dropped_count' => 17]],
+            'logs' => ['summary' => ['dropped_count' => 0]],
         ],
     ]);
 

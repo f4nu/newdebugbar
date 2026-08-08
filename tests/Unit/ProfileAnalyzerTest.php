@@ -18,14 +18,13 @@ it('produces stable bounded findings with supporting evidence', function () {
             'request' => ['summary' => ['status' => 500]],
             'queries' => [
                 'label' => 'Queries',
-                'summary' => ['count' => 5, 'retained_count' => 3],
+                'summary' => ['count' => 5, 'retained_count' => 3, 'dropped_count' => 2],
                 'payload' => [
                     'items' => [
                         ['sql' => 'select ?', 'bindings' => [1], 'duration_ms' => 60, 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
                         ['sql' => 'select ?', 'bindings' => [2], 'duration_ms' => 10, 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
                         ['sql' => 'select ?', 'bindings' => [3], 'duration_ms' => 10, 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
                     ],
-                    'dropped' => 2,
                 ],
             ],
             'exceptions' => ['summary' => ['count' => 1], 'payload' => ['items' => []]],
@@ -81,14 +80,13 @@ it('keeps diagnostic query findings ahead of collector-limit notes', function ()
             'request' => ['summary' => ['status' => 200]],
             'queries' => [
                 'label' => 'Queries',
-                'summary' => ['count' => 5, 'retained_count' => 3],
+                'summary' => ['count' => 5, 'retained_count' => 3, 'dropped_count' => 2],
                 'payload' => [
                     'items' => [
                         ['sql' => 'select ?', 'bindings' => [1], 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
                         ['sql' => 'select ?', 'bindings' => [2], 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
                         ['sql' => 'select ?', 'bindings' => [3], 'callsite' => ['file' => 'app/A.php', 'line' => 1]],
                     ],
-                    'dropped' => 2,
                 ],
             ],
         ],
@@ -168,13 +166,17 @@ it('reports omitted query transaction events as collector evidence', function ()
             'request' => ['summary' => ['status' => 200]],
             'queries' => [
                 'label' => 'Queries',
-                'summary' => ['count' => 0, 'retained_count' => 0],
+                'summary' => [
+                    'count' => 0,
+                    'retained_count' => 0,
+                    'dropped_count' => 0,
+                    'transaction_count' => 3,
+                    'transaction_retained_count' => 1,
+                    'transaction_dropped_count' => 2,
+                ],
                 'payload' => [
                     'items' => [],
-                    'dropped' => 0,
                     'transactions' => [['kind' => 'begin']],
-                    'transaction_dropped' => 2,
-                    'transaction_total' => 3,
                 ],
             ],
         ],

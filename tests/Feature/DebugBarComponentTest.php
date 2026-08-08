@@ -126,22 +126,22 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
             'queries' => [
                 'label' => 'Queries',
                 'summary' => ['count' => 0, 'duration_ms' => 0],
-                'payload' => ['items' => [], 'dropped' => 0],
+                'payload' => ['items' => []],
             ],
             'views' => [
                 'label' => 'Views',
                 'summary' => ['count' => 2, 'retained_count' => 0, 'dropped_count' => 2],
-                'payload' => ['items' => [], 'dropped' => 2, 'truncated' => true],
+                'payload' => ['items' => []],
             ],
             'logs' => [
                 'label' => 'Logs',
                 'summary' => ['count' => 0],
-                'payload' => ['items' => [], 'dropped' => 0],
+                'payload' => ['items' => []],
             ],
             'exceptions' => [
                 'label' => 'Exceptions',
                 'summary' => ['count' => 0],
-                'payload' => ['items' => [], 'dropped' => 0],
+                'payload' => ['items' => []],
             ],
         ],
     ]);
@@ -189,17 +189,20 @@ it('marks secondary query transaction omissions as truncated', function () {
             ],
             'queries' => [
                 'label' => 'Queries',
-                'summary' => ['count' => 0, 'duration_ms' => 0],
+                'summary' => [
+                    'count' => 0,
+                    'duration_ms' => 0,
+                    'transaction_count' => 3,
+                    'transaction_retained_count' => 1,
+                    'transaction_dropped_count' => 2,
+                    'truncated' => true,
+                ],
                 'payload' => [
                     'items' => [],
-                    'dropped' => 0,
                     'transactions' => [['kind' => 'begin']],
-                    'transaction_retained' => 1,
-                    'transaction_dropped' => 2,
-                    'transaction_total' => 3,
                 ],
             ],
-            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => [], 'dropped' => 0]],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => []]],
         ],
     ]);
 
@@ -234,8 +237,8 @@ it('uses the shared presenter for deferred query details and findings', function
             'queries' => ['label' => 'Queries', 'summary' => ['count' => 2, 'duration_ms' => 10], 'payload' => ['items' => [
                 ['sql' => 'select ?', 'bindings' => [1], 'duration_ms' => 5, 'connection' => 'testing'],
                 ['sql' => 'select ?', 'bindings' => [2], 'duration_ms' => 5, 'connection' => 'testing'],
-            ], 'dropped' => 0]],
-            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => [], 'dropped' => 0]],
+            ]]],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => []]],
         ],
     ]);
 

@@ -71,7 +71,6 @@ final class ProfilePresenter
                         'summary' => ['count' => count($timeline)],
                         'payload' => [
                             'items' => $timeline,
-                            'dropped' => 0,
                             'incomplete' => $omittedSources !== [],
                             'omitted_count' => array_sum($omittedSources),
                             'omitted_sources' => $omittedSources,

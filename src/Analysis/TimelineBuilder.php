@@ -91,13 +91,13 @@ final class TimelineBuilder
         $omitted = [];
 
         foreach ($profile['sections'] ?? [] as $section => $data) {
-            $dropped = (int) ($data['payload']['dropped'] ?? 0);
+            $dropped = (int) ($data['summary']['dropped_count'] ?? 0);
 
             if ($dropped > 0) {
                 $omitted[(string) $section] = $dropped;
             }
 
-            $transactionDropped = (int) ($data['payload']['transaction_dropped'] ?? 0);
+            $transactionDropped = (int) ($data['summary']['transaction_dropped_count'] ?? 0);
 
             if ($transactionDropped > 0) {
                 $omitted['query_transactions'] = $transactionDropped;

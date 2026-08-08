@@ -59,10 +59,6 @@ abstract class AbstractCollector implements Collector
     {
         return [
             'items' => $this->items,
-            'dropped' => $this->dropped,
-            'retained' => count($this->items),
-            'total' => count($this->items) + $this->dropped,
-            'truncated' => $this->dropped > 0,
         ];
     }
 

@@ -240,12 +240,9 @@ final class DebugBar extends Component
 
         foreach ($sections as $key => $section) {
             $count = $section['summary']['count'] ?? null;
-            $dropped = max(
-                (int) ($section['summary']['dropped_count'] ?? 0),
-                (int) ($section['payload']['dropped'] ?? 0),
-            );
-            $secondaryDropped = (int) ($section['payload']['transaction_dropped'] ?? 0);
-            $truncated = (bool) ($section['summary']['truncated'] ?? $section['payload']['truncated'] ?? false)
+            $dropped = (int) ($section['summary']['dropped_count'] ?? 0);
+            $secondaryDropped = (int) ($section['summary']['transaction_dropped_count'] ?? 0);
+            $truncated = (bool) ($section['summary']['truncated'] ?? false)
                 || $dropped > 0
                 || $secondaryDropped > 0;
             $incomplete = (bool) ($section['payload']['incomplete'] ?? false);

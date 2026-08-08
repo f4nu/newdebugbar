@@ -615,9 +615,9 @@
                                     wire:key="section-{{ $sectionKey }}"
                                     class="ndb:space-y-4"
                                 >
-                                    @php($collectionDropped = (int) ($section['payload']['dropped'] ?? 0))
-                                    @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? $section['payload']['retained'] ?? count($section['payload']['items'] ?? [])))
-                                    @php($collectionTotal = (int) ($section['summary']['count'] ?? $section['payload']['total'] ?? ($collectionRetained + $collectionDropped)))
+                                    @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))
+                                    @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? [])))
+                                    @php($collectionTotal = (int) ($section['summary']['count'] ?? ($collectionRetained + $collectionDropped)))
                                     @if ($sectionKey !== 'overview' && $collectionDropped > 0)
                                         <div
                                             data-ndb-collection-status="{{ $sectionKey }}"
@@ -627,13 +627,13 @@
                                             Showing {{ number_format($collectionRetained) }} of {{ number_format($collectionTotal) }} {{ strtolower($section['label']) }}.
                                         </div>
                                     @endif
-                                    @if ($sectionKey === 'queries' && (int) ($section['payload']['transaction_dropped'] ?? 0) > 0)
+                                    @if ($sectionKey === 'queries' && (int) ($section['summary']['transaction_dropped_count'] ?? 0) > 0)
                                         <div
                                             data-ndb-collection-status="query-transactions"
                                             role="status"
                                             class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
                                         >
-                                            Showing {{ number_format((int) ($section['payload']['transaction_retained'] ?? count($section['payload']['transactions'] ?? []))) }} of {{ number_format((int) ($section['payload']['transaction_total'] ?? 0)) }} query
+                                            Showing {{ number_format((int) ($section['summary']['transaction_retained_count'] ?? count($section['payload']['transactions'] ?? []))) }} of {{ number_format((int) ($section['summary']['transaction_count'] ?? 0)) }} query
                                             transaction events.
                                         </div>
                                     @endif

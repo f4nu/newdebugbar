@@ -29,14 +29,7 @@ it('counts dropped collector items without retaining their payload', function ()
             'source_preserved' => true,
             'runnable_available' => false,
         ]],
-        'dropped' => 1,
-        'retained' => 1,
-        'total' => 2,
-        'truncated' => true,
         'transactions' => [],
-        'transaction_retained' => 0,
-        'transaction_dropped' => 0,
-        'transaction_total' => 0,
     ]);
 
     $collector->reset();
@@ -53,14 +46,7 @@ it('counts dropped collector items without retaining their payload', function ()
         'rollback_count' => 0,
     ])->and($collector->payload())->toBe([
         'items' => [],
-        'dropped' => 0,
-        'retained' => 0,
-        'total' => 0,
-        'truncated' => false,
         'transactions' => [],
-        'transaction_retained' => 0,
-        'transaction_dropped' => 0,
-        'transaction_total' => 0,
     ]);
 });
 
@@ -78,10 +64,7 @@ it('keeps query counts separate while sharing one collector retention limit', fu
         ->transaction_dropped_count->toBe(1)
         ->rollback_count->toBe(1)
         ->and($collector->payload())
-        ->transactions->toHaveCount(1)
-        ->transaction_retained->toBe(1)
-        ->transaction_dropped->toBe(1)
-        ->transaction_total->toBe(2);
+        ->transactions->toHaveCount(1);
 });
 
 it('masks unnamed string query bindings by default', function () {
@@ -164,7 +147,7 @@ it('removes a cache command even after the Redis item limit is reached', functio
         'truncated' => false,
         'duration_ms' => 1.25,
         'failed_count' => 0,
-    ])->and($redis->payload()['dropped'])->toBe(0);
+    ])->and($redis->payload())->not->toHaveKey('dropped');
 });
 
 it('does not remove an older direct Redis command for a dropped cache command', function () {
