@@ -10,6 +10,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Redis\Events\CommandFailed;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -244,11 +245,33 @@ it('captures direct Redis commands and removes cache command duplicates', functi
     $redis = $profile['sections']['redis'];
     $cache = $profile['sections']['cache'];
     $storeAware = property_exists(CacheEvent::class, 'storeName');
+    $flushAware = class_exists(CacheFlushed::class);
+    $failureAware = class_exists(CommandFailed::class);
+    $expectedCommands = ['GET'];
+    $expectedDuration = 1.25;
+
+    if (! $storeAware) {
+        $expectedCommands[] = 'SETEX';
+        $expectedDuration += 0.4;
+    }
+
+    if (! $flushAware) {
+        $expectedCommands[] = 'FLUSHDB';
+        $expectedDuration += 0.5;
+    }
+
+    if ($failureAware) {
+        $expectedCommands[] = 'HGET';
+    }
 
     expect($redis['summary'])
-        ->count->toBe($storeAware ? 2 : 3)
-        ->duration_ms->toBe($storeAware ? 1.25 : 2.15)
-        ->failed_count->toBe($storeAware ? 1 : 0)
+        ->count->toBe(count($expectedCommands))
+        ->duration_ms->toBe(round($expectedDuration, 2))
+        ->failed_count->toBe($failureAware ? 1 : 0)
+        ->and(array_column($redis['payload']['items'], 'command'))->toBe($expectedCommands)
+        ->and(array_column($cache['payload']['items'], 'operation'))->toBe(
+            $flushAware ? ['write', 'flush'] : ['write'],
+        )
         ->and($redis['payload']['items'][0])
         ->command->toBe('GET')
         ->connection->toBe('default')
@@ -272,15 +295,14 @@ it('captures direct Redis commands and removes cache command duplicates', functi
             'private Redis failure',
         );
 
-    if ($storeAware) {
-        expect($redis['payload']['items'][1])
-            ->command->toBe('HGET')
+    $failedRedis = collect($redis['payload']['items'])->firstWhere('command', 'HGET');
+
+    if ($failureAware) {
+        expect($failedRedis)
             ->failed->toBeTrue()
-            ->exception_class->toBe(RuntimeException::class)
-            ->and(array_column($cache['payload']['items'], 'operation'))->toContain('write', 'flush');
+            ->exception_class->toBe(RuntimeException::class);
     } else {
-        expect(array_column($redis['payload']['items'], 'command'))->toBe(['GET', 'SETEX', 'FLUSHDB'])
-            ->and(array_column($cache['payload']['items'], 'operation'))->toBe(['write']);
+        expect($failedRedis)->toBeNull();
     }
 });
 
