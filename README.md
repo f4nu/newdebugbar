@@ -12,7 +12,7 @@ New Debug Bar includes a local Model Context Protocol (MCP) server for tools suc
 
 An agent can list recent profiles, open any captured section, inspect database queries, and read findings. The `X-NewDebugBar-Profile` response header can link a browser request to its exact profile. Private values are hidden, results are kept small, and the tools only read saved profiles.
 
-Your coding tool starts the MCP server when it needs it. Follow the [MCP setup guide](docs/mcp.md) for Codex, Claude Code, Cursor, VS Code, and other local MCP clients.
+Your coding tool starts the MCP server when it needs it. Codex users can install the optional plugin for automatic MCP startup and a built-in debugging skill. Follow the [MCP setup guide](docs/mcp.md) for Codex, Claude Code, Cursor, VS Code, and other local MCP clients.
 
 ## Requirements
 

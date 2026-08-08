@@ -8,11 +8,30 @@ Your coding tool starts the server when it needs it. Do not run `mcp:start` in a
 
 - Install New Debug Bar in your Laravel app.
 - Make sure the app uses the `local` environment.
-- Find the full path to the app's `artisan` file.
+- For manual setup, find the full path to the app's `artisan` file.
 
 The examples below use `/absolute/path/to/your-app/artisan`. Replace it with your real path.
 
-## Codex
+## Codex plugin
+
+The optional Codex plugin is the easiest setup. It adds a New Debug Bar skill and starts the MCP server from the Laravel app you have open.
+
+Add this repository as a plugin source, then install the plugin:
+
+```bash
+codex plugin marketplace add newdebugbar/newdebugbar
+codex plugin add newdebugbar@newdebugbar
+```
+
+Open the Laravel app's root folder in Codex and start a new task. You do not need to publish the New Debug Bar config file.
+
+The plugin is optional. Remove it at any time with:
+
+```bash
+codex plugin remove newdebugbar@newdebugbar
+```
+
+## Manual Codex setup
 
 Run this command once:
 
