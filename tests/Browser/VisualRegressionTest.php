@@ -241,7 +241,6 @@ function stabilizeVisualDebugValues($page): void
 }
 
 $visualSections = [
-    'overview',
     'request',
     'timeline',
     'queries',

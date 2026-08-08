@@ -105,6 +105,9 @@ it('captures a local web request and its Laravel activity', function () {
     expect(array_column($profile['sections']['models']['payload']['items'], 'event'))
         ->toContain('retrieved');
 
+    expect($profile['metrics'])->not->toHaveKey('memory_mb')
+        ->and($profile['sections']['request']['payload'])->not->toHaveKey('early_bootstrap_measured');
+
     expect(array_column($profile['sections']['overview']['payload']['ecosystem'], 'key'))
         ->not->toContain('livewire');
 

@@ -114,7 +114,7 @@ final class QueryAnalyzer
         ];
     }
 
-    public function normalizeSql(string $sql): string
+    private function normalizeSql(string $sql): string
     {
         return preg_replace('/\s+/', ' ', trim($sql)) ?? trim($sql);
     }

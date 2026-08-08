@@ -53,7 +53,6 @@ final class RuntimeContext
                 'configuration' => $this->app->configurationIsCached(),
                 'routes' => $this->app->routesAreCached(),
                 'events' => $this->app->eventsAreCached(),
-                'views' => null,
             ],
             'drivers' => array_filter([
                 'database' => $this->driver('database.default'),

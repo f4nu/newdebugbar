@@ -29,8 +29,6 @@ final class ProfileManager
 
     private int $startedAt = 0;
 
-    private int $startedMemory = 0;
-
     private string $profileType = 'http';
 
     private string $primarySectionLabel = 'Request';
@@ -146,7 +144,6 @@ final class ProfileManager
                 'authentication' => $authentication,
                 'session' => $session,
                 'timing_scope' => 'global_middleware_entry',
-                'early_bootstrap_measured' => false,
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
@@ -321,7 +318,6 @@ final class ProfileManager
         $this->profileType = $type;
         $this->primarySectionLabel = $primarySectionLabel;
         $this->startedAt = hrtime(true);
-        $this->startedMemory = memory_get_usage(true);
         $this->request = [];
         $this->lifecycleMarks = [];
         $this->responsePreparationIndex = 0;
@@ -332,10 +328,8 @@ final class ProfileManager
     private function buildProfile(): array
     {
         $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
-        $usedMemory = max(0, memory_get_usage(true) - $this->startedMemory);
         $metrics = [
             'duration_ms' => round($duration, 2),
-            'memory_mb' => round($usedMemory / 1_048_576, 2),
             'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
         ];
         $livewireActivity = (int) (($this->collectors['livewire'] ?? null)?->summary()['count'] ?? 0) > 0;

@@ -741,7 +741,7 @@
                                                                                 {{ str($label)->title() }}
                                                                             </dt>
                                                                             <dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">
-                                                                                {{ $value === null ? 'Not exposed' : ($value ? 'Cached' : 'Open') }}
+                                                                                {{ $value ? 'Cached' : 'Open' }}
                                                                             </dd>
                                                                         </div>
                                                                     @endforeach
