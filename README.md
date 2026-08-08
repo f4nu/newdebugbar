@@ -16,8 +16,8 @@ Your coding tool starts the MCP server when it needs it. Follow the [MCP setup g
 
 ## Requirements
 
-- PHP 8.3 or newer
-- Laravel 13
+- PHP 8.1 or newer
+- Laravel 10 or newer
 - Livewire 4.1 or newer
 
 ## Install
