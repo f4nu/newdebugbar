@@ -8,7 +8,6 @@ const defaultRuntime = () => ({
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
-  dispatch: (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail })),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
   lockHost: (root) => {
@@ -81,7 +80,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     historyWarning: 'all',
     historyShowRuntime: false,
     visibleHistoryCount: 0,
-    discoveredProfileId: null,
     timelineFilter: 'key',
     timelineSearch: '',
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
@@ -201,10 +199,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       return [...favorites, ...(overview ? [overview] : []), ...sections];
     },
 
-    get sidebarSections() {
-      return this.orderedSections.filter((section) => this.isSectionVisible(section));
-    },
-
     get firstVisibleNonFavoriteKey() {
       return this.orderedSections.find((section) => (
         !this.isFavorite(section.key) && this.isSectionVisible(section)
@@ -261,11 +255,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       const target = this.sectionKeys.includes(section) ? section : 'overview';
 
       this.selectSection(target, filter, true);
-      browser.dispatch?.('newdebugbar-select-section', {
-        section: target,
-        filter,
-        focusHeading: true,
-      });
     },
 
     openMobileSections(returnFocus = null) {
@@ -398,8 +387,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         this.historyStatus = '';
         this.historyWarning = 'all';
       }
-      this.discoveredProfileId = null;
-
       if (this.inspectorOpen) {
         if (keepHistoryOpen) {
           this.$nextTick?.(() => {
@@ -424,8 +411,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
         return;
       }
-
-      this.discoveredProfileId = profileId;
 
       Promise.resolve(this.$wire?.discoverProfile(profileId))
         .then(() => this.$nextTick?.(() => this.applyHistoryFilters()))

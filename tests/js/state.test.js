@@ -66,15 +66,19 @@ test('pins overview before alphabetized active sections while keeping selected a
 
   state.init();
 
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'history', 'queries']);
+  const visibleKeys = () => state.orderedSections
+    .filter((section) => state.isSectionVisible(section))
+    .map((section) => section.key);
+
+  assert.deepEqual(visibleKeys(), ['overview', 'history', 'queries']);
   assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.equal(state.isSectionVisible(state.summary.sections[2]), false);
 
   state.selectSection('logs');
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['overview', 'history', 'logs', 'queries']);
+  assert.deepEqual(visibleKeys(), ['overview', 'history', 'logs', 'queries']);
 
   state.toggleFavorite('cache');
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['cache', 'overview', 'history', 'logs', 'queries']);
+  assert.deepEqual(visibleKeys(), ['cache', 'overview', 'history', 'logs', 'queries']);
   assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'system',
@@ -89,18 +93,21 @@ test('favorites can be pinned and reordered', () => {
   state.toggleFavorite('queries');
   state.toggleFavorite('logs');
   state.moveFavorite('logs', -1);
+  const visibleKeys = () => state.orderedSections
+    .filter((section) => state.isSectionVisible(section))
+    .map((section) => section.key);
 
   assert.deepEqual(state.favorites, ['logs', 'queries']);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['logs', 'queries', 'overview']);
+  assert.deepEqual(visibleKeys(), ['logs', 'queries', 'overview']);
   assert.equal(browser.values.has(STORAGE_KEY), true);
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'overview', 'logs']);
+  assert.deepEqual(visibleKeys(), ['queries', 'overview', 'logs']);
 
   state.toggleFavorite('overview');
   assert.deepEqual(state.favorites, ['queries', 'overview']);
-  assert.deepEqual(state.sidebarSections.map((section) => section.key), ['queries', 'overview', 'logs']);
+  assert.deepEqual(visibleKeys(), ['queries', 'overview', 'logs']);
 });
 
 test('favorites can be reordered by dragging', () => {
@@ -193,7 +200,6 @@ test('background profiles refresh loaded history without switching the active pr
   await Promise.resolve();
 
   assert.equal(discovered, discoveredProfileId);
-  assert.equal(state.discoveredProfileId, discoveredProfileId);
   assert.equal(state.summary.id, activeProfileId);
 
   state.noticeProfile('not-a-profile');
@@ -229,7 +235,6 @@ test('foreground profiles replace the current profile instead of entering backgr
 
   assert.equal(switched, visitProfileId);
   assert.equal(discovered, null);
-  assert.equal(state.discoveredProfileId, null);
 });
 
 test('stale detail responses cannot resync panels for a newer profile', async () => {
@@ -442,8 +447,6 @@ test('query controls filter search and sort captured evidence', () => {
 
 test('authorization controls filter decisions and overview navigation opens denied results', () => {
   const browser = runtime();
-  let dispatched = null;
-  browser.dispatch = (name, detail) => { dispatched = [name, detail]; };
   const state = createNewDebugBar({
     sections: [
       { key: 'overview', label: 'Overview' },
@@ -471,11 +474,6 @@ test('authorization controls filter decisions and overview navigation opens deni
   assert.equal(allowed.hidden, true);
   assert.equal(denied.hidden, false);
   assert.equal(headingFocused, 1);
-  assert.deepEqual(dispatched, ['newdebugbar-select-section', {
-    section: 'authorization',
-    filter: 'denied',
-    focusHeading: true,
-  }]);
 
   state.setAuthorizationFilter('invalid');
   assert.equal(state.authorizationFilter, 'denied');

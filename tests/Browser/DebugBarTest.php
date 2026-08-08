@@ -77,9 +77,10 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
+                const visible = state.orderedSections.filter((section) => state.isSectionVisible(section));
 
-                return state.sidebarSections.length < state.summary.sections.length
-                    && state.sidebarSections.every((section) => section.active !== false || state.favorites.includes(section.key) || section.key === state.selected);
+                return visible.length < state.summary.sections.length
+                    && visible.every((section) => section.active !== false || state.favorites.includes(section.key) || section.key === state.selected);
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -316,10 +317,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
                 window.__newDebugBarFetchSentinel = true;
                 window.__newDebugBarDiscoveries = [];
                 window.addEventListener('newdebugbar-profile-discovered', (event) => {
-                    window.__newDebugBarDiscoveries.push({
-                        profileId: event.detail.profileId,
-                        stateProfileId: Alpine.$data(document.getElementById('newdebugbar')).discoveredProfileId,
-                    });
+                    window.__newDebugBarDiscoveries.push(event.detail.profileId);
                 });
                 fetch('/api/plain-json?sequence=first');
 
@@ -343,8 +341,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
                 return window.__newDebugBarFetchSentinel === true
                     && state.summary.id === window.__newDebugBarActiveProfile
                     && discoveries.length === 2
-                    && discoveries[0].profileId !== discoveries[1].profileId
-                    && discoveries[1].stateProfileId === discoveries[1].profileId
+                    && discoveries[0] !== discoveries[1]
                     && location.pathname === '/profiled'
                     && document.querySelectorAll('#newdebugbar').length === 1;
             })()

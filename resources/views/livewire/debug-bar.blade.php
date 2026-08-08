@@ -21,9 +21,6 @@
         })
     "
     @newdebugbar-profile-switched.window="switchProfile($event.detail.summary)"
-    @newdebugbar-select-section.window="
-        selectSection($event.detail.section, $event.detail.filter ?? null, $event.detail.focusHeading ?? false)
-    "
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <div
