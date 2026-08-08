@@ -1,7 +1,7 @@
 /.gitattributes export-ignore
+/AGENTS.md export-ignore
 /.github export-ignore
 /.gitignore export-ignore
-/benchmarks export-ignore
 /composer.lock export-ignore
 /package-lock.json export-ignore
 /package.json export-ignore
