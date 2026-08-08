@@ -18,7 +18,6 @@ Your coding tool starts the MCP server when it needs it. Follow the [MCP setup g
 
 - PHP 8.1 or newer
 - Laravel 10 or newer
-- Livewire 4.1 or newer
 
 ## Install
 
@@ -29,6 +28,8 @@ composer require --dev newdebugbar/newdebugbar:dev-main
 ```
 
 Laravel loads it for you. Visit your app in the `local` environment. The bar will appear at the bottom of the page.
+
+New Debug Bar uses Livewire 4 for its own interface. Your app does not need to use Livewire. Apps that already use Livewire 3 are not supported.
 
 Keep the package in `require-dev` so it is not installed in production.
 
