@@ -56,7 +56,6 @@
     "archive": {
         "exclude": [
             "/.gitattributes",
-            "/.editorconfig",
             "/.github",
             "/.gitignore",
             "/.phpunit.cache",
