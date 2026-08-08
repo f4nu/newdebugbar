@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\Component;
 use Livewire\Livewire;
@@ -34,6 +35,8 @@ use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Support\BarInjector;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -94,6 +97,70 @@ abstract class TestCase extends Orchestra
             '/profiled',
             fn () => $profiledPage('First request', '/profiled-next', 'Next request'),
         );
+
+        $router->get('/__newdebugbar/ai-preview', function () {
+            $id = app(ProfileStore::class)->put([
+                'id' => (string) Str::uuid(),
+                'environment' => 'testing',
+                'metrics' => ['duration_ms' => 48.2, 'peak_memory_mb' => 8.5],
+                'sections' => [
+                    'request' => [
+                        'label' => 'Request',
+                        'summary' => ['method' => 'POST', 'status' => 200],
+                        'payload' => [
+                            'method' => 'POST',
+                            'status' => 200,
+                            'path' => '/assistant',
+                            'route' => 'assistant.reply',
+                            'action' => 'AssistantController@reply',
+                            'request_type' => 'full_page',
+                        ],
+                    ],
+                    'ai' => [
+                        'label' => 'AI activity',
+                        'summary' => [
+                            'count' => 1,
+                            'retained_count' => 1,
+                            'dropped_count' => 0,
+                            'truncated' => false,
+                            'token_count' => 20,
+                            'tool_count' => 1,
+                            'streamed_count' => 1,
+                            'content_captured' => false,
+                        ],
+                        'payload' => [
+                            'content_captured' => false,
+                            'capture_scope' => 'current_profile_only',
+                            'items' => [[
+                                'agent' => 'App\\Ai\\SupportAgent',
+                                'provider' => 'openai',
+                                'model' => 'gpt-test',
+                                'streamed' => true,
+                                'status' => 'completed',
+                                'duration_ms' => 42.5,
+                                'at_ms' => 44.0,
+                                'attachment_count' => 0,
+                                'usage' => ['prompt_tokens' => 12, 'completion_tokens' => 8],
+                                'tool_count' => 1,
+                                'tools' => [[
+                                    'tool' => 'LookupPatient',
+                                    'status' => 'completed',
+                                    'duration_ms' => 3.1,
+                                ]],
+                            ]],
+                        ],
+                    ],
+                    'exceptions' => [
+                        'label' => 'Exceptions',
+                        'summary' => ['count' => 0],
+                        'payload' => ['items' => []],
+                    ],
+                ],
+            ]);
+            $response = response('<!doctype html><html><head><title>AI preview</title></head><body><main>AI preview</main></body></html>');
+
+            return app(BarInjector::class)->inject($response, $id);
+        });
 
         $router->middleware(ProfileRequest::class)->get(
             '/profiled-next',

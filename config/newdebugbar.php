@@ -26,6 +26,11 @@ return [
         'max_body_bytes' => 50_000,
     ],
 
+    'ai' => [
+        'enabled' => env('NEWDEBUGBAR_AI_ENABLED', true),
+        'capture_content' => env('NEWDEBUGBAR_AI_CAPTURE_CONTENT', false),
+    ],
+
     'findings' => [
         'minimum_cache_operations' => 5,
         'high_cache_miss_rate' => 0.8,

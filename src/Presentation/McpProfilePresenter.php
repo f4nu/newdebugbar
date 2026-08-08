@@ -19,6 +19,7 @@ final class McpProfilePresenter
         'queries',
         'livewire',
         'http_client',
+        'ai',
         'queue',
         'mail',
         'notifications',
@@ -294,6 +295,8 @@ final class McpProfilePresenter
 
         if ($section === 'queries') {
             $item = $this->safeQueryItem($item);
+        } elseif ($section === 'ai') {
+            $item = $this->safeAiItem($item);
         } elseif ($section === 'logs') {
             $item = [
                 'at_ms' => $item['at_ms'] ?? null,
@@ -332,6 +335,26 @@ final class McpProfilePresenter
         }
 
         return $this->clean($item);
+    }
+
+    /** @param array<string, mixed> $item @return array<string, mixed> */
+    private function safeAiItem(array $item): array
+    {
+        unset($item['prompt'], $item['response']);
+
+        if (is_array($item['tools'] ?? null)) {
+            $item['tools'] = array_map(function (mixed $tool): mixed {
+                if (! is_array($tool)) {
+                    return $tool;
+                }
+
+                unset($tool['arguments'], $tool['result']);
+
+                return $tool;
+            }, $item['tools']);
+        }
+
+        return $item;
     }
 
     /** @param array<string, mixed> $item @return array<string, mixed> */

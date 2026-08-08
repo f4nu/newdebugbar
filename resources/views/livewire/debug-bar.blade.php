@@ -780,7 +780,7 @@
                                     @if ($sectionKey === 'timeline')
                                         @php($timelineItems = $section['payload']['items'])
                                         @php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
-                                        @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
+                                        @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'ai', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
                                         @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
                                         @php($timelineTicks = [0, 25, 50, 75, 100])
                                         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:pb-3 ndb:lg:flex-row ndb:lg:items-end ndb:dark:border-zinc-800">
@@ -1434,6 +1434,130 @@
                                                 </article>
                                             @empty
                                                 <x-newdebugbar::empty-state label="No outbound HTTP requests were captured." />
+                                            @endforelse
+                                        </div>
+                                    @elseif ($sectionKey === 'ai')
+                                        <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                            @foreach ([['Runs', $section['summary']['count'] ?? 0], ['Tokens', $section['summary']['token_count'] ?? 0], ['Tool calls', $section['summary']['tool_count'] ?? 0], ['Streamed', $section['summary']['streamed_count'] ?? 0]] as [$label, $value])
+                                                <div class="ndb:px-3.5 ndb:py-3">
+                                                    <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                        {{ $label }}
+                                                    </dt>
+                                                    <dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
+                                                        {{ number_format((int) $value) }}
+                                                    </dd>
+                                                </div>
+                                            @endforeach
+                                        </dl>
+
+                                        <div
+                                            data-ndb-ai-privacy
+                                            class="ndb:rounded-xl ndb:border ndb:border-indigo-200 ndb:bg-indigo-50/55 ndb:px-3.5 ndb:py-3 ndb:text-xs ndb:text-indigo-950 ndb:dark:border-indigo-900 ndb:dark:bg-indigo-950/25 ndb:dark:text-indigo-100"
+                                        >
+                                            @if ($section['summary']['content_captured'] ?? false)
+                                                Prompt, response, and tool values were captured with New Debug Bar's
+                                                redaction and storage limits.
+                                            @else
+                                                Prompt, response, and tool values are hidden. Set
+                                                <code class="ndb:font-bold">NEWDEBUGBAR_AI_CAPTURE_CONTENT=true</code>
+                                                to capture them locally.
+                                            @endif
+                                            @if (($section['summary']['streamed_count'] ?? 0) > 0)
+                                                Streamed runs appear only after completion. This is not a live token
+                                                view.
+                                            @endif
+                                        </div>
+
+                                        <div class="ndb:space-y-3">
+                                            @forelse ($section['payload']['items'] as $index => $item)
+                                                @php($aiUsage = is_array($item['usage'] ?? null) ? $item['usage'] : [])
+                                                <article
+                                                    wire:key="ai-run-{{ $index }}"
+                                                    data-ndb-ai-run
+                                                    class="ndb:overflow-hidden ndb:rounded-xl ndb:border {{ ($item['status'] ?? null) === 'completed' ? 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' : 'ndb:border-amber-200 ndb:bg-amber-50/35 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/15' }}"
+                                                >
+                                                    <header class="ndb:flex ndb:flex-wrap ndb:items-start ndb:gap-3 ndb:px-3.5 ndb:py-3">
+                                                        <div class="ndb:min-w-0 ndb:flex-1">
+                                                            <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
+                                                                <code class="ndb:truncate ndb:text-xs ndb:font-bold">{{ class_basename($item['agent'] ?? 'AI agent') }}</code>
+                                                                <span class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300">
+                                                                    {{ ($item['streamed'] ?? false) ? 'Streamed' : 'Synchronous' }}
+                                                                </span>
+                                                                @if (($item['status'] ?? null) !== 'completed')
+                                                                    <span class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-amber-700 ndb:dark:text-amber-300">Incomplete</span>
+                                                                @endif
+                                                            </div>
+                                                            <p class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">
+                                                                <span>Provider {{ $item['provider'] ?? 'unknown' }}</span>
+                                                                <span>Model {{ $item['model'] ?? 'unknown' }}</span>
+                                                                <span>{{ number_format((int) ($item['attachment_count'] ?? 0)) }} attachments</span>
+                                                            </p>
+                                                        </div>
+                                                        <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">
+                                                            {{ is_numeric($item['duration_ms'] ?? null) ? number_format((float) $item['duration_ms'], 2).' ms' : 'Not finished' }}
+                                                        </span>
+                                                    </header>
+
+                                                    <dl class="ndb:grid ndb:grid-cols-2 ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/45 ndb:sm:grid-cols-4 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/20">
+                                                        @foreach ([['Input tokens', $aiUsage['prompt_tokens'] ?? 0], ['Output tokens', $aiUsage['completion_tokens'] ?? 0], ['Reasoning tokens', $aiUsage['reasoning_tokens'] ?? 0], ['Tool calls', $item['tool_count'] ?? 0]] as [$label, $value])
+                                                            <div class="ndb:px-3.5 ndb:py-2.5">
+                                                                <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                                    {{ $label }}
+                                                                </dt>
+                                                                <dd class="ndb:mt-1 ndb:text-xs ndb:font-bold ndb:tabular-nums">
+                                                                    {{ number_format((int) $value) }}
+                                                                </dd>
+                                                            </div>
+                                                        @endforeach
+                                                    </dl>
+
+                                                    @if (($item['tools'] ?? []) !== [])
+                                                        <div class="ndb:border-t ndb:border-zinc-200 ndb:px-3.5 ndb:py-3 ndb:dark:border-zinc-800">
+                                                            <p class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                                Tool calls
+                                                            </p>
+                                                            <div class="ndb:mt-2 ndb:space-y-2">
+                                                                @foreach ($item['tools'] as $toolIndex => $tool)
+                                                                    <div
+                                                                        wire:key="ai-run-{{ $index }}-tool-{{ $toolIndex }}"
+                                                                        class="ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/55 ndb:px-3 ndb:py-2.5 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/40"
+                                                                    >
+                                                                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
+                                                                            <code class="ndb:text-xs ndb:font-bold">{{ $tool['tool'] ?? class_basename($tool['tool_class'] ?? 'Tool') }}</code>
+                                                                            <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ ($tool['status'] ?? null) === 'completed' ? 'Completed' : 'Incomplete' }}</span>
+                                                                            @if (is_numeric($tool['duration_ms'] ?? null))
+                                                                                <span class="ndb:ml-auto ndb:text-[10px] ndb:font-bold ndb:tabular-nums">{{ number_format((float) $tool['duration_ms'], 2) }} ms</span>
+                                                                            @endif
+                                                                        </div>
+                                                                        @if (array_key_exists('arguments', $tool) || array_key_exists('result', $tool))
+                                                                            <details class="ndb:mt-2">
+                                                                                <summary class="ndb:cursor-pointer ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">
+                                                                                    Captured values
+                                                                                </summary>
+                                                                                <pre class="ndb-code ndb-scrollbar ndb:mt-2 ndb:rounded-lg"><code data-ndb-language="json">{{ json_encode(['arguments' => $tool['arguments'] ?? null, 'result' => $tool['result'] ?? null], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                                                                            </details>
+                                                                        @endif
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
+
+                                                    @if (array_key_exists('prompt', $item) || array_key_exists('response', $item))
+                                                        <div class="ndb:grid ndb:border-t ndb:border-zinc-200 ndb:sm:grid-cols-2 ndb:dark:border-zinc-800">
+                                                            @foreach ([['Prompt', $item['prompt'] ?? null], ['Response', $item['response'] ?? null]] as [$label, $value])
+                                                                <details class="ndb:border-zinc-200 ndb:px-3.5 ndb:py-3 ndb:sm:odd:border-r ndb:dark:border-zinc-800">
+                                                                    <summary class="ndb:cursor-pointer ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">
+                                                                        {{ $label }}
+                                                                    </summary>
+                                                                    <pre class="ndb-code ndb-scrollbar ndb:mt-2 ndb:rounded-lg ndb:whitespace-pre-wrap"><code>{{ $value }}</code></pre>
+                                                                </details>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                </article>
+                                            @empty
+                                                <x-newdebugbar::empty-state label="No request-scoped AI activity was captured." />
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'queue')

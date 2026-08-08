@@ -18,6 +18,7 @@ use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
 use NewDebugBar\Analysis\TimelineBuilder;
+use NewDebugBar\Collectors\AiCollector;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LivewireCollector;
@@ -43,6 +44,7 @@ use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EditorLink;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
+use NewDebugBar\Support\LaravelAiEventRegistrar;
 use NewDebugBar\Support\LivewireMountRecorder;
 use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\MailPreview;
@@ -127,6 +129,13 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 ),
                 new LivewireCollector($redactor, $maxItems),
                 new OutboundHttpCollector($redactor, $maxItems),
+                ...(LaravelAiEventRegistrar::packageAvailable() && config('newdebugbar.ai.enabled', true)
+                    ? [new AiCollector(
+                        $redactor,
+                        $maxItems,
+                        (bool) config('newdebugbar.ai.capture_content', false),
+                    )]
+                    : []),
                 new QueueCollector($redactor, $maxItems),
                 new MailCollector($redactor, $maxItems),
                 new NotificationCollector($redactor, $maxItems),
@@ -182,6 +191,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(Redactor::class),
             $this->app->make(MailPreview::class),
         ))->register();
+        (new LaravelAiEventRegistrar($events, $this->app))->register();
         $exceptions = $this->app->make(ExceptionHandler::class);
 
         if (method_exists($exceptions, 'renderable')) {

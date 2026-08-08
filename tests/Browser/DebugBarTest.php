@@ -62,6 +62,40 @@ it('opens every compact toolbar destination and closes cleanly', function () {
     $page->assertNoJavaScriptErrors();
 });
 
+it('keeps the AI activity panel clear at desktop and phone widths', function (string $theme) {
+    $page = visit('/__newdebugbar/ai-preview');
+    $preferences = json_encode(['theme' => $theme, 'favorites' => []], JSON_THROW_ON_ERROR);
+    $page->assertScript(<<<JS
+        (() => {
+            localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
+
+            return true;
+        })()
+        JS)
+        ->refresh()
+        ->resize(1440, 900)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2);
+
+    selectDebugSectionViaPalette($page, 'ai');
+    assertDebugSectionSelected($page, 'ai');
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-theme', $theme)
+        ->assertVisible('[data-ndb-ai-privacy]')
+        ->assertVisible('[data-ndb-ai-run]')
+        ->assertSee('SupportAgent')
+        ->assertSee('Provider openai')
+        ->assertSee('Model gpt-test')
+        ->assertSee('LookupPatient')
+        ->assertDontSee('private prompt')
+        ->resize(390, 844)
+        ->assertVisible('[data-ndb-ai-privacy]')
+        ->assertVisible('[data-ndb-ai-run]')
+        ->assertScript('document.documentElement.scrollWidth === window.innerWidth')
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");

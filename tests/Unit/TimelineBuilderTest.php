@@ -100,3 +100,27 @@ it('reports every collector source omitted from the timeline', function () {
 
     expect($omitted)->toBe(['queries' => 2, 'views' => 17]);
 });
+
+it('labels an AI run with its agent and model without content', function () {
+    $timeline = (new TimelineBuilder)->build([
+        'metrics' => ['duration_ms' => 20],
+        'sections' => [
+            'request' => ['payload' => []],
+            'ai' => ['payload' => ['items' => [[
+                'agent' => 'App\\Ai\\SupportAgent',
+                'model' => 'gpt-test',
+                'duration_ms' => 8,
+                'at_ms' => 12,
+            ]]]],
+        ],
+    ]);
+
+    $run = collect($timeline)->firstWhere('id', 'ai-0');
+
+    expect($run)
+        ->section->toBe('ai')
+        ->kind->toBe('span')
+        ->label->toBe('SupportAgent gpt-test')
+        ->start_ms->toBe(4.0)
+        ->duration_ms->toBe(8.0);
+});

@@ -6,6 +6,7 @@ use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use NewDebugBar\Collectors\AiCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
@@ -97,6 +98,11 @@ final class ProfileManager
         return $this->collecting;
     }
 
+    public function profileType(): string
+    {
+        return $this->profileType;
+    }
+
     /** @param array<string, mixed> $item */
     public function record(string $collector, array $item): void
     {
@@ -108,6 +114,60 @@ final class ProfileManager
             $this->collectors[$collector]->record([
                 ...$item,
                 'at_ms' => $this->elapsedMilliseconds(),
+            ]);
+        }
+    }
+
+    /** @param array<string, mixed> $item */
+    public function startAiInvocation(string $invocationId, array $item): void
+    {
+        $collector = $this->collectors['ai'] ?? null;
+
+        if ($this->collecting && $collector instanceof AiCollector) {
+            $collector->startInvocation($invocationId, [
+                ...$item,
+                'started_at_ms' => $this->elapsedMilliseconds(),
+            ]);
+        }
+    }
+
+    /** @param array<string, mixed> $item */
+    public function finishAiInvocation(string $invocationId, array $item): void
+    {
+        $collector = $this->collectors['ai'] ?? null;
+
+        if ($this->collecting && $collector instanceof AiCollector) {
+            $finishedAt = $this->elapsedMilliseconds();
+            $collector->finishInvocation($invocationId, [
+                ...$item,
+                'at_ms' => $finishedAt,
+                'finished_at_ms' => $finishedAt,
+            ]);
+        }
+    }
+
+    /** @param array<string, mixed> $item */
+    public function startAiTool(string $invocationId, string $toolInvocationId, array $item): void
+    {
+        $collector = $this->collectors['ai'] ?? null;
+
+        if ($this->collecting && $collector instanceof AiCollector) {
+            $collector->startTool($invocationId, $toolInvocationId, [
+                ...$item,
+                'started_at_ms' => $this->elapsedMilliseconds(),
+            ]);
+        }
+    }
+
+    /** @param array<string, mixed> $item */
+    public function finishAiTool(string $invocationId, string $toolInvocationId, array $item): void
+    {
+        $collector = $this->collectors['ai'] ?? null;
+
+        if ($this->collecting && $collector instanceof AiCollector) {
+            $collector->finishTool($invocationId, $toolInvocationId, [
+                ...$item,
+                'finished_at_ms' => $this->elapsedMilliseconds(),
             ]);
         }
     }

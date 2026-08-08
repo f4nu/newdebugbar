@@ -249,6 +249,68 @@ it('uses the shared presenter for deferred query details and findings', function
         ->assertSet('profile.findings.0.rule_id', 'query.repeated');
 });
 
+it('renders request scoped AI metadata with its privacy boundary', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'environment' => 'testing',
+        'metrics' => ['duration_ms' => 48.2, 'peak_memory_mb' => 8.5],
+        'sections' => [
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'POST', 'status' => 200],
+                'payload' => ['method' => 'POST', 'status' => 200, 'path' => '/assistant', 'route' => null, 'action' => null],
+            ],
+            'ai' => [
+                'label' => 'AI activity',
+                'summary' => [
+                    'count' => 1,
+                    'retained_count' => 1,
+                    'dropped_count' => 0,
+                    'truncated' => false,
+                    'token_count' => 20,
+                    'tool_count' => 1,
+                    'streamed_count' => 1,
+                    'content_captured' => false,
+                ],
+                'payload' => [
+                    'content_captured' => false,
+                    'capture_scope' => 'current_profile_only',
+                    'items' => [[
+                        'agent' => 'App\\Ai\\SupportAgent',
+                        'provider' => 'openai',
+                        'model' => 'gpt-test',
+                        'streamed' => true,
+                        'status' => 'completed',
+                        'duration_ms' => 42.5,
+                        'attachment_count' => 0,
+                        'usage' => ['prompt_tokens' => 12, 'completion_tokens' => 8],
+                        'tool_count' => 1,
+                        'tools' => [[
+                            'tool' => 'LookupPatient',
+                            'status' => 'completed',
+                            'duration_ms' => 3.1,
+                        ]],
+                    ]],
+                ],
+            ],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => []]],
+        ],
+    ]);
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->call('loadDetails')
+        ->assertSeeHtml('data-ndb-ai-privacy')
+        ->assertSeeHtml('data-ndb-ai-run')
+        ->assertSee('SupportAgent')
+        ->assertSee('Provider openai')
+        ->assertSee('Model gpt-test')
+        ->assertSee('LookupPatient')
+        ->assertSee('NEWDEBUGBAR_AI_CAPTURE_CONTENT=true')
+        ->assertSee('This is not a live token')
+        ->assertDontSee('private prompt');
+});
+
 it('loads retained history and compares requests from the same path', function () {
     $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()

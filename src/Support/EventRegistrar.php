@@ -489,6 +489,7 @@ final class EventRegistrar
         }
 
         return str_starts_with($name, 'eloquent.')
+            || str_starts_with($name, 'Laravel\\Ai\\Events\\')
             || str_starts_with($name, 'composing: ')
             || str_starts_with($name, 'creating: ')
             || str_starts_with($name, 'bootstrapped: ')

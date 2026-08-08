@@ -116,6 +116,7 @@ final class TimelineBuilder
                 : ($item['normalized_sql'] ?? $item['sql'] ?? 'Query'),
             'livewire' => trim(($item['component'] ?? 'Livewire').' '.implode(' ', $item['actions'] ?? [])),
             'http_client' => trim(($item['method'] ?? '').' '.($item['url'] ?? 'HTTP request')),
+            'ai' => trim(class_basename((string) ($item['agent'] ?? 'AI')).' '.($item['model'] ?? 'activity')),
             'queue' => trim(($item['kind'] ?? '').' '.($item['job'] ?? 'Job')),
             'mail' => 'Mail sent'.(($item['mailable'] ?? null) ? ' '.$item['mailable'] : ''),
             'notifications' => trim(($item['status'] ?? '').' '.($item['notification'] ?? 'Notification')),

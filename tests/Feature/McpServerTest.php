@@ -163,6 +163,58 @@ it('keeps explicitly enabled mail content out of MCP responses', function () {
     ]);
 });
 
+it('exposes AI activity metadata without captured content through MCP', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'environment' => 'testing',
+        'metrics' => ['duration_ms' => 20, 'peak_memory_mb' => 8],
+        'sections' => [
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'POST', 'status' => 200],
+                'payload' => ['method' => 'POST', 'status' => 200, 'path' => '/assistant', 'route' => null, 'action' => null],
+            ],
+            'ai' => [
+                'label' => 'AI activity',
+                'summary' => ['count' => 1, 'token_count' => 20, 'tool_count' => 1, 'content_captured' => true],
+                'payload' => ['content_captured' => true, 'items' => [[
+                    'agent' => 'App\\Ai\\SupportAgent',
+                    'provider' => 'openai',
+                    'model' => 'gpt-test',
+                    'prompt' => 'private prompt',
+                    'response' => 'private response',
+                    'usage' => ['prompt_tokens' => 12, 'completion_tokens' => 8],
+                    'tools' => [[
+                        'tool' => 'LookupPatient',
+                        'arguments' => ['patient' => 'private patient'],
+                        'result' => 'private result',
+                    ]],
+                ]]],
+            ],
+        ],
+    ]);
+
+    $response = NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $id,
+        'section' => 'ai',
+    ])->assertOk()
+        ->assertDontSee(['private prompt', 'private response', 'private patient', 'private result']);
+    $content = captureStructuredContent($response);
+    $item = $content['data']['payload']['items'][0];
+
+    expect($content['data'])
+        ->section->toBe('ai')
+        ->summary->token_count->toBe(20)
+        ->and($item)
+        ->provider->toBe('openai')
+        ->model->toBe('gpt-test')
+        ->not->toHaveKeys(['prompt', 'response'])
+        ->and($item['tools'][0])
+        ->tool->toBe('LookupPatient')
+        ->not->toHaveKeys(['arguments', 'result']);
+});
+
 it('masks full query bindings and log labels again at the MCP boundary', function () {
     config()->set('newdebugbar.collection.query_bindings', 'full');
     app()->forgetInstance(ProfileManager::class);

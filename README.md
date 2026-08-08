@@ -55,6 +55,8 @@ To turn the bar off, add this to `.env`:
 NEWDEBUGBAR_ENABLED=false
 ```
 
+See [optional profiling](docs/optional-profiling.md) for Laravel AI activity and other opt-in collection.
+
 ## License
 
 New Debug Bar uses the Apache License 2.0.
