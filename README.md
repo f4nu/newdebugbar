@@ -10,7 +10,7 @@ It works with Blade, Livewire, and Inertia.
 
 New Debug Bar includes a local Model Context Protocol (MCP) server for tools such as Codex. It gives an agent the same request facts shown in the debug bar as clear, structured data.
 
-An agent can list recent profiles, open any captured section, inspect database queries, and read findings. The `X-New-Debug-Bar-Profile` response header can link a browser request to its exact profile. Private values are hidden, results are kept small, and the tools only read saved profiles.
+An agent can list recent profiles, open any captured section, inspect database queries, and read findings. The `X-NewDebugBar-Profile` response header can link a browser request to its exact profile. Private values are hidden, results are kept small, and the tools only read saved profiles.
 
 Your coding tool starts the MCP server when it needs it. Follow the [MCP setup guide](docs/mcp.md) for Codex, Claude Code, Cursor, VS Code, and other local MCP clients.
 
@@ -37,18 +37,18 @@ Keep the package in `require-dev` so it is not installed in production.
 The package works without any setup. To change its settings, publish the config file:
 
 ```bash
-php artisan vendor:publish --tag=new-debug-bar-config
+php artisan vendor:publish --tag=newdebugbar-config
 ```
 
 To turn the bar off, add this to `.env`:
 
 ```dotenv
-NEW_DEBUG_BAR_ENABLED=false
+NEWDEBUGBAR_ENABLED=false
 ```
 
 ## Your data
 
-The package runs only in the `local` environment by default. It saves short-lived profile files in `storage/framework/new-debug-bar`. It does not need a database.
+The package runs only in the `local` environment by default. It saves short-lived profile files in `storage/framework/newdebugbar`. It does not need a database.
 
 Common secrets are hidden. The package does not call an AI service or change your app's data.
 

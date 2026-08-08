@@ -17,7 +17,7 @@ The examples below use `/absolute/path/to/your-app/artisan`. Replace it with you
 Run this command once:
 
 ```bash
-codex mcp add my-app-debug-bar -- php /absolute/path/to/your-app/artisan mcp:start new-debug-bar
+codex mcp add my-app-debug-bar -- php /absolute/path/to/your-app/artisan mcp:start newdebugbar
 ```
 
 Use a name that tells you which app it belongs to. Check the setup with:
@@ -31,7 +31,7 @@ codex mcp list
 Run this command from your project:
 
 ```bash
-claude mcp add --scope local new-debug-bar -- php /absolute/path/to/your-app/artisan mcp:start new-debug-bar
+claude mcp add --scope local newdebugbar -- php /absolute/path/to/your-app/artisan mcp:start newdebugbar
 ```
 
 Check the setup with:
@@ -47,12 +47,12 @@ Create `.cursor/mcp.json` in your project:
 ```json
 {
   "mcpServers": {
-    "new-debug-bar": {
+    "newdebugbar": {
       "command": "php",
       "args": [
         "/absolute/path/to/your-app/artisan",
         "mcp:start",
-        "new-debug-bar"
+        "newdebugbar"
       ]
     }
   }
@@ -66,13 +66,13 @@ Create `.vscode/mcp.json` in your project:
 ```json
 {
   "servers": {
-    "new-debug-bar": {
+    "newdebugbar": {
       "type": "stdio",
       "command": "php",
       "args": [
         "/absolute/path/to/your-app/artisan",
         "mcp:start",
-        "new-debug-bar"
+        "newdebugbar"
       ]
     }
   }
@@ -89,7 +89,7 @@ Add a local `stdio` server with this command and these arguments:
   "args": [
     "/absolute/path/to/your-app/artisan",
     "mcp:start",
-    "new-debug-bar"
+    "newdebugbar"
   ]
 }
 ```
@@ -109,11 +109,11 @@ Then visit a page in your Laravel app and ask your agent:
 
 > Inspect the latest New Debug Bar profile. Tell me what happened, what looks wrong, and what I should inspect next.
 
-When the agent can read the page's response headers, `X-New-Debug-Bar-Profile` points it to the exact profile. Otherwise, it can find the profile from the recent request list.
+When the agent can read the page's response headers, `X-NewDebugBar-Profile` points it to the exact profile. Otherwise, it can find the profile from the recent request list.
 
 ## Fix common problems
 
-- **The server is missing:** Make sure the package is installed, the app uses the `local` environment, and `NEW_DEBUG_BAR_ENABLED` is not `false`.
+- **The server is missing:** Make sure the package is installed, the app uses the `local` environment, and `NEWDEBUGBAR_ENABLED` is not `false`.
 - **The command cannot find PHP:** Replace `php` with the full path to your PHP program.
 - **The wrong app opens:** Check that the path points to that app's `artisan` file.
 - **No profiles appear:** Visit a page in the app first, then try again.
