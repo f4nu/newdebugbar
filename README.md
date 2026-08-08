@@ -1,4 +1,4 @@
-# New Debug Bar
+# New Debug Bar (for Laravel)
 
 New Debug Bar is a modern debugging tool for Laravel, built for developers and coding agents. It helps you understand each request and find problems without cluttering your local app.
 
