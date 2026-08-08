@@ -246,6 +246,7 @@ it('exposes relative exception evidence without messages or source code', functi
 
 it('returns stable not found results and validation errors', function () {
     $missing = (string) Str::uuid();
+    $wrongVersion = '550e8400-e29b-11d4-a716-446655440000';
     $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $missing,
     ])->assertOk());
@@ -258,10 +259,18 @@ it('returns stable not found results and validation errors', function () {
 
     NewDebugBarServer::tool(GetDebugFindings::class, ['profile_id' => '../bad'])
         ->assertHasErrors(['profile id']);
+    NewDebugBarServer::tool(GetDebugFindings::class, ['profile_id' => $wrongVersion])
+        ->assertHasErrors(['profile id']);
     NewDebugBarServer::tool(InspectDebugQueries::class, [
         'profile_id' => $missing,
         'filter' => 'unsafe',
     ])->assertHasErrors(['filter']);
+
+    expect(app(McpProfilePresenter::class)->section($wrongVersion, 'overview', 0, 1))->toBe([
+        'version' => 1,
+        'status' => 'not_found',
+        'data' => ['profile_id' => $wrongVersion],
+    ]);
 });
 
 it('enforces byte depth and item limits without exposing corrupt profiles', function () {

@@ -8,6 +8,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tools\ToolInputSchema;
 use Laravel\Mcp\Server\Tools\ToolResult;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Storage\ProfileStore;
 
 #[IsReadOnly]
 #[IsOpenWorld(false)]
@@ -34,7 +35,7 @@ final class GetDebugFindings extends DebugTool
     public function handle(array $arguments): ToolResult
     {
         $input = Validator::validate($arguments, [
-            'profile_id' => 'required|uuid',
+            'profile_id' => 'required|string|regex:'.ProfileStore::ID_REGEX,
             'cursor' => 'nullable|integer|min:0',
             'limit' => 'nullable|integer|min:1|max:'.$this->profiles->maxItems(),
         ]);

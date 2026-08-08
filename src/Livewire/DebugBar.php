@@ -318,6 +318,6 @@ final class DebugBar extends Component
 
     private function validProfileId(string $profileId): bool
     {
-        return preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $profileId) === 1;
+        return ProfileStore::validId($profileId);
     }
 }

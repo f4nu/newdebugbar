@@ -9,6 +9,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Storage\ProfileStore;
 
 #[IsReadOnly]
 #[IsOpenWorld(false)]
@@ -34,7 +35,7 @@ final class InspectDebugQueries extends DebugTool
     public function handle(Request $request): ResponseFactory
     {
         $input = $request->validate([
-            'profile_id' => 'required|uuid:4',
+            'profile_id' => 'required|string|regex:'.ProfileStore::ID_REGEX,
             'filter' => 'nullable|string|in:all,repeated,slow,read,write',
             'search' => 'nullable|string|max:200',
             'sort' => 'nullable|string|in:execution,duration',

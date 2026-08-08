@@ -32,6 +32,12 @@ it('rejects unsafe profile identifiers', function () {
     $store->get('../secrets');
 })->throws(InvalidArgumentException::class);
 
+it('uses one UUID v4 rule for stored profile identifiers', function () {
+    expect(ProfileStore::validId((string) Str::uuid()))->toBeTrue()
+        ->and(ProfileStore::validId('550e8400-e29b-11d4-a716-446655440000'))->toBeFalse()
+        ->and(ProfileStore::validId('../secrets'))->toBeFalse();
+});
+
 it('returns null for missing and malformed profiles', function () {
     $store = new ProfileStore($this->files, $this->profilePath);
     $missing = (string) Str::uuid();

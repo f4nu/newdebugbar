@@ -8,6 +8,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tools\ToolInputSchema;
 use Laravel\Mcp\Server\Tools\ToolResult;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Storage\ProfileStore;
 
 #[IsReadOnly]
 #[IsOpenWorld(false)]
@@ -37,7 +38,7 @@ final class InspectDebugQueries extends DebugTool
     public function handle(array $arguments): ToolResult
     {
         $input = Validator::validate($arguments, [
-            'profile_id' => 'required|uuid',
+            'profile_id' => 'required|string|regex:'.ProfileStore::ID_REGEX,
             'filter' => 'nullable|string|in:all,repeated,slow,read,write',
             'search' => 'nullable|string|max:200',
             'sort' => 'nullable|string|in:execution,duration',

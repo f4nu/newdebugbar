@@ -202,7 +202,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             ->where('path', '.*')
             ->name('newdebugbar.asset');
         $router->get('/__newdebugbar/mail/{profile}/{index}/{format}', MailPreviewController::class)
-            ->whereUuid('profile')
+            ->where('profile', ProfileStore::ID_PATTERN)
             ->whereNumber('index')
             ->whereIn('format', ['html', 'text', 'eml'])
             ->name('newdebugbar.mail-preview');

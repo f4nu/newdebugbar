@@ -11,6 +11,10 @@ use Throwable;
 /** Stores short-lived request profiles as private atomic JSON files. */
 final class ProfileStore
 {
+    public const ID_PATTERN = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}';
+
+    public const ID_REGEX = '/\A'.self::ID_PATTERN.'\z/';
+
     public function __construct(
         private readonly Filesystem $files,
         private readonly string $path,
@@ -116,6 +120,11 @@ final class ProfileStore
         return $this->maxProfiles;
     }
 
+    public static function validId(string $id): bool
+    {
+        return preg_match(self::ID_REGEX, $id) === 1;
+    }
+
     private function prune(): void
     {
         $files = collect($this->files->files($this->path))
@@ -139,7 +148,7 @@ final class ProfileStore
 
     private function assertValidId(string $id): void
     {
-        if (preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $id) !== 1) {
+        if (! self::validId($id)) {
             throw new InvalidArgumentException('Invalid debug profile ID.');
         }
     }

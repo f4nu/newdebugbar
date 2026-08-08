@@ -9,6 +9,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Storage\ProfileStore;
 
 #[IsReadOnly]
 #[IsOpenWorld(false)]
@@ -31,7 +32,7 @@ final class GetDebugFindings extends DebugTool
     public function handle(Request $request): ResponseFactory
     {
         $input = $request->validate([
-            'profile_id' => 'required|uuid:4',
+            'profile_id' => 'required|string|regex:'.ProfileStore::ID_REGEX,
             'cursor' => 'nullable|integer|min:0',
             'limit' => 'nullable|integer|min:1|max:'.$this->profiles->maxItems(),
         ]);

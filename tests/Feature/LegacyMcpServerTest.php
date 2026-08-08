@@ -1,13 +1,32 @@
 <?php
 
+use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Facades\Mcp;
 use NewDebugBar\Mcp\Legacy\NewDebugBarServer;
+use NewDebugBar\Mcp\Legacy\Tools\GetDebugFindings;
+use NewDebugBar\Mcp\Legacy\Tools\GetDebugProfileSection;
+use NewDebugBar\Mcp\Legacy\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Legacy\Tools\ListDebugProfiles;
 
 beforeEach(function () {
     if (class_exists(ResponseFactory::class)) {
         $this->markTestSkipped('These assertions cover Laravel MCP 0.1.');
+    }
+});
+
+it('rejects profile identifiers that storage cannot read', function () {
+    $wrongVersion = '550e8400-e29b-11d4-a716-446655440000';
+
+    foreach ([
+        GetDebugFindings::class => [],
+        GetDebugProfileSection::class => ['section' => 'overview'],
+        InspectDebugQueries::class => [],
+    ] as $tool => $arguments) {
+        expect(fn () => app($tool)->handle([
+            'profile_id' => $wrongVersion,
+            ...$arguments,
+        ]))->toThrow(ValidationException::class);
     }
 });
 

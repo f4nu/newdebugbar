@@ -214,13 +214,13 @@ final class McpProfilePresenter
     /** @return array<string, mixed>|null */
     private function find(string $profileId): ?array
     {
-        $profile = $this->store->get($profileId);
-
-        if ($profile === null) {
-            return null;
-        }
-
         try {
+            $profile = $this->store->get($profileId);
+
+            if ($profile === null) {
+                return null;
+            }
+
             return $this->profiles->present($profile);
         } catch (Throwable) {
             return null;

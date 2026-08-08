@@ -65,3 +65,10 @@ it('keeps preview routes unavailable when capture is disabled', function () {
 
     $this->get('/__newdebugbar/mail/'.$profileId.'/0/text')->assertNotFound();
 });
+
+it('rejects profile identifiers that storage cannot read', function () {
+    config()->set('newdebugbar.mail_preview.enabled', true);
+
+    $this->get('/__newdebugbar/mail/550e8400-e29b-11d4-a716-446655440000/0/text')
+        ->assertNotFound();
+});
