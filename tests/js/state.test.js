@@ -155,6 +155,53 @@ test('selecting a section resets content and highlights its code', async () => {
   assert.equal(highlighted, 1);
 });
 
+test('query findings reveal and scroll to grouped slow evidence', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const content = { scrollTop: 60 };
+  let requestedSelector = '';
+  let scrollOptions = null;
+  const target = {
+    scrollIntoView: (options) => {
+      scrollOptions = options;
+    },
+  };
+  const group = {
+    dataset: {
+      execution: '1',
+      duration: '20',
+      type: 'read',
+      slow: 'true',
+      search: 'select users',
+      queryKind: 'group',
+      resultCount: '3',
+    },
+    hidden: false,
+    querySelector: () => null,
+  };
+
+  state.$root = { querySelectorAll: () => [] };
+  state.$refs = {
+    content,
+    queryResults: {
+      children: [group],
+      appendChild() {},
+      querySelector: (selector) => {
+        requestedSelector = selector;
+
+        return target;
+      },
+    },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.selectSection('queries', 'slow');
+
+  assert.equal(state.queryFilter, 'attention');
+  assert.equal(content.scrollTop, 0);
+  assert.match(requestedSelector, /data-ndb-query-group/);
+  assert.deepEqual(scrollOptions, { block: 'start' });
+});
+
 test('a new application profile resets stale section state and reloads open details', async () => {
   const state = createNewDebugBar(summary, runtime());
   let detailsLoaded = 0;
@@ -418,66 +465,89 @@ test('the theme toggle shows the opposite resolved theme', () => {
 });
 
 test('query controls filter search and sort captured evidence', () => {
-  const state = createNewDebugBar({ ...summary, query_count: 3 }, runtime());
+  const state = createNewDebugBar({ ...summary, query_count: 4 }, runtime());
   const appended = [];
-  const item = (execution, duration, type, slow, search) => ({
+  const groupAppended = [];
+  const item = (execution, duration, type, slow, search, repeated = false) => ({
     dataset: {
       execution: String(execution),
       duration: String(duration),
       type,
       slow: String(slow),
       search,
+      queryKind: 'item',
+      repeated: String(repeated),
+      resultCount: '1',
     },
     hidden: false,
   });
-  const first = item(1, 4, 'read', false, 'select users [string]');
-  const second = item(2, 20, 'write', true, 'update clinics 42');
-  const third = item(3, 10, 'read', false, 'select clinics 42');
-  const group = item(1, 34, 'read', false, 'select repeated users');
-  state.$refs = {
-    queryItems: {
-      children: [first, second, third],
-      appendChild: (child) => appended.push(child),
+  const first = item(1, 4, 'read', false, 'select users 1', true);
+  const second = item(2, 6, 'read', false, 'select users 2', true);
+  const third = item(3, 20, 'write', true, 'update clinics 42');
+  const fourth = item(4, 10, 'read', false, 'select clinics 42');
+  const groupedFirst = item(1, 4, 'read', false, 'select users 1');
+  const groupedSecond = item(2, 6, 'read', false, 'select users 2');
+  const group = {
+    dataset: {
+      execution: '1',
+      duration: '10',
+      type: 'read',
+      slow: 'false',
+      search: 'select repeated users',
+      queryKind: 'group',
+      resultCount: '2',
     },
-    queryGroups: {
-      children: [group],
+    hidden: false,
+    querySelector: () => ({
+      children: [groupedFirst, groupedSecond],
+      appendChild: (child) => groupAppended.push(child),
+    }),
+  };
+  state.$refs = {
+    queryResults: {
+      children: [first, second, third, fourth, group],
       appendChild: (child) => appended.push(child),
     },
   };
 
   state.setQueryFilter('read');
-  assert.equal(first.hidden, false);
-  assert.equal(second.hidden, true);
-  assert.equal(third.hidden, false);
-  assert.equal(group.hidden, true);
-  assert.equal(state.visibleQueryCount, 2);
-
-  state.setQueryFilter('slow');
   assert.equal(first.hidden, true);
-  assert.equal(second.hidden, false);
-  assert.equal(state.visibleQueryCount, 1);
+  assert.equal(second.hidden, true);
+  assert.equal(third.hidden, true);
+  assert.equal(fourth.hidden, false);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 3);
+
+  state.setQueryFilter('attention');
+  assert.equal(first.hidden, true);
+  assert.equal(third.hidden, false);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 3);
 
   state.setQueryFilter('write');
-  assert.equal(second.hidden, false);
-  assert.equal(third.hidden, true);
+  assert.equal(third.hidden, false);
+  assert.equal(fourth.hidden, true);
+  assert.equal(group.hidden, true);
 
   state.setQueryFilter('read');
   state.querySearch = 'users';
   state.applyQueryView();
-  assert.equal(first.hidden, false);
-  assert.equal(third.hidden, true);
-  assert.equal(state.visibleQueryCount, 1);
+  assert.equal(first.hidden, true);
+  assert.equal(fourth.hidden, true);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 2);
 
   state.querySearch = '';
-  state.setQueryFilter('repeated');
+  state.setQueryFilter('all');
   assert.equal(first.hidden, true);
   assert.equal(group.hidden, false);
-  assert.equal(state.visibleQueryCount, 1);
+  assert.equal(state.visibleQueryCount, 4);
 
   appended.length = 0;
-  state.queryFilter = 'all';
+  groupAppended.length = 0;
   state.setQuerySort('duration');
-  assert.deepEqual(appended.slice(0, 3), [second, third, first]);
+  assert.deepEqual(appended, [third, group, fourth, second, first]);
+  assert.deepEqual(groupAppended, [groupedSecond, groupedFirst]);
 
   state.setQueryFilter('invalid');
   state.setQuerySort('invalid');

@@ -104,3 +104,40 @@ The main intentional differences are:
 ## Final result
 
 passed
+
+---
+
+# Queries design QA
+
+## Target and capture
+
+- Reference: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/10-mockup-queries-flat-details.png`
+- Same-state implementation: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/implementation-queries-1350x1168.png`
+- Combined comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/reference-vs-implementation.png`
+- Reference pixels: 1349 × 1166. Implementation viewport and pixels: 1350 × 1168 at 1× density. The comparison trims the implementation by 1 px horizontally and 2 px vertically so both sides share one 1349 × 1166 canvas.
+- Automated captures: light and dark at 1440 × 900, plus light and dark at 390 × 844.
+- State: Queries selected, All filter active, first repeated execution expanded, Application stack selected.
+
+## Comparison
+
+- The implementation keeps the selected hierarchy: three request-level metrics, query filters, search and sort controls, a single repeated-pattern summary, and flat execution evidence.
+- Repeated SQL is shown once for the group. Individual executions reveal bindings and application frames without adding another framed card.
+- The N+1 finding uses amber text instead of the mock's blue treatment. Blue now consistently means an action or selected control.
+- Query actions are consolidated into one menu. The repeated copy buttons and Open in Editor link were removed.
+- Standalone reads and writes remain in the same result list, so the section does not hide useful work that falls outside a repeated pattern.
+- The inspector remains capped at the LG breakpoint, matching the existing readability limit.
+
+## Findings and fixes
+
+- P2, resolved: repeated executions appeared both as standalone rows and inside their group. Grouped executions now have one visible source of truth.
+- P2, resolved: bindings, stack frames, and copy controls competed side by side. Evidence is now split into keyboard-accessible tabs, with utility actions in one menu.
+- P2, resolved: sorting only rearranged standalone queries. Repeated groups and their executions now follow the selected execution or duration order too.
+- P2, resolved: an Overview slow-query link could reset the panel to the top after revealing the evidence. It now scrolls to either a slow standalone query or a slow repeated group.
+- P2, resolved: result counts described cards instead of query executions. Counts now include every visible execution, including those represented by a repeated group.
+- P2, resolved: the first narrow layout could overflow around the filter and search controls. The 390 px light and dark captures now keep all content inside the inspector.
+- P3, resolved: long connection names, SQL previews, file paths, and functions could crowd timing evidence. They truncate visually and expose the full value through the native title text.
+- No P0 or P1 issues remained after the final combined comparison.
+
+## Final result
+
+passed

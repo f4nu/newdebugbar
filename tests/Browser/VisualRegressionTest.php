@@ -203,7 +203,7 @@ function stabilizeVisualDebugValues($page): void
                     const percent = duration * 2;
 
                     article.querySelector('[data-ndb-query-duration]').textContent = `${duration} ms`;
-                    article.querySelector('[data-ndb-query-percent]').textContent = `${percent}% query time`;
+                    article.querySelector('[data-ndb-query-percent]').textContent = `${percent}% of query time`;
                     totalDuration += duration;
                     totalPercent += percent;
                 });
@@ -222,11 +222,11 @@ function stabilizeVisualDebugValues($page): void
             }
 
             document.querySelectorAll('[data-ndb-query-group]').forEach((group) => {
-                const articles = Array.from(group.querySelectorAll('[data-ndb-query-group-executions] > article'));
+                const articles = Array.from(group.querySelectorAll('[data-ndb-query-group-executions] > details'));
                 const totals = normalizeQueryMetrics(articles);
                 const duration = group.querySelector('[data-ndb-query-group-duration]');
 
-                if (duration) duration.textContent = `${totals.totalDuration} ms`;
+                if (duration) duration.textContent = `${totals.totalDuration} ms total`;
             });
 
             const timelineTicks = Array.from(document.querySelectorAll('[data-ndb-timeline-tick]'));
@@ -419,8 +419,8 @@ it('matches the visual baseline for :dataset expanded query bindings', function 
     selectVisualDebugSection($page, 'queries');
 
     $page
-        ->click('[data-ndb-query-bindings="item-1"] summary')
-        ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '')
+        ->click('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]')
+        ->assertAttribute('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'aria-selected', 'true')
         ->assertScript(<<<'JS'
             (() => {
                 const content = document.querySelector('#newdebugbar main');
@@ -447,8 +447,8 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
     selectVisualDebugSection($page, 'queries');
 
     $page
-        ->click('[data-ndb-query-filter="repeated"]')
-        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article").length > 0');
+        ->click('[data-ndb-query-filter="attention"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > details").length > 0');
 
     stabilizeVisualDebugValues($page);
 
@@ -456,6 +456,24 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "query-repeated-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset narrow Queries section', function (string $theme) {
+    $page = visualDebugPage('queries', $theme)
+        ->resize(390, 844)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->waitForText('Runtime details');
+
+    selectVisualDebugSection($page, 'queries');
+
+    $page
+        ->assertVisible('[data-ndb-section-panel="queries"]')
+        ->assertScript('document.querySelector("#newdebugbar main").scrollWidth === document.querySelector("#newdebugbar main").clientWidth')
+        ->assertNoJavaScriptErrors();
+
+    stabilizeVisualDebugValues($page);
+
+    assertVisualDebugBaseline($page, "section-narrow-{$theme}-queries");
 })->with(['light', 'dark']);
 
 $expandedDetailCases = [

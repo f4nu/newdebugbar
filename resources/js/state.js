@@ -228,17 +228,20 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     selectSection(section, filter = null, focusHeading = false) {
       const focusContentHeading = focusHeading || this.mobileSectionsOpen;
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
-      if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) this.queryFilter = filter;
+      if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) this.queryFilter = 'attention';
       if (this.selected === 'authorization' && ['all', 'allowed', 'denied'].includes(filter)) this.authorizationFilter = filter;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.$nextTick?.(() => {
         this.syncSectionPanels();
+        if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         if (this.selected === 'queries') {
           this.applyQueryView();
           if (['repeated', 'slow'].includes(filter)) {
-            const list = filter === 'repeated' ? this.$refs?.queryGroups : this.$refs?.queryItems;
-            list?.querySelector?.('[data-ndb-query-group]:not([hidden]), [data-ndb-query-item]:not([hidden])')?.scrollIntoView?.({ block: 'start' });
+            const selector = filter === 'repeated'
+              ? '[data-ndb-query-group]:not([hidden])'
+              : '[data-ndb-query-item][data-slow="true"]:not([hidden]), [data-ndb-query-group][data-slow="true"]:not([hidden])';
+            this.$refs?.queryResults?.querySelector?.(selector)?.scrollIntoView?.({ block: 'start' });
           }
         }
         if (this.selected === 'authorization') this.applyAuthorizationFilters();
@@ -246,7 +249,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         if (this.selected === 'timeline') this.applyTimelineFilters();
         if (this.selected === 'events') this.applyEventFilters();
         if (this.selected === 'logs') this.applyLogFilters();
-        if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         if (focusContentHeading) this.$refs?.sectionHeading?.focus?.();
         browser.highlight?.();
       });
@@ -462,7 +464,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     setQueryFilter(filter) {
-      if (!['all', 'repeated', 'slow', 'read', 'write'].includes(filter)) return;
+      if (!['all', 'attention', 'read', 'write'].includes(filter)) return;
 
       this.queryFilter = filter;
       this.applyQueryView();
@@ -476,38 +478,35 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     applyQueryView() {
-      const itemList = this.$refs?.queryItems;
-      const groupList = this.$refs?.queryGroups;
+      const results = this.$refs?.queryResults;
       const search = this.querySearch.toLowerCase().trim();
       let visible = 0;
 
-      if (itemList?.children) {
-        const items = [...itemList.children];
-
-        items
+      if (results?.children) {
+        [...results.children]
           .sort((left, right) => this.compareQueries(left, right))
-          .forEach((item) => {
+          .forEach((result) => {
+            const isGroup = result.dataset.queryKind === 'group';
+            const isRepeatedItem = result.dataset.queryKind === 'item'
+              && result.dataset.repeated === 'true';
             const matchesFilter = this.queryFilter === 'all'
-              || (this.queryFilter === 'slow' && item.dataset.slow === 'true')
-              || (this.queryFilter === 'read' && item.dataset.type === 'read')
-              || (this.queryFilter === 'write' && item.dataset.type === 'write');
-            const matchesSearch = search === '' || item.dataset.search?.includes(search);
-            item.hidden = this.queryFilter === 'repeated' || !matchesFilter || !matchesSearch;
-            if (!item.hidden) visible++;
-            itemList.appendChild?.(item);
-          });
-      }
+              || (this.queryFilter === 'attention' && (isGroup || result.dataset.slow === 'true'))
+              || (this.queryFilter === 'read' && result.dataset.type === 'read')
+              || (this.queryFilter === 'write' && result.dataset.type === 'write');
+            const matchesSearch = search === '' || result.dataset.search?.includes(search);
+            result.hidden = isRepeatedItem || !matchesFilter || !matchesSearch;
+            if (!result.hidden) visible += Number(result.dataset.resultCount ?? 1);
+            results.appendChild?.(result);
 
-      if (groupList?.children) {
-        const groups = [...groupList.children];
+            if (isGroup) {
+              const executions = result.querySelector?.('[data-ndb-query-group-executions]');
 
-        groups
-          .sort((left, right) => this.compareQueries(left, right))
-          .forEach((group) => {
-            const matchesSearch = search === '' || group.dataset.search?.includes(search);
-            group.hidden = this.queryFilter !== 'repeated' || !matchesSearch;
-            if (!group.hidden) visible++;
-            groupList.appendChild?.(group);
+              if (executions?.children) {
+                [...executions.children]
+                  .sort((left, right) => this.compareQueries(left, right))
+                  .forEach((execution) => executions.appendChild?.(execution));
+              }
+            }
           });
       }
 

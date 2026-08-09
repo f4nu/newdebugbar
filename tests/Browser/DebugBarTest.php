@@ -1094,18 +1094,27 @@ it('uses the command palette, theme preference, and escape layers', function () 
         ->assertNoJavaScriptErrors();
 });
 
-it('highlights query code and expands custom binding details', function () {
+it('highlights repeated SQL and switches query evidence tabs', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
-        ->waitForText('Bindings')
-        ->assertSee('Repeated 3×')
+        ->waitForText('Repeated pattern')
+        ->assertSee('Find repeated work, slow SQL, and the application code that triggered it.')
         ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=sql][data-highlighted]").length > 0')
-        ->click('[data-ndb-query-bindings="item-1"] summary')
-        ->assertAttribute('[data-ndb-query-bindings="item-1"]', 'open', '')
+        ->assertAttribute('[data-ndb-query-group-execution][open]', 'open', '')
+        ->click('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]')
+        ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'aria-selected', 'true')
+        ->keys('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'ArrowRight')
+        ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="stack"]', 'aria-selected', 'true')
+        ->keys('[data-ndb-query-group-execution][open] [data-ndb-query-tab="stack"]', 'ArrowLeft')
+        ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'aria-selected', 'true')
+        ->click('[data-ndb-query-group-execution][open] [data-ndb-query-actions] > summary')
+        ->assertVisible('[data-ndb-query-group-execution][open] [data-ndb-query-actions] button:first-of-type')
+        ->keys('[data-ndb-query-group-execution][open] [data-ndb-query-actions] > summary', 'Escape')
+        ->assertScript('document.querySelector("[data-ndb-query-group-execution][open] [data-ndb-query-actions]").open === false')
         ->assertNoJavaScriptErrors();
 });
 
-it('matches repeated query SQL to regular query surfaces in :dataset mode', function (string $theme) {
+it('keeps repeated SQL on one shared syntax-highlighted surface in :dataset mode', function (string $theme) {
     $preferences = json_encode([
         'theme' => $theme,
         'favorites' => [],
@@ -1122,16 +1131,14 @@ it('matches repeated query SQL to regular query surfaces in :dataset mode', func
         ->refresh()
         ->assertAttribute('#newdebugbar', 'data-theme', $theme)
         ->click('[data-ndb-toolbar="queries"]')
-        ->click('[data-ndb-query-filter="repeated"]')
         ->assertScript(<<<'JS'
             (() => {
-                const repeated = document.querySelector('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] pre');
-                const regular = document.querySelector('[data-ndb-query-item] > pre');
-                const repeatedStyle = getComputedStyle(repeated);
-                const regularStyle = getComputedStyle(regular);
+                const sharedSql = document.querySelectorAll(
+                    '[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] code[data-ndb-language="sql"][data-highlighted]',
+                );
+                const duplicateItems = document.querySelectorAll('[data-ndb-query-item]:not([hidden])');
 
-                return repeatedStyle.backgroundColor === regularStyle.backgroundColor
-                    && repeatedStyle.color === regularStyle.color;
+                return sharedSql.length === 1 && duplicateItems.length === 0;
             })()
             JS)
         ->assertNoJavaScriptErrors();
@@ -1140,7 +1147,7 @@ it('matches repeated query SQL to regular query surfaces in :dataset mode', func
 it('filters searches sorts and shows repeated query evidence without another disclosure', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="queries"]')
-        ->waitForText('Extra runs')
+        ->waitForText('Needs attention')
         ->assertMissing('[data-ndb-findings]')
         ->assertScript(<<<'JS'
             (() => {
@@ -1155,44 +1162,34 @@ it('filters searches sorts and shows repeated query evidence without another dis
                     });
             })()
             JS)
-        ->assertScript(<<<'JS'
-            (() => {
-                const search = document.querySelector('[data-ndb-query-search]');
-                const searchLabel = search.parentElement.querySelector('span');
-                const sort = document.querySelector('[role="group"][aria-label="Sort queries"]');
-                const sortLabel = sort.parentElement.querySelector('p');
-
-                return Math.abs(search.getBoundingClientRect().left - searchLabel.getBoundingClientRect().left) < 1
-                    && Math.abs(sort.getBoundingClientRect().left - sortLabel.getBoundingClientRect().left) < 1;
-            })()
-            JS)
-        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
-        ->click('[data-ndb-query-filter="repeated"]')
-        ->assertAttribute('[data-ndb-query-filter="repeated"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
+        ->assertScript('document.querySelector("[data-ndb-query-result-count]").textContent.replace(/\\s+/g, " ").trim() === "3 results"')
+        ->click('[data-ndb-query-filter="attention"]')
+        ->assertAttribute('[data-ndb-query-filter="attention"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] code[data-ndb-language=sql]").length', 1)
-        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article").length', 3)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > details").length', 3)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > details[open]").length', 1)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-connection]").length', 3)
         ->assertScript(<<<'JS'
             document.querySelector('[data-ndb-query-group]:not([hidden])').getBoundingClientRect().top
                 >= document.querySelector('[data-ndb-section-heading]').parentElement.getBoundingClientRect().bottom - 1
             JS)
         ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > article'))
+            Array.from(document.querySelectorAll('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-executions] > details'))
                 .every((article) => article.querySelector(':scope > pre code[data-ndb-language="sql"]') === null)
             JS)
-        ->assertSee('Likely N+1')
+        ->assertSee('Likely N+1 pattern')
         ->click('[data-ndb-query-filter="read"]')
         ->assertScript('document.querySelectorAll("[data-ndb-query-filter][aria-pressed=true]").length', 1)
-        ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 3)
-        ->click('[data-ndb-query-sort="duration"]')
-        ->assertAttribute('[data-ndb-query-sort="execution"]', 'aria-pressed', 'false')
-        ->assertAttribute('[data-ndb-query-sort="duration"]', 'aria-pressed', 'true')
-        ->assertScript('document.querySelectorAll("[data-ndb-query-sort][aria-pressed=true]").length', 1)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
+        ->select('[data-ndb-query-sort]', 'duration')
+        ->assertValue('[data-ndb-query-sort]', 'duration')
         ->assertScript(<<<'JS'
             (() => {
-                const durations = Array.from(document.querySelectorAll('[data-ndb-query-item]:not([hidden])'))
+                const durations = Array.from(document.querySelectorAll('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-execution]'))
                     .map((query) => Number(query.dataset.duration));
 
                 return durations.every((duration, index) => index === 0 || durations[index - 1] >= duration);
@@ -1200,6 +1197,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
             JS)
         ->type('[data-ndb-query-search]', 'no query can match this')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
+        ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 0)
         ->assertSee('No queries match these filters.')
         ->assertNoJavaScriptErrors();
 });

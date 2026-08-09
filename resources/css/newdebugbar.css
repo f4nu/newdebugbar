@@ -52,12 +52,13 @@
     margin: 0;
 }
 
-#newdebugbar :where(button, input) {
+#newdebugbar :where(button, input, select) {
     letter-spacing: inherit;
 }
 
 #newdebugbar button,
-#newdebugbar input {
+#newdebugbar input,
+#newdebugbar select {
     color: inherit;
     font: inherit;
 }
