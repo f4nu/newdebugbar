@@ -29,12 +29,12 @@
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="Debug toolbar"
-        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:w-auto ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
+        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:max-w-5xl ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
     >
         <x-newdebugbar::toolbar-button
             section="request"
             data-ndb-toolbar="request"
-            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-52"
+            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:flex-1"
             aria-label="Open request details"
         >
             <span
@@ -57,7 +57,7 @@
             <x-newdebugbar::toolbar-button
                 section="overview"
                 data-ndb-toolbar="environment"
-                class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0"
+                class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0"
             >
                 <span
                     class="ndb:size-2 ndb:shrink-0 ndb:rounded-full"
@@ -77,7 +77,7 @@
             <x-newdebugbar::toolbar-button
                 section="request"
                 data-ndb-toolbar="duration"
-                class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0"
+                class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0"
             >
                 <x-newdebugbar::icon
                     name="clock"
@@ -117,7 +117,7 @@
             <x-newdebugbar::toolbar-button
                 section="queries"
                 data-ndb-toolbar="queries"
-                class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0"
+                class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0"
             >
                 <x-newdebugbar::icon
                     name="database"
@@ -140,7 +140,7 @@
 
         <div
             data-ndb-toolbar-actions
-            class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5 ndb:sm:ml-0.5"
+            class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5"
         >
             <x-newdebugbar::icon-button
                 name="search"
@@ -248,7 +248,7 @@
                             <x-newdebugbar::toolbar-button
                                 section="overview"
                                 data-ndb-header-fact="environment"
-                                class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0"
+                                class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0"
                             >
                                 <span
                                     class="ndb:size-2 ndb:shrink-0 ndb:rounded-full"
@@ -269,7 +269,7 @@
                             <x-newdebugbar::toolbar-button
                                 section="request"
                                 data-ndb-header-fact="duration"
-                                class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0"
+                                class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0"
                             >
                                 <x-newdebugbar::icon
                                     name="clock"
@@ -310,7 +310,7 @@
                             <x-newdebugbar::toolbar-button
                                 section="queries"
                                 data-ndb-header-fact="queries"
-                                class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0"
+                                class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0"
                             >
                                 <x-newdebugbar::icon
                                     name="database"

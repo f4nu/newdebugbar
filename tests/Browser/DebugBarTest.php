@@ -167,19 +167,46 @@ it('prioritizes relevant activity and opens the runtime details', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('caps the expanded inspector at the large breakpoint', function () {
+it('caps the compact and expanded bars at the large breakpoint', function () {
     visit('/profiled')
         ->resize(1440, 900)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const request = document.querySelector('[data-ndb-toolbar="request"]');
+                const facts = document.querySelector('[data-ndb-toolbar-facts]');
+                const actions = document.querySelector('[data-ndb-toolbar-actions]');
+                const box = toolbar.getBoundingClientRect();
+                const requestStyles = getComputedStyle(request);
+                const factsStyles = getComputedStyle(facts);
+                const factOrder = Array.from(facts.querySelectorAll('[data-ndb-toolbar]'))
+                    .sort((left, right) => left.getBoundingClientRect().left - right.getBoundingClientRect().left)
+                    .map((fact) => fact.dataset.ndbToolbar);
+
+                return Math.abs(box.width - 1024) <= 1
+                    && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
+                    && Math.abs(window.innerWidth - box.right - box.left) <= 1
+                    && requestStyles.flexGrow === '1'
+                    && factsStyles.flexGrow === '0'
+                    && request.getBoundingClientRect().right <= facts.getBoundingClientRect().left
+                    && facts.getBoundingClientRect().right <= actions.getBoundingClientRect().left
+                    && JSON.stringify(factOrder) === JSON.stringify(['environment', 'queries', 'duration', 'memory']);
+            })()
+            JS)
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->assertScript(<<<'JS'
             (() => {
                 const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const factOrder = Array.from(document.querySelectorAll('[data-ndb-header-fact]'))
+                    .sort((left, right) => left.getBoundingClientRect().left - right.getBoundingClientRect().left)
+                    .map((fact) => fact.dataset.ndbHeaderFact);
                 const box = inspector.getBoundingClientRect();
 
                 return Math.abs(box.width - 1024) <= 1
                     && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
-                    && Math.abs(window.innerWidth - box.right - box.left) <= 1;
+                    && Math.abs(window.innerWidth - box.right - box.left) <= 1
+                    && JSON.stringify(factOrder) === JSON.stringify(['environment', 'queries', 'duration', 'memory']);
             })()
             JS)
         ->resize(900, 900)
@@ -191,6 +218,18 @@ it('caps the expanded inspector at the large breakpoint', function () {
                 return Math.abs(box.width - window.innerWidth) <= 1
                     && Math.abs(box.left) <= 1
                     && Math.abs(window.innerWidth - box.right) <= 1;
+            })()
+            JS)
+        ->click('[data-ndb-inspector-action="close"]')
+        ->wait(0.2)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                const box = toolbar.getBoundingClientRect();
+
+                return Math.abs(box.width - (window.innerWidth - 24)) <= 1
+                    && Math.abs(box.left - 12) <= 1
+                    && Math.abs(window.innerWidth - box.right - 12) <= 1;
             })()
             JS)
         ->assertNoJavaScriptErrors();
