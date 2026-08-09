@@ -74,9 +74,15 @@
         @endunless
 
         @if ($bindings !== [] || $stack !== [] || ($query['callsite'] ?? null) !== null)
-            <div class="ndb:flex ndb:min-h-11 ndb:flex-wrap ndb:items-center ndb:gap-x-5 ndb:gap-y-2 ndb:px-4 {{ $grouped ? '' : 'ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800' }}">
+            <div class="ndb:flex ndb:min-h-12 ndb:flex-wrap ndb:items-center ndb:gap-2 ndb:bg-zinc-50/60 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/35 {{ $grouped ? '' : 'ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800' }}">
                 @if ($bindings !== [] || $stack !== [])
-                    <div role="tablist" aria-label="Query evidence" class="ndb:flex ndb:self-stretch">
+                    <div
+                        role="tablist"
+                        aria-label="Query evidence"
+                        aria-orientation="horizontal"
+                        data-ndb-query-tabs
+                        class="ndb:flex ndb:max-w-full ndb:gap-1 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-200/70 ndb:p-1 ndb:dark:bg-zinc-800/80"
+                    >
                         @if ($bindings !== [])
                             <button
                                 type="button"
@@ -90,15 +96,15 @@
                                 @click="queryTab = 'bindings'"
                                 @keydown.right.prevent="queryTab = @js($stack !== [] ? 'stack' : 'bindings'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
                                 @keydown.left.prevent="queryTab = @js($stack !== [] ? 'stack' : 'bindings'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
-                                class="ndb:border-b-2 ndb:border-transparent ndb:px-1 ndb:text-[10px] ndb:font-bold ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400"
+                                class="ndb:min-h-8 ndb:whitespace-nowrap ndb:rounded-md ndb:border ndb:border-transparent ndb:px-3 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                                 :class="queryTab === 'bindings'
-                                    ? 'ndb:border-indigo-500 ndb:text-indigo-600 ndb:dark:text-indigo-300'
-                                    : ''"
+                                    ? 'ndb:border-zinc-200 ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:dark:border-zinc-700 ndb:dark:bg-zinc-700 ndb:dark:text-indigo-200'
+                                    : 'ndb:text-zinc-600 ndb:hover:bg-white/60 ndb:hover:text-zinc-950 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-700/70 ndb:dark:hover:text-white'"
                             >
                                 Bindings
                                 <span
                                     data-ndb-query-bindings-count
-                                    class="ndb:ml-1.5 ndb:tabular-nums"
+                                    class="ndb:ml-1.5 ndb:tabular-nums ndb:opacity-60"
                                 >{{ count($bindings) }}</span>
                             </button>
                         @endif
@@ -114,22 +120,27 @@
                                 @click="queryTab = 'stack'"
                                 @keydown.right.prevent="queryTab = @js($bindings !== [] ? 'bindings' : 'stack'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
                                 @keydown.left.prevent="queryTab = @js($bindings !== [] ? 'bindings' : 'stack'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
-                                class="ndb:ml-5 ndb:border-b-2 ndb:border-transparent ndb:px-1 ndb:text-[10px] ndb:font-bold ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400"
+                                class="ndb:min-h-8 ndb:whitespace-nowrap ndb:rounded-md ndb:border ndb:border-transparent ndb:px-3 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                                 :class="queryTab === 'stack'
-                                    ? 'ndb:border-indigo-500 ndb:text-indigo-600 ndb:dark:text-indigo-300'
-                                    : ''"
+                                    ? 'ndb:border-zinc-200 ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:dark:border-zinc-700 ndb:dark:bg-zinc-700 ndb:dark:text-indigo-200'
+                                    : 'ndb:text-zinc-600 ndb:hover:bg-white/60 ndb:hover:text-zinc-950 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-700/70 ndb:dark:hover:text-white'"
                             >
                                 Application stack
                                 <span
                                     data-ndb-query-stack-count
-                                    class="ndb:ml-1.5 ndb:tabular-nums"
+                                    class="ndb:ml-1.5 ndb:tabular-nums ndb:opacity-60"
                                 >{{ count($stack) }}</span>
                             </button>
                         @endif
                     </div>
                 @endif
 
-                <x-newdebugbar::query-actions :query="$query" :identity="$identity" :sql="$sql" class="ndb:ml-auto" />
+                <x-newdebugbar::query-actions
+                    :query="$query"
+                    :identity="$identity"
+                    :sql="$sql"
+                    class="ndb:ml-auto ndb:shrink-0"
+                />
             </div>
 
             @if ($bindings !== [])

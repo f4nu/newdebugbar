@@ -1103,6 +1103,22 @@ it('highlights repeated SQL and switches query evidence tabs', function () {
         ->assertAttribute('[data-ndb-query-group-execution][open]', 'open', '')
         ->click('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]')
         ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'aria-selected', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const tablist = document.querySelector('[data-ndb-query-group-execution][open] [data-ndb-query-tabs]');
+                const active = tablist?.querySelector('[role="tab"][aria-selected="true"]');
+                const inactive = tablist?.querySelector('[role="tab"][aria-selected="false"]');
+
+                if (! active || ! inactive) return false;
+
+                const activeStyle = getComputedStyle(active);
+                const inactiveStyle = getComputedStyle(inactive);
+
+                return activeStyle.backgroundColor !== inactiveStyle.backgroundColor
+                    && activeStyle.color !== inactiveStyle.color
+                    && Number.parseFloat(activeStyle.minHeight) >= 32;
+            })()
+            JS)
         ->keys('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'ArrowRight')
         ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="stack"]', 'aria-selected', 'true')
         ->keys('[data-ndb-query-group-execution][open] [data-ndb-query-tab="stack"]', 'ArrowLeft')

@@ -112,9 +112,12 @@ passed
 ## Target and capture
 
 - Reference: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/10-mockup-queries-flat-details.png`
-- Same-state implementation: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/implementation-queries-1350x1168.png`
-- Combined comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/reference-vs-implementation.png`
-- Reference pixels: 1349 × 1166. Implementation viewport and pixels: 1350 × 1168 at 1× density. The comparison trims the implementation by 1 px horizontally and 2 px vertically so both sides share one 1349 × 1166 canvas.
+- Earlier implementation: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/implementation-queries-1350x1168.png`
+- Revised implementation: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/implementation-queries-tabs-1350x1168.png`
+- Original reference comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/reference-vs-implementation.png`
+- Full before-and-after tab comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/queries-tabs-before-after.png`
+- Focused before-and-after tab comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/queries-audit/queries-tabs-focused-before-after.png`
+- Reference pixels: 1349 × 1166. Earlier and revised implementation viewports and pixels: 1350 × 1168 at 1× density. The original comparison trims the implementation by 1 px horizontally and 2 px vertically. The tab comparisons use equal 1350 × 1168 captures; the focused comparison uses equal 1024 × 360 crops.
 - Automated captures: light and dark at 1440 × 900, plus light and dark at 390 × 844.
 - State: Queries selected, All filter active, first repeated execution expanded, Application stack selected.
 
@@ -124,13 +127,23 @@ passed
 - Repeated SQL is shown once for the group. Individual executions reveal bindings and application frames without adding another framed card.
 - The N+1 finding uses amber text instead of the mock's blue treatment. Blue now consistently means an action or selected control.
 - Query actions are consolidated into one menu. The repeated copy buttons and Open in Editor link were removed.
+- Bindings and Application stack now share one contained tab rail. The selected view has a solid surface, border, blue text, and subtle elevation; the inactive view remains visibly clickable. Query actions sit outside the control.
 - Standalone reads and writes remain in the same result list, so the section does not hide useful work that falls outside a repeated pattern.
 - The inspector remains capped at the LG breakpoint, matching the existing readability limit.
+
+## Fidelity surfaces
+
+- Typography: the tabs retain the package typeface, weight, and compact 10 px control scale, but use 32 px minimum targets and stronger selected text.
+- Spacing and layout: the rail adds consistent 4 px internal spacing and 12 px horizontal tab padding without widening the query card or overflowing at 390 px.
+- Colors and tokens: all surfaces use the existing zinc and indigo tokens in light and dark themes. The selected state no longer depends on a thin underline that can disappear against a divider.
+- Image quality: this section contains no raster imagery. Existing package icons remain sharp and unchanged.
+- Copy: Bindings, Application stack, their counts, and Query actions remain concise and accurate.
 
 ## Findings and fixes
 
 - P2, resolved: repeated executions appeared both as standalone rows and inside their group. Grouped executions now have one visible source of truth.
 - P2, resolved: bindings, stack frames, and copy controls competed side by side. Evidence is now split into keyboard-accessible tabs, with utility actions in one menu.
+- P2, resolved in the second pass: the initial tab styling still looked like static metadata because its selected underline disappeared into the panel divider. The focused before-and-after comparison shows the replacement contained rail, distinct selected surface, and separated Query actions. Arrow keys, click switching, ARIA selection, and both panels remain functional.
 - P2, resolved: sorting only rearranged standalone queries. Repeated groups and their executions now follow the selected execution or duration order too.
 - P2, resolved: an Overview slow-query link could reset the panel to the top after revealing the evidence. It now scrolls to either a slow standalone query or a slow repeated group.
 - P2, resolved: result counts described cards instead of query executions. Counts now include every visible execution, including those represented by a repeated group.
