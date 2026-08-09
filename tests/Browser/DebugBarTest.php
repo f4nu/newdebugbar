@@ -529,15 +529,42 @@ it('uses light dividers above expanded shared JSON details', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('shows request sizes presence flags middleware and log call sites', function () {
+it('shows an aligned request trace and switches request detail groups', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="request"]')
-        ->assertSee('Request size')
-        ->assertSee('Response size')
-        ->assertSee('Authentication')
-        ->assertSee('Middleware pipeline')
+        ->assertVisible('[data-ndb-request-trace]')
+        ->assertVisible('[data-ndb-request-details]')
+        ->assertScript('document.querySelectorAll("[data-ndb-request-step]").length', 3)
+        ->assertScript('document.querySelectorAll("[data-ndb-request-line]").length', 2)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-request-step]')).every((step) => {
+                const dot = step.querySelector('[data-ndb-request-dot]').getBoundingClientRect();
+                const heading = step.querySelector('h3').getBoundingClientRect();
+
+                return Math.abs((dot.top + dot.height / 2) - (heading.top + heading.height / 2)) < 1;
+            })
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-request-line]')).every((line, index) => {
+                const nextDot = document.querySelectorAll('[data-ndb-request-dot]')[index + 1].getBoundingClientRect();
+                const bounds = line.getBoundingClientRect();
+
+                return Math.abs(bounds.bottom - nextDot.top) < 1;
+            })
+            JS)
+        ->assertAttribute('[data-ndb-request-detail="headers"]', 'aria-pressed', 'true')
+        ->click('[data-ndb-request-detail="session"]')
+        ->assertAttribute('[data-ndb-request-detail="session"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-request-detail-panel="session"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows log call sites', function () {
+    $page = visit('/profiled')
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
         ->click('[data-ndb-select-section="logs"]')
         ->assertSee('tests/TestCase.php')
         ->click('[data-ndb-log-item] > summary')
