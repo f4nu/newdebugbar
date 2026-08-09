@@ -9,6 +9,7 @@
 
 - Build for Laravel only. Do not add support for other PHP frameworks.
 - Match the minimum PHP and Laravel versions supported by Livewire 4.
+- When using Laravel or Symfony APIs, verify them against the oldest supported versions. The newest local dependencies do not prove compatibility.
 - Use `NewDebugBar` or `newdebugbar` as one word in machine-facing names. Use “New Debug Bar” in text written for people.
 - Treat the local MCP server as a main product feature. Explain that coding agents can read exact debug data instead of guessing from a web page.
 - Keep the public README short. Explain why the package exists and how to start using it.
@@ -36,5 +37,7 @@
   - Inertia: local `../example-inertia-app` at `http://example-inertia-app.test`; GitHub `newdebugbar/example-inertia-app` at `https://github.com/newdebugbar/example-inertia-app`
 - Do not change the example apps just to make a package test pass.
 - Check one example app or browser test group at a time.
+- Reuse existing browser-test helpers and semantic selectors before adding raw CSS selectors. A missing selector can wait until timeout and look like a hung test.
+- Run Pest browser suites in an interactive terminal (PTY). After an interrupted or timed-out run, confirm no Pest or Playwright processes remain before starting another browser test group.
 - Check light and dark themes, keyboard use, browser errors, and a 390px-wide screen.
 - Update screenshot baselines only for planned changes. Look at each changed image, then run the same checks again.
