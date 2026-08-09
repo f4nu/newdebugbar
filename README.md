@@ -18,7 +18,7 @@ The optional Codex plugin is the simplest path for Codex users. It gives Codex a
 
 [Set up the Codex plugin](docs/mcp.md#codex-plugin).
 
-### Other MCP tools
+### Others
 
 Other compatible AI tools can use the same focused, read-only profile data through optional Model Context Protocol (MCP) support. Follow the [MCP setup guide](docs/mcp.md) for Claude Code, Cursor, VS Code, and other local MCP clients.
 
@@ -53,21 +53,6 @@ To turn the bar off, add this to `.env`:
 
 ```dotenv
 NEWDEBUGBAR_ENABLED=false
-```
-
-## Your data
-
-The package runs only in the `local` environment by default. It saves short-lived profile files in `storage/framework/newdebugbar`. It does not need a database.
-
-Common secrets are hidden. The package does not call an AI service or change your app's data.
-
-## Work on the package
-
-```bash
-composer install
-npm install
-npm run build
-composer test
 ```
 
 ## License
