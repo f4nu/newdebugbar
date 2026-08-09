@@ -70,3 +70,37 @@ The main intentional differences are:
 - No horizontal overflow at 390 px.
 - No browser JavaScript errors.
 - Updated visual baselines inspected, then rerun without update mode.
+
+---
+
+# Models design QA
+
+## Target and capture
+
+- Reference: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/models-audit/05-focused-model-expanded.png`
+- Same-viewport implementation: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/models-qa/implementation-1672x941.png`
+- Same-viewport comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/models-qa/reference-vs-implementation-1672x941.png`
+- Comparison viewport and pixels: 1672 × 941 at 1× density.
+- Automated captures: light and dark at 1440 × 900, plus light and dark at 390 × 844.
+- State: Models selected, repeated-load finding visible, StudioJob expanded, raw events closed.
+
+## Comparison
+
+- The implementation keeps the target hierarchy: a short reason for the section, one important finding, comparable model rows, record-level evidence, nested raw events, and a separate boot lifecycle disclosure.
+- The inspector remains capped at the LG breakpoint, so it is intentionally narrower than the generated reference at the same viewport.
+- The repeated-load definition is explicit. Null record identifiers are excluded instead of being reported as duplicates.
+- Changed models rank above repeated retrievals because writes can affect application state. Repeated loads rank next, then total loads.
+- The implementation uses counts and highlighted record rows instead of the mock's unlabeled progress bars. The exact number and the supporting records are clearer evidence for developers.
+- Expand all opens the five model summaries while leaving every raw JSON disclosure closed.
+
+## Findings and fixes
+
+- P2, resolved: initial test data relied on Eloquent's process-wide boot state, so boot lifecycle evidence could disappear between visual cases. The fixture now emits a stable 10-event lifecycle across five classes.
+- P2, resolved: numeric stabilization changed real model counts in narrow screenshots. Model metrics and raw-event counts are now preserved while timing values remain deterministic.
+- P2, resolved: the record table could exceed 390 px. Its overflow is contained inside the expanded model, while the inspector and main panel remain within the viewport.
+- P2, resolved: new analysis payloads exceeded the smallest MCP response budget. UI-only model groups and boot items are removed at the MCP boundary while raw section items remain paginated.
+- No P0 or P1 issues remained after the final comparison.
+
+## Final result
+
+passed

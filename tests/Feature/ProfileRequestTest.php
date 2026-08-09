@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
+use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
@@ -130,6 +131,30 @@ it('captures a local web request and its Laravel activity', function () {
             expect($item['at_ms'])->toBeNumeric()->toBeGreaterThanOrEqual(0);
         }
     }
+});
+
+it('presents model activity as useful record loads and boot lifecycle evidence', function () {
+    $response = $this->get('/profiled-models', ['Accept' => 'text/html'])->assertOk();
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $models = app(ProfilePresenter::class)->present($stored)['sections']['models'];
+
+    expect($models['summary'])
+        ->retrieval_count->toBe(44)
+        ->distinct_record_count->toBe(24)
+        ->repeated_load_count->toBe(20)
+        ->model_change_count->toBe(0)
+        ->boot_event_count->toBe(10)
+        ->boot_model_classes->toBe(5)
+        ->and(array_map(
+            fn (array $group): array => [class_basename($group['model']), $group['load_count'], $group['record_count'], $group['repeated_load_count']],
+            $models['payload']['model_groups'],
+        ))->toBe([
+            ['StudioJob', 14, 6, 8],
+            ['Client', 10, 4, 6],
+            ['ProofVersion', 8, 5, 3],
+            ['User', 5, 2, 3],
+            ['JobActivity', 7, 7, 0],
+        ]);
 });
 
 it('records initial application Livewire renders and then reports Livewire in the ecosystem', function () {

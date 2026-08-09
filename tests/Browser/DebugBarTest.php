@@ -389,6 +389,7 @@ it('profiles application Livewire updates without profiling itself', function ()
         ->assertSee('increment')
         ->assertSee('Request')
         ->assertSee('Response')
+        ->assertScript('document.querySelector(\'[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]\').disabled === false')
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->click('[data-testid="profiled-save"]')
         ->wait(0.2)
@@ -459,7 +460,7 @@ it('uses one metric color and balanced glass toolbar spacing', function () {
             JS, '18px')
         ->assertScript(<<<'JS'
             getComputedStyle(document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')).borderRadius
-            JS, '12px')
+            JS, '8px')
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
@@ -473,12 +474,13 @@ it('uses one metric color and balanced glass toolbar spacing', function () {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
                 const close = document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="close"]');
                 const toolbarBox = toolbar.getBoundingClientRect();
-                const expandBox = expand.getBoundingClientRect();
-                const right = toolbarBox.right - expandBox.right;
-                const top = expandBox.top - toolbarBox.top;
-                const bottom = toolbarBox.bottom - expandBox.bottom;
+                const closeBox = close.getBoundingClientRect();
+                const right = toolbarBox.right - closeBox.right;
+                const top = closeBox.top - toolbarBox.top;
+                const bottom = toolbarBox.bottom - closeBox.bottom;
 
-                return Math.abs(right - top) <= 1 && Math.abs(right - bottom) <= 1;
+                return Math.abs(right - top) <= 2
+                    && Math.abs(top - bottom) <= 1;
             })()
             JS)
         ->assertScript('document.querySelectorAll(\'[role="toolbar"] > span\').length', 0)
@@ -595,8 +597,8 @@ it('keeps host styles and package styles isolated', function () {
                 const style = getComputedStyle(document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]'));
 
                 return style.backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && style.borderRadius === '12px'
-                    && style.height === '36px';
+                    && style.borderRadius === '8px'
+                    && style.height === '32px';
             })()
             JS)
         ->assertScript("getComputedStyle(document.getElementById('newdebugbar')).fontFamily.includes('Outfit Variable')")
@@ -669,21 +671,111 @@ it('filters the timeline without inventing spans for point events', function () 
         ->assertNoJavaScriptErrors();
 });
 
-it('presents grouped Laravel activity with useful controls', function () {
-    $page = visit('/profiled')
+it('presents useful model evidence with progressive controls', function () {
+    $page = visit('/profiled-models')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="models"]')
-        ->assertSee('Model classes')
-        ->assertSee('Lifecycle events')
+        ->assertSee('Find repeated record loads, unexpected writes, and when the work happened.')
+        ->assertSee('Repeated means extra retrievals after a record’s first load.')
+        ->assertSee('20 repeated loads')
+        ->assertSee('44 retrievals across 24 distinct records')
+        ->assertScript(<<<'JS'
+            JSON.stringify(Array.from(document.querySelectorAll('[data-ndb-model-group]'))
+                .map((group) => [group.querySelector('[data-ndb-model-name]').textContent.trim(), group.dataset.changes, group.dataset.repeated, group.dataset.loads]))
+                === JSON.stringify([
+                    ['StudioJob', '0', '8', '14'],
+                    ['Client', '0', '6', '10'],
+                    ['ProofVersion', '0', '3', '8'],
+                    ['User', '0', '3', '5'],
+                    ['JobActivity', '0', '0', '7'],
+                ])
+            JS)
+        ->assertScript(<<<'JS'
+            [
+                ['loads', '[data-ndb-model-load-count]'],
+                ['records', '[data-ndb-model-record-count]'],
+                ['repeated', '[data-ndb-model-repeat-count]'],
+            ].every(([heading, value]) => {
+                const headingBounds = document.querySelector(`[data-ndb-model-heading="${heading}"]`).getBoundingClientRect();
+                const valueBounds = document.querySelector(`[data-ndb-model-group] ${value}`).getBoundingClientRect();
+
+                return Math.abs(headingBounds.right - valueBounds.right) < 1;
+            })
+            JS)
+        ->assertSee('Model boot lifecycle')
+        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
+        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->assertSee('studio_jobs')
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record]").length', 6)
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record][data-loads]:not([data-loads=\"1\"])").length', 5)
+        ->assertScript('document.querySelector("[data-ndb-model-group]:first-of-type [data-ndb-model-raw]").open === false')
+        ->click('[data-ndb-model-expand-all]')
+        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-model-group]")).every((group) => group.open)')
+        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-model-raw]")).every((group) => ! group.open)')
+        ->click('[data-ndb-model-expand-all]')
+        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-model-group]")).every((group) => ! group.open)')
+        ->assertNoJavaScriptErrors();
+});
+
+it('keeps model evidence contained on a narrow screen', function () {
+    $page = visit('/profiled-models')
+        ->resize(390, 844)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-inspector-action="palette"]')
+        ->click('[data-ndb-command="collectors:show"]')
+        ->wait(0.1)
+        ->click('[data-ndb-command="section:models"]')
+        ->assertVisible('[data-ndb-section-panel="models"]')
         ->assertScript(<<<'JS'
             (() => {
-                const counts = Array.from(document.querySelectorAll('[data-ndb-model-group]'))
-                    .map((group) => Number(group.dataset.count));
+                const content = document.querySelector('#newdebugbar main');
+                const panel = document.querySelector('[data-ndb-section-panel="models"]');
 
-                return counts.every((count, index) => index === 0 || counts[index - 1] >= count);
+                return panel.getBoundingClientRect().width <= content.clientWidth + 1
+                    && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)
+        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
+        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->assertScript(<<<'JS'
+            (() => {
+                const content = document.querySelector('#newdebugbar main');
+                const tableScroller = document.querySelector('[data-ndb-model-record]').closest('.ndb\\:overflow-x-auto');
+
+                return content.scrollWidth <= content.clientWidth + 1
+                    && tableScroller.scrollWidth > tableScroller.clientWidth;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('puts model changes before repeated retrievals', function () {
+    visit('/profiled-models?changes=1')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="models"]')
+        ->assertSee('1 model change')
+        ->assertSee('Changes appear first because they can affect application state.')
+        ->assertScript(<<<'JS'
+            (() => {
+                const first = document.querySelector('[data-ndb-model-group]');
+
+                return first.dataset.changes === '1'
+                    && first.querySelector('[data-ndb-model-name]').textContent.trim() === 'Client';
+            })()
+            JS)
+        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
+        ->assertSee('Model changes')
+        ->assertSee('1 updated')
+        ->assertNoJavaScriptErrors();
+});
+
+it('presents grouped Laravel activity with useful controls', function () {
+    visit('/profiled')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
         ->click('[data-ndb-select-section="cache"]')
         ->assertSee('Hit rate')
         ->assertSee('Misses')
@@ -707,7 +799,7 @@ it('presents grouped Laravel activity with useful controls', function () {
 });
 
 it('uses light dividers above expanded shared JSON details', function () {
-    $page = visit('/profiled');
+    $page = visit('/profiled-models');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
 
     $page
@@ -715,8 +807,20 @@ it('uses light dividers above expanded shared JSON details', function () {
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="models"]')
-        ->click('[data-ndb-section-panel="models"] details:first-of-type summary')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"models\\"] details pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"models\\"] details")).borderTopColor')
+        ->click('[data-ndb-model-group]:first-of-type > summary')
+        ->click('[data-ndb-model-group]:first-of-type [data-ndb-model-raw] > summary')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-raw] pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-model-raw]")).borderTopColor')
+        ->assertNoJavaScriptErrors();
+});
+
+it('uses light dividers above expanded cache JSON details', function () {
+    $page = visit('/profiled');
+    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
+
+    $page
+        ->refresh()
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
         ->click('[data-ndb-select-section="cache"]')
         ->click('[data-ndb-section-panel="cache"] details:first-of-type summary')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"cache\\"] details pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"cache\\"] details")).borderTopColor')

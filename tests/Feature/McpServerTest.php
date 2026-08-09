@@ -298,7 +298,7 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
         ->and($events['data']['pagination']['returned'])->toBeLessThanOrEqual(2)
         ->and($events['data']['pagination']['truncated'])->toBeTrue()
         ->and($profiles['data']['truncated'])->toBeTrue()
-        ->and($models['data']['payload'])->not->toHaveKeys(['groups', 'repeated_groups', 'repeated_misses'])
+        ->and($models['data']['payload'])->not->toHaveKeys(['groups', 'model_groups', 'boot_items', 'repeated_groups', 'repeated_misses'])
         ->and(array_column($profiles['data']['profiles'], 'id'))->not->toContain($corruptId);
 });
 
