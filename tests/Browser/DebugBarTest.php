@@ -31,7 +31,7 @@ function selectDebugSectionViaPalette($page, string $section): void
         ->wait(0.1);
 }
 
-it('opens every compact toolbar destination and closes cleanly', function () {
+it('opens every compact toolbar destination and shrinks cleanly', function () {
     $page = visit('/profiled')
         ->assertPresent('[data-testid="host-page"]')
         ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]');
@@ -44,8 +44,12 @@ it('opens every compact toolbar destination and closes cleanly', function () {
         'memory' => 'overview',
         'queries' => 'queries',
     ] as $toolbar => $section) {
+        $selector = $toolbar === 'expand'
+            ? '[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]'
+            : "[data-ndb-toolbar=\"{$toolbar}\"]";
+
         $page
-            ->click("[data-ndb-toolbar=\"{$toolbar}\"]")
+            ->click($selector)
             ->wait(0.2);
 
         assertDebugSectionSelected($page, $section);
@@ -55,11 +59,124 @@ it('opens every compact toolbar destination and closes cleanly', function () {
         }
 
         $page
-            ->click('[data-ndb-inspector-action="close"]')
+            ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
             ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]');
     }
 
     $page->assertNoJavaScriptErrors();
+});
+
+it('provides stateful window controls and closes until reload', function () {
+    $page = visit('/profiled')
+        ->resize(1440, 900)
+        ->assertVisible('[data-ndb-window-controls="compact"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const controls = document.querySelector('[data-ndb-window-controls="compact"]');
+                const expand = controls.querySelector('[data-ndb-window-action="expand"]');
+                const shrink = controls.querySelector('[data-ndb-window-action="shrink"]');
+                const close = controls.querySelector('[data-ndb-window-action="close"]');
+                const utility = document.querySelector('[data-ndb-toolbar-utility-actions]');
+                const separator = document.querySelector('[data-ndb-toolbar-actions] [data-ndb-window-controls-separator]');
+                const utilityBox = utility.getBoundingClientRect();
+                const separatorBox = separator.getBoundingClientRect();
+                const controlsBox = controls.getBoundingClientRect();
+
+                return expand.disabled === false
+                    && shrink.disabled === true
+                    && close.disabled === false
+                    && Number.parseFloat(getComputedStyle(shrink).opacity) < Number.parseFloat(getComputedStyle(expand).opacity)
+                    && utility.getAttribute('aria-label') === 'Tools'
+                    && controls.getAttribute('aria-label') === 'Window controls'
+                    && separatorBox.left >= utilityBox.right
+                    && separatorBox.right <= controlsBox.left
+                    && separatorBox.height > 0;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                window.ndbWindowControlColor = getComputedStyle(
+                    document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]'),
+                ).color;
+
+                return true;
+            })()
+            JS)
+        ->hover('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->assertScript(<<<'JS'
+            (() => {
+                const control = document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+                const style = getComputedStyle(control);
+
+                return style.backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && style.color !== window.ndbWindowControlColor;
+            })()
+            JS)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->assertVisible('[data-ndb-window-controls="expanded"]')
+        ->assertScript('document.querySelector(\'[data-ndb-window-controls="expanded"] [data-ndb-window-action="expand"]\').disabled === true')
+        ->assertScript('document.querySelector(\'[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]\').disabled === false')
+        ->assertScript('document.querySelector(\'[data-ndb-window-controls="expanded"] [data-ndb-window-action="close"]\').disabled === false')
+        ->assertScript(<<<'JS'
+            (() => {
+                const controls = document.querySelector('[data-ndb-window-controls="expanded"]');
+                const expand = controls.querySelector('[data-ndb-window-action="expand"]');
+                const shrink = controls.querySelector('[data-ndb-window-action="shrink"]');
+
+                return Number.parseFloat(getComputedStyle(expand).opacity)
+                    < Number.parseFloat(getComputedStyle(shrink).opacity);
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const controls = document.querySelector('[data-ndb-window-controls="expanded"]');
+                const utility = document.querySelector('[data-ndb-inspector-utility-actions]');
+                const separator = document.querySelector('[data-ndb-inspector-actions] [data-ndb-window-controls-separator]');
+                const utilityBox = utility.getBoundingClientRect();
+                const separatorBox = separator.getBoundingClientRect();
+                const controlsBox = controls.getBoundingClientRect();
+
+                return utility.getAttribute('aria-label') === 'Tools'
+                    && controls.getAttribute('aria-label') === 'Window controls'
+                    && utilityBox.right < controlsBox.left
+                    && separatorBox.width >= 1
+                    && separatorBox.height > 0
+                    && Boolean(utility.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING)
+                    && Boolean(separator.compareDocumentPosition(controls) & Node.DOCUMENT_POSITION_FOLLOWING);
+            })()
+            JS)
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->wait(0.2)
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="close"]')
+        ->wait(0.2)
+        ->assertScript(<<<'JS'
+            (() => {
+                window.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: 'P',
+                    metaKey: true,
+                    shiftKey: true,
+                }));
+
+                return getComputedStyle(document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]')).display === 'none'
+                    && getComputedStyle(document.querySelector('[role="dialog"][aria-label="Request inspector"]')).display === 'none'
+                    && getComputedStyle(document.querySelector('[role="dialog"][aria-label="Command palette"]')).display === 'none'
+                    && document.querySelector('[data-testid="host-page"]').inert === false
+                    && document.body.style.overflow === '';
+            })()
+            JS)
+        ->refresh()
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="close"]')
+        ->wait(0.2)
+        ->assertScript('getComputedStyle(document.querySelector(\'[role="toolbar"][aria-label="Debug toolbar"]\')).display === "none"')
+        ->refresh()
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->assertNoJavaScriptErrors();
 });
 
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
@@ -69,7 +186,7 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
     $page
         ->refresh()
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertMissing('[data-ndb-section-mode]')
         ->assertMissing('[data-ndb-quiet-count]')
@@ -122,7 +239,7 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
 
 it('prioritizes relevant activity and opens the runtime details', function () {
     $page = visit('/profiled-rich')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertVisible('[data-ndb-overview-activity]')
         ->assertCount('[data-ndb-overview-activity-section]', 5)
@@ -193,7 +310,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && JSON.stringify(factOrder) === JSON.stringify(['environment', 'queries', 'duration', 'memory']);
             })()
             JS)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertScript(<<<'JS'
             (() => {
@@ -220,7 +337,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && Math.abs(window.innerWidth - box.right) <= 1;
             })()
             JS)
-        ->click('[data-ndb-inspector-action="close"]')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->wait(0.2)
         ->assertScript(<<<'JS'
             (() => {
@@ -237,12 +354,12 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
 
 it('moves focus into the inspector and returns it to its opener', function () {
     visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-inspector-action=close]")')
-        ->click('[data-ndb-inspector-action="close"]')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-window-controls=expanded] [data-ndb-window-action=shrink]")')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->wait(0.2)
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-toolbar=expand]")')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-window-controls=compact] [data-ndb-window-action=expand]")')
         ->assertNoJavaScriptErrors();
 });
 
@@ -261,7 +378,7 @@ it('profiles application Livewire updates without profiling itself', function ()
         ->and($livewireProfile['sections']['livewire']['summary']['count'])->toBe(1);
 
     $page
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]');
 
@@ -272,10 +389,10 @@ it('profiles application Livewire updates without profiling itself', function ()
         ->assertSee('increment')
         ->assertSee('Request')
         ->assertSee('Response')
-        ->click('[data-ndb-inspector-action="close"]')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->click('[data-testid="profiled-save"]')
         ->wait(0.2)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]')
         ->assertSee('1 validation failure')
@@ -341,7 +458,7 @@ it('uses one metric color and balanced glass toolbar spacing', function () {
             getComputedStyle(document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]')).borderRadius
             JS, '18px')
         ->assertScript(<<<'JS'
-            getComputedStyle(document.querySelector('[data-ndb-toolbar="expand"]')).borderRadius
+            getComputedStyle(document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')).borderRadius
             JS, '12px')
         ->assertScript(<<<'JS'
             (() => {
@@ -354,7 +471,7 @@ it('uses one metric color and balanced glass toolbar spacing', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
-                const expand = document.querySelector('[data-ndb-toolbar="expand"]');
+                const close = document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="close"]');
                 const toolbarBox = toolbar.getBoundingClientRect();
                 const expandBox = expand.getBoundingClientRect();
                 const right = toolbarBox.right - expandBox.right;
@@ -370,7 +487,7 @@ it('uses one metric color and balanced glass toolbar spacing', function () {
                 const metricColors = ['duration', 'memory', 'queries'].map((name) =>
                     getComputedStyle(document.querySelector(`[data-ndb-toolbar="${name}"] svg`)).color
                 );
-                const utilityColor = getComputedStyle(document.querySelector('[data-ndb-toolbar="expand"] svg')).color;
+                const utilityColor = getComputedStyle(document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"] svg')).color;
 
                 return new Set(metricColors).size === 1 && metricColors[0] !== utilityColor;
             })()
@@ -453,7 +570,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
             })()
             JS)
         ->assertVisible('[data-testid="host-page"]')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="history"]')
         ->assertSee('A background request was added to History.')
@@ -475,7 +592,7 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->assertScript(<<<'JS'
             (() => {
-                const style = getComputedStyle(document.querySelector('[data-ndb-toolbar="expand"]'));
+                const style = getComputedStyle(document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]'));
 
                 return style.backgroundColor === 'rgba(0, 0, 0, 0)'
                     && style.borderRadius === '12px'
@@ -491,7 +608,7 @@ it('switches every section after Livewire navigation with one active state', fun
         ->click('[data-testid="host-navigation"]')
         ->waitForText('Second request')
         ->assertPathIs('/profiled-next')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2);
 
     foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'history', 'overview', 'models'] as $section) {
@@ -505,7 +622,7 @@ it('switches every section after Livewire navigation with one active state', fun
 
 it('filters the timeline without inventing spans for point events', function () {
     $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="timeline"]')
         ->wait(0.2);
@@ -554,7 +671,7 @@ it('filters the timeline without inventing spans for point events', function () 
 
 it('presents grouped Laravel activity with useful controls', function () {
     $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="models"]')
         ->assertSee('Model classes')
@@ -595,7 +712,7 @@ it('uses light dividers above expanded shared JSON details', function () {
 
     $page
         ->refresh()
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="models"]')
         ->click('[data-ndb-section-panel="models"] details:first-of-type summary')
@@ -608,7 +725,7 @@ it('uses light dividers above expanded shared JSON details', function () {
 
 it('shows an aligned request trace and switches request detail groups', function () {
     $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="request"]')
         ->assertVisible('[data-ndb-request-trace]')
@@ -659,7 +776,7 @@ it('shows an aligned request trace and switches request detail groups', function
 
 it('shows log call sites', function () {
     $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="logs"]')
         ->assertSee('tests/TestCase.php')
@@ -672,7 +789,7 @@ it('shows log call sites', function () {
 
 it('presents Laravel decisions lifecycle messages and editor links', function () {
     $page = visit('/profiled-context')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertMissing('[data-ndb-findings]')
         ->click('[data-ndb-select-section="authorization"]')
@@ -706,7 +823,7 @@ it('presents Laravel decisions lifecycle messages and editor links', function ()
 
 it('shows relative exception frames and highlighted source context', function () {
     $page = visit('/profiled-reported-exception')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="exceptions"]');
 
@@ -726,7 +843,7 @@ it('keeps favoriting active and repeatable after Livewire navigation', function 
     $page = visit('/profiled')
         ->click('[data-testid="host-navigation"]')
         ->waitForText('Second request')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="models"]');
 
@@ -754,10 +871,10 @@ it('keeps favoriting active and repeatable after Livewire navigation', function 
     $page
         ->click($favorite)
         ->assertAttribute($favorite, 'aria-pressed', 'true')
-        ->click('[data-ndb-inspector-action="close"]')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->click('[data-testid="host-navigation"]')
         ->waitForText('First request')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertAttribute($favorite, 'aria-pressed', 'true')
         ->assertNoJavaScriptErrors();
@@ -765,7 +882,7 @@ it('keeps favoriting active and repeatable after Livewire navigation', function 
 
 it('reorders favorites with the keyboard and drag and drop', function () {
     $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2);
 
     foreach (['request', 'overview', 'queries'] as $section) {
@@ -794,7 +911,7 @@ it('reorders favorites with the keyboard and drag and drop', function () {
 
     $page
         ->refresh()
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2);
 
     assertFavoriteOrder($page, 'queries,overview,request');
@@ -804,7 +921,7 @@ it('reorders favorites with the keyboard and drag and drop', function () {
 
 it('shows the favorite source and insertion point while dragging', function () {
     $page = visit('/profiled')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2);
 
     foreach (['request', 'overview', 'queries'] as $section) {
@@ -861,14 +978,14 @@ it('uses the command palette, theme preference, and escape layers', function () 
         ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
         ->refresh()
         ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->keys('[data-ndb-inspector-action="palette"]', 'Meta+Shift+P')
         ->assertVisible('[role="dialog"][aria-label="Command palette"]')
         ->keys('[data-ndb-palette-search]', 'Escape')
         ->assertScript('getComputedStyle(document.querySelector("[role=dialog][aria-label=\\"Command palette\\"]")).display === "none"')
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
-        ->keys('[data-ndb-inspector-action="close"]', 'Escape')
+        ->keys('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]', 'Escape')
         ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
         ->assertNoJavaScriptErrors();
 });
@@ -986,7 +1103,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
 it('filters retained history and compares the current path', function () {
     $page = visit('/profiled')
         ->refresh()
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="history"]');
 
@@ -1050,7 +1167,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
                 const facts = document.querySelector('[data-ndb-toolbar-facts]');
                 const factButtons = Array.from(facts.querySelectorAll('[data-ndb-toolbar]'));
                 const actions = document.querySelector('[data-ndb-toolbar-actions]');
-                const expand = document.querySelector('[data-ndb-toolbar="expand"]');
+                const close = document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="close"]');
                 const toolbarBox = toolbar.getBoundingClientRect();
                 const requestBox = request.getBoundingClientRect();
                 const factsBox = facts.getBoundingClientRect();
@@ -1059,7 +1176,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
 
                 return requestBox.width <= 113
                     && requestBox.width < toolbarBox.width / 3
-                    && factsBox.width > 100
+                    && factsBox.width > 60
                     && getComputedStyle(facts).overflowX === 'auto'
                     && facts.scrollWidth > facts.clientWidth
                     && factButtons.length === 4
@@ -1071,11 +1188,11 @@ it('keeps the main interactions usable on a phone viewport', function () {
                             && button.getBoundingClientRect().width > 0;
                     })
                     && Math.abs(toolbarBox.right - actionsBox.right - Number.parseFloat(toolbarStyles.paddingRight)) <= 1
-                    && Math.abs(actionsBox.right - expand.getBoundingClientRect().right) <= 1
+                    && Math.abs(actionsBox.right - close.getBoundingClientRect().right) <= 1
                     && actionsBox.left >= factsBox.right;
             })()
             JS)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertVisible('[data-ndb-header-memory]')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')

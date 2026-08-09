@@ -160,7 +160,6 @@ test('a new application profile resets stale section state and reloads open deta
   let detailsLoaded = 0;
   state.$wire = { loadDetails: async () => detailsLoaded++ };
   state.$nextTick = (callback) => callback();
-  state.$refs = { inspectorClose: { focus() {} } };
   state.selected = 'logs';
   state.inspectorOpen = true;
   state.detailsRequested = true;
@@ -257,24 +256,65 @@ test('stale detail responses cannot resync panels for a newer profile', async ()
   assert.equal(state.selected, 'overview');
 });
 
-test('the inspector moves focus inside and returns it when closed', () => {
+test('the inspector moves focus to shrink and returns it when closed', () => {
   let openerFocused = 0;
-  let closeFocused = 0;
+  let shrinkFocused = 0;
   const opener = { focus: () => openerFocused++ };
+  const shrink = { focus: () => shrinkFocused++ };
   const browser = runtime();
   browser.activeElement = () => opener;
   const state = createNewDebugBar(summary, browser);
-  state.$refs = { inspectorClose: { focus: () => closeFocused++ } };
+  state.$root = { querySelector: () => shrink };
   state.$nextTick = (callback) => callback();
 
   state.openInspector();
-  assert.equal(closeFocused, 1);
+  assert.equal(shrinkFocused, 1);
   assert.equal(browser.host.locks, 1);
 
   state.closeInspector();
   assert.equal(openerFocused, 1);
   assert.equal(state.inspectorReturnFocus, null);
   assert.equal(browser.host.unlocks, 1);
+});
+
+test('dismissing the bar lasts for the page lifetime without becoming a preference', () => {
+  let blurred = 0;
+  let prevented = 0;
+  const active = { blur: () => blurred++ };
+  const browser = runtime();
+  browser.activeElement = () => active;
+  const state = createNewDebugBar(summary, browser);
+  state.$nextTick = (callback) => callback();
+  state.inspectorOpen = true;
+  state.paletteOpen = true;
+
+  state.dismissBar();
+
+  assert.equal(state.barVisible, false);
+  assert.equal(state.inspectorOpen, false);
+  assert.equal(state.paletteOpen, false);
+  assert.equal(state.mobileSectionsOpen, false);
+  assert.equal(browser.host.unlocks, 1);
+  assert.equal(blurred, 1);
+  assert.equal(browser.values.has(STORAGE_KEY), false);
+
+  state.openInspector();
+  state.openPalette();
+  state.handleShortcut({
+    metaKey: true,
+    ctrlKey: false,
+    shiftKey: true,
+    key: 'P',
+    preventDefault: () => prevented++,
+  });
+
+  assert.equal(state.inspectorOpen, false);
+  assert.equal(state.paletteOpen, false);
+  assert.equal(prevented, 0);
+
+  const reloaded = createNewDebugBar(summary, browser);
+  reloaded.init();
+  assert.equal(reloaded.barVisible, true);
 });
 
 test('mobile section navigation manages focus and layered dismissal', () => {
@@ -614,7 +654,6 @@ test('the command palette jumps to sections and changes settings', async () => {
   const state = createNewDebugBar(summary, browser);
   let detailsLoaded = 0;
   state.$wire = { loadDetails: async () => detailsLoaded++ };
-  state.$refs = { inspectorClose: { focus() {} } };
   state.$nextTick = (callback) => callback();
   const opener = { focus() {} };
   state.paletteOpen = true;

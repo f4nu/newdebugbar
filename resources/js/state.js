@@ -54,6 +54,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
   const browser = runtime ?? defaultRuntime();
 
   return {
+    barVisible: true,
     inspectorOpen: false,
     inspectorReturnFocus: null,
     mobileSectionsOpen: false,
@@ -301,11 +302,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     syncHostLock() {
-      if (this.inspectorOpen || this.paletteOpen) browser.lockHost?.(this.$root);
+      if (this.barVisible && (this.inspectorOpen || this.paletteOpen)) browser.lockHost?.(this.$root);
       else browser.unlockHost?.(this.$root);
     },
 
     openInspector(section = this.selected, returnFocus = null) {
+      if (!this.barVisible) return;
+
       if (!this.inspectorOpen) {
         this.inspectorReturnFocus = returnFocus ?? browser.activeElement?.();
       }
@@ -316,7 +319,9 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.inspectorOpen = true;
       this.syncHostLock();
       this.$nextTick?.(() => {
-        const focus = () => this.$refs?.inspectorClose?.focus();
+        const focus = () => this.$root
+          ?.querySelector?.('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+          ?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
 
@@ -358,6 +363,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     closeInspector() {
+      if (!this.inspectorOpen) return;
+
       const returnFocus = this.inspectorReturnFocus;
       this.inspectorOpen = false;
       this.inspectorReturnFocus = null;
@@ -367,6 +374,27 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => {
         const focus = () => returnFocus?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    dismissBar() {
+      if (!this.barVisible) return;
+
+      const activeElement = browser.activeElement?.();
+      this.barVisible = false;
+      this.inspectorOpen = false;
+      this.inspectorReturnFocus = null;
+      this.mobileSectionsOpen = false;
+      this.mobileSectionsReturnFocus = null;
+      this.paletteOpen = false;
+      this.paletteSearch = '';
+      this.paletteIndex = 0;
+      this.paletteShowQuiet = false;
+      this.paletteReturnFocus = null;
+      this.syncHostLock();
+      this.$nextTick?.(() => {
+        const blur = () => activeElement?.blur?.();
+        browser.afterPaint ? browser.afterPaint(blur) : blur();
       });
     },
 
@@ -768,6 +796,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     openPalette() {
+      if (!this.barVisible) return;
+
       this.paletteReturnFocus = this.mobileSectionsOpen
         ? this.mobileSectionsReturnFocus
         : browser.activeElement?.();
@@ -839,6 +869,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     handleShortcut(event) {
+      if (!this.barVisible) return;
+
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'p') {
         event.preventDefault();
         this.togglePalette();

@@ -25,7 +25,7 @@
 >
     <div
         x-cloak
-        x-show.important="! inspectorOpen"
+        x-show.important="barVisible && ! inspectorOpen"
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="Debug toolbar"
@@ -138,47 +138,48 @@
             </x-newdebugbar::toolbar-button>
         </div>
 
-        <div
-            data-ndb-toolbar-actions
-            class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5"
-        >
-            <x-newdebugbar::icon-button
-                name="search"
-                :dark-surface="true"
-                data-ndb-toolbar="palette"
-                @click="openPalette()"
-                class="ndb:size-9 ndb:rounded-xl"
-                aria-label="Open command palette"
-                title="Command palette (Command or Control + Shift + P)"
-            />
-            <x-newdebugbar::icon-button
-                name="expand"
-                :dark-surface="true"
-                data-ndb-toolbar="expand"
-                @click="openInspector()"
-                class="ndb:size-9 ndb:rounded-xl"
-                aria-label="Expand inspector"
-                title="Expand inspector"
-            />
+        <div data-ndb-toolbar-actions class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5">
+            <div
+                data-ndb-toolbar-utility-actions
+                role="group"
+                aria-label="Tools"
+                class="ndb:flex ndb:items-center ndb:gap-0.5"
+            >
+                <x-newdebugbar::icon-button
+                    name="search"
+                    :dark-surface="true"
+                    data-ndb-toolbar="palette"
+                    @click="openPalette()"
+                    class="ndb:size-9 ndb:rounded-xl"
+                    aria-label="Open command palette"
+                    title="Command palette (Command or Control + Shift + P)"
+                />
+            </div>
+            <span
+                data-ndb-window-controls-separator
+                aria-hidden="true"
+                class="ndb:mx-1 ndb:h-5 ndb:w-px ndb:shrink-0 ndb:bg-zinc-300/80 ndb:dark:bg-zinc-700"
+            ></span>
+            <x-newdebugbar::window-controls data-ndb-window-controls="compact" :dark-surface="true" />
         </div>
     </div>
 
     <div
         x-cloak
-        x-show.important="inspectorOpen"
+        x-show.important="barVisible && inspectorOpen"
         class="ndb:pointer-events-auto ndb:fixed ndb:inset-0"
         role="presentation"
     >
         <div
             data-ndb-backdrop
-            x-show.important="inspectorOpen"
+            x-show.important="barVisible && inspectorOpen"
             x-transition.opacity.duration.150ms
             @click="closeInspector()"
             class="ndb:absolute ndb:inset-0 ndb:bg-zinc-950/30 ndb:backdrop-blur-[1px] ndb:dark:bg-black/55"
         ></div>
 
         <aside
-            x-show.important="inspectorOpen"
+            x-show.important="barVisible && inspectorOpen"
             x-transition:enter="ndb:transition ndb:duration-200 ndb:ease-out"
             x-transition:enter-start="ndb:translate-y-full"
             x-transition:enter-end="ndb:translate-y-0"
@@ -333,33 +334,38 @@
                         </div>
                     </div>
 
-                    <div class="ndb:ml-auto ndb:flex ndb:items-center ndb:gap-0.5">
-                        <x-newdebugbar::icon-button
-                            name="search"
-                            data-ndb-inspector-action="palette"
-                            @click="openPalette()"
-                            class="ndb:size-9 ndb:rounded-xl"
-                            aria-label="Open command palette"
-                        />
-                        <x-newdebugbar::icon-button
-                            data-ndb-inspector-action="theme"
-                            @click="toggleTheme()"
-                            class="ndb:size-9 ndb:rounded-xl"
-                            ::aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-                            ::title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-                            ><span x-show.important="resolvedTheme !== 'dark'"
-                                ><x-newdebugbar::icon name="moon" class="ndb:size-4" /></span
-                            ><span x-show.important="resolvedTheme === 'dark'"
-                                ><x-newdebugbar::icon name="sun" class="ndb:size-4" /></span
-                        ></x-newdebugbar::icon-button>
-                        <x-newdebugbar::icon-button
-                            name="close"
-                            data-ndb-inspector-action="close"
-                            x-ref="inspectorClose"
-                            @click="closeInspector()"
-                            class="ndb:size-9 ndb:rounded-xl"
-                            aria-label="Close inspector"
-                        />
+                    <div data-ndb-inspector-actions class="ndb:ml-auto ndb:flex ndb:items-center ndb:gap-0.5">
+                        <div
+                            data-ndb-inspector-utility-actions
+                            role="group"
+                            aria-label="Tools"
+                            class="ndb:flex ndb:items-center ndb:gap-0.5"
+                        >
+                            <x-newdebugbar::icon-button
+                                name="search"
+                                data-ndb-inspector-action="palette"
+                                @click="openPalette()"
+                                class="ndb:size-9 ndb:rounded-xl"
+                                aria-label="Open command palette"
+                            />
+                            <x-newdebugbar::icon-button
+                                data-ndb-inspector-action="theme"
+                                @click="toggleTheme()"
+                                class="ndb:size-9 ndb:rounded-xl"
+                                ::aria-label="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+                                ::title="resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+                                ><span x-show.important="resolvedTheme !== 'dark'"
+                                    ><x-newdebugbar::icon name="moon" class="ndb:size-4" /></span
+                                ><span x-show.important="resolvedTheme === 'dark'"
+                                    ><x-newdebugbar::icon name="sun" class="ndb:size-4" /></span
+                            ></x-newdebugbar::icon-button>
+                        </div>
+                        <span
+                            data-ndb-window-controls-separator
+                            aria-hidden="true"
+                            class="ndb:mx-1 ndb:h-5 ndb:w-px ndb:shrink-0 ndb:bg-zinc-300/80 ndb:dark:bg-zinc-700"
+                        ></span>
+                        <x-newdebugbar::window-controls data-ndb-window-controls="expanded" />
                     </div>
                 </div>
             </header>
@@ -651,14 +657,12 @@
                                         @if ($activitySections !== [])
                                             <div data-ndb-overview-activity>
                                                 <div class="ndb:mb-3">
-                                                    <h3 class="ndb:text-xs ndb:font-bold">
-                                                        Relevant activity
-                                                    </h3>
-                                                    <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">Sorted by what may need attention</p>
+                                                    <h3 class="ndb:text-xs ndb:font-bold">Relevant activity</h3>
+                                                    <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">
+                                                        Sorted by what may need attention
+                                                    </p>
                                                 </div>
-                                                <div
-                                                    class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
-                                                >
+                                                <div class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                                                     @foreach ($activitySections as $link)
                                                         <button
                                                             type="button"
@@ -666,22 +670,17 @@
                                                             @click="navigateToSection(@js($link['key']))"
                                                             class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-3 ndb:text-left ndb:transition ndb:hover:bg-indigo-50/60 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:sm:grid-cols-[9rem_minmax(0,1fr)_auto] ndb:dark:border-zinc-800 ndb:dark:hover:bg-indigo-950/30"
                                                         >
-                                                            <span
-                                                                class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
-                                                            >
+                                                            <span class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold">
                                                                 {{ $link['label'] }}
                                                             </span>
-                                                            <span
-                                                                class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-2 ndb:sm:row-start-1 ndb:dark:text-zinc-400"
-                                                            >
+                                                            <span class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-2 ndb:sm:row-start-1 ndb:dark:text-zinc-400">
                                                                 {{ $link['description'] }}
                                                             </span>
                                                             @if ($link['attention'] ?? false)
                                                                 <span
                                                                     data-ndb-overview-activity-review
                                                                     class="ndb:col-start-2 ndb:row-span-2 ndb:row-start-1 ndb:self-center ndb:text-[10px] ndb:font-bold ndb:text-amber-600 ndb:sm:col-start-3 ndb:sm:row-span-1 ndb:dark:text-amber-400"
-                                                                    >Review</span
-                                                                >
+                                                                >Review</span>
                                                             @endif
                                                         </button>
                                                     @endforeach
@@ -693,16 +692,10 @@
                                             data-ndb-overview-runtime
                                             class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
                                         >
-                                            <summary
-                                                class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500"
-                                            >
+                                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
                                                 <span class="ndb:min-w-0 ndb:flex-1">
-                                                    <span class="ndb:block ndb:text-xs ndb:font-bold"
-                                                        >Runtime details</span
-                                                    >
-                                                    <span
-                                                        class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400"
-                                                    >
+                                                    <span class="ndb:block ndb:text-xs ndb:font-bold">Runtime details</span>
+                                                    <span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">
                                                         Runtime, drivers, framework cache, and ecosystem
                                                     </span>
                                                 </span>
@@ -759,9 +752,7 @@
                                                             :class="runtimeDetail === @js($runtimeDetailKey) ? 'ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300' : 'ndb:text-zinc-600 ndb:hover:bg-white ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white'"
                                                             class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
                                                         >
-                                                            <span
-                                                                class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold"
-                                                            >
+                                                            <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">
                                                                 {{ $runtimeDetailGroup['label'] }}
                                                             </span>
                                                         </button>
@@ -774,9 +765,7 @@
                                                             data-ndb-runtime-detail-panel="{{ $runtimeDetailKey }}"
                                                             x-show.important="runtimeDetail === @js($runtimeDetailKey)"
                                                         >
-                                                            <div
-                                                                class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"
-                                                            >
+                                                            <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
                                                                 <h3 class="ndb:text-xs ndb:font-bold">
                                                                     {{ $runtimeDetailGroup['label'] }}
                                                                 </h3>
@@ -791,13 +780,9 @@
 
                                                             <div class="ndb:mt-3 ndb:overflow-x-auto">
                                                                 @if ($runtimeDetailGroup['items'] !== [])
-                                                                    <table
-                                                                        class="ndb:w-full ndb:table-fixed ndb:border-collapse ndb:text-left"
-                                                                    >
+                                                                    <table class="ndb:w-full ndb:table-fixed ndb:border-collapse ndb:text-left">
                                                                         <thead>
-                                                                            <tr
-                                                                                class="ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
-                                                                            >
+                                                                            <tr class="ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                                                                                 <th
                                                                                     scope="col"
                                                                                     class="ndb:w-2/5 ndb:pb-2 ndb:pr-4 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
@@ -814,18 +799,14 @@
                                                                         </thead>
                                                                         <tbody>
                                                                             @foreach ($runtimeDetailGroup['items'] as $runtimeDetailItem)
-                                                                                <tr
-                                                                                    class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80"
-                                                                                >
+                                                                                <tr class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80">
                                                                                     <th
                                                                                         scope="row"
                                                                                         class="ndb:py-2 ndb:pr-4 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:font-medium ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                                                                     >
                                                                                         {{ $runtimeDetailItem['name'] }}
                                                                                     </th>
-                                                                                    <td
-                                                                                        class="ndb:break-words ndb:py-2 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:text-zinc-800 ndb:dark:text-zinc-200"
-                                                                                    >
+                                                                                    <td class="ndb:break-words ndb:py-2 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:text-zinc-800 ndb:dark:text-zinc-200">
                                                                                         {{ is_scalar($runtimeDetailItem['value']) || $runtimeDetailItem['value'] === null ? ($runtimeDetailItem['value'] ?? '—') : json_encode($runtimeDetailItem['value'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}
                                                                                     </td>
                                                                                 </tr>
@@ -833,7 +814,10 @@
                                                                         </tbody>
                                                                     </table>
                                                                 @else
-                                                                    <p class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-4 ndb:text-xs ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400">No {{ strtolower($runtimeDetailGroup['label']) }} details were detected.</p>
+                                                                    <p class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-4 ndb:text-xs ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400">
+                                                                        No {{ strtolower($runtimeDetailGroup['label']) }} details
+                                                                        were detected.
+                                                                    </p>
                                                                 @endif
                                                             </div>
                                                         </div>

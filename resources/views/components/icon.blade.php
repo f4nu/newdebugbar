@@ -16,7 +16,10 @@
             /><path d="m20 20-4-4" />
             @break
         @case ('expand')
-            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+            <rect x="5" y="5" width="14" height="14" rx="1" />
+            @break
+        @case ('shrink')
+            <path d="M5 12h14" />
             @break
         @case ('close')
             <path d="m6 6 12 12M18 6 6 18" />

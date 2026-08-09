@@ -273,7 +273,7 @@ foreach (['light', 'dark'] as $theme) {
 it('matches the visual baseline for the :dataset section', function (string $section, string $theme) {
     $page = visualDebugPage($section, $theme)
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, $section);
@@ -295,7 +295,7 @@ it('matches the visual baseline for the :dataset progressive overview', function
 
     $page
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details')
         ->assertMissing('[data-ndb-section-mode]')
         ->assertMissing('[data-ndb-quiet-count]')
@@ -312,7 +312,7 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
 
     $page
         ->resize(390, 844)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details')
         ->assertMissing('[data-ndb-section-mode]')
         ->assertMissing('[data-ndb-quiet-count]')
@@ -372,7 +372,7 @@ it('matches the visual baseline for the :dataset command palette', function (str
 it('matches the visual baseline for :dataset expanded query bindings', function (string $theme) {
     $page = visualDebugPage('queries', $theme)
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'queries');
@@ -400,7 +400,7 @@ it('matches the visual baseline for :dataset expanded query bindings', function 
 it('matches the visual baseline for :dataset repeated query evidence', function (string $theme) {
     $page = visualDebugPage('queries', $theme)
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'queries');
@@ -427,7 +427,7 @@ $expandedDetailCases = [
 it('matches the visual baseline for expanded :dataset details', function (string $section, string $theme) {
     $page = visualDebugPage($section, $theme)
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, $section);
@@ -450,7 +450,7 @@ it('matches the visual baseline for :dataset favorite ordering', function (strin
 
     $page
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Favorites');
 
     stabilizeVisualDebugValues($page);
@@ -467,7 +467,7 @@ it('matches the visual baseline for :dataset favorite dragging', function (strin
 
     $page
         ->resize(1440, 900)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Favorites')
         ->wait(0.5)
         ->assertScript(<<<'JS'
@@ -497,7 +497,7 @@ it('matches the visual baseline for :dataset favorite dragging', function (strin
 it('matches the visual baseline for the :dataset narrow inspector', function (string $theme) {
     $page = visualDebugPage('queries', $theme)
         ->resize(390, 844)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]');
 
@@ -517,7 +517,7 @@ it('matches the visual baseline for the :dataset narrow inspector', function (st
 it('matches the visual baseline for the :dataset narrow section drawer', function (string $theme) {
     $page = visualDebugPage('overview', $theme)
         ->resize(390, 844)
-        ->click('[data-ndb-toolbar="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-mobile-sections-toggle]')
         ->assertVisible('#newdebugbar-section-navigation')
