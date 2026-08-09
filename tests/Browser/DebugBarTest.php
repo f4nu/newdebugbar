@@ -138,6 +138,8 @@ it('prioritizes relevant activity and opens the runtime details', function () {
         ->assertVisible('[data-ndb-overview-runtime]')
         ->assertAttribute('[data-ndb-overview-runtime]', 'open', '')
         ->assertVisible('[data-ndb-runtime-detail-panel="runtime"]')
+        ->assertVisible('[data-ndb-runtime-detail-navigation]')
+        ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-select-wrapper]\')).display === "none"')
         ->assertMissing('[data-ndb-runtime-detail-count]')
         ->assertMissing('[data-ndb-runtime-detail-panel-count]')
         ->assertNoJavaScriptErrors();
@@ -147,6 +149,12 @@ it('prioritizes relevant activity and opens the runtime details', function () {
         ->assertVisible('[data-ndb-runtime-detail-panel="drivers"]')
         ->assertScript('document.querySelector(\'[data-ndb-runtime-detail="drivers"]\').getAttribute("aria-pressed") === "true"')
         ->resize(390, 844)
+        ->assertVisible('[data-ndb-runtime-detail-select]')
+        ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-navigation]\')).display === "none"')
+        ->assertScript('document.querySelector(\'[data-ndb-runtime-detail-select]\').value === "drivers"')
+        ->select('[data-ndb-runtime-detail-select]', 'ecosystem')
+        ->assertVisible('[data-ndb-runtime-detail-panel="ecosystem"]')
+        ->assertScript('document.querySelector(\'[data-ndb-runtime-detail-select]\').value === "ecosystem"')
         ->assertScript(<<<'JS'
             (() => {
                 const activity = document.querySelector('[data-ndb-overview-activity]');

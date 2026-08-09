@@ -716,8 +716,39 @@
                                                 class="ndb:border-t ndb:border-zinc-200/90 ndb:sm:grid ndb:sm:grid-cols-[11rem_minmax(0,1fr)] ndb:dark:border-zinc-800"
                                             >
                                                 <div
+                                                    data-ndb-runtime-detail-select-wrapper
+                                                    class="ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/70 ndb:p-3 ndb:sm:hidden ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/50"
+                                                >
+                                                    <label
+                                                        for="ndb-runtime-detail-select"
+                                                        class="ndb:mb-1.5 ndb:block ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                    >
+                                                        Show details for
+                                                    </label>
+                                                    <div class="ndb:relative">
+                                                        <select
+                                                            id="ndb-runtime-detail-select"
+                                                            data-ndb-runtime-detail-select
+                                                            x-model="runtimeDetail"
+                                                            class="ndb:h-10 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-300 ndb:bg-white ndb:px-3 ndb:pr-9 ndb:text-xs ndb:font-bold ndb:text-zinc-950 ndb:shadow-xs ndb:outline-none ndb:transition ndb:focus:border-indigo-500 ndb:focus:ring-2 ndb:focus:ring-indigo-500/20 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-950 ndb:dark:text-white ndb:dark:focus:border-indigo-400 ndb:dark:focus:ring-indigo-400/20"
+                                                        >
+                                                            @foreach ($runtimeDetailGroups as $runtimeDetailKey => $runtimeDetailGroup)
+                                                                <option value="{{ $runtimeDetailKey }}">
+                                                                    {{ $runtimeDetailGroup['label'] }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <x-newdebugbar::icon
+                                                            name="chevron-down"
+                                                            class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <nav
+                                                    data-ndb-runtime-detail-navigation
                                                     aria-label="Runtime detail category"
-                                                    class="ndb:grid ndb:grid-cols-2 ndb:gap-1 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/70 ndb:p-2 ndb:sm:block ndb:sm:border-r ndb:sm:border-b-0 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/50"
+                                                    class="ndb:hidden ndb:border-r ndb:border-zinc-200/90 ndb:bg-zinc-50/70 ndb:p-2 ndb:sm:block ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/50"
                                                 >
                                                     @foreach ($runtimeDetailGroups as $runtimeDetailKey => $runtimeDetailGroup)
                                                         <button
@@ -735,7 +766,7 @@
                                                             </span>
                                                         </button>
                                                     @endforeach
-                                                </div>
+                                                </nav>
 
                                                 <div class="ndb:min-w-0 ndb:p-4">
                                                     @foreach ($runtimeDetailGroups as $runtimeDetailKey => $runtimeDetailGroup)
