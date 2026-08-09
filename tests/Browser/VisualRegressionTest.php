@@ -274,7 +274,7 @@ it('matches the visual baseline for the :dataset section', function (string $sec
     $page = visualDebugPage($section, $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details');
+        ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, $section);
 
@@ -296,7 +296,7 @@ it('matches the visual baseline for the :dataset progressive overview', function
     $page
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details')
+        ->waitForText('Runtime details')
         ->assertMissing('[data-ndb-section-mode]')
         ->assertMissing('[data-ndb-quiet-count]')
         ->assertNoJavaScriptErrors();
@@ -313,7 +313,7 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
     $page
         ->resize(390, 844)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details')
+        ->waitForText('Runtime details')
         ->assertMissing('[data-ndb-section-mode]')
         ->assertMissing('[data-ndb-quiet-count]')
         ->assertNoJavaScriptErrors();
@@ -373,7 +373,7 @@ it('matches the visual baseline for :dataset expanded query bindings', function 
     $page = visualDebugPage('queries', $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details');
+        ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'queries');
 
@@ -401,7 +401,7 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
     $page = visualDebugPage('queries', $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details');
+        ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'queries');
 
@@ -428,7 +428,7 @@ it('matches the visual baseline for expanded :dataset details', function (string
     $page = visualDebugPage($section, $theme)
         ->resize(1440, 900)
         ->click('[data-ndb-toolbar="expand"]')
-        ->waitForText('Environment details');
+        ->waitForText('Runtime details');
 
     selectVisualDebugSection($page, $section);
 

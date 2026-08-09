@@ -40,3 +40,33 @@
 ## Final result
 
 passed
+
+---
+
+# Overview design QA
+
+## Target and capture
+
+- Reference: `/Users/benjamin/.codex/generated_images/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/exec-9d56c4e0-19e4-46b1-8f1a-2c03371d59ec.png`
+- Implementation: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/overview-implementation-1547x1017.png`
+- Side-by-side comparison: `/Users/benjamin/.codex/visualizations/2026/08/09/019fe6a7-ddd7-7982-ae2f-323a1f4800d3/overview-reference-vs-implementation.png`
+- Comparison viewport: 1547 × 1017 for both images.
+
+## Result
+
+Passed. The implementation keeps the selected hierarchy: a short ranked activity list followed by an expanded, tabbed runtime table. It removes the repeated request context, the “more sections” row, standalone runtime counts, and all activity-row icons. Activity rows have zero left and right padding.
+
+The main intentional differences are:
+
+- The inspector stays capped at 1024 px, matching the earlier LG-breakpoint decision. The generated reference is wider.
+- Activity chevrons were removed after the reference was made, matching the later instruction to remove item icons.
+- Values and section counts come from the captured request instead of the generated reference data.
+
+## Checks
+
+- Light and dark themes at 1440 × 900.
+- Light and dark themes at 390 × 844.
+- Runtime category selection by keyboard.
+- No horizontal overflow at 390 px.
+- No browser JavaScript errors.
+- Updated visual baselines inspected, then rerun without update mode.

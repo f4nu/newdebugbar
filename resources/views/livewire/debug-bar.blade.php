@@ -645,136 +645,171 @@
                                         </div>
                                     @endif
                                     @if ($sectionKey === 'overview')
-                                        @php($runtimeFacts = is_array($section['payload']['runtime'] ?? null) ? $section['payload']['runtime'] : array_filter(['environment' => $section['payload']['environment'] ?? null, 'php' => $section['payload']['php'] ?? null, 'laravel' => $section['payload']['laravel'] ?? null]))
-                                        @php($runtimeDrivers = is_array($section['payload']['drivers'] ?? null) ? $section['payload']['drivers'] : [])
-                                        @php($runtimeCacheState = is_array($section['payload']['cache_state'] ?? null) ? $section['payload']['cache_state'] : [])
-                                        @php($runtimeEcosystem = is_array($section['payload']['ecosystem'] ?? null) ? $section['payload']['ecosystem'] : [])
-                                        @php($activitySections = array_values(array_filter($summary['sections'] ?? [], fn (array $link): bool => ! in_array($link['key'], ['overview', 'request', 'history'], true) && $link['count'] !== null && ($link['active'] ?? true))))
-                                        @if (is_string($section['payload']['action_location']['editor_url'] ?? null))
-                                            <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:dark:border-zinc-800">
-                                                <span class="ndb:font-semibold ndb:text-zinc-400"
-                                                    >Controller source</span
-                                                ><code
-                                                    class="ndb:min-w-0 ndb:flex-1 ndb:truncate"
-                                                    >{{ $section['payload']['action_location']['copy'] }}</code
-                                                ><a
-                                                    href="{{ $section['payload']['action_location']['editor_url'] }}"
-                                                    class="ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                    >Open in editor</a>
-                                            </div>
-                                        @endif
+                                        @php($overview = app(\NewDebugBar\Presentation\OverviewPresenter::class)->present($profile, $summary['sections'] ?? []))
+                                        @php($activitySections = $overview['activity'])
+                                        @php($runtimeDetailGroups = $overview['runtime'])
                                         @if ($activitySections !== [])
                                             <div data-ndb-overview-activity>
-                                                <div class="ndb:mb-2 ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
-                                                    <h3 class="ndb:text-xs ndb:font-bold">Activity</h3>
-                                                    <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ count($activitySections) }} relevant sections</span>
+                                                <div class="ndb:mb-3">
+                                                    <h3 class="ndb:text-xs ndb:font-bold">
+                                                        Relevant activity
+                                                    </h3>
+                                                    <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">Sorted by what may need attention</p>
                                                 </div>
-                                                <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-4">
+                                                <div
+                                                    class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
+                                                >
                                                     @foreach ($activitySections as $link)
                                                         <button
                                                             type="button"
                                                             data-ndb-overview-activity-section="{{ $link['key'] }}"
                                                             @click="navigateToSection(@js($link['key']))"
-                                                            class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-2 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:hover:border-indigo-300 ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-800 ndb:dark:hover:border-indigo-800 ndb:dark:hover:bg-indigo-950/50"
+                                                            class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-3 ndb:text-left ndb:transition ndb:hover:bg-indigo-50/60 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:sm:grid-cols-[9rem_minmax(0,1fr)_auto] ndb:dark:border-zinc-800 ndb:dark:hover:bg-indigo-950/30"
                                                         >
                                                             <span
-                                                                class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold"
-                                                                >{{ $link['label'] }}</span
-                                                            ><span
-                                                                class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-zinc-400"
-                                                                >{{ $link['count'] }}</span>
+                                                                class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
+                                                            >
+                                                                {{ $link['label'] }}
+                                                            </span>
+                                                            <span
+                                                                class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-2 ndb:sm:row-start-1 ndb:dark:text-zinc-400"
+                                                            >
+                                                                {{ $link['description'] }}
+                                                            </span>
+                                                            @if ($link['attention'] ?? false)
+                                                                <span
+                                                                    data-ndb-overview-activity-review
+                                                                    class="ndb:col-start-2 ndb:row-span-2 ndb:row-start-1 ndb:self-center ndb:text-[10px] ndb:font-bold ndb:text-amber-600 ndb:sm:col-start-3 ndb:sm:row-span-1 ndb:dark:text-amber-400"
+                                                                    >Review</span
+                                                                >
+                                                            @endif
                                                         </button>
                                                     @endforeach
                                                 </div>
                                             </div>
                                         @endif
-                                        <div data-ndb-overview-environment>
-                                            <h3 class="ndb:mb-2 ndb:text-xs ndb:font-bold">Environment details</h3>
-                                            <div data-ndb-overview-environment-content class="ndb:space-y-5">
-                                                <div>
-                                                    <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                        Runtime
-                                                    </h3>
-                                                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:lg:grid-cols-5">
-                                                        @foreach ($runtimeFacts as $label => $value)
-                                                            <div>
-                                                                <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                                    {{ str($label)->replace('_', ' ')->title() }}
-                                                                </dt>
-                                                                <dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">
-                                                                    {{ is_bool($value) ? ($value ? 'On' : 'Off') : $value }}
-                                                                </dd>
-                                                            </div>
-                                                        @endforeach
-                                                    </dl>
+                                        <details
+                                            open
+                                            data-ndb-overview-runtime
+                                            class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
+                                        >
+                                            <summary
+                                                class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500"
+                                            >
+                                                <span class="ndb:min-w-0 ndb:flex-1">
+                                                    <span class="ndb:block ndb:text-xs ndb:font-bold"
+                                                        >Runtime details</span
+                                                    >
+                                                    <span
+                                                        class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400"
+                                                    >
+                                                        Runtime, drivers, framework cache, and ecosystem
+                                                    </span>
+                                                </span>
+                                                <x-newdebugbar::icon
+                                                    name="chevron-down"
+                                                    class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
+                                                />
+                                            </summary>
+                                            <div
+                                                x-data="{ runtimeDetail: 'runtime' }"
+                                                class="ndb:border-t ndb:border-zinc-200/90 ndb:sm:grid ndb:sm:grid-cols-[11rem_minmax(0,1fr)] ndb:dark:border-zinc-800"
+                                            >
+                                                <div
+                                                    aria-label="Runtime detail category"
+                                                    class="ndb:grid ndb:grid-cols-2 ndb:gap-1 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/70 ndb:p-2 ndb:sm:block ndb:sm:border-r ndb:sm:border-b-0 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/50"
+                                                >
+                                                    @foreach ($runtimeDetailGroups as $runtimeDetailKey => $runtimeDetailGroup)
+                                                        <button
+                                                            type="button"
+                                                            data-ndb-runtime-detail="{{ $runtimeDetailKey }}"
+                                                            @click="runtimeDetail = @js($runtimeDetailKey)"
+                                                            :aria-pressed="runtimeDetail === @js($runtimeDetailKey)"
+                                                            :class="runtimeDetail === @js($runtimeDetailKey) ? 'ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300' : 'ndb:text-zinc-600 ndb:hover:bg-white ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white'"
+                                                            class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
+                                                        >
+                                                            <span
+                                                                class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold"
+                                                            >
+                                                                {{ $runtimeDetailGroup['label'] }}
+                                                            </span>
+                                                        </button>
+                                                    @endforeach
                                                 </div>
-                                                @if ($runtimeDrivers !== [] || $runtimeCacheState !== [])
-                                                    <div class="ndb:grid ndb:gap-5 ndb:border-t ndb:border-zinc-200 ndb:pt-5 ndb:lg:grid-cols-2 ndb:dark:border-zinc-800">
-                                                        @if ($runtimeDrivers !== [])
-                                                            <div>
-                                                                <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                                    Drivers
+
+                                                <div class="ndb:min-w-0 ndb:p-4">
+                                                    @foreach ($runtimeDetailGroups as $runtimeDetailKey => $runtimeDetailGroup)
+                                                        <div
+                                                            data-ndb-runtime-detail-panel="{{ $runtimeDetailKey }}"
+                                                            x-show.important="runtimeDetail === @js($runtimeDetailKey)"
+                                                        >
+                                                            <div
+                                                                class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"
+                                                            >
+                                                                <h3 class="ndb:text-xs ndb:font-bold">
+                                                                    {{ $runtimeDetailGroup['label'] }}
                                                                 </h3>
-                                                                <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-3">
-                                                                    @foreach ($runtimeDrivers as $label => $value)
-                                                                        <div>
-                                                                            <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                                                {{ str($label)->title() }}
-                                                                            </dt>
-                                                                            <dd class="ndb:mt-0.5 ndb:truncate ndb:text-sm ndb:font-semibold">
-                                                                                {{ $value }}
-                                                                            </dd>
-                                                                        </div>
-                                                                    @endforeach
-                                                                </dl>
+                                                                <button
+                                                                    type="button"
+                                                                    @click="copyText(@js(json_encode($runtimeDetailGroup['copy'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)))"
+                                                                    class="ndb:shrink-0 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                                                                >
+                                                                    Copy all
+                                                                </button>
                                                             </div>
-                                                        @endif
-                                                        @if ($runtimeCacheState !== [])
-                                                            <div>
-                                                                <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                                    Framework cache
-                                                                </h3>
-                                                                <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-3">
-                                                                    @foreach ($runtimeCacheState as $label => $value)
-                                                                        <div>
-                                                                            <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                                                {{ str($label)->title() }}
-                                                                            </dt>
-                                                                            <dd class="ndb:mt-0.5 ndb:text-sm ndb:font-semibold">
-                                                                                {{ $value ? 'Cached' : 'Open' }}
-                                                                            </dd>
-                                                                        </div>
-                                                                    @endforeach
-                                                                </dl>
+
+                                                            <div class="ndb:mt-3 ndb:overflow-x-auto">
+                                                                @if ($runtimeDetailGroup['items'] !== [])
+                                                                    <table
+                                                                        class="ndb:w-full ndb:table-fixed ndb:border-collapse ndb:text-left"
+                                                                    >
+                                                                        <thead>
+                                                                            <tr
+                                                                                class="ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
+                                                                            >
+                                                                                <th
+                                                                                    scope="col"
+                                                                                    class="ndb:w-2/5 ndb:pb-2 ndb:pr-4 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                                                >
+                                                                                    Name
+                                                                                </th>
+                                                                                <th
+                                                                                    scope="col"
+                                                                                    class="ndb:pb-2 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                                                >
+                                                                                    Value
+                                                                                </th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            @foreach ($runtimeDetailGroup['items'] as $runtimeDetailItem)
+                                                                                <tr
+                                                                                    class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80"
+                                                                                >
+                                                                                    <th
+                                                                                        scope="row"
+                                                                                        class="ndb:py-2 ndb:pr-4 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:font-medium ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                                                                    >
+                                                                                        {{ $runtimeDetailItem['name'] }}
+                                                                                    </th>
+                                                                                    <td
+                                                                                        class="ndb:break-words ndb:py-2 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:text-zinc-800 ndb:dark:text-zinc-200"
+                                                                                    >
+                                                                                        {{ is_scalar($runtimeDetailItem['value']) || $runtimeDetailItem['value'] === null ? ($runtimeDetailItem['value'] ?? '—') : json_encode($runtimeDetailItem['value'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            @endforeach
+                                                                        </tbody>
+                                                                    </table>
+                                                                @else
+                                                                    <p class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-4 ndb:text-xs ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400">No {{ strtolower($runtimeDetailGroup['label']) }} details were detected.</p>
+                                                                @endif
                                                             </div>
-                                                        @endif
-                                                    </div>
-                                                @endif
-                                                <div class="ndb:border-t ndb:border-zinc-200 ndb:pt-5 ndb:dark:border-zinc-800">
-                                                    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
-                                                        <h3 class="ndb:text-xs ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                            Ecosystem
-                                                        </h3>
-                                                        <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Observed host packages</span>
-                                                    </div>
-                                                    @if ($runtimeEcosystem === [])
-                                                        <p class="ndb:mt-3 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                                            No supported ecosystem packages were detected for this
-                                                            request.
-                                                        </p>
-                                                    @else
-                                                        <ul class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
-                                                            @foreach ($runtimeEcosystem as $package)
-                                                                <li class="ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:dark:bg-zinc-900">
-                                                                    {{ $package['label'] }}
-                                                                    <span class="ndb:text-zinc-400">{{ $package['version'] }}</span>
-                                                                </li>
-                                                            @endforeach
-                                                        </ul>
-                                                    @endif
+                                                        </div>
+                                                    @endforeach
                                                 </div>
                                             </div>
-                                        </div>
+                                        </details>
                                     @endif
 
                                     @if ($sectionKey === 'timeline')

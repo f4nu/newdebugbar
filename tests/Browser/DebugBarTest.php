@@ -120,12 +120,42 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertNoJavaScriptErrors();
 });
 
-it('shows environment details without another click', function () {
-    visit('/profiled-rich')
+it('prioritizes relevant activity and opens the runtime details', function () {
+    $page = visit('/profiled-rich')
         ->click('[data-ndb-toolbar="expand"]')
         ->wait(0.2)
-        ->assertVisible('[data-ndb-overview-environment-content]')
-        ->assertMissing('[data-ndb-overview-environment] summary')
+        ->assertVisible('[data-ndb-overview-activity]')
+        ->assertCount('[data-ndb-overview-activity-section]', 5)
+        ->assertMissing('[data-ndb-overview-activity-section] svg')
+        ->assertScript(<<<'JS'
+            (() => {
+                const row = document.querySelector('[data-ndb-overview-activity-section]');
+                const style = getComputedStyle(row);
+
+                return style.paddingLeft === '0px' && style.paddingRight === '0px';
+            })()
+            JS)
+        ->assertVisible('[data-ndb-overview-runtime]')
+        ->assertAttribute('[data-ndb-overview-runtime]', 'open', '')
+        ->assertVisible('[data-ndb-runtime-detail-panel="runtime"]')
+        ->assertMissing('[data-ndb-runtime-detail-count]')
+        ->assertMissing('[data-ndb-runtime-detail-panel-count]')
+        ->assertNoJavaScriptErrors();
+
+    $page
+        ->keys('[data-ndb-runtime-detail="drivers"]', 'Enter')
+        ->assertVisible('[data-ndb-runtime-detail-panel="drivers"]')
+        ->assertScript('document.querySelector(\'[data-ndb-runtime-detail="drivers"]\').getAttribute("aria-pressed") === "true"')
+        ->resize(390, 844)
+        ->assertScript(<<<'JS'
+            (() => {
+                const activity = document.querySelector('[data-ndb-overview-activity]');
+                const runtime = document.querySelector('[data-ndb-overview-runtime]');
+
+                return activity.scrollWidth <= activity.clientWidth
+                    && runtime.scrollWidth <= runtime.clientWidth;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 
