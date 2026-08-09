@@ -6,6 +6,12 @@ A compact bar at the bottom of the page gives you quick access to database queri
 
 It supports Livewire and Inertia.
 
+## Why I built New Debug Bar
+
+I'm [Benjamin Crozat](https://x.com/benjamincrozat), and I built New Debug Bar because I wanted a debug bar that looks modern and is pleasant to use every day. Its clearer interface, favorite sections, and command palette make everyday debugging more convenient. Built-in MCP support gives coding agents direct access to focused debug data, making them faster and easier to work with.
+
+If you find a bug or have an idea for a feature, please [open an issue](https://github.com/newdebugbar/newdebugbar/issues). I'd love to hear from you.
+
 ## Use with coding agents
 
 New Debug Bar saves a clear profile for each request. A coding agent can use it to understand what happened, spot errors or slow work, explain the likely cause, and point you to what to inspect next. Common secrets are hidden, and the agent can only read the saved profiles.
