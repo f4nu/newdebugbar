@@ -129,6 +129,35 @@ it('shows environment details without another click', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('caps the expanded inspector at the large breakpoint', function () {
+    visit('/profiled')
+        ->resize(1440, 900)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->wait(0.2)
+        ->assertScript(<<<'JS'
+            (() => {
+                const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const box = inspector.getBoundingClientRect();
+
+                return Math.abs(box.width - 1024) <= 1
+                    && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
+                    && Math.abs(window.innerWidth - box.right - box.left) <= 1;
+            })()
+            JS)
+        ->resize(900, 900)
+        ->assertScript(<<<'JS'
+            (() => {
+                const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const box = inspector.getBoundingClientRect();
+
+                return Math.abs(box.width - window.innerWidth) <= 1
+                    && Math.abs(box.left) <= 1
+                    && Math.abs(window.innerWidth - box.right) <= 1;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('moves focus into the inspector and returns it to its opener', function () {
     visit('/profiled')
         ->click('[data-ndb-toolbar="expand"]')
