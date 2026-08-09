@@ -3,13 +3,10 @@
 use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Presentation\ProfilePresenter;
-use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\QueryExplainer;
 
-it('offers runnable SQL and runs manual SQLite explain only with complete full bindings', function () {
-    config()->set('newdebugbar.collection.query_bindings', 'full');
-    $this->app->forgetInstance(ProfileManager::class);
+it('offers runnable SQL and runs manual SQLite explain with the default bindings', function () {
     $response = $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
     $id = $response->headers->get('X-NewDebugBar-Profile');
     $stored = app(ProfileStore::class)->get($id);

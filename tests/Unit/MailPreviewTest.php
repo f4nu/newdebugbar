@@ -3,7 +3,7 @@
 use NewDebugBar\Support\MailPreview;
 use Symfony\Component\Mime\Email;
 
-it('builds bounded attachment free html text and eml previews only when enabled', function () {
+it('builds bounded attachment free html text and eml previews', function () {
     $message = (new Email)
         ->from('sender@example.test')
         ->to('recipient@example.test')
@@ -12,7 +12,7 @@ it('builds bounded attachment free html text and eml previews only when enabled'
         ->html('<h1>HTML preview</h1>')
         ->attach('private attachment', 'private.txt');
 
-    $preview = (new MailPreview(maxBodyBytes: 1_000, maxRecipients: 10))->capture($message, enabled: true);
+    $preview = (new MailPreview(maxBodyBytes: 1_000, maxRecipients: 10))->capture($message);
 
     expect($preview)
         ->subject->toBe('Preview subject')
@@ -35,7 +35,7 @@ it('bounds the inputs without cutting the serialized mime message', function () 
         ->text(str_repeat('t', 200))
         ->html(str_repeat('h', 200));
 
-    $preview = (new MailPreview(maxBodyBytes: 64, maxRecipients: 1))->capture($message, enabled: true);
+    $preview = (new MailPreview(maxBodyBytes: 64, maxRecipients: 1))->capture($message);
 
     expect($preview)
         ->truncated->toBeTrue()
@@ -48,8 +48,6 @@ it('bounds the inputs without cutting the serialized mime message', function () 
         ->not->toEndWith('[preview truncated]');
 });
 
-it('does not capture mail content by default', function () {
-    $message = (new Email)->text('Private default body');
-
-    expect((new MailPreview(maxBodyBytes: 1_000, maxRecipients: 10))->capture($message))->toBeNull();
+it('ignores unsupported mail message types', function () {
+    expect((new MailPreview(maxBodyBytes: 1_000, maxRecipients: 10))->capture(new stdClass))->toBeNull();
 });

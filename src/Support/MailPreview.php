@@ -5,7 +5,7 @@ namespace NewDebugBar\Support;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
-/** Builds an explicitly enabled, attachment-free local mail preview. */
+/** Builds a bounded, attachment-free local mail preview. */
 final class MailPreview
 {
     public function __construct(
@@ -14,9 +14,9 @@ final class MailPreview
     ) {}
 
     /** @return array<string, mixed>|null */
-    public function capture(mixed $message, bool $enabled = false): ?array
+    public function capture(mixed $message): ?array
     {
-        if (! $enabled || ! $message instanceof Email) {
+        if (! $message instanceof Email) {
             return null;
         }
 

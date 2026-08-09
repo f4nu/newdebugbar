@@ -4,8 +4,7 @@ use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Storage\ProfileStore;
 
-it('stores and serves explicitly enabled local previews without attachments', function () {
-    config()->set('newdebugbar.mail_preview.enabled', true);
+it('stores and serves local previews without attachments by default', function () {
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
     $profileId = $response->headers->get('X-NewDebugBar-Profile');
     $profile = app(ProfileStore::class)->get($profileId);
@@ -56,19 +55,7 @@ it('stores and serves explicitly enabled local previews without attachments', fu
         ->assertSee('Open text preview');
 });
 
-it('keeps preview routes unavailable when capture is disabled', function () {
-    $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
-    $profileId = $response->headers->get('X-NewDebugBar-Profile');
-
-    expect(app(ProfileStore::class)->get($profileId)['sections']['mail']['payload']['items'][0])
-        ->not->toHaveKey('preview');
-
-    $this->get('/__newdebugbar/mail/'.$profileId.'/0/text')->assertNotFound();
-});
-
 it('rejects profile identifiers that storage cannot read', function () {
-    config()->set('newdebugbar.mail_preview.enabled', true);
-
     $this->get('/__newdebugbar/mail/550e8400-e29b-11d4-a716-446655440000/0/text')
         ->assertNotFound();
 });

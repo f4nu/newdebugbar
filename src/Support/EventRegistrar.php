@@ -297,10 +297,7 @@ final class EventRegistrar
                 'attachment_count' => count($message->getAttachments()),
                 'has_html' => $message->getHtmlBody() !== null,
                 'has_text' => $message->getTextBody() !== null,
-                'preview' => $this->mailPreview->capture(
-                    $message,
-                    (bool) config('newdebugbar.mail_preview.enabled', false),
-                ),
+                'preview' => $this->mailPreview->capture($message),
             ]);
         });
 
@@ -667,7 +664,7 @@ final class EventRegistrar
 
     private function keyPolicy(): string
     {
-        return config('newdebugbar.collection.key_policy') === 'full' ? 'full' : 'hash';
+        return config('newdebugbar.collection.key_policy', 'full') === 'hash' ? 'hash' : 'full';
     }
 
     private function cacheStoreUsesRedis(?string $store): bool

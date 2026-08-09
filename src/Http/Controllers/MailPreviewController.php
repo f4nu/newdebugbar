@@ -5,15 +5,14 @@ namespace NewDebugBar\Http\Controllers;
 use Illuminate\Http\Response;
 use NewDebugBar\Storage\ProfileStore;
 
-/** Serves explicitly retained mail previews from local profile storage. */
+/** Serves retained mail previews from local profile storage. */
 final class MailPreviewController
 {
     public function __invoke(string $profile, int $index, string $format, ProfileStore $store): Response
     {
         $environments = config('newdebugbar.environments', ['local']);
 
-        if (! config('newdebugbar.mail_preview.enabled', false)
-            || ! is_array($environments)
+        if (! is_array($environments)
             || ! app()->environment($environments)) {
             abort(404);
         }

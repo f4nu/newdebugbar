@@ -17,12 +17,7 @@ return [
 
     'slow_request_ms' => 1_000,
 
-    'queries' => [
-        'explain' => true,
-    ],
-
     'mail_preview' => [
-        'enabled' => env('NEWDEBUGBAR_MAIL_PREVIEW', false),
         'max_body_bytes' => 50_000,
     ],
 
@@ -51,8 +46,8 @@ return [
         'max_items_per_array' => 100,
         'max_depth' => 5,
         'max_string_length' => 2_000,
-        'query_bindings' => env('NEWDEBUGBAR_QUERY_BINDINGS', 'safe'),
-        'key_policy' => env('NEWDEBUGBAR_KEY_POLICY', 'hash'),
+        'query_bindings' => env('NEWDEBUGBAR_QUERY_BINDINGS', 'full'),
+        'key_policy' => env('NEWDEBUGBAR_KEY_POLICY', 'full'),
         'call_sites' => true,
         'call_site_frames' => 5,
         'call_site_scan_limit' => 40,

@@ -4,7 +4,7 @@ namespace NewDebugBar\Collectors;
 
 use NewDebugBar\Support\Redactor;
 
-/** Captures mail shape and strictly bounded, explicitly enabled previews. */
+/** Captures mail shape and bounded, attachment-free previews. */
 final class MailCollector extends AbstractCollector
 {
     /** @var array<int, int> */

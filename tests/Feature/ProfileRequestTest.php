@@ -215,7 +215,7 @@ it('captures queued dispatches and synchronous execution without job data', func
         ->and(json_encode($section))->not->toContain('private queued value', 'queued payload', 'private sync value', 'private failed value', 'private failure message');
 });
 
-it('captures mail and notification shape without private content or identities', function () {
+it('captures mail previews and notification shape by default', function () {
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
     $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $mail = $profile['sections']['mail'];
@@ -230,6 +230,12 @@ it('captures mail and notification shape without private content or identities',
         ->recipient_count->toBe(2)
         ->attachment_count->toBe(1)
         ->has_text->toBeTrue()
+        ->preview->subject->toBe('private subject')
+        ->preview->from->toBe(['private-sender@example.test'])
+        ->preview->to->toBe(['private-recipient@example.test'])
+        ->preview->cc->toBe(['private-copy@example.test'])
+        ->preview->text->toBe('private body')
+        ->preview->attachments_omitted->toBe(1)
         ->and($notifications['summary'])
         ->count->toBe(2)
         ->sent_count->toBe(1)
@@ -241,12 +247,7 @@ it('captures mail and notification shape without private content or identities',
         ->status->toBe('failed')
         ->channel->toBe('slack')
         ->and(json_encode([$mail, $notifications]))->not->toContain(
-            'private body',
-            'private subject',
             'private attachment',
-            'private-sender',
-            'private-recipient',
-            'private-copy',
             'private notification data',
             'failure data',
         );
@@ -290,20 +291,18 @@ it('captures direct Redis commands and removes cache command duplicates', functi
         ->connection->toBe('default')
         ->key_count->toBe(1)
         ->key_hashes->toBe([substr(hash('sha256', 'private-direct-key'), 0, 16)])
+        ->keys->toBe(['private-direct-key'])
+        ->key_policy->toBe('full')
         ->and($cache['payload']['items'][0])
         ->tag_count->toBe(2)
         ->tag_hashes->toBe([
             substr(hash('sha256', 'tenant:private-clinic'), 0, 16),
             substr(hash('sha256', 'patient:private-patient'), 0, 16),
         ])
-        ->tags->toBe([])
+        ->key->toBe('private-cache-key')
+        ->tags->toBe(['tenant:private-clinic', 'patient:private-patient'])
         ->and(json_encode([$redis, $cache]))->not->toContain(
-            'private-direct-key',
-            'private-cache-key',
             'private-cache-value',
-            'private-clinic',
-            'private-patient',
-            'private-hash',
             'private-field',
             'private Redis failure',
         );
@@ -329,11 +328,12 @@ it('keeps direct Redis commands when a non Redis cache store emits a similar ope
         ->and($redis['payload']['items'][0])
         ->command->toBe('GET')
         ->key_hashes->toBe([substr(hash('sha256', 'private-direct-key'), 0, 16)])
+        ->keys->toBe(['private-direct-key'])
         ->and($cache['summary']['misses'])->toBe(1);
 });
 
-it('reveals bounded cache and Redis keys only under the explicit full key policy', function () {
-    config()->set('newdebugbar.collection.key_policy', 'full');
+it('hashes bounded cache and Redis keys under the explicit hash policy', function () {
+    config()->set('newdebugbar.collection.key_policy', 'hash');
 
     $response = $this->get('/profiled-redis', ['Accept' => 'text/html'])->assertOk();
     $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
@@ -342,17 +342,23 @@ it('reveals bounded cache and Redis keys only under the explicit full key policy
     $redisGet = collect($profile['sections']['redis']['payload']['items'])->firstWhere('command', 'GET');
 
     expect($cacheWrite)
-        ->key_policy->toBe('full')
-        ->key->toBe('private-cache-key')
-        ->tags->toBe(['tenant:private-clinic', 'patient:private-patient'])
+        ->key_policy->toBe('hash')
+        ->key->toBeNull()
+        ->tags->toBe([])
         ->and($redisGet)
-        ->key_policy->toBe('full')
-        ->keys->toBe(['private-direct-key']);
+        ->key_policy->toBe('hash')
+        ->keys->toBe([])
+        ->and(json_encode([$cacheWrite, $redisGet]))->not->toContain(
+            'private-cache-key',
+            'private-direct-key',
+            'private-clinic',
+            'private-patient',
+        );
 
     if (class_exists(CacheFlushed::class)) {
         expect($cacheFlush)
-            ->key_policy->toBe('full')
-            ->tags->toBe(['tenant:private-clinic']);
+            ->key_policy->toBe('hash')
+            ->tags->toBe([]);
     } else {
         expect($cacheFlush)->toBeNull();
     }

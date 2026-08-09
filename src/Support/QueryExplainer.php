@@ -23,10 +23,6 @@ final class QueryExplainer
             throw new InvalidArgumentException('Manual EXPLAIN is not available in this environment.');
         }
 
-        if (! config('newdebugbar.queries.explain', true)) {
-            throw new InvalidArgumentException('Manual EXPLAIN is disabled.');
-        }
-
         if (($query['source_preserved'] ?? false) !== true
             || ($query['binding_policy'] ?? null) !== 'full'
             || ($query['bindings_complete'] ?? false) !== true) {

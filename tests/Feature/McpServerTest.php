@@ -11,7 +11,6 @@ use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
 use NewDebugBar\Mcp\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Tools\ListDebugProfiles;
 use NewDebugBar\Presentation\McpProfilePresenter;
-use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
 
 function captureStructuredContent($response): array
@@ -134,8 +133,7 @@ it('exposes every recorded context section through the bounded section tool', fu
     }
 });
 
-it('keeps explicitly enabled mail content out of MCP responses', function () {
-    config()->set('newdebugbar.mail_preview.enabled', true);
+it('keeps captured mail content out of MCP responses', function () {
     $response = $this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk();
     $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
@@ -164,8 +162,6 @@ it('keeps explicitly enabled mail content out of MCP responses', function () {
 });
 
 it('masks full query bindings and log labels again at the MCP boundary', function () {
-    config()->set('newdebugbar.collection.query_bindings', 'full');
-    app()->forgetInstance(ProfileManager::class);
     $response = $this->get('/profiled-private-query', ['Accept' => 'text/html'])->assertOk();
     $profileId = $response->headers->get('X-NewDebugBar-Profile');
 

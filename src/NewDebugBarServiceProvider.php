@@ -123,7 +123,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new QueryCollector(
                     $redactor,
                     $maxItems,
-                    (string) config('newdebugbar.collection.query_bindings', 'safe'),
+                    (string) config('newdebugbar.collection.query_bindings', 'full'),
                 ),
                 new LivewireCollector($redactor, $maxItems),
                 new OutboundHttpCollector($redactor, $maxItems),
