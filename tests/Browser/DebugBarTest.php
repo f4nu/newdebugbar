@@ -536,6 +536,9 @@ it('shows an aligned request trace and switches request detail groups', function
         ->click('[data-ndb-select-section="request"]')
         ->assertVisible('[data-ndb-request-trace]')
         ->assertVisible('[data-ndb-request-details]')
+        ->assertScript('document.querySelector("[data-ndb-request-details]").open === false')
+        ->click('[data-ndb-request-details] > summary')
+        ->assertScript('document.querySelector("[data-ndb-request-details]").open === true')
         ->assertScript('document.querySelectorAll("[data-ndb-request-step]").length', 3)
         ->assertScript('document.querySelectorAll("[data-ndb-request-line]").length', 2)
         ->assertScript(<<<'JS'
@@ -551,8 +554,24 @@ it('shows an aligned request trace and switches request detail groups', function
                 const nextDot = document.querySelectorAll('[data-ndb-request-dot]')[index + 1].getBoundingClientRect();
                 const bounds = line.getBoundingClientRect();
 
-                return Math.abs(bounds.bottom - nextDot.top) < 1;
+                return Math.abs(bounds.bottom - nextDot.top) < 1
+                    && Math.abs(bounds.width - 2) < 0.1;
             })
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-request-detail]')).every((button) => {
+                const parent = button.parentElement;
+                const styles = getComputedStyle(parent);
+                const availableWidth = parent.clientWidth
+                    - parseFloat(styles.paddingLeft)
+                    - parseFloat(styles.paddingRight);
+
+                return Math.abs(button.getBoundingClientRect().width - availableWidth) < 1;
+            })
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-request-detail-count], [data-ndb-request-detail-panel-count]'))
+                .every((count) => /^\d+$/.test(count.textContent.trim()))
             JS)
         ->assertAttribute('[data-ndb-request-detail="headers"]', 'aria-pressed', 'true')
         ->click('[data-ndb-request-detail="session"]')

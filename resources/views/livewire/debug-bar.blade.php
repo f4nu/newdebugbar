@@ -1029,22 +1029,22 @@
                                             $requestDetailGroups = [
                                                 'headers' => [
                                                     'label' => 'Headers',
-                                                    'summary' => count($requestHeaders).' '.str('value')->plural(count($requestHeaders)),
+                                                    'count' => count($requestHeaders),
                                                     'items' => $requestHeaders,
                                                 ],
                                                 'input' => [
                                                     'label' => 'Input',
-                                                    'summary' => count($requestInput).' '.str('field')->plural(count($requestInput)),
+                                                    'count' => count($requestInput),
                                                     'items' => $requestInput,
                                                 ],
                                                 'query' => [
                                                     'label' => 'Query',
-                                                    'summary' => count($requestQuery).' '.str('parameter')->plural(count($requestQuery)),
+                                                    'count' => count($requestQuery),
                                                     'items' => $requestQuery,
                                                 ],
                                                 'session' => [
                                                     'label' => 'Session',
-                                                    'summary' => ($requestSession['present'] ?? false) ? (($requestSession['key_count'] ?? 0).' keys') : 'Not started',
+                                                    'count' => (int) ($requestSession['key_count'] ?? 0),
                                                     'items' => [
                                                         'started' => (bool) ($requestSession['present'] ?? false),
                                                         'driver' => $requestSession['driver'] ?? '—',
@@ -1087,7 +1087,7 @@
                                                         >
                                                             <span
                                                                 data-ndb-request-line
-                                                                class="ndb:absolute ndb:top-[18px] ndb:-bottom-0.5 ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-indigo-400 ndb:dark:bg-indigo-500"
+                                                                class="ndb:absolute ndb:top-[18px] ndb:-bottom-0.5 ndb:left-1/2 ndb:w-0.5 ndb:-translate-x-1/2 ndb:bg-indigo-400 ndb:dark:bg-indigo-500"
                                                             ></span>
                                                             <span
                                                                 data-ndb-request-dot
@@ -1134,7 +1134,7 @@
                                                         >
                                                             <span
                                                                 data-ndb-request-line
-                                                                class="ndb:absolute ndb:top-[18px] ndb:-bottom-0.5 ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-indigo-400 ndb:dark:bg-indigo-500"
+                                                                class="ndb:absolute ndb:top-[18px] ndb:-bottom-0.5 ndb:left-1/2 ndb:w-0.5 ndb:-translate-x-1/2 ndb:bg-indigo-400 ndb:dark:bg-indigo-500"
                                                             ></span>
                                                             <span
                                                                 data-ndb-request-dot
@@ -1242,7 +1242,6 @@
                                             </div>
 
                                             <details
-                                                open
                                                 data-ndb-request-details
                                                 class="ndb:group ndb:mt-8 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
                                             >
@@ -1268,10 +1267,13 @@
                                                                 @click="requestDetail = @js($requestDetailKey)"
                                                                 :aria-pressed="requestDetail === @js($requestDetailKey)"
                                                                 :class="requestDetail === @js($requestDetailKey) ? 'ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300' : 'ndb:text-zinc-600 ndb:hover:bg-white ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white'"
-                                                                class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
+                                                                class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
                                                             >
                                                                 <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $requestDetailGroup['label'] }}</span>
-                                                                <span class="ndb:shrink-0 ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">{{ $requestDetailGroup['summary'] }}</span>
+                                                                <span
+                                                                    data-ndb-request-detail-count
+                                                                    class="ndb:shrink-0 ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
+                                                                >{{ $requestDetailGroup['count'] }}</span>
                                                             </button>
                                                         @endforeach
                                                     </div>
@@ -1287,7 +1289,10 @@
                                                                         <h3 class="ndb:text-xs ndb:font-bold">
                                                                             {{ $requestDetailGroup['label'] }}
                                                                         </h3>
-                                                                        <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ $requestDetailGroup['summary'] }}</span>
+                                                                        <span
+                                                                            data-ndb-request-detail-panel-count
+                                                                            class="ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
+                                                                        >{{ $requestDetailGroup['count'] }}</span>
                                                                     </div>
                                                                     <button
                                                                         type="button"
