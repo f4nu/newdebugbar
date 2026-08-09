@@ -101,6 +101,13 @@ function visualDebugPage(string $section, string $theme)
         return $page;
     }
 
+    if ($section === 'models') {
+        $page = visit('/profiled-models');
+        setVisualDebugTheme($page, $theme);
+
+        return $page;
+    }
+
     $page = visit('/profiled-rich');
     setVisualDebugTheme($page, $theme);
 
@@ -140,6 +147,13 @@ function stabilizeVisualDebugValues($page): void
     $page->wait(0.25)->assertScript(<<<'JS'
         (() => {
             let numericIndex = 0;
+            document.querySelectorAll('[data-ndb-model-record]').forEach((record, index) => {
+                const firstSeen = record.querySelector('[data-ndb-model-first-seen]');
+                const lastSeen = record.querySelector('[data-ndb-model-last-seen]');
+
+                if (firstSeen) firstSeen.textContent = `${index + 1}.2 ms`;
+                if (lastSeen) lastSeen.textContent = `${index + 2}.4 ms`;
+            });
             const walker = document.createTreeWalker(
                 document.getElementById('newdebugbar'),
                 NodeFilter.SHOW_TEXT,
@@ -159,8 +173,18 @@ function stabilizeVisualDebugValues($page): void
                     [data-ndb-query-stack-count],
                     code[data-ndb-language="sql"]
                 `) !== null;
+                const preservesModelEvidence = parent?.closest(`
+                    [data-ndb-model-finding],
+                    [data-ndb-model-load-count],
+                    [data-ndb-model-record-count],
+                    [data-ndb-model-repeat-count],
+                    [data-ndb-model-mobile-summary],
+                    [data-ndb-model-record],
+                    [data-ndb-model-raw],
+                    [data-ndb-model-boot]
+                `) !== null;
 
-                if (preservesQueryEvidence || ['queries', 'repeated', 'extra-runs'].includes(summaryValue)) {
+                if (preservesQueryEvidence || preservesModelEvidence || ['queries', 'repeated', 'extra-runs'].includes(summaryValue)) {
                     continue;
                 }
 
@@ -323,6 +347,23 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
     assertVisualDebugBaseline($page, "progressive-overview-narrow-{$theme}");
 })->with(['light', 'dark']);
 
+it('matches the visual baseline for the :dataset narrow Models section', function (string $theme) {
+    $page = visualDebugPage('models', $theme)
+        ->resize(390, 844)
+        ->click('[data-ndb-toolbar="expand"]')
+        ->waitForText('Runtime details');
+
+    selectVisualDebugSection($page, 'models');
+
+    $page
+        ->assertVisible('[data-ndb-section-panel="models"]')
+        ->assertNoJavaScriptErrors();
+
+    stabilizeVisualDebugValues($page);
+
+    assertVisualDebugBaseline($page, "section-narrow-{$theme}-models");
+})->with(['light', 'dark']);
+
 it('matches the visual baseline for the :dataset toolbar', function (string $theme) {
     $page = visit('/profiled-rich');
 
@@ -432,9 +473,13 @@ it('matches the visual baseline for expanded :dataset details', function (string
 
     selectVisualDebugSection($page, $section);
 
+    $detailsSelector = $section === 'models'
+        ? '[data-ndb-section-panel="models"] [data-ndb-model-group]:first-of-type'
+        : '[data-ndb-section-panel="cache"] details:first-of-type';
+
     $page
-        ->click("[data-ndb-section-panel=\"{$section}\"] details:first-of-type summary")
-        ->assertAttribute("[data-ndb-section-panel=\"{$section}\"] details:first-of-type", 'open', '');
+        ->click("{$detailsSelector} > summary")
+        ->assertAttribute($detailsSelector, 'open', '');
 
     stabilizeVisualDebugValues($page);
 

@@ -249,7 +249,14 @@ final class McpProfilePresenter
     private function safeSectionPayload(string $section, array $payload): array
     {
         if ($section !== 'request') {
-            unset($payload['items'], $payload['groups'], $payload['repeated_groups'], $payload['repeated_misses']);
+            unset(
+                $payload['items'],
+                $payload['groups'],
+                $payload['model_groups'],
+                $payload['boot_items'],
+                $payload['repeated_groups'],
+                $payload['repeated_misses'],
+            );
 
             return $this->clean($payload);
         }

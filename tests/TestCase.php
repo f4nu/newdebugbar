@@ -65,6 +65,10 @@ abstract class TestCase extends Orchestra
 
     protected function defineRoutes($router): void
     {
+        foreach ([StudioJob::class, Client::class, ProofVersion::class, JobActivity::class, User::class] as $modelClass) {
+            new $modelClass;
+        }
+
         $profiledPage = function (string $title, string $nextPath, string $nextLabel) {
             foreach ([1, 2, 3] as $number) {
                 DB::select('select ? as number', [$number]);
@@ -117,6 +121,49 @@ abstract class TestCase extends Orchestra
             Event::dispatch(new CommandExecuted('get', ['private-direct-key'], 1.25, new ProfiledRedisConnection));
 
             return $profiledPage('Rich request', '/profiled', 'First request');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-models', function () {
+            $retrievals = [
+                StudioJob::class => [1, 5, 7, 2, 3, 4, 1, 5, 7, 2, 3, 1, 5, 7],
+                Client::class => [1, 4, 2, 3, 1, 4, 2, 3, 1, 4],
+                ProofVersion::class => [2, 8, 9, 1, 3, 2, 8, 9],
+                JobActivity::class => [1, 2, 3, 4, 5, 6, 7],
+                User::class => [1, 2, 1, 2, 1],
+            ];
+
+            foreach (array_keys($retrievals) as $modelClass) {
+                $model = new $modelClass;
+                $model->setConnection('testing');
+
+                foreach (['booting', 'booted'] as $event) {
+                    Event::dispatch("eloquent.{$event}: {$modelClass}", [$model]);
+                }
+            }
+
+            foreach ($retrievals as $modelClass => $keys) {
+                foreach ($keys as $key) {
+                    $model = new $modelClass;
+                    $model->setConnection('testing');
+                    $model->setRawAttributes(['id' => $key], true);
+                    Event::dispatch('eloquent.retrieved: '.$modelClass, [$model]);
+                }
+            }
+
+            if (request()->boolean('changes')) {
+                $model = new Client;
+                $model->setConnection('testing');
+                $model->setRawAttributes(['id' => 4], true);
+                Event::dispatch('eloquent.updated: '.Client::class, [$model]);
+            }
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Model activity</title></head>
+                    <body><main><h1 data-testid="host-page">Model activity</h1></main></body>
+                </html>
+                HTML);
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
@@ -377,6 +424,36 @@ final class ProfiledModel extends Model
     protected $table = 'profiled_models';
 
     protected $guarded = [];
+}
+
+abstract class ProfiledVisualModel extends Model
+{
+    protected $guarded = [];
+}
+
+final class StudioJob extends ProfiledVisualModel
+{
+    protected $table = 'studio_jobs';
+}
+
+final class Client extends ProfiledVisualModel
+{
+    protected $table = 'clients';
+}
+
+final class ProofVersion extends ProfiledVisualModel
+{
+    protected $table = 'proof_versions';
+}
+
+final class JobActivity extends ProfiledVisualModel
+{
+    protected $table = 'job_activities';
+}
+
+final class User extends ProfiledVisualModel
+{
+    protected $table = 'users';
 }
 
 final class ProfiledCounter extends Component

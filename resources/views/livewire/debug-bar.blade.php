@@ -651,14 +651,12 @@
                                         @if ($activitySections !== [])
                                             <div data-ndb-overview-activity>
                                                 <div class="ndb:mb-3">
-                                                    <h3 class="ndb:text-xs ndb:font-bold">
-                                                        Relevant activity
-                                                    </h3>
-                                                    <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">Sorted by what may need attention</p>
+                                                    <h3 class="ndb:text-xs ndb:font-bold">Relevant activity</h3>
+                                                    <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">
+                                                        Sorted by what may need attention
+                                                    </p>
                                                 </div>
-                                                <div
-                                                    class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
-                                                >
+                                                <div class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                                                     @foreach ($activitySections as $link)
                                                         <button
                                                             type="button"
@@ -666,22 +664,17 @@
                                                             @click="navigateToSection(@js($link['key']))"
                                                             class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-3 ndb:text-left ndb:transition ndb:hover:bg-indigo-50/60 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:sm:grid-cols-[9rem_minmax(0,1fr)_auto] ndb:dark:border-zinc-800 ndb:dark:hover:bg-indigo-950/30"
                                                         >
-                                                            <span
-                                                                class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
-                                                            >
+                                                            <span class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold">
                                                                 {{ $link['label'] }}
                                                             </span>
-                                                            <span
-                                                                class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-2 ndb:sm:row-start-1 ndb:dark:text-zinc-400"
-                                                            >
+                                                            <span class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-2 ndb:sm:row-start-1 ndb:dark:text-zinc-400">
                                                                 {{ $link['description'] }}
                                                             </span>
                                                             @if ($link['attention'] ?? false)
                                                                 <span
                                                                     data-ndb-overview-activity-review
                                                                     class="ndb:col-start-2 ndb:row-span-2 ndb:row-start-1 ndb:self-center ndb:text-[10px] ndb:font-bold ndb:text-amber-600 ndb:sm:col-start-3 ndb:sm:row-span-1 ndb:dark:text-amber-400"
-                                                                    >Review</span
-                                                                >
+                                                                >Review</span>
                                                             @endif
                                                         </button>
                                                     @endforeach
@@ -693,16 +686,10 @@
                                             data-ndb-overview-runtime
                                             class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
                                         >
-                                            <summary
-                                                class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500"
-                                            >
+                                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
                                                 <span class="ndb:min-w-0 ndb:flex-1">
-                                                    <span class="ndb:block ndb:text-xs ndb:font-bold"
-                                                        >Runtime details</span
-                                                    >
-                                                    <span
-                                                        class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400"
-                                                    >
+                                                    <span class="ndb:block ndb:text-xs ndb:font-bold">Runtime details</span>
+                                                    <span class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400">
                                                         Runtime, drivers, framework cache, and ecosystem
                                                     </span>
                                                 </span>
@@ -759,9 +746,7 @@
                                                             :class="runtimeDetail === @js($runtimeDetailKey) ? 'ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300' : 'ndb:text-zinc-600 ndb:hover:bg-white ndb:hover:text-zinc-950 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white'"
                                                             class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
                                                         >
-                                                            <span
-                                                                class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold"
-                                                            >
+                                                            <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">
                                                                 {{ $runtimeDetailGroup['label'] }}
                                                             </span>
                                                         </button>
@@ -774,9 +759,7 @@
                                                             data-ndb-runtime-detail-panel="{{ $runtimeDetailKey }}"
                                                             x-show.important="runtimeDetail === @js($runtimeDetailKey)"
                                                         >
-                                                            <div
-                                                                class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3"
-                                                            >
+                                                            <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
                                                                 <h3 class="ndb:text-xs ndb:font-bold">
                                                                     {{ $runtimeDetailGroup['label'] }}
                                                                 </h3>
@@ -791,13 +774,9 @@
 
                                                             <div class="ndb:mt-3 ndb:overflow-x-auto">
                                                                 @if ($runtimeDetailGroup['items'] !== [])
-                                                                    <table
-                                                                        class="ndb:w-full ndb:table-fixed ndb:border-collapse ndb:text-left"
-                                                                    >
+                                                                    <table class="ndb:w-full ndb:table-fixed ndb:border-collapse ndb:text-left">
                                                                         <thead>
-                                                                            <tr
-                                                                                class="ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
-                                                                            >
+                                                                            <tr class="ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                                                                                 <th
                                                                                     scope="col"
                                                                                     class="ndb:w-2/5 ndb:pb-2 ndb:pr-4 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
@@ -814,18 +793,14 @@
                                                                         </thead>
                                                                         <tbody>
                                                                             @foreach ($runtimeDetailGroup['items'] as $runtimeDetailItem)
-                                                                                <tr
-                                                                                    class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80"
-                                                                                >
+                                                                                <tr class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80">
                                                                                     <th
                                                                                         scope="row"
                                                                                         class="ndb:py-2 ndb:pr-4 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:font-medium ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                                                                     >
                                                                                         {{ $runtimeDetailItem['name'] }}
                                                                                     </th>
-                                                                                    <td
-                                                                                        class="ndb:break-words ndb:py-2 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:text-zinc-800 ndb:dark:text-zinc-200"
-                                                                                    >
+                                                                                    <td class="ndb:break-words ndb:py-2 ndb:align-top ndb:font-mono ndb:text-[10px] ndb:text-zinc-800 ndb:dark:text-zinc-200">
                                                                                         {{ is_scalar($runtimeDetailItem['value']) || $runtimeDetailItem['value'] === null ? ($runtimeDetailItem['value'] ?? '—') : json_encode($runtimeDetailItem['value'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}
                                                                                     </td>
                                                                                 </tr>
@@ -833,7 +808,10 @@
                                                                         </tbody>
                                                                     </table>
                                                                 @else
-                                                                    <p class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-4 ndb:text-xs ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400">No {{ strtolower($runtimeDetailGroup['label']) }} details were detected.</p>
+                                                                    <p class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-4 ndb:text-xs ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400">
+                                                                        No {{ strtolower($runtimeDetailGroup['label']) }} details
+                                                                        were detected.
+                                                                    </p>
                                                                 @endif
                                                             </div>
                                                         </div>
@@ -2128,54 +2106,300 @@
                                             @endforelse
                                         </div>
                                     @elseif ($sectionKey === 'models')
-                                        <div class="ndb:grid ndb:grid-cols-2 ndb:gap-3">
-                                            <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">
-                                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                    Model classes
-                                                </p>
-                                                <p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
-                                                    {{ $section['summary']['model_classes'] }}
-                                                </p>
-                                            </div>
-                                            <div class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">
-                                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                    Lifecycle events
-                                                </p>
-                                                <p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
-                                                    {{ count($section['summary']['lifecycle_events']) }}
-                                                </p>
-                                            </div>
+                                        @php($modelGroups = $section['payload']['model_groups'] ?? [])
+                                        @php($changedModelCount = count(array_filter($modelGroups, fn (array $group): bool => $group['change_count'] > 0)))
+                                        <div
+                                            data-ndb-models
+                                            x-data="{ modelsAllExpanded: false }"
+                                            class="ndb:space-y-5"
+                                        >
+                                            <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                                See which Eloquent models this request loaded or changed. Find repeated
+                                                record loads, unexpected writes, and when the work happened. Repeated
+                                                means extra retrievals after a record’s first load.
+                                            </p>
+
+                                            @if (($section['summary']['model_change_count'] ?? 0) > 0)
+                                                <div
+                                                    data-ndb-model-finding="changes"
+                                                    class="ndb:rounded-xl ndb:border ndb:border-amber-200 ndb:bg-amber-50/55 ndb:px-4 ndb:py-3 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20"
+                                                >
+                                                    <p class="ndb:text-xs ndb:font-bold ndb:text-amber-900 ndb:dark:text-amber-200">
+                                                        {{ $section['summary']['model_change_count'] }} model {{ $section['summary']['model_change_count'] === 1 ? 'change' : 'changes' }}
+                                                    </p>
+                                                    <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-amber-800/80 ndb:dark:text-amber-300/80">
+                                                        {{ $changedModelCount }} {{ $changedModelCount === 1 ? 'model class changed' : 'model classes changed' }}.
+                                                        Changes appear first because they can affect application state.
+                                                    </p>
+                                                </div>
+                                            @elseif (($section['summary']['repeated_load_count'] ?? 0) > 0)
+                                                <div
+                                                    data-ndb-model-finding="repeated"
+                                                    class="ndb:rounded-xl ndb:border ndb:border-amber-200 ndb:bg-amber-50/55 ndb:px-4 ndb:py-3 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20"
+                                                >
+                                                    <p class="ndb:text-xs ndb:font-bold ndb:text-amber-900 ndb:dark:text-amber-200">
+                                                        {{ $section['summary']['repeated_load_count'] }} repeated {{ $section['summary']['repeated_load_count'] === 1 ? 'load' : 'loads' }}
+                                                    </p>
+                                                    <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-amber-800/80 ndb:dark:text-amber-300/80">
+                                                        {{ $section['summary']['retrieval_count'] }} retrievals across {{ $section['summary']['distinct_record_count'] }} distinct {{ $section['summary']['distinct_record_count'] === 1 ? 'record' : 'records' }}.
+                                                        Check repeated rows for avoidable database work.
+                                                    </p>
+                                                </div>
+                                            @elseif (($section['summary']['retrieval_count'] ?? 0) > 0)
+                                                <div
+                                                    data-ndb-model-finding="clear"
+                                                    class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-zinc-50/55 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
+                                                >
+                                                    <p class="ndb:text-xs ndb:font-bold">
+                                                        No repeated identified loads
+                                                    </p>
+                                                    <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                                        {{ $section['summary']['retrieval_count'] }} retrievals across {{ $section['summary']['distinct_record_count'] }} distinct {{ $section['summary']['distinct_record_count'] === 1 ? 'record' : 'records' }}.
+                                                    </p>
+                                                </div>
+                                            @endif
+
+                                            @if ($modelGroups !== [])
+                                                <div>
+                                                    <div class="ndb:flex ndb:items-end ndb:justify-between ndb:gap-4 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
+                                                        <div class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-1 ndb:items-center ndb:sm:grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_1.5rem]">
+                                                            <span class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Model</span>
+                                                            <span class="ndb:hidden ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:block">Loads</span>
+                                                            <span class="ndb:hidden ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:block">Records</span>
+                                                            <span class="ndb:hidden ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:block">Repeated</span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            data-ndb-model-expand-all
+                                                            @click="
+                                                                modelsAllExpanded = ! modelsAllExpanded;
+                                                                $root
+                                                                    .querySelectorAll('[data-ndb-model-group]')
+                                                                    .forEach(
+                                                                        (group) => (group.open = modelsAllExpanded),
+                                                                    );
+                                                            "
+                                                            class="ndb:shrink-0 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                                                            x-text="modelsAllExpanded ? 'Collapse all' : 'Expand all'"
+                                                        >
+                                                            Expand all
+                                                        </button>
+                                                    </div>
+
+                                                    <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+                                                        @foreach ($modelGroups as $index => $group)
+                                                            <details
+                                                                data-ndb-model-group
+                                                                data-loads="{{ $group['load_count'] }}"
+                                                                data-records="{{ $group['record_count'] }}"
+                                                                data-repeated="{{ $group['repeated_load_count'] }}"
+                                                                data-changes="{{ $group['change_count'] }}"
+                                                                wire:key="model-group-{{ $index }}"
+                                                                @toggle="
+                                                                    modelsAllExpanded = Array.from(
+                                                                        $root.querySelectorAll(
+                                                                            '[data-ndb-model-group]',
+                                                                        ),
+                                                                    ).every((modelGroup) => modelGroup.open)
+                                                                "
+                                                                class="ndb:group"
+                                                            >
+                                                                <summary class="ndb:grid ndb:cursor-pointer ndb:list-none ndb:grid-cols-[minmax(0,1fr)_1.5rem] ndb:items-center ndb:gap-x-3 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:sm:grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_1.5rem]">
+                                                                    <span class="ndb:min-w-0">
+                                                                        <span
+                                                                            data-ndb-model-name
+                                                                            class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
+                                                                        >{{ class_basename($group['model']) }}</span>
+                                                                        <span
+                                                                            data-ndb-model-mobile-summary
+                                                                            class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:hidden"
+                                                                        >
+                                                                            <span>{{ $group['load_count'] }} loads</span>
+                                                                            <span>{{ $group['record_count'] }} records</span>
+                                                                            <span @class(['ndb:text-amber-600 ndb:dark:text-amber-400' => $group['repeated_load_count'] > 0])>{{ $group['repeated_load_count'] }} repeated</span>
+                                                                            @if ($group['change_count'] > 0)
+                                                                                <span class="ndb:text-amber-600 ndb:dark:text-amber-400">{{ $group['change_count'] }} changed</span>
+                                                                            @endif
+                                                                        </span>
+                                                                    </span>
+                                                                    <span
+                                                                        data-ndb-model-load-count
+                                                                        class="ndb:hidden ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:sm:block"
+                                                                    >{{ $group['load_count'] }}</span>
+                                                                    <span
+                                                                        data-ndb-model-record-count
+                                                                        class="ndb:hidden ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:sm:block"
+                                                                    >{{ $group['record_count'] }}</span>
+                                                                    <span
+                                                                        data-ndb-model-repeat-count
+                                                                        class="ndb:hidden ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums {{ $group['repeated_load_count'] > 0 ? 'ndb:text-amber-600 ndb:dark:text-amber-400' : 'ndb:text-zinc-400' }} ndb:sm:block"
+                                                                    >{{ $group['repeated_load_count'] }}</span>
+                                                                    <x-newdebugbar::icon
+                                                                        name="chevron-down"
+                                                                        class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
+                                                                    />
+                                                                </summary>
+
+                                                                <div class="ndb:border-t ndb:border-zinc-200/80 ndb:pb-4 ndb:pt-3 ndb:dark:border-zinc-800">
+                                                                    <code class="ndb:block ndb:break-all ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $group['model'] }}</code>
+                                                                    <dl class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-x-8 ndb:gap-y-2">
+                                                                        <div>
+                                                                            <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                                                Connection
+                                                                            </dt>
+                                                                            <dd class="ndb:mt-0.5 ndb:font-mono ndb:text-[10px] ndb:font-semibold">
+                                                                                {{ $group['connection'] ?? 'default' }}
+                                                                            </dd>
+                                                                        </div>
+                                                                        <div>
+                                                                            <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                                                Table
+                                                                            </dt>
+                                                                            <dd class="ndb:mt-0.5 ndb:font-mono ndb:text-[10px] ndb:font-semibold">
+                                                                                {{ $group['table'] ?? 'unknown' }}
+                                                                            </dd>
+                                                                        </div>
+                                                                    </dl>
+
+                                                                    @if ($group['change_events'] !== [])
+                                                                        <div
+                                                                            data-ndb-model-changes
+                                                                            class="ndb:mt-4 ndb:rounded-lg ndb:bg-amber-50/70 ndb:px-3 ndb:py-2.5 ndb:dark:bg-amber-950/25"
+                                                                        >
+                                                                            <p class="ndb:text-[10px] ndb:font-bold ndb:text-amber-900 ndb:dark:text-amber-200">
+                                                                                Model changes
+                                                                            </p>
+                                                                            <div class="ndb:mt-1.5 ndb:flex ndb:flex-wrap ndb:gap-2">
+                                                                                @foreach ($group['change_events'] as $event => $count)
+                                                                                    <span class="ndb:rounded-md ndb:border ndb:border-amber-200 ndb:bg-white/70 ndb:px-2 ndb:py-1 ndb:text-[9px] ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-900 ndb:dark:bg-amber-950/30 ndb:dark:text-amber-300">{{ $count }} {{ str($event)->headline()->lower() }}</span>
+                                                                                @endforeach
+                                                                            </div>
+                                                                        </div>
+                                                                    @endif
+
+                                                                    @if ($group['records'] !== [])
+                                                                        <div class="ndb-scrollbar ndb:mt-4 ndb:overflow-x-auto">
+                                                                            <table class="ndb:w-full ndb:min-w-[34rem] ndb:border-collapse ndb:text-left">
+                                                                                <thead>
+                                                                                    <tr class="ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
+                                                                                        <th
+                                                                                            scope="col"
+                                                                                            class="ndb:w-2/5 ndb:pb-2 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                                                        >
+                                                                                            Record
+                                                                                        </th>
+                                                                                        <th
+                                                                                            scope="col"
+                                                                                            class="ndb:pb-2 ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                                                        >
+                                                                                            Loads
+                                                                                        </th>
+                                                                                        <th
+                                                                                            scope="col"
+                                                                                            class="ndb:pb-2 ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                                                        >
+                                                                                            First seen
+                                                                                        </th>
+                                                                                        <th
+                                                                                            scope="col"
+                                                                                            class="ndb:pb-2 ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                                                        >
+                                                                                            Last seen
+                                                                                        </th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    @foreach ($group['records'] as $record)
+                                                                                        <tr
+                                                                                            data-ndb-model-record
+                                                                                            data-loads="{{ $record['loads'] }}"
+                                                                                            class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80 {{ $record['loads'] > 1 ? 'ndb:bg-amber-50/55 ndb:dark:bg-amber-950/20' : '' }}"
+                                                                                        >
+                                                                                            <th
+                                                                                                scope="row"
+                                                                                                class="ndb:py-2.5 ndb:font-mono ndb:text-[10px] ndb:font-semibold"
+                                                                                            >
+                                                                                                #{{ $record['key'] }}
+                                                                                            </th>
+                                                                                            <td class="ndb:py-2.5 ndb:text-right ndb:text-[10px] ndb:font-bold ndb:tabular-nums {{ $record['loads'] > 1 ? 'ndb:text-amber-700 ndb:dark:text-amber-300' : '' }}">
+                                                                                                {{ $record['loads'] }}
+                                                                                            </td>
+                                                                                            <td
+                                                                                                data-ndb-model-first-seen
+                                                                                                class="ndb:py-2.5 ndb:text-right ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                                                            >
+                                                                                                {{ $record['first_seen_ms'] !== null ? rtrim(rtrim(number_format($record['first_seen_ms'], 1, '.', ''), '0'), '.').' ms' : '—' }}
+                                                                                            </td>
+                                                                                            <td
+                                                                                                data-ndb-model-last-seen
+                                                                                                class="ndb:py-2.5 ndb:text-right ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                                                            >
+                                                                                                {{ $record['last_seen_ms'] !== null ? rtrim(rtrim(number_format($record['last_seen_ms'], 1, '.', ''), '0'), '.').' ms' : '—' }}
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    @endforeach
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    @elseif ($group['load_count'] > 0)
+                                                                        <p class="ndb:mt-4 ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-2.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400">
+                                                                            Record identifiers were not available for
+                                                                            these retrievals.
+                                                                        </p>
+                                                                    @endif
+
+                                                                    @if ($group['unidentified_load_count'] > 0 && $group['records'] !== [])
+                                                                        <p class="ndb:mt-3 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                                                            {{ $group['unidentified_load_count'] }} additional {{ $group['unidentified_load_count'] === 1 ? 'retrieval had' : 'retrievals had' }} no
+                                                                            record identifier, so {{ $group['unidentified_load_count'] === 1 ? 'it is' : 'they are' }} not
+                                                                            counted as repeated.
+                                                                        </p>
+                                                                    @endif
+
+                                                                    <details
+                                                                        data-ndb-model-raw
+                                                                        class="ndb:group/raw ndb:mt-4 ndb:overflow-hidden ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"
+                                                                    >
+                                                                        <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:px-3 ndb:py-2.5 ndb:text-[10px] ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
+                                                                            <span class="ndb:min-w-0 ndb:flex-1">View {{ count($group['items']) }} raw {{ count($group['items']) === 1 ? 'event' : 'events' }}</span>
+                                                                            <x-newdebugbar::icon
+                                                                                name="chevron-down"
+                                                                                class="ndb:size-3 ndb:text-zinc-400 ndb:transition ndb:group-open/raw:rotate-180"
+                                                                            />
+                                                                        </summary>
+                                                                        <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($group['items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                                                                    </details>
+                                                                </div>
+                                                            </details>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <x-newdebugbar::empty-state label="No model loads or changes were captured." />
+                                            @endif
+
+                                            @if (($section['payload']['boot_items'] ?? []) !== [])
+                                                <details
+                                                    data-ndb-model-boot
+                                                    class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"
+                                                >
+                                                    <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
+                                                        <span class="ndb:min-w-0 ndb:flex-1">
+                                                            <span class="ndb:block ndb:text-xs ndb:font-bold">Model boot lifecycle</span>
+                                                            <span
+                                                                class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:text-zinc-400"
+                                                                >{{ $section['summary']['boot_event_count'] }} events
+                                                                across {{ $section['summary']['boot_model_classes'] }} {{ $section['summary']['boot_model_classes'] === 1 ? 'class' : 'classes' }}</span>
+                                                        </span>
+                                                        <x-newdebugbar::icon
+                                                            name="chevron-down"
+                                                            class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
+                                                        />
+                                                    </summary>
+                                                    <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($section['payload']['boot_items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                                                </details>
+                                            @endif
                                         </div>
-                                        @forelse ($section['payload']['groups'] as $index => $group)
-                                            <details
-                                                data-ndb-model-group
-                                                data-count="{{ $group['count'] }}"
-                                                wire:key="model-group-{{ $index }}"
-                                                class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"
-                                            >
-                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3">
-                                                    <span class="ndb:min-w-0 ndb:flex-1"
-                                                        ><span
-                                                            title="{{ $group['model'] }}"
-                                                            class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
-                                                            >{{ class_basename($group['model']) }}</span
-                                                        ><span
-                                                            class="ndb:mt-0.5 ndb:block ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"
-                                                            >{{ str($group['event'])->title() }}</span
-                                                        ></span
-                                                    ><span
-                                                        class="ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                                                        >{{ $group['count'] }}</span
-                                                    ><x-newdebugbar::icon
-                                                        name="chevron-down"
-                                                        class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
-                                                    />
-                                                </summary>
-                                                <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($group['items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
-                                            </details>
-                                        @empty
-                                            <x-newdebugbar::empty-state label="No model activity was captured." />
-                                        @endforelse
                                     @elseif ($sectionKey === 'cache')
                                         <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-zinc-200 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                                             @foreach ([['Hit rate', $section['summary']['hit_rate'].'%'], ['Hits', $section['summary']['hits']], ['Misses', $section['summary']['misses']], ['Writes', $section['summary']['writes']]] as [$label, $value])
