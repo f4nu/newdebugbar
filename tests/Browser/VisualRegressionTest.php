@@ -318,7 +318,8 @@ it('matches the visual baseline for the :dataset section', function (string $sec
         $page
             ->click('[data-ndb-view-group] > summary')
             ->assertVisible('[data-ndb-view-render]')
-            ->click('[data-ndb-view-data-details] > summary')
+            ->click('[data-ndb-view-data-trigger]')
+            ->assertVisible('[data-ndb-view-data-popover]')
             ->assertVisible('[data-ndb-view-data]');
     }
 

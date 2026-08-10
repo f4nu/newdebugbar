@@ -2321,48 +2321,102 @@
                                                                     @foreach ($group['items'] as $view)
                                                                         @php($viewData = is_array($view['data'] ?? null) ? $view['data'] : [])
                                                                         <article data-ndb-view-render class="ndb:py-4">
-                                                                            <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
-                                                                                <span
-                                                                                    data-ndb-view-render-order
-                                                                                    class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
-                                                                                >Render #{{ $view['render_order'] }}</span>
-                                                                                <code
-                                                                                    data-ndb-view-source
-                                                                                    class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]"
-                                                                                >
-                                                                                    {{ $view['source']['file'] ?? 'Template path unavailable' }}
-                                                                                    @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
-                                                                                </code>
-                                                                            </div>
-
-                                                                            <details
-                                                                                data-ndb-view-data-details
-                                                                                class="ndb:mt-3"
+                                                                            <div
+                                                                                x-data="{ viewDataOpen: false }"
+                                                                                x-id="[
+                                                                                    'view-data-trigger',
+                                                                                    'view-data-popover',
+                                                                                ]"
+                                                                                @keydown.escape.stop="
+                                                                                    if (viewDataOpen) {
+                                                                                        viewDataOpen = false;
+                                                                                        $nextTick(() =>
+                                                                                            $refs.viewDataButton.focus(),
+                                                                                        );
+                                                                                    }
+                                                                                "
+                                                                                class="ndb:relative"
                                                                             >
-                                                                                <summary class="ndb:ml-auto ndb:flex ndb:w-fit ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-2 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:transition ndb:hover:bg-zinc-100/70 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900/70">
-                                                                                    <span>View data</span>
+                                                                                <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
                                                                                     <span
-                                                                                        data-ndb-view-data-count
-                                                                                        class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
-                                                                                        >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span
-                                                                                    ><x-newdebugbar::icon
-                                                                                        name="chevron-down"
-                                                                                        class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition"
-                                                                                    />
-                                                                                </summary>
+                                                                                        data-ndb-view-render-order
+                                                                                        class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
+                                                                                    >Render #{{ $view['render_order'] }}</span>
+                                                                                    <code
+                                                                                        data-ndb-view-source
+                                                                                        class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]"
+                                                                                    >
+                                                                                        {{ $view['source']['file'] ?? 'Template path unavailable' }}
+                                                                                        @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
+                                                                                    </code>
+                                                                                    <button
+                                                                                        x-ref="viewDataButton"
+                                                                                        type="button"
+                                                                                        data-ndb-view-data-trigger
+                                                                                        :id="$id('view-data-trigger')"
+                                                                                        :aria-controls="$id(
+                                                                                            'view-data-popover',
+                                                                                        )"
+                                                                                        :aria-expanded="viewDataOpen"
+                                                                                        @click="
+                                                                                            viewDataOpen = ! viewDataOpen
+                                                                                        "
+                                                                                        class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/60"
+                                                                                    >
+                                                                                        <span>View data</span>
+                                                                                        <span
+                                                                                            data-ndb-view-data-count
+                                                                                            class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
+                                                                                            >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span
+                                                                                        ><span
+                                                                                            :class="{
+                                                                                                'ndb:rotate-180':
+                                                                                                    viewDataOpen,
+                                                                                            }"
+                                                                                            class="ndb:transition-transform ndb:duration-150 ndb:motion-reduce:transition-none"
+                                                                                        >
+                                                                                            <x-newdebugbar::icon
+                                                                                                name="chevron-down"
+                                                                                                class="ndb:size-3.5 ndb:text-zinc-400"
+                                                                                            />
+                                                                                        </span>
+                                                                                    </button>
+                                                                                </div>
 
-                                                                                @if ($viewData !== [])
-                                                                                    <pre
-                                                                                        data-ndb-view-data
-                                                                                        class="ndb-code ndb-scrollbar ndb:mt-2 ndb:max-h-80 ndb:overflow-auto ndb:border ndb:border-zinc-200/80 ndb:dark:border-zinc-800"
-                                                                                    ><code data-ndb-language="json">{{ json_encode($viewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</code></pre>
-                                                                                @else
-                                                                                    <p class="ndb:mt-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                                                                        No data was passed directly to
-                                                                                        this view.
-                                                                                    </p>
-                                                                                @endif
-                                                                            </details>
+                                                                                <div
+                                                                                    x-cloak
+                                                                                    x-show.important="viewDataOpen"
+                                                                                    x-transition:enter="ndb:transition ndb:duration-150 ndb:ease-out ndb:motion-reduce:transition-none"
+                                                                                    x-transition:enter-start="ndb:translate-y-1 ndb:scale-95 ndb:opacity-0"
+                                                                                    x-transition:enter-end="ndb:translate-y-0 ndb:scale-100 ndb:opacity-100"
+                                                                                    x-transition:leave="ndb:transition ndb:duration-100 ndb:ease-in ndb:motion-reduce:transition-none"
+                                                                                    x-transition:leave-start="ndb:translate-y-0 ndb:scale-100 ndb:opacity-100"
+                                                                                    x-transition:leave-end="ndb:translate-y-1 ndb:scale-95 ndb:opacity-0"
+                                                                                    @click.outside="
+                                                                                        viewDataOpen = false
+                                                                                    "
+                                                                                    data-ndb-view-data-popover
+                                                                                    :id="$id('view-data-popover')"
+                                                                                    :aria-labelledby="$id(
+                                                                                        'view-data-trigger',
+                                                                                    )"
+                                                                                    role="region"
+                                                                                    class="ndb:absolute ndb:top-full ndb:right-0 ndb:z-30 ndb:mt-2 ndb:w-[min(36rem,calc(100vw-3rem))] ndb:origin-top-right ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:shadow-[0_18px_50px_-16px_rgba(24,24,27,0.45)] ndb:dark:border-zinc-700 ndb:dark:bg-zinc-950 ndb:dark:shadow-[0_18px_50px_-16px_rgba(0,0,0,0.9)]"
+                                                                                >
+                                                                                    @if ($viewData !== [])
+                                                                                        <pre
+                                                                                            tabindex="0"
+                                                                                            data-ndb-view-data
+                                                                                            class="ndb-code ndb-scrollbar ndb:max-h-80 ndb:overflow-auto ndb:rounded-none ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                                                                        ><code data-ndb-language="json">{{ json_encode($viewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</code></pre>
+                                                                                    @else
+                                                                                        <p class="ndb:px-4 ndb:py-3 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                                                                            No data was passed directly
+                                                                                            to this view.
+                                                                                        </p>
+                                                                                    @endif
+                                                                                </div>
+                                                                            </div>
 
                                                                             @if (($view['composers'] ?? []) !== [])
                                                                                 <div class="ndb:mt-4">

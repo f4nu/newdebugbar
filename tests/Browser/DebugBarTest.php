@@ -943,22 +943,31 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->click('[data-ndb-view-group] > summary')
         ->assertSee('tests/views/context.blade.php')
         ->assertPresent('[data-ndb-view-data]')
-        ->assertScript('document.querySelector("[data-ndb-view-data-details]").open === false')
+        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-data-popover]")).display === "none"')
         ->assertScript(<<<'JS'
             (() => {
                 const render = document.querySelector('[data-ndb-view-render]');
                 const renderHeader = render?.querySelector('[data-ndb-view-render-order]')?.parentElement;
-                const viewDataSummary = render?.querySelector('[data-ndb-view-data-details] > summary');
+                const viewDataTrigger = render?.querySelector('[data-ndb-view-data-trigger]');
+                const viewDataPopover = render?.querySelector('[data-ndb-view-data-popover]');
 
                 return render !== null
                     && renderHeader !== null
-                    && viewDataSummary !== null
+                    && viewDataTrigger !== null
+                    && viewDataPopover !== null
+                    && viewDataTrigger.parentElement === renderHeader
                     && getComputedStyle(renderHeader).alignItems === 'baseline'
-                    && viewDataSummary.getBoundingClientRect().width < render.getBoundingClientRect().width
-                    && Math.abs(viewDataSummary.getBoundingClientRect().right - render.getBoundingClientRect().right) <= 1;
+                    && Math.abs(viewDataTrigger.getBoundingClientRect().right - render.getBoundingClientRect().right) <= 1
+                    && viewDataTrigger.getAttribute('aria-controls') === viewDataPopover.id
+                    && viewDataPopover.getAttribute('role') === 'region'
+                    && viewDataPopover.hasAttribute('x-transition:enter')
+                    && viewDataPopover.getAttribute('x-transition:enter-start').includes('ndb:scale-95');
             })()
             JS)
-        ->click('[data-ndb-view-data-details] > summary')
+        ->click('[data-ndb-view-data-trigger]')
+        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'true')
+        ->assertVisible('[data-ndb-view-data-popover]')
         ->assertVisible('[data-ndb-view-data]')
         ->assertSee('view-data-value')
         ->assertScript(<<<'JS'
@@ -978,20 +987,39 @@ it('presents Laravel decisions lifecycle messages and source context without edi
                     && getComputedStyle(property).color !== getComputedStyle(string).color;
             })()
             JS)
+        ->keys('[data-ndb-view-data-trigger]', 'Escape')
+        ->wait(0.2)
+        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
+        ->assertScript(<<<'JS'
+            (() => {
+                const trigger = document.querySelector('[data-ndb-view-data-trigger]');
+                const popover = document.querySelector('[data-ndb-view-data-popover]');
+
+                return document.activeElement === trigger
+                    && getComputedStyle(popover).display === 'none';
+            })()
+            JS)
+        ->click('[data-ndb-view-data-trigger]')
         ->resize(390, 844)
         ->assertScript(<<<'JS'
             (() => {
                 const render = document.querySelector('[data-ndb-view-render]');
-                const viewDataSummary = render?.querySelector('[data-ndb-view-data-details] > summary');
+                const viewDataTrigger = render?.querySelector('[data-ndb-view-data-trigger]');
+                const viewDataPopover = render?.querySelector('[data-ndb-view-data-popover]');
 
                 return render !== null
-                    && viewDataSummary !== null
+                    && viewDataTrigger !== null
+                    && viewDataPopover !== null
                     && document.documentElement.scrollWidth <= document.documentElement.clientWidth
-                    && viewDataSummary.getBoundingClientRect().left >= render.getBoundingClientRect().left
-                    && viewDataSummary.getBoundingClientRect().right <= render.getBoundingClientRect().right + 1;
+                    && viewDataTrigger.getBoundingClientRect().right <= render.getBoundingClientRect().right + 1
+                    && viewDataPopover.getBoundingClientRect().left >= 0
+                    && viewDataPopover.getBoundingClientRect().right <= window.innerWidth;
             })()
             JS)
         ->resize(1440, 900)
+        ->click('[data-ndb-view-source]')
+        ->wait(0.2)
+        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
         ->assertMissing('a[href^="vscode://file/"]')
         ->click('[data-ndb-select-section="events"]')
         ->click('[data-ndb-event-item]:first-child summary')
