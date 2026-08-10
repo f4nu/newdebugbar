@@ -1,13 +1,13 @@
 # Livewire diagnostics contract
 
-This document records the evidence rules for the clean-sheet Livewire section. It is an implementation contract, not a promise that every Livewire exchange exposes every field.
+This document records the evidence rules for the clean-sheet Livewire section. It is an implementation contract, not a promise that every Livewire request exposes every field.
 
 ## User task
 
 A Livewire developer must be able to answer:
 
-1. What triggered this exchange?
-2. What messages and actions ran?
+1. What triggered this request?
+2. What important server work ran?
 3. What state changed?
 4. Which component instances rendered, and why?
 5. What events or effects were observed?
@@ -19,7 +19,7 @@ The package records facts before findings. It does not invent a single interacti
 
 ## Baseline
 
-- Starting commit: `bea7458858691a184b0941aa076816c2526363d1`.
+- Three-tab redesign starting commit: `d7ff8353ea2bd62dac13c61f93feb10a867909ca`.
 - Global profile schema: version 1.
 - Livewire support floor: 4.1.0. Installed contract check: 4.3.5.
 - Livewire 4.1.0 and 4.3.5 both expose public request, message, and action interceptors. The server lifecycle event bus, the debug-only `profile` event, and `action.origin` are internal contracts.
@@ -31,14 +31,25 @@ The final local Testbench microbenchmark ran three times with 30 property-update
 
 ## Final verification
 
-- The current stack used PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The package suite passed 180 tests with 1,646 assertions and 2 expected skips. The full browser suite passed 112 tests with 1,324 assertions.
-- The JavaScript suite passed 47 tests. Overall line, branch, and function coverage was 91.28%, 85.44%, and 94.90%. The production build, strict Composer validation, dependency audit, formatting check, and a static check for dynamic code evaluation passed.
-- An isolated dependency lane resolved the declared floor of PHP 8.1, Laravel 10.50.2, and Livewire 4.1.0. Its full package suite completed 182 tests with 1,402 assertions and no failures. The available runtime binary was PHP 8.5.7, so the old dependency lane reported dependency deprecations and is dependency-resolution proof, not an actual PHP 8.1 runtime run.
-- The four new Livewire visual baselines passed after manual inspection: desktop light and dark, plus 390px light and dark. The final full visual suite passed without changing a baseline.
-- The canonical Livewire example ran against this worktree without source or Composer changes. Its workspace feature group passed 5 tests with 47 assertions. A real search update produced one value-free trace append, kept the typed search text out of the trace payload, resolved `App\Livewire\ApplicationBoard` and its project-relative source, and left the browser console clean.
-- The canonical example's older `test:debugbar` group passed 6 tests and failed 2 assertions that still expect the removed pre-rebuild `payload.items` and request-type shape. The app was restored unchanged. Migrating those separate example-repository assertions is deferred because restoring the retired package shape would conflict with this clean-sheet contract.
+- The current stack used PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The package suite passed 184 tests with 1,688 assertions and 2 expected legacy MCP skips. The full browser suite passed 114 tests with 1,342 assertions.
+- The JavaScript suite passed 50 tests. Overall line, branch, and function coverage was 91.57%, 86.23%, and 95.15%. The production build, strict Composer validation, dependency audit, formatting check, and Git whitespace check passed.
+- An isolated dependency lane resolved the declared floor of PHP 8.1, Laravel 10.50.2, and Livewire 4.1.0. Its full package suite completed 186 tests with 1,437 assertions and no failures. The available runtime binary was PHP 8.5.7, so the older dependency lane reported dependency deprecations and is dependency-resolution proof, not an actual PHP 8.1 runtime run.
+- Four planned Livewire visual baselines passed after manual inspection: desktop light and dark, plus 390px light and dark. The full visual suite passed without changing unrelated baselines.
+- The canonical Livewire example used a reversible vendor-only link to this worktree without source or Composer changes. Its workspace feature group passed 5 tests with 47 assertions. Real search and check-in interactions showed the three tabs, `Application Board`, `Search changed`, safe property changes, and separate declared and observed event recipients. The browser console was clean. The local check-in was undone and the public package dependency was restored.
 - Response-safety tests cover exact response bytes, payload, application headers, status, redirects, and downloads. Browser trace headers are the only intentional response additions for an eligible profile.
-- No database, migration, editor, replay, hot-reload, or browser-extension changes were added.
+- No setting, database, migration, editor, replay, component-refresh, event-redispatch, hot-reload, or browser-extension change was added.
+
+## Primary research
+
+- Livewire's documented JavaScript interceptors are the browser capture boundary: <https://livewire.laravel.com/docs/4.x/javascript>.
+- Actions document that `$refresh` sends a request and applies pending state, so an inspector refresh control could change the host app: <https://livewire.laravel.com/docs/4.x/actions>.
+- Events document global, targeted, and self dispatch. Any redispatch control could invoke listeners, network work, and application side effects: <https://livewire.laravel.com/docs/4.x/events>.
+- Deferred and live property updates are normal behavior: <https://livewire.laravel.com/docs/4.x/wire-model>.
+- Polling, validation failures, and renderless actions are normal documented behavior and are not findings by themselves: <https://livewire.laravel.com/docs/4.x/wire-poll>, <https://livewire.laravel.com/docs/4.x/validation>, and <https://livewire.laravel.com/docs/4.x/attribute-renderless>.
+- Public properties are serialized between requests, while lazy loading and islands are documented tools for independent display work: <https://livewire.laravel.com/docs/4.x/properties>, <https://livewire.laravel.com/docs/4.x/lazy>, and <https://livewire.laravel.com/docs/4.x/islands>.
+- Class, single-file, and multi-file component layouts inform the short human component names: <https://livewire.laravel.com/docs/4.x/components>.
+- The exact installed Livewire 4.3.5 source confirms that debug-only profile timings and `__dispatch` are internal mechanics, not product labels: <https://github.com/livewire/livewire/blob/7ef4b2a876c71744e86463079dd506b26eeab624/src/Mechanisms/HandleComponents/HandleComponents.php>.
+- Laravel response contracts require preserving response types, bytes, status, headers, redirects, and downloads: <https://laravel.com/docs/13.x/responses>. Debug-only evidence follows Laravel's documented `app.debug` boundary: <https://laravel.com/docs/13.x/configuration>.
 
 ## Source order
 
@@ -72,7 +83,7 @@ Confidence is one of `observed`, `inferred`, or `unknown`. An inferred fact neve
 | Before and server state | Isolated server lifecycle component state | Hydrated and dehydrated component state | Server | Diff only; secret values never stored | Changed paths only, bounded | `unknown` layer |
 | Browser state | Documented message success and sync callbacks | Browser trace appended | Browser | Equality, type, and presence only; no raw browser values | Changed paths only | `unknown` or `missing` trace |
 | Trigger kind | Observed updates, calls, metadata, and event call shape | Every valid message | None | Names and redacted parameters | One taxonomy value per action | `unknown` |
-| Single exchange title | Package inference | Only one unambiguous property, action, poll, refresh, or received event | None | Uses safe component and action labels | One | “Livewire exchange” plus observed facts |
+| Request activity label | Package inference | Only one unambiguous property, action, poll, refresh, or received event | None | Uses safe component and action labels | One | “Livewire request” plus observed facts |
 | Rendered or skipped | Response effects, render hook, and documented skipped callback | Per message when observed | Server or browser | No HTML stored | One state | `unknown` |
 | Render reason | Package inference from the message's observed triggers | Only when one reason is defensible | None | Safe labels | One per component | `unknown`, never “because” without proof |
 | Validation fields and errors | Snapshot errors, action return metadata, and Laravel validation collector | When emitted | Server | Field names and redacted messages | Existing collector bounds | Empty observed list or unknown |
@@ -172,14 +183,14 @@ Render reasons use the same observed trigger language. Multiple possible causes 
 
 ## Interface state matrix
 
-The section uses the same evidence model for every state. Hidden panels remain in the rendered profile so keyboard and browser checks can switch between them without fetching a second interpretation.
+The section has exactly three left-aligned tabs: Overview, Components, and Events. Hidden panels remain in the rendered profile so keyboard and browser checks can switch between them without fetching a second interpretation.
 
 | State | Real fixture or evidence | Required visible result |
 | --- | --- | --- |
-| Initial mount | Nested parent and child mount | Mount headline, affected-only explanation, stable instance IDs, parent link |
-| One property update | `search` update | One inferred title, before-to-server diff, optional submitted and browser layers |
-| Named action | `saveReview` | Action name, component, state change, render reason |
-| Multi-action batch | 17 distinct messages | Generic exchange title, exact counts, bounded rows |
+| Initial mount | Nested parent and child mount | Mount activity, affected-only explanation, stable instance IDs, parent link |
+| One property update | `search` update | `Search changed`, safe before-to-server diff, optional browser equality |
+| Named action | `saveReview` | Human action name, component, state change, render result |
+| Multi-action batch | 17 distinct messages | Familiar activity label, affected component rows, no automatic warning |
 | Nested subcomponents | Parent and child fixture | Affected relationships, never a claimed full page tree |
 | Emitted event | `vendor-checked-in` dispatch | Source, declared target, recipient unknown when not observed |
 | Received event | `__dispatch` on child | Concrete observed recipient without inventing a source |
@@ -191,8 +202,10 @@ The section uses the same evidence model for every state. Hidden panels remain i
 | Partial browser trace | Unmatched callback evidence | Visible partial status; unmatched facts stay unknown |
 | Truncated evidence | Collector bound exceeded | Retained facts plus explicit truncation notice |
 | Redacted change | Secret property update | Changed and hidden; no before, submitted, or server secret |
-| Empty events | Exchange with no dispatch | Events tab shows a zero count and a calm empty state |
+| Empty events | Request with no dispatch | Events tab shows a calm empty state without a low-value counter |
 | Corrupt or partial profile | Missing or wrong-shaped optional fields | Generic unknown labels and visible evidence gaps, never a render failure |
+
+Overview leads with clear problems. Each finding shows the problem, impact, origin, and next check. With no supported finding it shows `No clear problem found`. Components prioritizes the selected component's name, trigger, safe changes, result, validation, events, server work, then source details. Events stays chronological and never presents a declared or likely recipient as observed.
 
 Polling is inferred only when one correlated refresh has an observed `wire:poll` source. A browser-skipped callback is shown beside, and never replaces, the server result. Parallel and out-of-order requests keep separate request objects, profile IDs, append tokens, and revisions.
 
@@ -205,6 +218,7 @@ Polling is inferred only when one correlated refresh has an observed `wire:poll`
 - The render callback is not paint time.
 - Upload and stream content are not captured. Deep upload and stream correlation is deferred.
 - Broad MCP filters and broad findings are deferred until the core model proves a need.
+- Component refresh and event redispatch are not shipped. Livewire documents that they can commit pending state, invoke listeners, start network work, or repeat application side effects. Keep them out until a narrower host-safe contract exists.
 
 ## Running decisions
 
@@ -216,5 +230,6 @@ Polling is inferred only when one correlated refresh has an observed `wire:poll`
 | Store state diffs, not snapshots | Developers need changes while profiles and MCP must stay bounded and safe. |
 | Keep event declaration and observation separate | A declared target is not proof of a recipient. |
 | Treat missing evidence as a visible product state | Silent omission would make the debugger look more complete than it is. |
-| Start findings with a fixed ten-message batch threshold | It is a clear observed count and yields a review prompt without claiming the batch is wrong or slow. |
+| Start findings with observed server work at or above 200 ms | A measured wait has a clear impact. Normal validation, polling, renderless work, a 17-item batch, or an unobserved event receiver does not. |
+| Offer only `Copy details` and `Copy event` in the far-right action area | These controls copy already prepared bounded text, make no request, and do not mutate or replay host application work. |
 | Return typed causal records from MCP | Agents can follow the same IDs as the UI without receiving state values or snapshots. |
