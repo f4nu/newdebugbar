@@ -137,6 +137,35 @@ final class LivewirePresenter
             ];
         }
 
+        $propertyAction = collect($actions)
+            ->where('kind', 'property_update')
+            ->groupBy(fn (array $action): string => ($action['component_id'] ?? '').'|'.($action['display_name'] ?? ''))
+            ->whenNotEmpty(fn ($groups) => $groups->count() === 1 ? $groups->first()->first() : null);
+
+        if (is_array($propertyAction)) {
+            $component = $this->string($propertyAction['component_name'] ?? null) ?? 'Livewire component';
+
+            return [
+                'title' => $propertyAction['display_name'],
+                'detail' => $component.' handled the property change.',
+            ];
+        }
+
+        $repeatedAction = collect($actions)
+            ->groupBy(fn (array $action): string => ($action['component_id'] ?? '').'|'.($action['display_name'] ?? ''))
+            ->whenNotEmpty(fn ($groups) => $groups->count() === 1 ? $actions[0] : null);
+
+        if (is_array($repeatedAction)) {
+            $component = $this->string($repeatedAction['component_name'] ?? null) ?? 'Livewire component';
+
+            return [
+                'title' => $repeatedAction['display_name'],
+                'detail' => $repeatedAction['kind'] === 'property_update'
+                    ? $component.' handled the property change.'
+                    : $component.' ran the repeated trigger.',
+            ];
+        }
+
         if (count($actions) > 1) {
             return [
                 'title' => 'Multiple components updated',

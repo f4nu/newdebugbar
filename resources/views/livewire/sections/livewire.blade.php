@@ -1,10 +1,8 @@
 @php($livewire = $livewireSection['payload']['presentation'] ?? [])
-@php($componentIds = array_values(array_filter(array_column($livewire['components'] ?? [], 'id'), 'is_string')))
-@php($eventIds = array_values(array_filter(array_column($livewire['events'] ?? [], 'id'), 'is_string')))
-
 <div
     data-ndb-livewire
-    x-data="newDebugBarLivewireSection({ componentIds: @js($componentIds), eventIds: @js($eventIds) })"
+    x-data="newDebugBarLivewireSection()"
+    x-init="initializeLivewireSelection()"
     class="ndb:space-y-5"
 >
     <div class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2">

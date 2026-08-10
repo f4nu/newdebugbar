@@ -1,15 +1,23 @@
 const cleanIds = (ids) => Array.isArray(ids) ? ids.filter((id) => typeof id === 'string' && id !== '') : [];
 
-export function createLivewireSection(options = {}) {
-  const componentIds = cleanIds(options.componentIds);
-  const eventIds = cleanIds(options.eventIds);
-
+export function createLivewireSection() {
   return {
     livewireTab: 'overview',
-    componentIds,
-    eventIds,
-    selectedComponentId: componentIds[0] ?? null,
-    selectedEventId: eventIds[0] ?? null,
+    componentIds: [],
+    eventIds: [],
+    selectedComponentId: null,
+    selectedEventId: null,
+
+    initializeLivewireSelection() {
+      const root = this.$root;
+      const componentChoices = [...(root?.querySelectorAll?.('[data-ndb-livewire-component-choice]') ?? [])];
+      const eventChoices = [...(root?.querySelectorAll?.('[data-ndb-livewire-event-choice]') ?? [])];
+
+      this.componentIds = cleanIds(componentChoices.map((choice) => choice.dataset.ndbLivewireChoice));
+      this.eventIds = cleanIds(eventChoices.map((choice) => choice.dataset.ndbLivewireChoice));
+      this.selectedComponentId = this.componentIds[0] ?? null;
+      this.selectedEventId = this.eventIds[0] ?? null;
+    },
 
     selectLivewireTab(tab) {
       if (['overview', 'components', 'events'].includes(tab)) {

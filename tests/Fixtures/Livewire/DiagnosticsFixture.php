@@ -32,7 +32,7 @@ final class DiagnosticsFixture extends Component
 
     public function loadReviewOptions(): void
     {
-        usleep(125_000);
+        usleep(225_000);
         $this->reviewScore = 3;
     }
 

@@ -401,7 +401,8 @@ it('matches the visual baseline for the :dataset narrow Livewire section', funct
                 return box.width === window.innerWidth
                     && box.left === 0
                     && box.right === window.innerWidth
-                    && tabs.scrollWidth >= tabs.clientWidth;
+                    && tabs.querySelectorAll('[role="tab"]').length === 3
+                    && tabs.scrollWidth <= tabs.clientWidth + 1;
             })()
             JS)
         ->assertNoJavaScriptErrors();

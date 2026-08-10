@@ -5,7 +5,7 @@ namespace NewDebugBar\Analysis;
 /** Produces a small set of high-confidence findings from Livewire facts. */
 final class LivewireAnalyzer
 {
-    private const SLOW_SERVER_PHASE_MS = 100.0;
+    private const SLOW_SERVER_WORK_MS = 200.0;
 
     /** @param array<string, mixed> $section @return list<array<string, mixed>> */
     public function analyze(array $section): array
@@ -13,17 +13,21 @@ final class LivewireAnalyzer
         $payload = is_array($section['payload'] ?? null) ? $section['payload'] : [];
         $components = $this->keyedItems($payload['components'] ?? null, 'id');
         $actions = $this->keyedItems($payload['actions'] ?? null, 'id');
-        $spans = array_values(array_filter(
+        $allSpans = array_values(array_filter(
             is_array($payload['server_spans'] ?? null) ? $payload['server_spans'] : [],
+            'is_array',
+        ));
+        $spans = array_values(array_filter(
+            $allSpans,
             fn (mixed $span): bool => is_array($span)
                 && is_numeric($span['duration_ms'] ?? null)
-                && (float) $span['duration_ms'] >= self::SLOW_SERVER_PHASE_MS,
+                && (float) $span['duration_ms'] >= self::SLOW_SERVER_WORK_MS,
         ));
 
         usort($spans, fn (array $left, array $right): int => (float) $right['duration_ms'] <=> (float) $left['duration_ms']
         );
 
-        return array_map(function (array $span) use ($payload, $components, $actions): array {
+        $findings = array_map(function (array $span) use ($payload, $components, $actions): array {
             $componentId = is_string($span['component_id'] ?? null) ? $span['component_id'] : null;
             $actionId = is_string($span['action_id'] ?? null) ? $span['action_id'] : null;
             $component = $componentId === null ? [] : ($components[$componentId] ?? []);
@@ -49,10 +53,43 @@ final class LivewireAnalyzer
                     'action_id' => $actionId,
                     'phase' => is_string($span['phase'] ?? null) ? $span['phase'] : null,
                     'duration_ms' => $duration,
-                    'threshold_ms' => self::SLOW_SERVER_PHASE_MS,
+                    'threshold_ms' => self::SLOW_SERVER_WORK_MS,
                 ],
             ];
         }, array_slice($spans, 0, 3));
+
+        if ($findings !== [] || $allSpans !== []) {
+            return $findings;
+        }
+
+        $duration = data_get($payload, 'exchange.duration_ms');
+
+        if (! is_numeric($duration) || (float) $duration < self::SLOW_SERVER_WORK_MS) {
+            return [];
+        }
+
+        $component = array_values($components)[0] ?? [];
+        $componentName = $this->componentName($component);
+        $duration = round((float) $duration, 1);
+
+        return [[
+            'rule_id' => 'livewire.slow_request',
+            'severity' => 'warning',
+            'section' => 'livewire',
+            'summary' => sprintf('%s request took %s ms.', $componentName, $this->number($duration)),
+            'why' => 'The Livewire response was not ready until this server request finished.',
+            'location' => null,
+            'origin' => sprintf('Observed total server time for %s. Internal phase timing was unavailable.', $componentName),
+            'next' => 'Inspect the linked queries and Laravel work. Run the interaction with Laravel debug mode on locally to capture the slow internal phase.',
+            'action' => ['label' => 'Inspect Livewire request', 'section' => 'livewire'],
+            'evidence' => [
+                'exchange_id' => is_string(data_get($payload, 'exchange.id')) ? data_get($payload, 'exchange.id') : null,
+                'component_id' => is_string($component['id'] ?? null) ? $component['id'] : null,
+                'duration_ms' => $duration,
+                'threshold_ms' => self::SLOW_SERVER_WORK_MS,
+                'server_phase_timing' => 'unavailable',
+            ],
+        ]];
     }
 
     /** @return array<string, array<string, mixed>> */

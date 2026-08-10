@@ -649,23 +649,28 @@ it('renders a real Livewire mount as an accessible evidence section', function (
         ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]')
         ->assertVisible('[data-ndb-livewire]')
-        ->assertSee('Mounted diagnostics-fixture')
+        ->assertSee('Diagnostics Fixture mounted')
+        ->assertSee('No clear problem found')
+        ->assertScript('document.querySelectorAll("[data-ndb-livewire-tab]").length', 3)
         ->assertAttribute('[data-ndb-livewire-tab="overview"]', 'aria-selected', 'true')
         ->click('[data-ndb-livewire-tab="components"]')
         ->assertAttribute('[data-ndb-livewire-tab="components"]', 'aria-selected', 'true')
         ->assertVisible('[data-ndb-livewire-panel="components"]')
-        ->assertSee('This is not a full page component tree.')
-        ->assertSee('diagnostics-fixture')
+        ->assertSee('This is not a full page inventory.')
+        ->assertSee('Diagnostics Fixture')
+        ->assertAttribute('[data-ndb-livewire-component-choice]', 'aria-selected', 'true')
+        ->assertVisible('[data-ndb-copy-livewire-component]')
+        ->keys('[data-ndb-livewire-component-choice]', 'ArrowDown')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-livewire-component-choice]")')
         ->keys('[data-ndb-livewire-tab="components"]', 'ArrowRight')
-        ->assertAttribute('[data-ndb-livewire-tab="timeline"]', 'aria-selected', 'true')
-        ->assertVisible('[data-ndb-livewire-panel="timeline"]')
-        ->click('[data-ndb-livewire-tab="events"]')
         ->assertAttribute('[data-ndb-livewire-tab="events"]', 'aria-selected', 'true')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-livewire-tab=\\"events\\"]")')
+        ->assertVisible('[data-ndb-livewire-panel="events"]')
         ->assertSee('No Livewire events were observed.')
         ->assertNoJavaScriptErrors();
 });
 
-it('shows the correlated state and timing evidence from a real Livewire update', function () {
+it('shows correlated changes and copies only prepared component details', function () {
     $page = visit('/profiled-livewire')
         ->type('[data-testid="diagnostics-fixture"] input[type="search"]', 'northline')
         ->wait(1)
@@ -676,14 +681,116 @@ it('shows the correlated state and timing evidence from a real Livewire update',
         ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]')
         ->assertVisible('[data-ndb-livewire]')
-        ->assertSee('Livewire exchange')
-        ->assertSee('2 actions ran across this exchange.')
-        ->assertSeeIn('[data-ndb-livewire-overview-state]', 'search')
+        ->assertSee('Search changed')
+        ->assertSee('Rendered')
+        ->assertSee('No clear problem found')
+        ->assertSeeIn('[data-ndb-livewire-overview-state] code', 'search')
         ->assertSeeIn('[data-ndb-livewire-overview-state]', 'northline')
-        ->assertDontSee('Browser trace is missing')
-        ->click('[data-ndb-livewire-tab="timeline"]')
-        ->assertVisible('[data-ndb-livewire-lane="browser"]')
-        ->assertSee('Browser and server clocks have different origins.')
+        ->assertDontSee('Browser evidence is missing')
+        ->click('[data-ndb-livewire-tab="components"]');
+
+    $page->script(<<<'JS'
+            window.__newDebugBarCopiedLivewire = null;
+            window.__newDebugBarCopyRequests = 0;
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = (...args) => {
+                window.__newDebugBarCopyRequests++;
+                return nativeFetch(...args);
+            };
+            Object.defineProperty(window.navigator, 'clipboard', {
+                configurable: true,
+                value: {
+                    writeText(value) {
+                        window.__newDebugBarCopiedLivewire = value;
+                        return Promise.resolve();
+                    },
+                },
+            });
+            JS);
+
+    $page
+        ->click('[data-ndb-copy-livewire-component]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const copied = window.__newDebugBarCopiedLivewire ?? '';
+
+                return copied.includes('Diagnostics Fixture')
+                    && copied.includes('search: empty -> northline')
+                    && copied.includes('$set') === false
+                    && copied.includes('$commit') === false
+                    && copied.includes('__dispatch') === false
+                    && window.__newDebugBarCopyRequests === 0;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows a safe event trace without claiming an unobserved recipient', function () {
+    $page = visit('/profiled-livewire')
+        ->click('[data-testid="announce-check-in"]')
+        ->wait(0.5)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="history"]')
+        ->click('[data-ndb-open-profile]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="livewire"]')
+        ->click('[data-ndb-livewire-tab="events"]')
+        ->assertSee('Vendor Checked In')
+        ->assertSee('All components')
+        ->assertSee('Not observed')
+        ->assertSee('Northline Ceramics')
+        ->assertVisible('[data-ndb-copy-livewire-event]');
+
+    $page->script(<<<'JS'
+            window.__newDebugBarCopiedEvent = null;
+            window.__newDebugBarEventCopyRequests = 0;
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = (...args) => {
+                window.__newDebugBarEventCopyRequests++;
+                return nativeFetch(...args);
+            };
+            Object.defineProperty(window.navigator, 'clipboard', {
+                configurable: true,
+                value: {
+                    writeText(value) {
+                        window.__newDebugBarCopiedEvent = value;
+                        return Promise.resolve();
+                    },
+                },
+            });
+            JS);
+
+    $page
+        ->click('[data-ndb-copy-livewire-event]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const copied = window.__newDebugBarCopiedEvent ?? '';
+
+                return copied.includes('Vendor Checked In')
+                    && copied.includes('Observed recipients: Not observed')
+                    && copied.includes('Northline Ceramics')
+                    && window.__newDebugBarEventCopyRequests === 0;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('leads with a proven slow Livewire problem', function () {
+    visit('/profiled-livewire')
+        ->click('[data-testid="slow-review"]')
+        ->wait(0.5)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="history"]')
+        ->click('[data-ndb-open-profile]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="livewire"]')
+        ->assertSee('Problems to check')
+        ->assertSee('Load Review Options')
+        ->assertSee('Impact')
+        ->assertSee('Origin')
+        ->assertSee('Next check')
         ->assertNoJavaScriptErrors();
 });
 

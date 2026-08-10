@@ -391,7 +391,7 @@ it('turns observed slow Livewire work into a useful problem', function () {
     ));
 
     expect(collect($profile['sections']['livewire']['payload']['server_spans'])->max('duration_ms'))
-        ->toBeGreaterThanOrEqual(100);
+        ->toBeGreaterThanOrEqual(200);
 
     renderedDiagnosticsBar($profile)
         ->assertSee('Problems to check')

@@ -21,8 +21,13 @@ it('presents a corrupted partial Livewire section as unknown evidence', function
     expect($profile['sections']['livewire'])
         ->label->toBe('Livewire')
         ->summary->count->toBe(0)
-        ->payload->presentation->headline->title->toBe('Livewire exchange')
-        ->payload->presentation->outcome->title->toBe('Result is not fully known')
+        ->payload->presentation->activity->title->toBe('Livewire request')
+        ->payload->presentation->outcome->title->toBe('Result not observed')
+        ->payload->presentation->tabs->toBe([
+            ['key' => 'overview', 'label' => 'Overview'],
+            ['key' => 'components', 'label' => 'Components'],
+            ['key' => 'events', 'label' => 'Events'],
+        ])
         ->payload->presentation->events->toBe([]);
 });
 

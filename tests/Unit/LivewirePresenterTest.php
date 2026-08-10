@@ -203,6 +203,36 @@ it('presents polling and renderless work as normal outcomes', function () {
         ->and($view['findings'])->toBe([]);
 });
 
+it('uses the familiar property label when framework work accompanies one trigger', function () {
+    $section = (new LivewirePresenter)->present([
+        'payload' => [
+            'exchange' => ['kind' => 'update', 'result' => 'rendered'],
+            'actions' => [
+                [
+                    'id' => 'action-search-1',
+                    'component_id' => 'component-search',
+                    'kind' => 'property_update',
+                    'property_paths' => ['search'],
+                ],
+                [
+                    'id' => 'action-framework',
+                    'component_id' => 'component-search',
+                    'kind' => 'action',
+                    'name' => '$commit',
+                ],
+            ],
+            'components' => [[
+                'id' => 'component-search',
+                'class' => 'App\\Livewire\\ApplicationBoard',
+            ]],
+        ],
+    ]);
+
+    expect($section['payload']['presentation']['activity'])
+        ->title->toBe('Search changed')
+        ->detail->toBe('Application Board handled the property change.');
+});
+
 it('keeps declared event targets separate from observed recipients', function () {
     $section = (new LivewirePresenter)->present([
         'payload' => [
