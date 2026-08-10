@@ -10,6 +10,8 @@ use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Contracts\Collector;
+use NewDebugBar\Livewire\ExecutionContext;
+use NewDebugBar\Livewire\InteractionRecorder;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestContext;
@@ -33,6 +35,8 @@ final class ProfileManager
 
     private string $primarySectionLabel = 'Request';
 
+    private string $profileId = '';
+
     /** @var array<string, mixed> */
     private array $request = [];
 
@@ -48,6 +52,8 @@ final class ProfileManager
         private readonly ?ExceptionNormalizer $exceptionNormalizer = null,
         private readonly ?RuntimeContext $runtimeContext = null,
         private readonly ?RequestContext $requestContext = null,
+        private readonly ?InteractionRecorder $livewire = null,
+        private readonly ?ExecutionContext $executionContext = null,
     ) {
         foreach ($collectors as $collector) {
             $this->collectors[$collector->key()] = $collector;
@@ -57,13 +63,16 @@ final class ProfileManager
     public function begin(Request $request): void
     {
         $this->start('http', 'Request');
+        $this->livewire?->begin($request, $this->profileId);
         $query = $this->redactor->clean($request->query());
         $this->request = [
             'method' => $request->getMethod(),
             'url' => $this->redactedUrl($request, is_array($query) ? $query : []),
             'path' => '/'.ltrim($request->path(), '/'),
             'query' => $query,
-            'input' => $this->redactor->clean($request->input()),
+            'input' => $this->livewire?->isActive() === true
+                ? $this->livewire->safeRequestInput()
+                : $this->redactor->clean($request->input()),
             'headers' => $this->redactor->clean($request->headers->all()),
         ];
         $this->collecting = true;
@@ -144,9 +153,12 @@ final class ProfileManager
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
-            return $this->buildProfile();
+            $livewire = $this->livewire?->finish($request, $response);
+
+            return $this->buildProfile($livewire);
         } finally {
             $this->collecting = false;
+            $this->executionContext?->clear();
         }
     }
 
@@ -173,12 +185,15 @@ final class ProfileManager
             return $this->buildProfile();
         } finally {
             $this->collecting = false;
+            $this->executionContext?->clear();
         }
     }
 
     public function discard(): void
     {
         $this->collecting = false;
+        $this->livewire?->discard();
+        $this->executionContext?->clear();
     }
 
     public function recordException(Throwable $exception): void
@@ -314,6 +329,7 @@ final class ProfileManager
 
         $this->profileType = $type;
         $this->primarySectionLabel = $primarySectionLabel;
+        $this->profileId = (string) Str::uuid();
         $this->startedAt = hrtime(true);
         $this->request = [];
         $this->lifecycleMarks = [];
@@ -322,7 +338,7 @@ final class ProfileManager
     }
 
     /** @return array<string, mixed> */
-    private function buildProfile(): array
+    private function buildProfile(?array $livewire = null): array
     {
         $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
         $metrics = [
@@ -354,9 +370,13 @@ final class ProfileManager
             ];
         }
 
+        if ($livewire !== null) {
+            $sections['livewire'] = $livewire;
+        }
+
         return [
             'schema_version' => 1,
-            'id' => (string) Str::uuid(),
+            'id' => $this->profileId !== '' ? $this->profileId : (string) Str::uuid(),
             'recorded_at' => now()->toIso8601String(),
             'profile_type' => $this->profileType,
             'environment' => app()->environment(),

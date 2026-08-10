@@ -32,6 +32,10 @@ use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Controllers\MailPreviewController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
+use NewDebugBar\Livewire\ExecutionContext;
+use NewDebugBar\Livewire\InteractionRecorder;
+use NewDebugBar\Livewire\LivewireGateway;
+use NewDebugBar\Livewire\StateDiff;
 use NewDebugBar\Mcp\Legacy\NewDebugBarServer as LegacyNewDebugBarServer;
 use NewDebugBar\Mcp\NewDebugBarServer as ModernNewDebugBarServer;
 use NewDebugBar\Presentation\McpProfilePresenter;
@@ -102,6 +106,20 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->scoped(RuntimeProfiler::class);
         $this->app->singleton(RuntimeContext::class);
         $this->app->singleton(SafeUrl::class);
+        $this->app->scoped(ExecutionContext::class);
+        $this->app->singleton(StateDiff::class, fn ($app): StateDiff => new StateDiff(
+            redactor: $app->make(Redactor::class),
+            maxChanges: (int) config('newdebugbar.collection.max_items_per_collector', 500),
+            maxDepth: (int) config('newdebugbar.collection.max_depth', 5),
+        ));
+        $this->app->scoped(InteractionRecorder::class, fn ($app): InteractionRecorder => new InteractionRecorder(
+            redactor: $app->make(Redactor::class),
+            stateDiff: $app->make(StateDiff::class),
+            context: $app->make(ExecutionContext::class),
+            projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
+            maxItems: (int) config('newdebugbar.collection.max_items_per_collector', 500),
+        ));
+        $this->app->singleton(LivewireGateway::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
             $maxItems = (int) config('newdebugbar.collection.max_items_per_collector', 500);
@@ -128,7 +146,14 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new ItemCollector($redactor, $maxItems, 'messages', 'Messages'),
                 new LogCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
-            ], $redactor, $app->make(ExceptionNormalizer::class), $app->make(RuntimeContext::class), $app->make(RequestContext::class));
+            ],
+                $redactor,
+                $app->make(ExceptionNormalizer::class),
+                $app->make(RuntimeContext::class),
+                $app->make(RequestContext::class),
+                $app->make(InteractionRecorder::class),
+                $app->make(ExecutionContext::class),
+            );
         });
 
         $this->app->singleton(ProfileStore::class, fn ($app): ProfileStore => new ProfileStore(
@@ -169,6 +194,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(Redactor::class),
             $this->app->make(MailPreview::class),
         ))->register();
+        $this->app->make(LivewireGateway::class)->register();
         $exceptions = $this->app->make(ExceptionHandler::class);
 
         if (method_exists($exceptions, 'renderable')) {
