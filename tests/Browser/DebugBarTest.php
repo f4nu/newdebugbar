@@ -555,6 +555,57 @@ it('discovers background fetch profiles without switching reloading or flashing 
         ->assertNoJavaScriptErrors();
 });
 
+it('appends one value-free browser trace after a real Livewire update', function () {
+    $page = visit('/profiled-livewire')
+        ->assertVisible('[data-testid="diagnostics-fixture"] input[type="search"]');
+
+    $page->script(<<<'JS'
+        window.__newDebugBarTraceRequests = [];
+        window.__newDebugBarTraceUpdates = [];
+        window.addEventListener('newdebugbar-profile-trace-updated', (event) => {
+            window.__newDebugBarTraceUpdates.push(event.detail);
+        });
+
+        const nativeFetch = window.fetch.bind(window);
+        window.fetch = (input, options = {}) => {
+            const url = typeof input === 'string' ? input : input?.url ?? '';
+
+            if (url.includes('/__newdebugbar/livewire-trace/')) {
+                window.__newDebugBarTraceRequests.push({
+                    url,
+                    body: options.body ?? null,
+                });
+            }
+
+            return nativeFetch(input, options);
+        };
+        JS);
+
+    $page
+        ->type('[data-testid="diagnostics-fixture"] input[type="search"]', 'northline')
+        ->wait(1)
+        ->assertSeeIn('[data-testid="diagnostics-fixture"] p', 'northline')
+        ->assertScript(<<<'JS'
+            (() => {
+                const requests = window.__newDebugBarTraceRequests;
+                const updates = window.__newDebugBarTraceUpdates;
+                if (requests.length !== 1 || updates.length !== 1) return false;
+
+                const payload = JSON.parse(requests[0].body);
+                const serialized = JSON.stringify(payload);
+
+                return payload.schema_version === 1
+                    && payload.messages.length === 1
+                    && payload.messages[0].state.length === 1
+                    && payload.messages[0].state[0].path === 'search'
+                    && payload.messages[0].state[0].browser_type === 'string'
+                    && serialized.includes('northline') === false
+                    && updates[0].revision === 2;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('keeps host styles and package styles isolated', function () {
     visit('/hostile-styles')
         ->assertScript(<<<'JS'

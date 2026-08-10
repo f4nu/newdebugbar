@@ -124,6 +124,38 @@ final class DebugBar extends Component
         }
     }
 
+    public function refreshProfileTrace(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        if (! $this->validProfileId($profileId)) {
+            return;
+        }
+
+        $profile = $store->get($profileId);
+
+        if ($profile === null) {
+            return;
+        }
+
+        if ($profileId !== $this->profileId) {
+            $this->discoveredProfileId = $profileId;
+
+            if ($this->detailsLoaded) {
+                $this->refreshHistoryData($store, $presenter, $summaries);
+                $this->dispatch('newdebugbar-content-updated');
+            }
+
+            return;
+        }
+
+        unset($this->profile);
+        $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
+        $this->dispatch('newdebugbar-content-updated');
+    }
+
     public function explainQuery(
         int $execution,
         ProfileStore $store,

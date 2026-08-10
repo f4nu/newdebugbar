@@ -26,11 +26,13 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Mcp\Server\McpServiceProvider;
+use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Tests\Fixtures\Livewire\DiagnosticsFixture;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -62,6 +64,8 @@ abstract class TestCase extends Orchestra
 
     protected function defineRoutes($router): void
     {
+        Livewire::component('diagnostics-fixture', DiagnosticsFixture::class);
+
         foreach ([StudioJob::class, Client::class, ProofVersion::class, JobActivity::class, User::class] as $modelClass) {
             new $modelClass;
         }
@@ -100,6 +104,18 @@ abstract class TestCase extends Orchestra
             '/profiled-next',
             fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
         );
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
+            $component = app('livewire')->mount('diagnostics-fixture', key: 'diagnostics-browser');
+
+            return response(<<<HTML
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Livewire diagnostics</title></head>
+                    <body><main><h1 data-testid="host-page">Livewire diagnostics</h1>{$component}</main></body>
+                </html>
+                HTML);
+        });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-rich', function () use ($profiledPage) {
             Http::fake(['api.example.test/*' => Http::response(['private' => 'body'], 202)]);
