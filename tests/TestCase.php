@@ -7,7 +7,6 @@ use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
@@ -27,8 +26,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Mcp\Server\McpServiceProvider;
-use Livewire\Component;
-use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
@@ -166,12 +163,6 @@ abstract class TestCase extends Orchestra
                 HTML);
         });
 
-        $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
-            $component = app('livewire')->mount('profiled-counter');
-
-            return response('<!doctype html><html><head><title>Livewire request</title></head><body><h1 data-testid="host-page">Livewire request</h1>'.$component.'</body></html>');
-        });
-
         $router->middleware(ProfileRequest::class)->get('/profiled-context', function () {
             Gate::define('inspect-profile', fn (mixed $user, ProfiledModel $model): bool => $user === null && $model instanceof ProfiledModel);
             Gate::define('delete-profile', fn (): bool => false);
@@ -251,8 +242,8 @@ abstract class TestCase extends Orchestra
         ));
 
         $router->get('/binary-response', fn () => response()->download(
-            __DIR__.'/views/profiled-counter.blade.php',
-            'profiled-counter.txt',
+            __DIR__.'/views/original-response.blade.php',
+            'original-response.txt',
         ));
 
         $router->middleware(ProfileRequest::class)->get(
@@ -414,7 +405,6 @@ abstract class TestCase extends Orchestra
         parent::setUp();
 
         view()->addLocation(__DIR__.'/views');
-        Livewire::component('profiled-counter', ProfiledCounter::class);
         $this->app['files']->deleteDirectory(config('newdebugbar.storage.path'));
     }
 
@@ -461,28 +451,6 @@ final class JobActivity extends ProfiledVisualModel
 final class User extends ProfiledVisualModel
 {
     protected $table = 'users';
-}
-
-final class ProfiledCounter extends Component
-{
-    public int $count = 0;
-
-    public string $name = '';
-
-    public function increment(): void
-    {
-        $this->count++;
-    }
-
-    public function save(): void
-    {
-        $this->validate(['name' => ['required']]);
-    }
-
-    public function render(): View
-    {
-        return view('profiled-counter');
-    }
 }
 
 final class ProfiledJob implements ShouldQueue

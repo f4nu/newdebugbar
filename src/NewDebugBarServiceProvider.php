@@ -20,7 +20,6 @@ use NewDebugBar\Analysis\SectionAnalyzer;
 use NewDebugBar\Analysis\TimelineBuilder;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
-use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\MailCollector;
 use NewDebugBar\Collectors\NotificationCollector;
@@ -42,8 +41,6 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
-use NewDebugBar\Support\LivewireMountRecorder;
-use NewDebugBar\Support\LivewireUpdateRecorder;
 use NewDebugBar\Support\MailPreview;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\QueryExplainer;
@@ -102,8 +99,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxBodyBytes: (int) config('newdebugbar.mail_preview.max_body_bytes', 50_000),
             maxRecipients: (int) config('newdebugbar.collection.max_items_per_array', 100),
         ));
-        $this->app->scoped(LivewireUpdateRecorder::class);
-        $this->app->scoped(LivewireMountRecorder::class);
         $this->app->scoped(RuntimeProfiler::class);
         $this->app->singleton(RuntimeContext::class);
         $this->app->singleton(SafeUrl::class);
@@ -118,7 +113,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                     $maxItems,
                     (string) config('newdebugbar.collection.query_bindings', 'full'),
                 ),
-                new LivewireCollector($redactor, $maxItems),
                 new OutboundHttpCollector($redactor, $maxItems),
                 new QueueCollector($redactor, $maxItems),
                 new MailCollector($redactor, $maxItems),
@@ -189,7 +183,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),
         );
         Livewire::component('newdebugbar.toolbar', DebugBar::class);
-        $this->app->make(LivewireMountRecorder::class)->register();
         $this->registerMcpServer();
         $router->get('/__newdebugbar/assets/{path}', AssetController::class)
             ->where('path', '.*')

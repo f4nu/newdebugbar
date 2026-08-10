@@ -12,7 +12,6 @@ final class RuntimeContext
     private const ECOSYSTEM = [
         'cashier' => ['label' => 'Cashier', 'packages' => ['laravel/cashier']],
         'filament' => ['label' => 'Filament', 'packages' => ['filament/filament']],
-        'flux' => ['label' => 'Flux', 'packages' => ['livewire/flux-pro', 'livewire/flux']],
         'fortify' => ['label' => 'Fortify', 'packages' => ['laravel/fortify']],
         'horizon' => ['label' => 'Horizon', 'packages' => ['laravel/horizon']],
         'inertia' => ['label' => 'Inertia', 'packages' => ['inertiajs/inertia-laravel']],
@@ -28,13 +27,9 @@ final class RuntimeContext
     public function __construct(private readonly Application $app) {}
 
     /** @return array<string, mixed> */
-    public function build(bool $livewireActivity): array
+    public function build(): array
     {
         $ecosystem = $this->ecosystem();
-
-        if ($livewireActivity && InstalledVersions::isInstalled('livewire/livewire')) {
-            $ecosystem[] = $this->package('livewire', 'Livewire', 'livewire/livewire');
-        }
 
         usort($ecosystem, fn (array $left, array $right): int => $left['label'] <=> $right['label']);
 

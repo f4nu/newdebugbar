@@ -5,7 +5,6 @@ use GuzzleHttp\Promise\Create;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
@@ -23,12 +22,9 @@ use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\AssetUrl;
 use NewDebugBar\Support\BarInjector;
-use NewDebugBar\Support\LivewireUpdateRecorder;
-use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestEligibility;
 use NewDebugBar\Tests\ProfiledModel;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -109,9 +105,6 @@ it('captures a local web request and its Laravel activity', function () {
     expect($profile['metrics'])->not->toHaveKey('memory_mb')
         ->and($profile['sections']['request']['payload'])->not->toHaveKey('early_bootstrap_measured');
 
-    expect(array_column($profile['sections']['overview']['payload']['ecosystem'], 'key'))
-        ->not->toContain('livewire');
-
     expect($profile['sections']['logs']['payload']['items'][0]['callsite'])
         ->toMatchArray(['file' => 'tests/TestCase.php'])
         ->and($profile['sections']['logs']['payload']['items'][0]['stack'])->not->toBeEmpty();
@@ -155,27 +148,6 @@ it('presents model activity as useful record loads and boot lifecycle evidence',
             ['User', 5, 2, 3],
             ['JobActivity', 7, 7, 0],
         ]);
-});
-
-it('records initial application Livewire renders and then reports Livewire in the ecosystem', function () {
-    $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
-    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
-    $section = $profile['sections']['livewire'];
-
-    expect(substr_count((string) $response->getContent(), '<!-- Livewire Styles -->'))->toBe(1)
-        ->and(substr_count((string) $response->getContent(), 'data-update-uri='))->toBe(1);
-
-    expect($section['summary'])
-        ->count->toBe(1)
-        ->initial_render_count->toBe(1)
-        ->update_count->toBe(0)
-        ->component_count->toBe(1)
-        ->and($section['payload']['items'][0])
-        ->kind->toBe('initial')
-        ->component->toBe('profiled-counter')
-        ->duration_ms->toBeFloat()
-        ->and(array_column($profile['sections']['overview']['payload']['ecosystem'], 'key'))
-        ->toContain('livewire');
 });
 
 it('captures outbound HTTP results without private URLs or bodies', function () {
@@ -530,7 +502,7 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
 
     $binary = $this->get('/binary-response')
         ->assertOk()
-        ->assertDownload('profiled-counter.txt')
+        ->assertDownload('original-response.txt')
         ->assertHeader('X-NewDebugBar-Profile');
 
     $profiles = collect([
@@ -656,37 +628,6 @@ it('discards request state when profiling setup fails', function () {
         ->and($manager->isCollecting())->toBeFalse();
 });
 
-it('discards request state when Livewire response collection fails', function () {
-    $manager = new ProfileManager(
-        [new CollectorThatFailsDuringRecord],
-        app(Redactor::class),
-    );
-    $request = Request::create('/livewire/update', 'POST');
-    $manager->begin($request);
-    $request->headers->set('X-Livewire', 'true');
-    $request->request->set('components', [[
-        'snapshot' => json_encode(['memo' => ['name' => 'application-counter']], JSON_THROW_ON_ERROR),
-        'updates' => [],
-        'calls' => [],
-    ]]);
-    $response = new JsonResponse(['components' => [[
-        'snapshot' => json_encode(['memo' => ['errors' => []]], JSON_THROW_ON_ERROR),
-        'effects' => [],
-    ]]]);
-    $finalizer = new ProfileFinalizer(
-        $manager,
-        app(ProfileStore::class),
-        app(BarInjector::class),
-        app(RequestEligibility::class),
-        new LivewireUpdateRecorder($manager),
-    );
-
-    $finalizer->handle(new RequestHandled($request, $response));
-
-    expect($manager->isCollecting())->toBeFalse()
-        ->and($response->headers->has('X-NewDebugBar-Profile'))->toBeFalse();
-});
-
 final class CollectorThatFailsDuringSummary implements Collector
 {
     public function key(): string
@@ -706,36 +647,6 @@ final class CollectorThatFailsDuringSummary implements Collector
     public function summary(): array
     {
         throw new RuntimeException('Collector failed.');
-    }
-
-    public function payload(): array
-    {
-        return ['items' => []];
-    }
-}
-
-final class CollectorThatFailsDuringRecord implements Collector
-{
-    public function key(): string
-    {
-        return 'livewire';
-    }
-
-    public function label(): string
-    {
-        return 'Livewire';
-    }
-
-    public function reset(): void {}
-
-    public function record(array $item): void
-    {
-        throw new RuntimeException('Collector failed.');
-    }
-
-    public function summary(): array
-    {
-        return ['count' => 0];
     }
 
     public function payload(): array

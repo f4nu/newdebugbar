@@ -63,13 +63,10 @@ final class ProfileManager
             'url' => $this->redactedUrl($request, is_array($query) ? $query : []),
             'path' => '/'.ltrim($request->path(), '/'),
             'query' => $query,
-            'input' => $request->headers->has('X-Livewire')
-                ? ['components' => count((array) $request->input('components', []))]
-                : $this->redactor->clean($request->input()),
+            'input' => $this->redactor->clean($request->input()),
             'headers' => $this->redactor->clean($request->headers->all()),
         ];
         $this->collecting = true;
-        $this->recordLivewireRequest($request);
     }
 
     /** @param array<string, mixed> $context */
@@ -332,12 +329,11 @@ final class ProfileManager
             'duration_ms' => round($duration, 2),
             'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
         ];
-        $livewireActivity = (int) (($this->collectors['livewire'] ?? null)?->summary()['count'] ?? 0) > 0;
         $sections = [
             'overview' => [
                 'label' => 'Overview',
                 'summary' => $metrics,
-                'payload' => $this->runtimeContext?->build($livewireActivity) ?? [],
+                'payload' => $this->runtimeContext?->build() ?? [],
             ],
             'request' => [
                 'label' => $this->primarySectionLabel,
@@ -384,46 +380,6 @@ final class ProfileManager
         }
 
         return strlen(http_build_query($request->request->all(), '', '&', PHP_QUERY_RFC3986));
-    }
-
-    private function recordLivewireRequest(Request $request): void
-    {
-        if (! $request->headers->has('X-Livewire')) {
-            return;
-        }
-
-        foreach (array_values((array) $request->input('components', [])) as $index => $component) {
-            if (! is_array($component) || ! is_string($component['snapshot'] ?? null)) {
-                continue;
-            }
-
-            $snapshot = json_decode($component['snapshot'], true);
-            $name = is_array($snapshot) ? ($snapshot['memo']['name'] ?? null) : null;
-
-            if (! is_string($name) || $name === '' || $name === 'newdebugbar.toolbar') {
-                continue;
-            }
-
-            $calls = is_array($component['calls'] ?? null) ? $component['calls'] : [];
-            $updates = is_array($component['updates'] ?? null) ? $component['updates'] : [];
-            $this->record('livewire', [
-                'phase' => 'request',
-                'kind' => 'update',
-                'request_index' => $index,
-                'component' => $name,
-                'actions' => array_values(array_unique(array_filter(array_map(
-                    fn (mixed $call): ?string => is_array($call) && is_string($call['method'] ?? null)
-                        ? $call['method']
-                        : null,
-                    $calls,
-                )))),
-                'updated_properties' => array_values(array_map('strval', array_keys($updates))),
-                'validation_failure_count' => 0,
-                'validation_fields' => [],
-                'payload_size_bytes' => $this->requestSize($request),
-                'response_size_bytes' => 0,
-            ]);
-        }
     }
 
     private function hasStartedSession(Request $request): bool
@@ -488,10 +444,6 @@ final class ProfileManager
 
     private function requestType(Request $request, ?Response $response): string
     {
-        if ($request->headers->has('X-Livewire')) {
-            return 'livewire';
-        }
-
         $status = $response?->getStatusCode() ?? 500;
 
         if ($request->headers->has('X-Inertia')) {
