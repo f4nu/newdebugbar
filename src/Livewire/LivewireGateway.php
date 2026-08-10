@@ -5,6 +5,7 @@ namespace NewDebugBar\Livewire;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Request;
 use Livewire\Component;
+use Livewire\Mechanisms\HandleComponents\ComponentContext;
 use Throwable;
 
 use function Livewire\on;
@@ -32,6 +33,9 @@ final class LivewireGateway
 
         $this->registered = true;
 
+        on('mount', function (Component $component, array $params, mixed $key, mixed $parent): void {
+            $this->recorder()->observeMount($component, $params, $key, $parent);
+        });
         on('hydrate', function (Component $component): void {
             $this->recorder()->observeHydrate($component);
         });
@@ -50,8 +54,11 @@ final class LivewireGateway
 
             return fn () => $this->recorder()->popContext($token);
         });
-        on('dehydrate', function (Component $component): void {
-            $this->recorder()->observeDehydrate($component);
+        on('dehydrate', function (Component $component, ComponentContext $context): void {
+            $this->recorder()->observeDehydrate($component, is_array($context->effects) ? $context->effects : []);
+        });
+        on('destroy', function (Component $component): void {
+            $this->recorder()->observeDestroy($component);
         });
         on('profile', function (string $phase, string $componentId, array $range): void {
             $this->recorder()->observeServerSpan($phase, $componentId, $range);

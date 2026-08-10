@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use NewDebugBar\Support\Redactor;
+use NewDebugBar\Support\SafeUrl;
 use ReflectionClass;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -13,6 +14,8 @@ use Throwable;
 /** Records one bounded Livewire HTTP exchange from observed lifecycle facts. */
 final class InteractionRecorder
 {
+    private bool $listening = false;
+
     private bool $active = false;
 
     private string $profileId = '';
@@ -22,6 +25,8 @@ final class InteractionRecorder
     private int $startedAt = 0;
 
     private float $startedWallAt = 0;
+
+    private string $exchangeKind = 'unknown';
 
     /** @var list<array<string, mixed>> */
     private array $messages = [];
@@ -50,6 +55,12 @@ final class InteractionRecorder
     /** @var list<array<string, mixed>> */
     private array $serverSpans = [];
 
+    /** @var list<array<string, mixed>> */
+    private array $events = [];
+
+    /** @var array<string, true> */
+    private array $effectFingerprints = [];
+
     /** @var array<string, list<string>> */
     private array $componentContextTokens = [];
 
@@ -59,10 +70,12 @@ final class InteractionRecorder
         'actions' => 0,
         'state_changes' => 0,
         'server_spans' => 0,
+        'events' => 0,
     ];
 
     public function __construct(
         private readonly Redactor $redactor,
+        private readonly SafeUrl $safeUrl,
         private readonly StateDiff $stateDiff,
         private readonly ExecutionContext $context,
         private readonly string $projectPath,
@@ -72,16 +85,18 @@ final class InteractionRecorder
     public function begin(Request $request, string $profileId): void
     {
         $this->reset();
+        $this->listening = true;
+        $this->profileId = $profileId;
+        $this->exchangeId = (string) Str::uuid();
+        $this->startedAt = hrtime(true);
+        $this->startedWallAt = microtime(true);
 
         if (! $request->headers->has('X-Livewire') || ! is_array($request->input('components'))) {
             return;
         }
 
         $this->active = true;
-        $this->profileId = $profileId;
-        $this->exchangeId = (string) Str::uuid();
-        $this->startedAt = hrtime(true);
-        $this->startedWallAt = microtime(true);
+        $this->exchangeKind = 'update';
 
         foreach (array_values($request->input('components')) as $requestIndex => $rawMessage) {
             if (! is_array($rawMessage)) {
@@ -120,6 +135,8 @@ final class InteractionRecorder
                 'action_ids' => [],
                 'state_change_ids' => [],
                 'result' => 'unknown',
+                'validation_errors' => [],
+                'effects' => [],
                 'caused_by' => [],
                 'source' => 'livewire_public',
                 'confidence' => 'observed',
@@ -191,6 +208,75 @@ final class InteractionRecorder
     public function isActive(): bool
     {
         return $this->active;
+    }
+
+    /** @param array<string, mixed> $params */
+    public function observeMount(Component $component, array $params, mixed $key, mixed $parent): void
+    {
+        if (! $this->listening || $component->getName() === 'newdebugbar.toolbar') {
+            return;
+        }
+
+        $componentId = $component->getId();
+
+        if (isset($this->messageIndexesByComponent[$componentId])) {
+            return;
+        }
+
+        if (count($this->messages) >= $this->maxItems) {
+            $this->dropped['messages']++;
+
+            return;
+        }
+
+        $this->active = true;
+        $this->exchangeKind = 'initial_mount';
+        $messageIndex = count($this->messages);
+        $messageId = (string) Str::uuid();
+        $parentId = $parent instanceof Component ? $parent->getId() : null;
+        $this->messages[] = [
+            'id' => $messageId,
+            'request_index' => $messageIndex,
+            'component_id' => $componentId,
+            'action_ids' => [],
+            'state_change_ids' => [],
+            'result' => 'unknown',
+            'validation_errors' => [],
+            'effects' => [],
+            'caused_by' => [],
+            'source' => 'livewire_internal',
+            'confidence' => 'observed',
+        ];
+        $this->messageIndexesByComponent[$componentId] = $messageIndex;
+        $this->components[$componentId] = [
+            'id' => $componentId,
+            'mount_scope' => $componentId,
+            'name' => $component->getName(),
+            'class' => $component::class,
+            'source' => null,
+            'view' => null,
+            'parent_id' => $parentId,
+            'key' => is_scalar($key) ? $key : null,
+            'depth' => $parentId !== null && isset($this->components[$parentId])
+                ? ((int) ($this->components[$parentId]['depth'] ?? 0)) + 1
+                : 0,
+            'rendered' => 'unknown',
+            'render_reason' => ['kind' => 'initial_mount', 'action_id' => null, 'confidence' => 'observed'],
+            'completeness' => 'affected_only',
+        ];
+        $this->addAction($componentId, $messageIndex, [
+            'kind' => 'initial_mount',
+            'name' => 'mount',
+            'parameters' => $this->redactor->clean($params),
+            'property_paths' => [],
+            'execution_status' => 'observed',
+            'source' => 'livewire_internal',
+            'confidence' => 'observed',
+        ]);
+        $this->beforeState[$componentId] = $component->all();
+        $this->observeComponent($component);
+        $token = $this->context->push($this->componentContext($componentId, 'mount'));
+        $this->componentContextTokens[$componentId][] = $token;
     }
 
     /** @return array<string, mixed> */
@@ -285,7 +371,8 @@ final class InteractionRecorder
         return $this->context->push($this->componentContext($componentId, 'render'));
     }
 
-    public function observeDehydrate(Component $component): void
+    /** @param array<string, mixed> $effects */
+    public function observeDehydrate(Component $component, array $effects = []): void
     {
         if (! $this->tracks($component)) {
             return;
@@ -293,6 +380,15 @@ final class InteractionRecorder
 
         $componentId = $component->getId();
         $this->observeComponent($component);
+        $this->observeEffects($componentId, $effects);
+        $messageIndex = $this->messageIndexesByComponent[$componentId] ?? null;
+
+        if (is_int($messageIndex) && $this->messages[$messageIndex]['result'] === 'unknown') {
+            $this->messages[$messageIndex]['result'] = $this->components[$componentId]['rendered'] === 'yes'
+                ? 'rendered'
+                : 'renderless';
+            $this->messages[$messageIndex]['effects'] = $this->safeEffects($effects);
+        }
         $diff = $this->stateDiff->between(
             $this->beforeState[$componentId] ?? [],
             $component->all(),
@@ -329,6 +425,17 @@ final class InteractionRecorder
         $this->setRenderReason($componentId);
         $this->leaveComponentContext($componentId);
         unset($this->beforeState[$componentId], $this->submittedState[$componentId]);
+    }
+
+    public function observeDestroy(Component $component): void
+    {
+        $componentId = $component->getId();
+
+        foreach ($this->componentContextTokens[$componentId] ?? [] as $token) {
+            $this->context->pop($token);
+        }
+
+        unset($this->componentContextTokens[$componentId]);
     }
 
     /** @param array{0: float|int, 1: float|int} $range */
@@ -389,14 +496,18 @@ final class InteractionRecorder
             }
 
             $effects = is_array($componentResponse['effects'] ?? null) ? $componentResponse['effects'] : [];
+            $this->observeEffects((string) ($componentId ?? ''), $effects);
+            $errors = $this->validationErrors($snapshot);
             $result = match (true) {
                 array_key_exists('redirect', $effects) => 'redirected',
                 array_key_exists('download', $effects) => 'downloaded',
+                $errors !== [] => 'validation_failed',
                 array_key_exists('html', $effects) => 'rendered',
-                $this->hasValidationErrors($snapshot) => 'validation_failed',
                 default => 'renderless',
             };
             $this->messages[$messageIndex]['result'] = $result;
+            $this->messages[$messageIndex]['validation_errors'] = $errors;
+            $this->messages[$messageIndex]['effects'] = $this->safeEffects($effects);
 
             if (is_string($componentId) && isset($this->components[$componentId])) {
                 $this->components[$componentId]['rendered'] = $result === 'rendered' ? 'yes' : 'no';
@@ -418,6 +529,14 @@ final class InteractionRecorder
             $this->clear();
 
             return null;
+        }
+
+        if (($response?->getStatusCode() ?? 500) >= 400) {
+            foreach ($this->messages as $index => $message) {
+                if ($message['result'] === 'unknown') {
+                    $this->messages[$index]['result'] = 'failed';
+                }
+            }
         }
 
         $results = array_values(array_unique(array_column($this->messages, 'result')));
@@ -451,7 +570,7 @@ final class InteractionRecorder
                 'exchange' => [
                     'id' => $this->exchangeId,
                     'request_id' => $this->profileId,
-                    'kind' => 'update',
+                    'kind' => $this->exchangeKind,
                     'title' => $title['text'],
                     'title_confidence' => $title['confidence'],
                     'result' => $result,
@@ -469,7 +588,7 @@ final class InteractionRecorder
                 'actions' => array_values($this->actions),
                 'components' => array_values($this->components),
                 'state_changes' => array_values($this->stateChanges),
-                'events' => [],
+                'events' => array_values($this->events),
                 'server_spans' => array_values($this->serverSpans),
                 'browser_trace' => [
                     'status' => 'missing',
@@ -482,7 +601,7 @@ final class InteractionRecorder
                     'messages' => $this->dropped['messages'] === 0 ? 'complete' : 'partial',
                     'components' => 'affected_only',
                     'state' => $this->dropped['state_changes'] === 0 ? 'complete' : 'partial',
-                    'events' => 'not_collected',
+                    'events' => $this->dropped['events'] === 0 ? 'observed' : 'partial',
                     'server_spans' => $this->serverSpans === [] ? 'unknown' : 'observed',
                     'browser_trace' => 'missing',
                     'truncated' => $truncated,
@@ -522,6 +641,172 @@ final class InteractionRecorder
         ];
         $this->messages[$messageIndex]['action_ids'][] = $actionId;
         $this->actionIndexesByComponent[$componentId][] = $actionIndex;
+
+        if ($action['kind'] === 'event_received') {
+            $this->addReceivedEvent($componentId, $actionId, $action);
+        }
+    }
+
+    /** @param array<string, mixed> $effects */
+    private function observeEffects(string $componentId, array $effects): void
+    {
+        if ($componentId === '' || ! isset($this->components[$componentId])) {
+            return;
+        }
+
+        foreach ((array) ($effects['dispatches'] ?? []) as $dispatch) {
+            if (! is_array($dispatch) || ! is_string($dispatch['name'] ?? null)) {
+                continue;
+            }
+
+            $safeParams = $this->redactor->clean(is_array($dispatch['params'] ?? null) ? $dispatch['params'] : []);
+            $mode = match (true) {
+                ($dispatch['self'] ?? false) === true => 'self',
+                is_string($dispatch['component'] ?? null) => 'component',
+                is_string($dispatch['ref'] ?? null) => 'ref',
+                is_string($dispatch['el'] ?? null) => 'element',
+                default => 'global',
+            };
+            $declaredTarget = match ($mode) {
+                'self' => $componentId,
+                'component' => $dispatch['component'],
+                'ref' => $dispatch['ref'],
+                'element' => $dispatch['el'],
+                default => null,
+            };
+            $fingerprint = hash('sha256', json_encode([
+                $componentId,
+                $dispatch['name'],
+                $mode,
+                $declaredTarget,
+                $safeParams,
+            ], JSON_UNESCAPED_SLASHES) ?: 'unencodable');
+
+            if (isset($this->effectFingerprints[$fingerprint])) {
+                continue;
+            }
+
+            $this->effectFingerprints[$fingerprint] = true;
+
+            if (count($this->events) >= $this->maxItems) {
+                $this->dropped['events']++;
+
+                continue;
+            }
+
+            $this->events[] = [
+                'id' => (string) Str::uuid(),
+                'source_component_id' => $componentId,
+                'action_id' => $this->singleActionId($componentId),
+                'name' => $dispatch['name'],
+                'parameters' => $safeParams,
+                'mode' => $mode,
+                'declared_target' => $this->redactor->clean($declaredTarget),
+                'observed_recipient_ids' => [],
+                'recipient_status' => 'unknown',
+                'source' => 'livewire_public',
+                'confidence' => 'observed',
+            ];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $action
+     */
+    private function addReceivedEvent(string $componentId, string $actionId, array $action): void
+    {
+        if (count($this->events) >= $this->maxItems) {
+            $this->dropped['events']++;
+
+            return;
+        }
+
+        $parameters = is_array($action['parameters'] ?? null) ? $action['parameters'] : [];
+        $this->events[] = [
+            'id' => (string) Str::uuid(),
+            'source_component_id' => null,
+            'action_id' => $actionId,
+            'name' => $action['name'],
+            'parameters' => is_array($parameters[1] ?? null) ? $parameters[1] : [],
+            'mode' => 'received',
+            'declared_target' => null,
+            'observed_recipient_ids' => [$componentId],
+            'recipient_status' => 'observed',
+            'source' => 'livewire_public',
+            'confidence' => 'observed',
+        ];
+    }
+
+    /** @param array<string, mixed> $effects
+     * @return array<string, mixed>
+     */
+    private function safeEffects(array $effects): array
+    {
+        $safe = [];
+
+        if (is_string($effects['redirect'] ?? null)) {
+            $safe['redirect'] = $this->safeRedirect($effects['redirect']);
+        }
+
+        if (is_array($effects['download'] ?? null)) {
+            $content = is_string($effects['download']['content'] ?? null)
+                ? $effects['download']['content']
+                : '';
+            $padding = str_ends_with($content, '==') ? 2 : (str_ends_with($content, '=') ? 1 : 0);
+            $safe['download'] = [
+                'name' => $this->redactor->clean($effects['download']['name'] ?? 'download'),
+                'content_type' => $this->redactor->clean($effects['download']['contentType'] ?? null),
+                'size_bytes' => max(0, intdiv(strlen($content) * 3, 4) - $padding),
+                'content_stored' => false,
+            ];
+        }
+
+        if (isset($effects['dispatches']) && is_array($effects['dispatches'])) {
+            $safe['dispatch_count'] = count($effects['dispatches']);
+        }
+
+        if (array_key_exists('html', $effects)) {
+            $safe['rendered_html'] = true;
+        }
+
+        if (isset($effects['returns']) && is_array($effects['returns'])) {
+            $safe['return_count'] = count($effects['returns']);
+            $safe['return_values_stored'] = false;
+        }
+
+        return $safe;
+    }
+
+    private function safeRedirect(string $url): string
+    {
+        if (preg_match('#\Ahttps?://#i', $url) === 1) {
+            return $this->safeUrl->clean($url);
+        }
+
+        $parts = parse_url($url);
+
+        if (! is_array($parts)) {
+            return '[invalid-url]';
+        }
+
+        $path = '/'.ltrim((string) ($parts['path'] ?? '/'), '/');
+        $query = [];
+
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $query);
+            $query = $this->redactor->clean($query);
+        }
+
+        return is_array($query) && $query !== []
+            ? $path.'?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986)
+            : $path;
+    }
+
+    private function singleActionId(string $componentId): ?string
+    {
+        $indexes = $this->actionIndexesByComponent[$componentId] ?? [];
+
+        return count($indexes) === 1 ? $this->actions[$indexes[0]]['id'] : null;
     }
 
     private function observeComponent(Component $component): void
@@ -646,7 +931,10 @@ final class InteractionRecorder
             return null;
         }
 
-        $indexes = $this->actionIndexesByComponent[$componentId] ?? [];
+        $indexes = array_values(array_filter(
+            $this->actionIndexesByComponent[$componentId] ?? [],
+            fn (int $index): bool => $this->actions[$index]['kind'] !== 'property_update',
+        ));
         $index = $indexes[(int) $matches[1]] ?? null;
 
         return is_int($index) ? $this->actions[$index]['id'] : null;
@@ -655,6 +943,17 @@ final class InteractionRecorder
     /** @return array{text: string, confidence: string} */
     private function title(): array
     {
+        if ($this->exchangeKind === 'initial_mount') {
+            $roots = array_values(array_filter(
+                $this->components,
+                fn (array $component): bool => $component['parent_id'] === null,
+            ));
+
+            if (count($roots) === 1) {
+                return ['text' => 'Mounted '.$roots[0]['name'], 'confidence' => 'inferred'];
+            }
+        }
+
         if (count($this->actions) !== 1 || $this->dropped['actions'] > 0) {
             return ['text' => 'Livewire exchange', 'confidence' => 'unknown'];
         }
@@ -688,12 +987,21 @@ final class InteractionRecorder
         }
     }
 
-    /** @param array<string, mixed> $snapshot */
-    private function hasValidationErrors(array $snapshot): bool
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @return array<string, mixed>
+     */
+    private function validationErrors(array $snapshot): array
     {
         $errors = data_get($snapshot, 'memo.errors');
 
-        return is_array($errors) && $errors !== [];
+        if (! is_array($errors)) {
+            return [];
+        }
+
+        $clean = $this->redactor->clean($errors);
+
+        return is_array($clean) ? $clean : [];
     }
 
     private function relativePath(string $path): string
@@ -732,11 +1040,13 @@ final class InteractionRecorder
 
     private function reset(): void
     {
+        $this->listening = false;
         $this->active = false;
         $this->profileId = '';
         $this->exchangeId = '';
         $this->startedAt = 0;
         $this->startedWallAt = 0;
+        $this->exchangeKind = 'unknown';
         $this->messages = [];
         $this->messageIndexesByComponent = [];
         $this->actions = [];
@@ -746,12 +1056,15 @@ final class InteractionRecorder
         $this->submittedState = [];
         $this->stateChanges = [];
         $this->serverSpans = [];
+        $this->events = [];
+        $this->effectFingerprints = [];
         $this->componentContextTokens = [];
         $this->dropped = [
             'messages' => 0,
             'actions' => 0,
             'state_changes' => 0,
             'server_spans' => 0,
+            'events' => 0,
         ];
         $this->context->clear();
     }

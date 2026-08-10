@@ -81,6 +81,7 @@ final class ProfileManager
     /** @param array<string, mixed> $context */
     public function beginRuntime(string $type, string $name, array $context = []): void
     {
+        $this->livewire?->discard();
         $type = in_array($type, ['artisan', 'queue', 'test'], true) ? $type : 'runtime';
         $this->start($type, 'Runtime');
         $safeContext = $this->redactor->clean($context);
@@ -111,9 +112,11 @@ final class ProfileManager
         }
 
         if (isset($this->collectors[$collector])) {
+            $livewire = $this->executionContext?->current();
             $this->collectors[$collector]->record([
                 ...$item,
                 'at_ms' => $this->elapsedMilliseconds(),
+                ...($livewire === null ? [] : ['livewire' => $livewire]),
             ]);
         }
     }
@@ -242,9 +245,11 @@ final class ProfileManager
         $collector = $this->collectors['queries'] ?? null;
 
         if ($this->collecting && $collector instanceof QueryCollector) {
+            $livewire = $this->executionContext?->current();
             $collector->recordTransaction([
                 ...$item,
                 'at_ms' => $this->elapsedMilliseconds(),
+                ...($livewire === null ? [] : ['livewire' => $livewire]),
             ]);
         }
     }

@@ -114,6 +114,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         ));
         $this->app->scoped(InteractionRecorder::class, fn ($app): InteractionRecorder => new InteractionRecorder(
             redactor: $app->make(Redactor::class),
+            safeUrl: $app->make(SafeUrl::class),
             stateDiff: $app->make(StateDiff::class),
             context: $app->make(ExecutionContext::class),
             projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),

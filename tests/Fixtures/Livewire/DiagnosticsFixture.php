@@ -2,8 +2,12 @@
 
 namespace NewDebugBar\Tests\Fixtures\Livewire;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /** Provides deterministic property, action, validation, event, and render states for diagnostics tests. */
 final class DiagnosticsFixture extends Component
@@ -19,6 +23,13 @@ final class DiagnosticsFixture extends Component
         $this->reviewScore += $score;
     }
 
+    public function saveReviewWithWork(): void
+    {
+        DB::select('select ? as review_score', [5]);
+        Log::info('Review saved by Livewire.');
+        $this->reviewScore = 5;
+    }
+
     public function validateReview(): void
     {
         $this->validate(['search' => ['required', 'min:3']]);
@@ -27,6 +38,25 @@ final class DiagnosticsFixture extends Component
     public function announceCheckIn(): void
     {
         $this->dispatch('vendor-checked-in', vendor: 'Northline Ceramics');
+    }
+
+    public function goToVendor(): void
+    {
+        $this->redirect('/vendors?token=private-vendor-token');
+    }
+
+    public function downloadReport(): StreamedResponse
+    {
+        return response()->streamDownload(
+            static fn () => print 'private report body',
+            'review-report.txt',
+            ['Content-Type' => 'text/plain'],
+        );
+    }
+
+    public function failReview(): never
+    {
+        throw new RuntimeException('Review action failed.');
     }
 
     #[Renderless]
