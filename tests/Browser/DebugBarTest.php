@@ -647,6 +647,14 @@ it('filters the timeline without inventing spans for point events', function () 
             })()
             JS)
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-filter=key]")).whiteSpace === "nowrap"')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-filter]')).every((button) => {
+                const style = getComputedStyle(button);
+
+                return parseFloat(style.borderBottomLeftRadius) > 0
+                    && style.borderTopColor === style.borderBottomColor;
+            })
+            JS)
         ->keys('[data-ndb-timeline-filter="all"]', 'Enter')
         ->assertAttribute('[data-ndb-timeline-filter="all"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").getBoundingClientRect().left > document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").parentElement.parentElement.getBoundingClientRect().left + 4')
@@ -805,6 +813,14 @@ it('presents grouped Laravel activity with useful controls', function () {
                 return count && Number(count.textContent.trim()) === expected;
             })
             JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-event-source]')).every((button) => {
+                const style = getComputedStyle(button);
+
+                return parseFloat(style.borderBottomLeftRadius) > 0
+                    && style.borderTopColor === style.borderBottomColor;
+            })
+            JS)
         ->click('[data-ndb-event-source="application"]')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-event-item]:not([hidden])'))
@@ -813,6 +829,14 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->type('[data-ndb-event-search]', 'application.ready')
         ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length', 1)
         ->click('[data-ndb-select-section="logs"]')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-log-level]')).every((button) => {
+                const style = getComputedStyle(button);
+
+                return parseFloat(style.borderBottomLeftRadius) > 0
+                    && style.borderTopColor === style.borderBottomColor;
+            })
+            JS)
         ->click('[data-ndb-log-level="info"]')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-log-item]:not([hidden])'))
@@ -1290,6 +1314,34 @@ it('filters searches sorts and shows repeated query evidence without another dis
                     });
             })()
             JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const items = Array.from(document.querySelectorAll('[data-ndb-query-item]'));
+                const groups = Array.from(document.querySelectorAll('[data-ndb-query-group]'));
+                const expected = {
+                    all: items.length,
+                    attention: groups.reduce((count, group) => count + Number(group.dataset.resultCount), 0)
+                        + items.filter((item) => item.dataset.repeated !== 'true' && item.dataset.slow === 'true').length,
+                    read: items.filter((item) => item.dataset.type === 'read').length,
+                    write: items.filter((item) => item.dataset.type === 'write').length,
+                };
+
+                return Object.entries(expected).every(([filter, count]) =>
+                    Number(document.querySelector(`[data-ndb-query-filter-count="${filter}"]`).textContent.trim()) === count
+                );
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const tabs = document.querySelector('[aria-label="Filter queries"]').getBoundingClientRect();
+                const count = document.querySelector('[data-ndb-query-result-count]').getBoundingClientRect();
+                const search = document.querySelector('[data-ndb-query-search]').getBoundingClientRect();
+
+                return tabs.bottom <= count.top
+                    && tabs.bottom <= search.top
+                    && count.right < search.left;
+            })()
+            JS)
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
         ->assertScript('document.querySelector("[data-ndb-query-result-count]").textContent.replace(/\\s+/g, " ").trim() === "3 results"')
@@ -1340,6 +1392,14 @@ it('filters retained history and compares the current path', function () {
     assertDebugSectionSelected($page, 'history');
 
     $page
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-history-warning]')).every((button) => {
+                const style = getComputedStyle(button);
+
+                return parseFloat(style.borderBottomLeftRadius) > 0
+                    && style.borderTopColor === style.borderBottomColor;
+            })
+            JS)
         ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length >= 2')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-history-profile][data-runtime="true"]'))

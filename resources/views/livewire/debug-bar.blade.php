@@ -837,44 +837,32 @@
                                         <div data-ndb-timeline-toolbar>
                                             <div
                                                 data-ndb-timeline-tabs
-                                                class="ndb:scrollbar ndb:flex ndb:overflow-x-auto ndb:border-b ndb:border-zinc-200/80 ndb:dark:border-zinc-800"
+                                                class="ndb:scrollbar ndb:flex ndb:gap-1 ndb:overflow-x-auto"
                                                 role="group"
                                                 aria-label="Filter timeline"
                                             >
-                                                <button
-                                                    type="button"
+                                                <x-newdebugbar::filter-tab
                                                     data-ndb-timeline-filter="key"
                                                     @click="setTimelineFilter('key')"
-                                                    :aria-pressed="timelineFilter === 'key'"
-                                                    class="ndb:-mb-px ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                    :class="timelineFilter === 'key'
-                                                        ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                                                        : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                    ::aria-pressed="timelineFilter === 'key'"
                                                 >
-                                                    Key activity</button
-                                                ><button
-                                                    type="button"
+                                                    Key activity
+                                                </x-newdebugbar::filter-tab>
+                                                <x-newdebugbar::filter-tab
                                                     data-ndb-timeline-filter="all"
                                                     @click="setTimelineFilter('all')"
-                                                    :aria-pressed="timelineFilter === 'all'"
-                                                    class="ndb:-mb-px ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                    :class="timelineFilter === 'all'
-                                                        ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                                                        : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                    ::aria-pressed="timelineFilter === 'all'"
                                                 >
                                                     All
-                                                </button>
+                                                </x-newdebugbar::filter-tab>
                                                 @foreach ($timelineSections as $timelineSection)
-                                                    <button
-                                                        type="button"
+                                                    <x-newdebugbar::filter-tab
                                                         data-ndb-timeline-filter="{{ $timelineSection }}"
-                                                        @click="setTimelineFilter(@js($timelineSection))"
-                                                        :aria-pressed="timelineFilter === @js($timelineSection)"
-                                                        class="ndb:-mb-px ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                        :class="timelineFilter === @js($timelineSection) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                        @click="setTimelineFilter({{ \Illuminate\Support\Js::from($timelineSection) }})"
+                                                        ::aria-pressed="timelineFilter === {{ \Illuminate\Support\Js::from($timelineSection) }}"
                                                     >
                                                         {{ str($timelineSection)->title() }}
-                                                    </button>
+                                                    </x-newdebugbar::filter-tab>
                                                 @endforeach
                                             </div>
                                         </div>
@@ -2465,22 +2453,23 @@
                                                 <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                                     Source
                                                 </p>
-                                                <div class="ndb:flex" role="group" aria-label="Filter events by source">
+                                                <div
+                                                    class="ndb:flex ndb:gap-1 ndb:overflow-x-auto"
+                                                    role="group"
+                                                    aria-label="Filter events by source"
+                                                >
                                                     @foreach (['application' => 'Application', 'all' => 'All', 'framework' => 'Framework'] as $source => $label)
-                                                        <button
-                                                            type="button"
+                                                        <x-newdebugbar::filter-tab
                                                             data-ndb-event-source="{{ $source }}"
-                                                            @click="setEventSource(@js($source))"
-                                                            :aria-pressed="eventSource === @js($source)"
-                                                            class="ndb:flex ndb:shrink-0 ndb:items-baseline ndb:gap-1.5 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                            :class="eventSource === @js($source) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                            @click="setEventSource({{ \Illuminate\Support\Js::from($source) }})"
+                                                            ::aria-pressed="eventSource === {{ \Illuminate\Support\Js::from($source) }}"
                                                         >
                                                             <span>{{ $label }}</span>
                                                             <span
                                                                 data-ndb-event-source-count="{{ $source }}"
                                                                 class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
                                                             >{{ $eventSourceCounts[$source] ?? 0 }}</span>
-                                                        </button>
+                                                        </x-newdebugbar::filter-tab>
                                                     @endforeach
                                                 </div>
                                             </div>
@@ -2551,28 +2540,26 @@
                                                 <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                                     Level
                                                 </p>
-                                                <div class="ndb:flex ndb:overflow-x-auto">
-                                                    <button
-                                                        type="button"
+                                                <div
+                                                    class="ndb:flex ndb:gap-1 ndb:overflow-x-auto"
+                                                    role="group"
+                                                    aria-label="Filter logs by level"
+                                                >
+                                                    <x-newdebugbar::filter-tab
                                                         data-ndb-log-level="all"
                                                         @click="setLogLevel('all')"
-                                                        class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                        :class="logLevel === 'all'
-                                                            ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                                                            : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                        ::aria-pressed="logLevel === 'all'"
                                                     >
                                                         All
-                                                    </button>
+                                                    </x-newdebugbar::filter-tab>
                                                     @foreach ($logLevels as $level)
-                                                        <button
-                                                            type="button"
+                                                        <x-newdebugbar::filter-tab
                                                             data-ndb-log-level="{{ $level }}"
-                                                            @click="setLogLevel(@js($level))"
-                                                            class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                            :class="logLevel === @js($level) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                            @click="setLogLevel({{ \Illuminate\Support\Js::from($level) }})"
+                                                            ::aria-pressed="logLevel === {{ \Illuminate\Support\Js::from($level) }}"
                                                         >
                                                             {{ strtoupper($level) }}
-                                                        </button>
+                                                        </x-newdebugbar::filter-tab>
                                                     @endforeach
                                                 </div>
                                             </div>
@@ -2849,18 +2836,15 @@
                                         /></label>
                                     </div>
                                 </details>
-                                <div class="ndb:flex ndb:items-center ndb:gap-1 ndb:border-b ndb:border-zinc-200/80 ndb:pb-2 ndb:dark:border-zinc-800">
+                                <div class="ndb:flex ndb:items-center ndb:gap-1 ndb:overflow-x-auto">
                                     @foreach (['all' => 'All', 'warning' => 'Warnings', 'clean' => 'Clean'] as $filter => $label)
-                                        <button
-                                            type="button"
+                                        <x-newdebugbar::filter-tab
                                             data-ndb-history-warning="{{ $filter }}"
-                                            @click="setHistoryWarning(@js($filter))"
-                                            :aria-pressed="historyWarning === @js($filter)"
-                                            class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
-                                            :class="historyWarning === @js($filter) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                            @click="setHistoryWarning({{ \Illuminate\Support\Js::from($filter) }})"
+                                            ::aria-pressed="historyWarning === {{ \Illuminate\Support\Js::from($filter) }}"
                                         >
                                             {{ $label }}
-                                        </button>
+                                        </x-newdebugbar::filter-tab>
                                     @endforeach
                                     <button
                                         type="button"

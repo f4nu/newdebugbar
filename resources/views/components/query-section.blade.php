@@ -4,7 +4,19 @@
     'queryExplainErrors' => [],
 ])
 
-@php($querySummary = $section['summary'])
+@php
+    $querySummary = $section['summary'];
+    $queryItems = $section['payload']['items'] ?? [];
+    $queryRepeatedGroups = $section['payload']['repeated_groups'] ?? [];
+    $queryAttentionCount = array_sum(array_column($queryRepeatedGroups, 'count'))
+        + count(array_filter($queryItems, fn (array $query): bool => ($query['slow'] ?? false) && ! ($query['repeated'] ?? false)));
+    $queryFilters = [
+        'all' => ['All', $querySummary['total_count']],
+        'attention' => ['Needs attention', $queryAttentionCount],
+        'read' => ['Reads', $querySummary['read_count']],
+        'write' => ['Writes', $querySummary['write_count']],
+    ];
+@endphp
 
 <div data-ndb-queries class="ndb:space-y-4">
     <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
@@ -33,23 +45,30 @@
         </dl>
     </div>
 
-    <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between">
-        <div class="ndb:min-w-0">
-            <div class="ndb:flex ndb:gap-1 ndb:overflow-x-auto" role="group" aria-label="Filter queries">
-                @foreach (['all' => 'All', 'attention' => 'Needs attention', 'read' => 'Reads', 'write' => 'Writes'] as $filter => $label)
-                    <button
-                        type="button"
-                        data-ndb-query-filter="{{ $filter }}"
-                        @click="setQueryFilter(@js($filter))"
-                        :aria-pressed="queryFilter === @js($filter)"
-                        class="ndb:whitespace-nowrap ndb:rounded-lg ndb:border ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
-                        :class="queryFilter === @js($filter) ? 'ndb:border-indigo-200 ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:border-indigo-900 ndb:dark:bg-indigo-950/60 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:bg-zinc-100/70 ndb:text-zinc-500 ndb:hover:bg-zinc-200/70 ndb:hover:text-zinc-950 ndb:dark:bg-zinc-900/70 ndb:dark:text-zinc-400 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white'"
-                    >
-                        {{ $label }}
-                    </button>
-                @endforeach
-            </div>
-        </div>
+    <div class="ndb:flex ndb:gap-1 ndb:overflow-x-auto" role="group" aria-label="Filter queries">
+        @foreach ($queryFilters as $filter => [$label, $count])
+            <x-newdebugbar::filter-tab
+                data-ndb-query-filter="{{ $filter }}"
+                @click="setQueryFilter({{ \Illuminate\Support\Js::from($filter) }})"
+                ::aria-pressed="queryFilter === {{ \Illuminate\Support\Js::from($filter) }}"
+            >
+                <span>{{ $label }}</span>
+                <span
+                    data-ndb-query-filter-count="{{ $filter }}"
+                    class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
+                >{{ $count }}</span>
+            </x-newdebugbar::filter-tab>
+        @endforeach
+    </div>
+
+    <div class="ndb:flex ndb:flex-col ndb:gap-2 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between">
+        <p
+            data-ndb-query-result-count
+            class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+        >
+            <span x-text="visibleQueryCount"></span>
+            <span x-text="visibleQueryCount === 1 ? 'result' : 'results'">results</span>
+        </p>
         <div class="ndb:grid ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_auto] ndb:gap-2 ndb:sm:w-[25rem]">
             <label class="ndb:relative ndb:min-w-0">
                 <span class="ndb:sr-only">Search queries</span>
@@ -84,11 +103,6 @@
             </label>
         </div>
     </div>
-
-    <p data-ndb-query-result-count class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
-        <span x-text="visibleQueryCount"></span>
-        <span x-text="visibleQueryCount === 1 ? 'result' : 'results'">results</span>
-    </p>
 
     <div x-ref="queryResults" x-init="$nextTick(() => applyQueryView())" class="ndb:space-y-3">
         @foreach ($section['payload']['items'] as $query)

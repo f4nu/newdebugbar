@@ -164,6 +164,7 @@ function stabilizeVisualDebugValues($page): void
                 const summaryValue = parent?.closest('[data-ndb-query-summary-value]')?.dataset.ndbQuerySummaryValue;
                 const preservesQueryEvidence = parent?.closest(`
                     [data-ndb-query-finding-summary],
+                    [data-ndb-query-filter-count],
                     [data-ndb-query-result-count],
                     [data-ndb-query-group-count],
                     [data-ndb-query-group-extra],
