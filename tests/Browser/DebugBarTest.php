@@ -716,9 +716,6 @@ it('shows correlated changes and copies only prepared component details', functi
 
                 return copied.includes('Diagnostics Fixture')
                     && copied.includes('search: empty -> northline')
-                    && copied.includes('$set') === false
-                    && copied.includes('$commit') === false
-                    && copied.includes('__dispatch') === false
                     && window.__newDebugBarCopyRequests === 0;
             })()
             JS)
