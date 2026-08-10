@@ -944,6 +944,20 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->assertSee('tests/views/context.blade.php')
         ->assertPresent('[data-ndb-view-data]')
         ->assertScript('document.querySelector("[data-ndb-view-data-details]").open === false')
+        ->assertScript(<<<'JS'
+            (() => {
+                const render = document.querySelector('[data-ndb-view-render]');
+                const renderHeader = render?.querySelector('[data-ndb-view-render-order]')?.parentElement;
+                const viewDataSummary = render?.querySelector('[data-ndb-view-data-details] > summary');
+
+                return render !== null
+                    && renderHeader !== null
+                    && viewDataSummary !== null
+                    && getComputedStyle(renderHeader).alignItems === 'baseline'
+                    && viewDataSummary.getBoundingClientRect().width < render.getBoundingClientRect().width
+                    && Math.abs(viewDataSummary.getBoundingClientRect().right - render.getBoundingClientRect().right) <= 1;
+            })()
+            JS)
         ->click('[data-ndb-view-data-details] > summary')
         ->assertVisible('[data-ndb-view-data]')
         ->assertSee('view-data-value')
@@ -964,6 +978,20 @@ it('presents Laravel decisions lifecycle messages and source context without edi
                     && getComputedStyle(property).color !== getComputedStyle(string).color;
             })()
             JS)
+        ->resize(390, 844)
+        ->assertScript(<<<'JS'
+            (() => {
+                const render = document.querySelector('[data-ndb-view-render]');
+                const viewDataSummary = render?.querySelector('[data-ndb-view-data-details] > summary');
+
+                return render !== null
+                    && viewDataSummary !== null
+                    && document.documentElement.scrollWidth <= document.documentElement.clientWidth
+                    && viewDataSummary.getBoundingClientRect().left >= render.getBoundingClientRect().left
+                    && viewDataSummary.getBoundingClientRect().right <= render.getBoundingClientRect().right + 1;
+            })()
+            JS)
+        ->resize(1440, 900)
         ->assertMissing('a[href^="vscode://file/"]')
         ->click('[data-ndb-select-section="events"]')
         ->click('[data-ndb-event-item]:first-child summary')

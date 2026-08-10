@@ -2321,7 +2321,7 @@
                                                                     @foreach ($group['items'] as $view)
                                                                         @php($viewData = is_array($view['data'] ?? null) ? $view['data'] : [])
                                                                         <article data-ndb-view-render class="ndb:py-4">
-                                                                            <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
+                                                                            <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
                                                                                 <span
                                                                                     data-ndb-view-render-order
                                                                                     class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
@@ -2339,11 +2339,11 @@
                                                                                 data-ndb-view-data-details
                                                                                 class="ndb:mt-3"
                                                                             >
-                                                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-2 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:transition ndb:hover:bg-zinc-100/70 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900/70">
+                                                                                <summary class="ndb:ml-auto ndb:flex ndb:w-fit ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-2 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:transition ndb:hover:bg-zinc-100/70 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900/70">
                                                                                     <span>View data</span>
                                                                                     <span
                                                                                         data-ndb-view-data-count
-                                                                                        class="ndb:ml-auto ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
+                                                                                        class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
                                                                                         >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span
                                                                                     ><x-newdebugbar::icon
                                                                                         name="chevron-down"
