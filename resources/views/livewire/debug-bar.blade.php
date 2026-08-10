@@ -831,72 +831,15 @@
                                     @if ($sectionKey === 'timeline')
                                         @php($timelineItems = $section['payload']['items'])
                                         @php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
-                                        @php($timelineMoreSections = array_values(array_filter($timelineSections, fn ($timelineSection) => $timelineSection !== 'request')))
+                                        @php($timelineSourceSections = array_values(array_filter($timelineSections, fn ($timelineSection) => $timelineSection !== 'request')))
                                         @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
                                         @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
                                         @php($timelineTicks = [0, 25, 50, 75, 100])
-                                        <div
-                                            data-ndb-timeline-toolbar
-                                            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2"
-                                        >
+                                        <div data-ndb-timeline-results-header class="ndb:space-y-3">
                                             <div
-                                                data-ndb-timeline-tabs
-                                                class="ndb:flex ndb:gap-1"
-                                                role="group"
-                                                aria-label="Timeline view"
+                                                data-ndb-timeline-overview
+                                                class="ndb:flex ndb:flex-wrap ndb:items-end ndb:justify-between ndb:gap-3"
                                             >
-                                                <x-newdebugbar::filter-tab
-                                                    data-ndb-timeline-filter="key"
-                                                    @click="setTimelineFilter('key')"
-                                                    ::aria-pressed="timelineFilter === 'key'"
-                                                >
-                                                    Key activity
-                                                </x-newdebugbar::filter-tab>
-                                                <x-newdebugbar::filter-tab
-                                                    data-ndb-timeline-filter="all"
-                                                    @click="setTimelineFilter('all')"
-                                                    ::aria-pressed="timelineFilter === 'all'"
-                                                >
-                                                    All
-                                                </x-newdebugbar::filter-tab>
-                                                <x-newdebugbar::filter-tab
-                                                    data-ndb-timeline-filter="request"
-                                                    @click="setTimelineFilter('request')"
-                                                    ::aria-pressed="timelineFilter === 'request'"
-                                                >
-                                                    Request
-                                                </x-newdebugbar::filter-tab>
-                                            </div>
-                                            <label class="ndb:relative ndb:min-w-40 ndb:flex-1 ndb:sm:flex-none">
-                                                <span class="ndb:sr-only">Filter timeline by source</span>
-                                                <select
-                                                    data-ndb-timeline-more
-                                                    x-effect="
-                                                        $el.value = ['key', 'all', 'request'].includes(timelineFilter)
-                                                            ? ''
-                                                            : timelineFilter
-                                                    "
-                                                    @change="setTimelineFilter($event.target.value)"
-                                                    class="ndb:h-9 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                                                >
-                                                    <option value="" disabled>More activity</option>
-                                                    @foreach ($timelineMoreSections as $timelineSection)
-                                                        <option value="{{ $timelineSection }}">
-                                                            {{ str($timelineSection)->replace('_', ' ')->title() }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                <x-newdebugbar::icon
-                                                    name="chevron-down"
-                                                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                                                />
-                                            </label>
-                                        </div>
-                                        <div
-                                            data-ndb-timeline-results-header
-                                            class="ndb:flex ndb:flex-col ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end ndb:sm:justify-between"
-                                        >
-                                            <div class="ndb:flex ndb:flex-wrap ndb:items-end ndb:justify-between ndb:gap-3 ndb:sm:min-w-0 ndb:sm:flex-1 ndb:sm:justify-start ndb:sm:gap-6">
                                                 <div>
                                                     <h3 class="ndb:text-xs ndb:font-bold">Waterfall</h3>
                                                     <p
@@ -920,18 +863,52 @@
                                                         >Event</span>
                                                 </div>
                                             </div>
-                                            <label class="ndb:min-w-0 ndb:sm:w-64 ndb:sm:shrink-0"
-                                                ><span
-                                                    class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
-                                                    >Search activity</span
-                                                ><input
-                                                    data-ndb-timeline-search
-                                                    x-model="timelineSearch"
-                                                    @input.debounce.100ms="applyTimelineFilters()"
-                                                    type="search"
-                                                    placeholder="Event or section"
-                                                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                                            /></label>
+                                            <div
+                                                data-ndb-timeline-toolbar
+                                                class="ndb:grid ndb:w-full ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] ndb:gap-2 ndb:sm:grid-cols-[12rem_16rem] ndb:sm:justify-between"
+                                            >
+                                                <label class="ndb:min-w-0"
+                                                    ><span
+                                                        class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                        >Show activity</span
+                                                    ><span class="ndb:relative ndb:block"
+                                                        ><select
+                                                            data-ndb-timeline-filter
+                                                            x-model="timelineFilter"
+                                                            @change="setTimelineFilter($event.target.value)"
+                                                            class="ndb:h-9 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                                        >
+                                                            <optgroup label="View">
+                                                                <option value="key">Key activity</option>
+                                                                <option value="all">All activity</option>
+                                                            </optgroup>
+                                                            <optgroup label="Source">
+                                                                <option value="request">Request</option>
+                                                                @foreach ($timelineSourceSections as $timelineSection)
+                                                                    <option value="{{ $timelineSection }}">
+                                                                        {{ str($timelineSection)->replace('_', ' ')->title() }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </optgroup>
+                                                        </select>
+                                                        <x-newdebugbar::icon
+                                                            name="chevron-down"
+                                                            class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                                                        /> </span
+                                                ></label>
+                                                <label class="ndb:min-w-0"
+                                                    ><span
+                                                        class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                        >Search activity</span
+                                                    ><input
+                                                        data-ndb-timeline-search
+                                                        x-model="timelineSearch"
+                                                        @input.debounce.100ms="applyTimelineFilters()"
+                                                        type="search"
+                                                        placeholder="Event or section"
+                                                        class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                                /></label>
+                                            </div>
                                         </div>
                                         <div
                                             data-ndb-timeline-waterfall

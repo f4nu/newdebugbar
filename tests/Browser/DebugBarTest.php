@@ -638,49 +638,42 @@ it('filters the timeline without inventing spans for point events', function () 
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
+                const toolbarBounds = toolbar.getBoundingClientRect();
+                const overview = document.querySelector('[data-ndb-timeline-overview]').getBoundingClientRect();
+                const filter = document.querySelector('[data-ndb-timeline-filter]').getBoundingClientRect();
                 const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
-                const resultsHeader = document.querySelector('[data-ndb-timeline-results-header]').getBoundingClientRect();
 
-                return toolbar.getBoundingClientRect().bottom <= resultsHeader.top
-                    && toolbar.scrollWidth <= toolbar.clientWidth
-                    && search.top >= resultsHeader.top
-                    && search.bottom <= resultsHeader.bottom;
+                return overview.bottom <= toolbarBounds.top
+                    && Math.abs(filter.left - toolbarBounds.left) <= 1
+                    && Math.abs(search.right - toolbarBounds.right) <= 1
+                    && filter.right <= search.left
+                    && toolbar.scrollWidth <= toolbar.clientWidth;
             })()
             JS)
-        ->assertScript('document.querySelectorAll("[data-ndb-timeline-filter]").length', 3)
+        ->assertMissing('[data-ndb-timeline-tabs]')
+        ->assertValue('[data-ndb-timeline-filter]', 'key')
         ->assertScript(<<<'JS'
             (() => {
-                const values = Array.from(document.querySelector('[data-ndb-timeline-more]').options)
+                const values = Array.from(document.querySelector('[data-ndb-timeline-filter]').options)
                     .map((option) => option.value);
 
-                return values[0] === ''
-                    && !values.includes('request')
+                return JSON.stringify(values.slice(0, 3)) === JSON.stringify(['key', 'all', 'request'])
+                    && new Set(values).size === values.length
                     && values.includes('lifecycle')
                     && values.includes('queries')
                     && values.includes('events');
             })()
             JS)
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-filter=key]")).whiteSpace === "nowrap"')
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-filter]')).every((button) => {
-                const style = getComputedStyle(button);
-
-                return parseFloat(style.borderBottomLeftRadius) > 0
-                    && style.borderTopColor === style.borderBottomColor;
-            })
-            JS)
-        ->keys('[data-ndb-timeline-filter="all"]', 'Enter')
-        ->assertAttribute('[data-ndb-timeline-filter="all"]', 'aria-pressed', 'true')
-        ->assertValue('[data-ndb-timeline-more]', '')
+        ->select('[data-ndb-timeline-filter]', 'all')
+        ->assertValue('[data-ndb-timeline-filter]', 'all')
         ->assertScript('document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").getBoundingClientRect().left > document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").parentElement.parentElement.getBoundingClientRect().left + 4')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
         ->assertScript(<<<'JS'
             Number(document.querySelector('[data-ndb-section-panel="timeline"] [x-text="visibleTimelineCount"]').textContent)
                 === document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])').length
             JS)
-        ->select('[data-ndb-timeline-more]', 'queries')
-        ->assertValue('[data-ndb-timeline-more]', 'queries')
-        ->assertScript('document.querySelectorAll("[data-ndb-timeline-filter][aria-pressed=true]").length', 0)
+        ->select('[data-ndb-timeline-filter]', 'queries')
+        ->assertValue('[data-ndb-timeline-filter]', 'queries')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
                 .every((item) => item.dataset.section === 'queries')
@@ -703,15 +696,14 @@ it('filters the timeline without inventing spans for point events', function () 
                         && mark.right <= track.right + 1;
                 })
             JS)
-        ->select('[data-ndb-timeline-more]', 'events')
+        ->select('[data-ndb-timeline-filter]', 'events')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
                 .every((item) => item.dataset.kind === 'point'
                     && item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect().width > 0)
             JS)
-        ->click('[data-ndb-timeline-filter="request"]')
-        ->assertAttribute('[data-ndb-timeline-filter="request"]', 'aria-pressed', 'true')
-        ->assertValue('[data-ndb-timeline-more]', '')
+        ->select('[data-ndb-timeline-filter]', 'request')
+        ->assertValue('[data-ndb-timeline-filter]', 'request')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
                 .every((item) => item.dataset.section === 'request')
@@ -724,10 +716,14 @@ it('filters the timeline without inventing spans for point events', function () 
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
+                const toolbarBounds = toolbar.getBoundingClientRect();
+                const filter = document.querySelector('[data-ndb-timeline-filter]').getBoundingClientRect();
+                const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
 
                 return toolbar.scrollWidth <= toolbar.clientWidth
-                    && document.querySelector('[data-ndb-timeline-tabs]').scrollWidth
-                        <= document.querySelector('[data-ndb-timeline-tabs]').clientWidth;
+                    && Math.abs(filter.left - toolbarBounds.left) <= 1
+                    && Math.abs(search.right - toolbarBounds.right) <= 1
+                    && filter.right <= search.left;
             })()
             JS)
         ->type('[data-ndb-timeline-search]', 'nothing can match this')
