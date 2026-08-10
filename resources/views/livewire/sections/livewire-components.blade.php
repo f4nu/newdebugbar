@@ -12,7 +12,10 @@
 
     <div class="ndb:mt-3 ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800">
         @forelse ($livewire['components'] ?? [] as $component)
-            <article data-ndb-livewire-component="{{ $component['id'] }}" class="ndb:border-b ndb:border-zinc-200 ndb:py-4 ndb:dark:border-zinc-800">
+            <article
+                data-ndb-livewire-component="{{ $component['id'] }}"
+                class="ndb:border-b ndb:border-zinc-200 ndb:py-4 ndb:dark:border-zinc-800"
+            >
                 <div style="padding-left: {{ $component['depth'] * 16 }}px">
                     <div class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-start ndb:gap-x-3 ndb:gap-y-1">
                         <div class="ndb:min-w-0 ndb:flex-1">
@@ -21,7 +24,10 @@
                                 {{ $component['class'] ?? 'Class unknown' }}
                             </p>
                         </div>
-                        <code class="ndb:text-[10px] ndb:text-zinc-400" title="Mount-scoped instance ID">{{ $component['short_id'] }}</code>
+                        <code
+                            class="ndb:text-[10px] ndb:text-zinc-400"
+                            title="Mount-scoped instance ID"
+                        >{{ $component['short_id'] }}</code>
                     </div>
 
                     <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-3 ndb:text-[10px] ndb:sm:grid-cols-4">
@@ -36,11 +42,15 @@
                         </div>
                         <div>
                             <dt class="ndb:text-zinc-400">Message result</dt>
-                            <dd class="ndb:mt-0.5 ndb:font-bold">{{ ucfirst(str_replace('_', ' ', $component['message_result'])) }}</dd>
+                            <dd class="ndb:mt-0.5 ndb:font-bold">
+                                {{ ucfirst(str_replace('_', ' ', $component['message_result'])) }}
+                            </dd>
                         </div>
                         <div>
                             <dt class="ndb:text-zinc-400">Parent</dt>
-                            <dd class="ndb:mt-0.5 ndb:truncate ndb:font-bold">{{ $component['parent_name'] ?? 'Not observed' }}</dd>
+                            <dd class="ndb:mt-0.5 ndb:truncate ndb:font-bold">
+                                {{ $component['parent_name'] ?? 'Not observed' }}
+                            </dd>
                         </div>
                     </dl>
 
@@ -65,20 +75,34 @@
                     @if ($component['actions'] !== [] || $component['state_changes'] !== [])
                         <div class="ndb:mt-3 ndb:grid ndb:gap-3 ndb:sm:grid-cols-2">
                             <div>
-                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Actions</p>
+                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                    Actions
+                                </p>
                                 <ul class="ndb:mt-1 ndb:list-none ndb:space-y-1">
                                     @forelse ($component['actions'] as $action)
-                                        <li class="ndb:text-xs"><span class="ndb:font-bold">{{ $action['name'] }}</span> <span class="ndb:text-zinc-400">{{ $action['kind_label'] }}</span></li>
+                                        <li class="ndb:text-xs">
+                                            <span class="ndb:font-bold">{{ $action['name'] }}</span>
+                                            <span class="ndb:text-zinc-400">{{ $action['kind_label'] }}</span>
+                                        </li>
                                     @empty
                                         <li class="ndb:text-xs ndb:text-zinc-400">None observed</li>
                                     @endforelse
                                 </ul>
                             </div>
                             <div>
-                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Changed state</p>
+                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                    Changed state
+                                </p>
                                 <ul class="ndb:mt-1 ndb:list-none ndb:space-y-1">
                                     @forelse ($component['state_changes'] as $change)
-                                        <li class="ndb:flex ndb:gap-2 ndb:text-xs"><code class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $change['path'] }}</code><span class="ndb:max-w-[55%] ndb:truncate ndb:text-zinc-400">{{ $change['server_display'] }}</span></li>
+                                        <li class="ndb:flex ndb:gap-2 ndb:text-xs">
+                                            <code
+                                                class="ndb:min-w-0 ndb:flex-1 ndb:truncate"
+                                                >{{ $change['path'] }}</code
+                                            ><span
+                                                class="ndb:max-w-[55%] ndb:truncate ndb:text-zinc-400"
+                                                >{{ $change['server_display'] }}</span>
+                                        </li>
                                     @empty
                                         <li class="ndb:text-xs ndb:text-zinc-400">None observed</li>
                                     @endforelse

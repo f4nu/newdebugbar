@@ -19,9 +19,7 @@
             </p>
         </div>
         <div class="ndb:border-t ndb:border-zinc-200 ndb:pt-4 ndb:lg:border-t-0 ndb:lg:border-l ndb:lg:pt-0 ndb:lg:pl-5 ndb:dark:border-zinc-800">
-            <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                Result
-            </p>
+            <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Result</p>
             <p class="ndb:mt-1 ndb:text-sm ndb:font-bold">{{ $outcome['title'] ?? 'Result unknown' }}</p>
             <p class="ndb:mt-1 ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
                 {{ $outcome['detail'] ?? 'No result details were observed.' }}
@@ -29,7 +27,10 @@
         </div>
     </div>
 
-    <dl data-ndb-livewire-facts class="ndb:grid ndb:grid-cols-2 ndb:border-y ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:dark:border-zinc-800">
+    <dl
+        data-ndb-livewire-facts
+        class="ndb:grid ndb:grid-cols-2 ndb:border-y ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:dark:border-zinc-800"
+    >
         @foreach ($livewire['facts'] ?? [] as $fact)
             <div class="ndb:py-3 ndb:nth-[n+3]:border-t ndb:sm:nth-[n+3]:border-t-0 ndb:not-last:sm:border-r ndb:border-zinc-200 ndb:sm:px-4 ndb:first:sm:pl-0 ndb:dark:border-zinc-800">
                 <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
@@ -52,6 +53,36 @@
             </p>
         </div>
     @endforeach
+
+    @if (($livewire['findings'] ?? []) !== [])
+        <section data-ndb-livewire-findings class="ndb:border-y ndb:border-zinc-200 ndb:dark:border-zinc-800">
+            <div class="ndb:py-3">
+                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                    Next check
+                </p>
+                @foreach ($livewire['findings'] as $finding)
+                    <div
+                        data-ndb-livewire-finding="{{ $finding['rule_id'] }}"
+                        class="ndb:mt-2 ndb:grid ndb:gap-2 ndb:sm:grid-cols-[minmax(0,1fr)_minmax(14rem,0.65fr)]"
+                    >
+                        <div>
+                            <h4 class="ndb:text-xs ndb:font-bold">{{ $finding['summary'] }}</h4>
+                            @if ($finding['why'])
+                                <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    {{ $finding['why'] }}
+                                </p>
+                            @endif
+                        </div>
+                        @if ($finding['next'])
+                            <p class="ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:border-l ndb:sm:border-zinc-200 ndb:sm:pl-3 ndb:dark:text-zinc-400 ndb:dark:sm:border-zinc-800">
+                                {{ $finding['next'] }}
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <div
         role="tablist"

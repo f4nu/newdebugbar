@@ -6,18 +6,29 @@
         </div>
         <div class="ndb:mt-3 ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800">
             @forelse (array_slice($livewire['state_changes'] ?? [], 0, 6) as $change)
-                <div data-ndb-livewire-state-change="{{ $change['id'] }}" class="ndb:border-b ndb:border-zinc-200 ndb:py-3 ndb:dark:border-zinc-800">
+                <div
+                    data-ndb-livewire-state-change="{{ $change['id'] }}"
+                    class="ndb:border-b ndb:border-zinc-200 ndb:py-3 ndb:dark:border-zinc-800"
+                >
                     <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
                         <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $change['path'] }}</code>
                         <span class="ndb:text-[10px] ndb:text-zinc-400">{{ $change['component_name'] }}</span>
                     </div>
                     <div class="ndb:mt-1.5 ndb:grid ndb:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] ndb:items-center ndb:gap-2 ndb:text-xs">
-                        <span class="ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400" title="{{ $change['before_display'] }}">{{ $change['before_display'] }}</span>
+                        <span
+                            class="ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            title="{{ $change['before_display'] }}"
+                        >{{ $change['before_display'] }}</span>
                         <span aria-label="changed to" class="ndb:text-zinc-300 ndb:dark:text-zinc-700">→</span>
-                        <span class="ndb:truncate ndb:font-semibold" title="{{ $change['server_display'] }}">{{ $change['server_display'] }}</span>
+                        <span
+                            class="ndb:truncate ndb:font-semibold"
+                            title="{{ $change['server_display'] }}"
+                        >{{ $change['server_display'] }}</span>
                     </div>
                     @if ($change['redacted'])
-                        <p class="ndb:mt-1.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">Secret value stayed hidden.</p>
+                        <p class="ndb:mt-1.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">
+                            Secret value stayed hidden.
+                        </p>
                     @elseif ($change['submitted_material'] || $change['browser_status'] === 'observed')
                         <details class="ndb:mt-2">
                             <summary class="ndb:cursor-pointer ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300">
@@ -30,7 +41,9 @@
                                 @endif
                                 @if ($change['browser_status'] === 'observed')
                                     <dt class="ndb:text-zinc-400">Browser state</dt>
-                                    <dd>{{ $change['browser_matches_server'] === true ? 'Matched server' : ($change['browser_matches_server'] === false ? 'Did not match server' : 'Comparison unknown') }}{{ $change['browser_type'] ? ' ('.$change['browser_type'].')' : '' }}</dd>
+                                    <dd>
+                                        {{ $change['browser_matches_server'] === true ? 'Matched server' : ($change['browser_matches_server'] === false ? 'Did not match server' : 'Comparison unknown') }}{{ $change['browser_type'] ? ' ('.$change['browser_type'].')' : '' }}
+                                    </dd>
                                 @endif
                             </dl>
                         </details>
@@ -48,23 +61,37 @@
         <section data-ndb-livewire-overview-messages>
             <div>
                 <h4 class="ndb:text-xs ndb:font-bold">Messages and effects</h4>
-                <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">Observed results returned by each component message</p>
+                <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">
+                    Observed results returned by each component message
+                </p>
             </div>
             <div class="ndb:mt-3 ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800">
                 @foreach (array_slice($livewire['messages'] ?? [], 0, 6) as $message)
-                    <div data-ndb-livewire-message="{{ $message['id'] }}" class="ndb:border-b ndb:border-zinc-200 ndb:py-3 ndb:dark:border-zinc-800">
+                    <div
+                        data-ndb-livewire-message="{{ $message['id'] }}"
+                        class="ndb:border-b ndb:border-zinc-200 ndb:py-3 ndb:dark:border-zinc-800"
+                    >
                         <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
-                            <p class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $message['component_name'] }}</p>
+                            <p class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">
+                                {{ $message['component_name'] }}
+                            </p>
                             <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $message['result_label'] }}</span>
                         </div>
                         @if ($message['validation_fields'] !== [])
-                            <p class="ndb:mt-1.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">Validation fields: {{ implode(', ', $message['validation_fields']) }}</p>
+                            <p class="ndb:mt-1.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                Validation fields: {{ implode(', ', $message['validation_fields']) }}
+                            </p>
                         @endif
                         @if ($message['redirect'])
-                            <p class="ndb:mt-1.5 ndb:truncate ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">Redirect: {{ $message['redirect'] }}</p>
+                            <p class="ndb:mt-1.5 ndb:truncate ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                Redirect: {{ $message['redirect'] }}
+                            </p>
                         @endif
                         @if ($message['download'])
-                            <p class="ndb:mt-1.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">Download: {{ $message['download']['name'] }}@if ($message['download']['size_bytes'] !== null) {{ number_format($message['download']['size_bytes']) }} bytes @endif</p>
+                            <p class="ndb:mt-1.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                Download: {{ $message['download']['name'] }}
+                                @if ($message['download']['size_bytes'] !== null) {{ number_format($message['download']['size_bytes']) }}bytes @endif
+                            </p>
                         @endif
                     </div>
                 @endforeach
@@ -86,7 +113,10 @@
                     <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:py-3 ndb:dark:border-zinc-800">
                         <div class="ndb:min-w-0 ndb:flex-1">
                             <p class="ndb:truncate ndb:text-xs ndb:font-bold">{{ $component['name'] }}</p>
-                            <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">{{ $component['render_reason_label'] }} <span>{{ $component['render_reason_confidence'] }}</span></p>
+                            <p class="ndb:mt-0.5 ndb:text-[10px] ndb:text-zinc-400">
+                                {{ $component['render_reason_label'] }}
+                                <span>{{ $component['render_reason_confidence'] }}</span>
+                            </p>
                         </div>
                         <code class="ndb:text-[10px] ndb:text-zinc-400">{{ $component['short_id'] }}</code>
                     </div>

@@ -49,10 +49,6 @@ final class ProfilePresenter
 
         $profile = $this->sections->analyze($profile);
 
-        if (isset($profile['sections']['livewire']) && is_array($profile['sections']['livewire'])) {
-            $profile['sections']['livewire'] = $this->livewire->present($profile['sections']['livewire']);
-        }
-
         if (isset($profile['sections']['request'])) {
             $timeline = $this->timeline->build($profile);
             $omittedSources = $this->timeline->omittedSources($profile);
@@ -79,6 +75,14 @@ final class ProfilePresenter
         }
 
         $profile['findings'] = $this->profiles->analyze($profile);
+
+        if (isset($profile['sections']['livewire']) && is_array($profile['sections']['livewire'])) {
+            $profile['sections']['livewire']['payload']['findings'] = array_values(array_filter(
+                $profile['findings'],
+                fn (array $finding): bool => ($finding['section'] ?? null) === 'livewire',
+            ));
+            $profile['sections']['livewire'] = $this->livewire->present($profile['sections']['livewire']);
+        }
 
         return $profile;
     }

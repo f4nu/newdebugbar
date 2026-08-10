@@ -17,6 +17,7 @@ final class LivewirePresenter
         $serverSpans = $this->items($payload['server_spans'] ?? null);
         $browserTrace = $this->array($payload['browser_trace'] ?? null);
         $browserSpans = $this->items($browserTrace['spans'] ?? null);
+        $findings = $this->items($payload['findings'] ?? null);
         $componentNames = [];
 
         foreach ($components as $component) {
@@ -95,6 +96,12 @@ final class LivewirePresenter
                 'lanes' => [$serverLane, $browserLane],
                 'trace_status' => $traceStatus,
                 'notices' => $this->notices($traceStatus, $completeness),
+                'findings' => array_map(fn (array $finding): array => [
+                    'rule_id' => $this->string($finding['rule_id'] ?? null) ?? 'livewire.unknown',
+                    'summary' => $this->string($finding['summary'] ?? null) ?? 'Review this exchange.',
+                    'why' => $this->string($finding['why'] ?? null),
+                    'next' => $this->string($finding['next'] ?? null),
+                ], $findings),
                 'affected_hierarchy_only' => ($completeness['components'] ?? null) !== 'complete',
                 'truncated' => (bool) ($completeness['truncated'] ?? false),
             ],

@@ -254,6 +254,8 @@ it('keeps a seventeen message batch distinct and bounded', function () {
     renderedDiagnosticsBar($profile)
         ->assertSee('Livewire exchange')
         ->assertSee('17 actions ran across this exchange.')
+        ->assertSee('17 Livewire messages ran in one exchange.')
+        ->assertSee('Inspect the message and action links')
         ->assertSee('11 more messages are listed in the profile data.');
 });
 

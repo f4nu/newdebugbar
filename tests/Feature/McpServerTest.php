@@ -11,6 +11,7 @@ use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
 use NewDebugBar\Mcp\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Tools\ListDebugProfiles;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
 
 function captureStructuredContent($response): array
@@ -131,6 +132,196 @@ it('exposes every recorded context section through the bounded section tool', fu
         expect($content['status'])->toBe('ok')
             ->and($content['data']['section'])->toBe($section);
     }
+});
+
+it('exposes Livewire causal records with UI parity and no state values', function () {
+    $profileId = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'schema_version' => 1,
+        'id' => $profileId,
+        'metrics' => ['duration_ms' => 20],
+        'sections' => [
+            'livewire' => [
+                'schema_version' => 1,
+                'profile_revision' => 2,
+                'label' => 'Livewire',
+                'summary' => [
+                    'title' => 'Ran saveReview',
+                    'message_count' => 1,
+                    'action_count' => 1,
+                    'component_count' => 1,
+                    'state_change_count' => 1,
+                    'result' => 'rendered',
+                    'trace_status' => 'complete',
+                ],
+                'payload' => [
+                    'exchange' => [
+                        'id' => 'exchange-1',
+                        'request_id' => $profileId,
+                        'kind' => 'update',
+                        'title' => 'Ran saveReview',
+                        'title_confidence' => 'inferred',
+                        'result' => 'rendered',
+                        'status' => 200,
+                        'path' => '/livewire/update',
+                        'duration_ms' => 20,
+                        'server_clock' => ['type' => 'wall_normalized_to_exchange'],
+                        'browser_clock' => ['type' => 'performance_monotonic_offset', 'status' => 'complete'],
+                    ],
+                    'messages' => [[
+                        'id' => 'message-1',
+                        'request_index' => 0,
+                        'component_id' => 'component-1',
+                        'action_ids' => ['action-1'],
+                        'state_change_ids' => ['change-1'],
+                        'result' => 'rendered',
+                        'validation_errors' => [],
+                        'effects' => ['rendered_html' => true],
+                        'caused_by' => [],
+                    ]],
+                    'actions' => [[
+                        'id' => 'action-1',
+                        'message_id' => 'message-1',
+                        'component_id' => 'component-1',
+                        'kind' => 'action',
+                        'name' => 'saveReview',
+                        'parameters' => ['private-action-value'],
+                        'property_paths' => [],
+                        'execution_status' => 'observed',
+                        'caused_by' => [['type' => 'message', 'id' => 'message-1']],
+                    ]],
+                    'components' => [[
+                        'id' => 'component-1',
+                        'mount_scope' => 'component-1',
+                        'name' => 'diagnostics-fixture',
+                        'class' => 'App\\Livewire\\DiagnosticsFixture',
+                        'source' => ['file' => base_path('app/Livewire/DiagnosticsFixture.php'), 'line' => 8],
+                        'view' => 'resources/views/livewire/diagnostics-fixture.blade.php',
+                        'parent_id' => null,
+                        'depth' => 0,
+                        'rendered' => 'yes',
+                        'render_reason' => ['kind' => 'action', 'action_id' => 'action-1', 'confidence' => 'inferred'],
+                        'completeness' => 'affected_only',
+                    ]],
+                    'state_changes' => [[
+                        'id' => 'change-1',
+                        'action_id' => 'action-1',
+                        'component_id' => 'component-1',
+                        'path' => 'reviewNote',
+                        'type' => 'string',
+                        'before' => 'private-before-value',
+                        'submitted' => 'private-submitted-value',
+                        'server' => 'private-server-value',
+                        'browser' => ['status' => 'observed', 'matches_server' => true, 'type' => 'string'],
+                        'redacted' => false,
+                        'confidence' => 'observed',
+                        'caused_by' => [['type' => 'action', 'id' => 'action-1']],
+                    ]],
+                    'events' => [[
+                        'id' => 'event-1',
+                        'action_id' => 'action-1',
+                        'source_component_id' => 'component-1',
+                        'name' => 'review-saved',
+                        'parameters' => ['note' => 'private-event-value'],
+                        'mode' => 'global',
+                        'declared_target' => null,
+                        'observed_recipient_ids' => [],
+                        'recipient_status' => 'unknown',
+                    ]],
+                    'server_spans' => [[
+                        'id' => 'server-span-1',
+                        'component_id' => 'component-1',
+                        'action_id' => 'action-1',
+                        'phase' => 'call0',
+                        'start_ms' => 2,
+                        'duration_ms' => 5,
+                    ]],
+                    'browser_trace' => [
+                        'status' => 'complete',
+                        'appended_at' => '2026-08-10T12:00:00+00:00',
+                        'raw_values_stored' => false,
+                        'actions' => [[
+                            'action_id' => 'action-1',
+                            'source' => [
+                                'status' => 'observed',
+                                'directive' => 'wire:click',
+                                'element' => 'button',
+                                'contract' => 'livewire_action_origin_v1',
+                            ],
+                        ]],
+                        'spans' => [[
+                            'id' => 'browser-span-1',
+                            'message_id' => 'message-1',
+                            'component_id' => 'component-1',
+                            'phase' => 'request_wait',
+                            'start_ms' => 0,
+                            'duration_ms' => 12,
+                        ]],
+                    ],
+                    'completeness' => [
+                        'messages' => 'complete',
+                        'components' => 'affected_only',
+                        'state' => 'complete',
+                        'events' => 'observed',
+                        'server_spans' => 'observed',
+                        'browser_trace' => 'complete',
+                        'truncated' => false,
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $stored = app(ProfileStore::class)->get($profileId);
+    $ui = app(ProfilePresenter::class)->present($stored);
+    $direct = app(McpProfilePresenter::class)->section($profileId, 'livewire', 0, 50);
+    $response = NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'livewire',
+        'limit' => 50,
+    ])->assertOk()->assertDontSee([
+        'private-action-value',
+        'private-before-value',
+        'private-submitted-value',
+        'private-server-value',
+        'private-event-value',
+    ]);
+    $content = captureStructuredContent($response);
+    $records = collect($content['data']['payload']['items'])->keyBy('record_type');
+
+    expect($content['data']['payload'])
+        ->schema_version->toBe(1)
+        ->profile_revision->toBe(2)
+        ->record_counts->toBe([
+            'message' => 1,
+            'action' => 1,
+            'component' => 1,
+            'state_change' => 1,
+            'event' => 1,
+            'server_span' => 1,
+            'browser_span' => 1,
+        ])
+        ->and($content['data']['payload']['exchange']['title'])
+        ->toBe($ui['sections']['livewire']['payload']['presentation']['headline']['title'])
+        ->and($content['data']['summary']['result'])
+        ->toBe($ui['sections']['livewire']['payload']['presentation']['outcome']['result'])
+        ->and($records['action'])
+        ->id->toBe('action-1')
+        ->message_id->toBe('message-1')
+        ->parameters_included->toBeFalse()
+        ->browser_source->directive->toBe('wire:click')
+        ->and($records['state_change'])
+        ->id->toBe('change-1')
+        ->action_id->toBe('action-1')
+        ->values_included->toBeFalse()
+        ->not->toHaveKeys(['before', 'submitted', 'server'])
+        ->and($records['event'])
+        ->parameters_included->toBeFalse()
+        ->recipient_status->toBe('unknown')
+        ->and($records['component']['source']['file'])->toBe('app/Livewire/DiagnosticsFixture.php')
+        ->and($content['data']['payload']['trace']['raw_values_included'])->toBeFalse();
+
+    expect($direct)->toBe($content);
 });
 
 it('keeps captured mail content out of MCP responses', function () {

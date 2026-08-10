@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
+use NewDebugBar\Analysis\LivewireAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Analysis\QueryAnalyzer;
@@ -72,12 +73,14 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(QueryAnalyzer::class, fn (): QueryAnalyzer => new QueryAnalyzer(
             (float) config('newdebugbar.slow_query_ms', 100),
         ));
+        $this->app->singleton(LivewireAnalyzer::class);
         $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
             queries: $app->make(QueryAnalyzer::class),
             slowRequestMs: (float) config('newdebugbar.slow_request_ms', 1_000),
             minimumCacheOperations: (int) config('newdebugbar.findings.minimum_cache_operations', 5),
             highCacheMissRate: (float) config('newdebugbar.findings.high_cache_miss_rate', 0.8),
             maxFindings: (int) config('newdebugbar.findings.max_findings', 50),
+            livewire: $app->make(LivewireAnalyzer::class),
         ));
         $this->app->singleton(ProfileSummaryPresenter::class);
         $this->app->singleton(ProfileComparator::class);

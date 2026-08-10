@@ -119,6 +119,8 @@ sections.livewire
 
 Raw Livewire snapshots are never stored in this section and are never returned by MCP.
 
+The MCP section read returns a paginated list of typed causal records. Messages, actions, components, state changes, events, server spans, and browser spans keep their stable IDs and links. Action and event parameters are omitted. State-change records include the path, type, redaction status, and browser equality only; before, submitted, server, and browser values are never included.
+
 ## Taxonomies
 
 Trigger kinds:
@@ -202,3 +204,5 @@ Polling, browser-skipped callbacks, and parallel request ordering use the same m
 | Store state diffs, not snapshots | Developers need changes while profiles and MCP must stay bounded and safe. |
 | Keep event declaration and observation separate | A declared target is not proof of a recipient. |
 | Treat missing evidence as a visible product state | Silent omission would make the debugger look more complete than it is. |
+| Start findings with a fixed ten-message batch threshold | It is a clear observed count and yields a review prompt without claiming the batch is wrong or slow. |
+| Return typed causal records from MCP | Agents can follow the same IDs as the UI without receiving state values or snapshots. |
