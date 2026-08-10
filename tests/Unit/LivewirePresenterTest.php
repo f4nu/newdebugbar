@@ -140,7 +140,7 @@ it('builds one truthful Livewire view model with separate timing lanes', functio
 
 it('keeps missing and malformed evidence visible instead of inventing facts', function () {
     $section = (new LivewirePresenter)->present([
-        'summary' => ['trace_status' => 'unknown'],
+        'summary' => 'broken',
         'payload' => [
             'exchange' => ['result' => 'unknown'],
             'messages' => 'broken',
@@ -171,4 +171,67 @@ it('keeps missing and malformed evidence visible instead of inventing facts', fu
             'Some evidence was truncated',
         ])
         ->and($view['events'])->toBe([]);
+});
+
+it('surfaces an observed poll and a browser-skipped callback without changing the server result', function () {
+    $section = (new LivewirePresenter)->present([
+        'summary' => ['title' => 'Refreshed status-panel', 'result' => 'renderless'],
+        'payload' => [
+            'exchange' => [
+                'kind' => 'update',
+                'title' => 'Refreshed status-panel',
+                'title_confidence' => 'inferred',
+                'result' => 'renderless',
+            ],
+            'messages' => [[
+                'id' => 'message-poll',
+                'component_id' => 'component-poll',
+                'result' => 'renderless',
+            ]],
+            'actions' => [[
+                'id' => 'action-poll',
+                'message_id' => 'message-poll',
+                'component_id' => 'component-poll',
+                'kind' => 'refresh',
+                'name' => '$refresh',
+            ]],
+            'components' => [[
+                'id' => 'component-poll',
+                'name' => 'status-panel',
+                'rendered' => 'no',
+            ]],
+            'browser_trace' => [
+                'status' => 'complete',
+                'messages' => [[
+                    'message_id' => 'message-poll',
+                    'outcome' => 'skipped',
+                ]],
+                'actions' => [[
+                    'action_id' => 'action-poll',
+                    'source' => [
+                        'status' => 'observed',
+                        'directive' => 'wire:poll.5s',
+                        'element' => 'div',
+                    ],
+                ]],
+            ],
+        ],
+    ]);
+
+    $view = $section['payload']['presentation'];
+
+    expect($view['headline'])
+        ->title->toBe('Polled status-panel')
+        ->kind->toBe('poll')
+        ->confidence->toBe('inferred')
+        ->detail->toContain('source directive was observed')
+        ->and($view['actions'][0])
+        ->kind->toBe('poll')
+        ->source_label->toBe('wire:poll.5s on <div>')
+        ->and($view['messages'][0])
+        ->result->toBe('renderless')
+        ->browser_outcome->toBe('skipped')
+        ->and($view['outcome'])
+        ->result->toBe('renderless')
+        ->title->toBe('Completed without a render');
 });

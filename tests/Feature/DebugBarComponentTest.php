@@ -4,7 +4,27 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
+use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
+
+it('presents a corrupted partial Livewire section as unknown evidence', function () {
+    $profile = app(ProfilePresenter::class)->present([
+        'metrics' => [],
+        'sections' => [
+            'livewire' => [
+                'summary' => 'corrupted',
+                'payload' => 'corrupted',
+            ],
+        ],
+    ]);
+
+    expect($profile['sections']['livewire'])
+        ->label->toBe('Livewire')
+        ->summary->count->toBe(0)
+        ->payload->presentation->headline->title->toBe('Livewire exchange')
+        ->payload->presentation->outcome->title->toBe('Result is not fully known')
+        ->payload->presentation->events->toBe([]);
+});
 
 it('loads full profile details only after the inspector asks', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();

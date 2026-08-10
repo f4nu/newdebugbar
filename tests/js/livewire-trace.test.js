@@ -359,6 +359,64 @@ test('flushes pending requests before wire navigation without duplicate appends'
   assert.equal(browser.fetches.length, 1);
 });
 
+test('keeps out-of-order Livewire requests correlated to their own profile', async () => {
+  const browser = browserRuntime();
+  installLivewireTrace(browser);
+  const secondProfileId = '770e8400-e29b-41d4-a716-446655440000';
+  const secondNonce = '880e8400-e29b-41d4-a716-446655440000';
+  const secondTraceUrl = `https://viteclinic.test/__newdebugbar/livewire-trace/${secondProfileId}?revision=1&nonce=${secondNonce}&expires=100&signature=signed`;
+
+  const exchanges = [
+    {
+      request: {},
+      component: { id: 'component-first', name: 'first', canonical: {}, reactive: {} },
+      profileId,
+      traceUrl,
+    },
+    {
+      request: {},
+      component: { id: 'component-second', name: 'second', canonical: {}, reactive: {} },
+      profileId: secondProfileId,
+      traceUrl: secondTraceUrl,
+    },
+  ].map((exchange) => {
+    const message = { request: exchange.request, component: exchange.component, updates: {} };
+    const requestCallbacks = callbackHooks([
+      'Send', 'Cancel', 'Failure', 'Response', 'Parsed', 'Error', 'Redirect', 'Success', 'Finish',
+    ], { request: exchange.request });
+    const messageCallbacks = callbackHooks([
+      'Send', 'Cancel', 'Failure', 'Error', 'Success', 'Skipped', 'Finish',
+    ], { message });
+    browser.interceptors.request[0](requestCallbacks.context);
+    browser.interceptors.message[0](messageCallbacks.context);
+    requestCallbacks.hooks.Send();
+    messageCallbacks.hooks.Send();
+
+    return { ...exchange, requestCallbacks, messageCallbacks };
+  });
+
+  for (const exchange of [...exchanges].reverse()) {
+    exchange.requestCallbacks.hooks.Response({
+      response: {
+        status: 200,
+        headers: { get: (name) => ({
+          'X-NewDebugBar-Profile': exchange.profileId,
+          'X-NewDebugBar-Livewire-Trace': exchange.traceUrl,
+        })[name] ?? null },
+      },
+    });
+    exchange.requestCallbacks.hooks.Success({ response: { status: 200 } });
+    exchange.messageCallbacks.hooks.Finish();
+    exchange.requestCallbacks.hooks.Finish();
+  }
+  await tick();
+
+  assert.deepEqual(browser.fetches.map((fetch) => fetch.url), [secondTraceUrl, traceUrl]);
+  assert.deepEqual(browser.fetches.map((fetch) => (
+    JSON.parse(fetch.options.body).messages[0].component_id
+  )), ['component-second', 'component-first']);
+});
+
 test('missing Livewire contracts or trace headers fail without host effects', async () => {
   const unavailable = browserRuntime();
   unavailable.Livewire = {};

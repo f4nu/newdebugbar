@@ -117,15 +117,16 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxChanges: (int) config('newdebugbar.collection.max_items_per_collector', 500),
             maxDepth: (int) config('newdebugbar.collection.max_depth', 5),
         ));
+        $this->app->singleton(LivewireGateway::class);
         $this->app->scoped(InteractionRecorder::class, fn ($app): InteractionRecorder => new InteractionRecorder(
             redactor: $app->make(Redactor::class),
             safeUrl: $app->make(SafeUrl::class),
             stateDiff: $app->make(StateDiff::class),
             context: $app->make(ExecutionContext::class),
+            gateway: $app->make(LivewireGateway::class),
             projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
             maxItems: (int) config('newdebugbar.collection.max_items_per_collector', 500),
         ));
-        $this->app->singleton(LivewireGateway::class);
         $this->app->singleton(LivewireTraceToken::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {

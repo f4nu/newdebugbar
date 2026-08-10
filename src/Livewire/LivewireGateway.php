@@ -6,6 +6,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Request;
 use Livewire\Component;
 use Livewire\Mechanisms\HandleComponents\ComponentContext;
+use ReflectionClass;
 use Throwable;
 
 use function Livewire\on;
@@ -112,6 +113,63 @@ final class LivewireGateway
         }
 
         return $toolbarMessage ? self::PACKAGE_TOOLBAR : self::MALFORMED;
+    }
+
+    /**
+     * Resolve the developer-owned source behind class, single-file, and multi-file components.
+     *
+     * The Livewire finder is an internal contract, so it is contained here and always falls
+     * back to reflection. A missing or changed finder returns truthful unknown evidence.
+     *
+     * @return array{path: string, line: int, kind: string}|null
+     */
+    public function componentSource(Component $component): ?array
+    {
+        try {
+            $finder = $this->app->bound('livewire.finder')
+                ? $this->app->make('livewire.finder')
+                : null;
+            $name = $component->getName();
+
+            if (is_object($finder) && is_string($name) && $name !== '') {
+                if (method_exists($finder, 'resolveMultiFileComponentPath')) {
+                    $directory = $finder->resolveMultiFileComponentPath($name);
+
+                    if (is_string($directory) && is_dir($directory)) {
+                        $files = array_values(array_filter(
+                            glob(rtrim($directory, '/\\').'/*.php') ?: [],
+                            fn (string $file): bool => ! str_ends_with($file, '.blade.php'),
+                        ));
+                        sort($files);
+
+                        if (isset($files[0]) && is_file($files[0])) {
+                            return ['path' => $files[0], 'line' => 1, 'kind' => 'multi_file'];
+                        }
+                    }
+                }
+
+                if (method_exists($finder, 'resolveSingleFileComponentPath')) {
+                    $path = $finder->resolveSingleFileComponentPath($name);
+
+                    if (is_string($path) && is_file($path)) {
+                        return ['path' => $path, 'line' => 1, 'kind' => 'single_file'];
+                    }
+                }
+            }
+        } catch (Throwable) {
+            // The finder is optional internal evidence. Reflection remains available below.
+        }
+
+        try {
+            $reflection = new ReflectionClass($component);
+            $filename = $reflection->getFileName();
+
+            return is_string($filename)
+                ? ['path' => $filename, 'line' => $reflection->getStartLine(), 'kind' => 'class']
+                : null;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function recorder(): InteractionRecorder

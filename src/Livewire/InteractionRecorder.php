@@ -7,7 +7,6 @@ use Illuminate\Support\Str;
 use Livewire\Component;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\SafeUrl;
-use ReflectionClass;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -78,6 +77,7 @@ final class InteractionRecorder
         private readonly SafeUrl $safeUrl,
         private readonly StateDiff $stateDiff,
         private readonly ExecutionContext $context,
+        private readonly LivewireGateway $gateway,
         private readonly string $projectPath,
         private readonly int $maxItems = 500,
     ) {}
@@ -817,17 +817,12 @@ final class InteractionRecorder
             return;
         }
 
-        $source = null;
-
-        try {
-            $reflection = new ReflectionClass($component);
-            $filename = $reflection->getFileName();
-            $source = is_string($filename)
-                ? ['file' => $this->relativePath($filename), 'line' => $reflection->getStartLine()]
-                : null;
-        } catch (Throwable) {
-            // Missing source is an explicit unknown in the section.
-        }
+        $resolved = $this->gateway->componentSource($component);
+        $source = $resolved === null ? null : [
+            'file' => $this->relativePath($resolved['path']),
+            'line' => $resolved['line'],
+            'kind' => $resolved['kind'],
+        ];
 
         $this->components[$componentId]['class'] = $component::class;
         $this->components[$componentId]['source'] = $source;

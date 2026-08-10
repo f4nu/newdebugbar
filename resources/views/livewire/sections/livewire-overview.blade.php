@@ -82,6 +82,11 @@
                                 Validation fields: {{ implode(', ', $message['validation_fields']) }}
                             </p>
                         @endif
+                        @if ($message['browser_outcome'] !== 'unknown')
+                            <p class="ndb:mt-1.5 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                Browser callback: {{ $message['browser_outcome_label'] }}
+                            </p>
+                        @endif
                         @if ($message['redirect'])
                             <p class="ndb:mt-1.5 ndb:truncate ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                 Redirect: {{ $message['redirect'] }}

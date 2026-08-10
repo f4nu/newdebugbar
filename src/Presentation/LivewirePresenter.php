@@ -8,6 +8,7 @@ final class LivewirePresenter
     /** @param array<string, mixed> $section @return array<string, mixed> */
     public function present(array $section): array
     {
+        $summary = $this->array($section['summary'] ?? null);
         $payload = $this->array($section['payload'] ?? null);
         $messages = $this->items($payload['messages'] ?? null);
         $actions = $this->items($payload['actions'] ?? null);
@@ -37,7 +38,7 @@ final class LivewirePresenter
             $actions,
         );
         $presentedMessages = array_map(
-            fn (array $message): array => $this->message($message, $componentNames),
+            fn (array $message): array => $this->message($message, $componentNames, $browserTrace),
             $messages,
         );
         $presentedComponents = array_map(
@@ -56,21 +57,21 @@ final class LivewirePresenter
 
         $exchange = $this->array($payload['exchange'] ?? null);
         $completeness = $this->array($payload['completeness'] ?? null);
-        $traceStatus = $this->traceStatus($browserTrace['status'] ?? $section['summary']['trace_status'] ?? null);
+        $traceStatus = $this->traceStatus($browserTrace['status'] ?? $summary['trace_status'] ?? null);
         $serverLane = $this->lane('Server', 'server', $serverSpans);
         $browserLane = $this->lane('Browser', 'browser', $browserSpans);
-        $result = $this->string($exchange['result'] ?? $section['summary']['result'] ?? null) ?? 'unknown';
+        $result = $this->string($exchange['result'] ?? $summary['result'] ?? null) ?? 'unknown';
         $messageCount = count($messages);
 
         $section['label'] = 'Livewire';
         $section['summary'] = [
-            ...$this->array($section['summary'] ?? null),
-            'count' => $section['summary']['message_count'] ?? $messageCount,
+            ...$summary,
+            'count' => $summary['message_count'] ?? $messageCount,
         ];
         $section['payload'] = [
             ...$payload,
             'presentation' => [
-                'headline' => $this->headline($section, $exchange, $actions, $componentNames),
+                'headline' => $this->headline($summary, $exchange, $presentedActions, $componentNames),
                 'outcome' => $this->outcome($result, $messages, $presentedComponents, $presentedChanges),
                 'facts' => [
                     ['label' => 'Messages', 'value' => $messageCount],
@@ -110,12 +111,19 @@ final class LivewirePresenter
         return $section;
     }
 
-    /** @param array<string, mixed> $section @param array<string, mixed> $exchange @param list<array<string, mixed>> $actions @param array<string, string> $componentNames @return array<string, mixed> */
-    private function headline(array $section, array $exchange, array $actions, array $componentNames): array
+    /** @param array<string, mixed> $summary @param array<string, mixed> $exchange @param list<array<string, mixed>> $actions @param array<string, string> $componentNames @return array<string, mixed> */
+    private function headline(array $summary, array $exchange, array $actions, array $componentNames): array
     {
-        $title = $this->string($exchange['title'] ?? $section['summary']['title'] ?? null) ?? 'Livewire exchange';
+        $title = $this->string($exchange['title'] ?? $summary['title'] ?? null) ?? 'Livewire exchange';
         $confidence = $this->confidence($exchange['title_confidence'] ?? null);
         $kind = $this->string($exchange['kind'] ?? null) ?? 'unknown';
+
+        if (count($actions) === 1 && ($actions[0]['kind'] ?? null) === 'poll') {
+            $component = $componentNames[(string) ($actions[0]['component_id'] ?? '')] ?? 'component';
+            $title = 'Polled '.$component;
+            $kind = 'poll';
+            $confidence = 'inferred';
+        }
         $detail = match (true) {
             $kind === 'initial_mount' => 'An initial mount ran for '.count($componentNames).' affected component'.(count($componentNames) === 1 ? '' : 's').'.',
             count($actions) === 1 => $this->actionDetail($actions[0], $componentNames),
@@ -144,6 +152,10 @@ final class LivewirePresenter
             return $paths === []
                 ? 'A property update ran on '.$component.'.'
                 : 'A property update submitted '.implode(', ', $paths).' on '.$component.'.';
+        }
+
+        if ($kind === 'poll') {
+            return 'A polling refresh ran on '.$component.'; the source directive was observed in the browser.';
         }
 
         $name = $this->string($action['name'] ?? null) ?? 'an unknown action';
@@ -191,6 +203,11 @@ final class LivewirePresenter
         $source = $this->array($browser['source'] ?? null);
         $kind = $this->string($action['kind'] ?? null) ?? 'unknown';
         $name = $this->string($action['name'] ?? null) ?? 'Unknown action';
+        $directive = $this->string($source['directive'] ?? null);
+
+        if ($kind === 'refresh' && $directive !== null && str_starts_with($directive, 'wire:poll')) {
+            $kind = 'poll';
+        }
 
         return [
             ...$action,
@@ -204,20 +221,26 @@ final class LivewirePresenter
         ];
     }
 
-    /** @param array<string, mixed> $message @param array<string, string> $componentNames @return array<string, mixed> */
-    private function message(array $message, array $componentNames): array
+    /** @param array<string, mixed> $message @param array<string, string> $componentNames @param array<string, mixed> $browserTrace @return array<string, mixed> */
+    private function message(array $message, array $componentNames, array $browserTrace): array
     {
         $effects = $this->array($message['effects'] ?? null);
         $download = $this->array($effects['download'] ?? null);
         $errors = $this->array($message['validation_errors'] ?? null);
         $result = $this->string($message['result'] ?? null) ?? 'unknown';
+        $id = (string) ($message['id'] ?? '');
+        $browser = collect($this->items($browserTrace['messages'] ?? null))
+            ->first(fn (array $item): bool => ($item['message_id'] ?? null) === $id, []);
+        $browserOutcome = $this->string($browser['outcome'] ?? null) ?? 'unknown';
 
         return [
             ...$message,
-            'id' => (string) ($message['id'] ?? ''),
+            'id' => $id,
             'component_name' => $componentNames[(string) ($message['component_id'] ?? '')] ?? 'Unknown component',
             'result' => $result,
             'result_label' => $this->label($result),
+            'browser_outcome' => $browserOutcome,
+            'browser_outcome_label' => $this->label($browserOutcome),
             'validation_fields' => array_values(array_filter(array_keys($errors), 'is_string')),
             'redirect' => $this->string($effects['redirect'] ?? null),
             'download' => $download === [] ? null : [
