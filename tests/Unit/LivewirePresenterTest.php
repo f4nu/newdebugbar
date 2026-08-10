@@ -230,7 +230,8 @@ it('uses the familiar property label when framework work accompanies one trigger
 
     expect($section['payload']['presentation']['activity'])
         ->title->toBe('Search changed')
-        ->detail->toBe('Application Board handled the property change.');
+        ->detail->toBe('Application Board handled the property change.')
+        ->and($section['payload']['presentation']['components'][0]['trigger_label'])->toBe('Search changed');
 });
 
 it('keeps declared event targets separate from observed recipients', function () {

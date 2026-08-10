@@ -329,11 +329,7 @@ final class LivewirePresenter
             ? $component['rendered']
             : 'unknown';
         $result = $this->string($message['result'] ?? null) ?? 'unknown';
-        $trigger = match (count($componentActions)) {
-            0 => 'Trigger not observed',
-            1 => $componentActions[0]['display_name'],
-            default => 'Multiple triggers',
-        };
+        $trigger = $this->preferredTrigger($componentActions);
         $validationFields = $this->validationFields($componentMessages);
         $sourceLabel = $source === [] ? null : (($source['file'] ?? 'unknown').':'.($source['line'] ?? '?'));
         $class = $this->string($component['class'] ?? null);
@@ -687,6 +683,28 @@ final class LivewirePresenter
             'action' => 'Action ran',
             default => 'Trigger not observed',
         };
+    }
+
+    /** @param list<array<string, mixed>> $actions */
+    private function preferredTrigger(array $actions): string
+    {
+        if ($actions === []) {
+            return 'Trigger not observed';
+        }
+
+        $propertyActions = array_values(array_filter(
+            $actions,
+            fn (array $action): bool => ($action['kind'] ?? null) === 'property_update',
+        ));
+        $propertyLabels = array_values(array_unique(array_column($propertyActions, 'display_name')));
+
+        if (count($propertyLabels) === 1) {
+            return $propertyLabels[0];
+        }
+
+        $labels = array_values(array_unique(array_column($actions, 'display_name')));
+
+        return count($labels) === 1 ? $labels[0] : 'Multiple triggers';
     }
 
     private function resultLabel(string $result): string
