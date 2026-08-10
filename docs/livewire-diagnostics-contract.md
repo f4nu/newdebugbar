@@ -23,6 +23,7 @@ The package records facts before findings. It does not invent a single interacti
 - Global profile schema: version 1.
 - Livewire support floor: 4.1.0. Installed contract check: 4.3.5.
 - Livewire 4.1.0 and 4.3.5 both expose public request, message, and action interceptors. The server lifecycle event bus, the debug-only `profile` event, and `action.origin` are internal contracts.
+- Livewire 4.1 can surface a stale current component as a root mount parent while 4.3 reports no parent. A parent link is retained only when that instance was already observed in the same exchange.
 - Baseline package checks on 2026-08-10: 140 PHP tests passed with 1,221 assertions and 2 expected skips; 36 JavaScript tests passed; the production asset build passed.
 - The canonical Livewire example rendered cleanly and a real search update completed with a clean browser console. That checkout used its public package dependency, so it is baseline product evidence rather than proof of this worktree.
 

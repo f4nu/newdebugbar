@@ -233,7 +233,12 @@ final class InteractionRecorder
         $this->exchangeKind = 'initial_mount';
         $messageIndex = count($this->messages);
         $messageId = (string) Str::uuid();
-        $parentId = $parent instanceof Component ? $parent->getId() : null;
+        $observedParentId = $parent instanceof Component
+            ? $parent->getId()
+            : (is_string($parent) ? $parent : null);
+        $parentId = $observedParentId !== $componentId && isset($this->components[$observedParentId])
+            ? $observedParentId
+            : null;
         $this->messages[] = [
             'id' => $messageId,
             'request_index' => $messageIndex,

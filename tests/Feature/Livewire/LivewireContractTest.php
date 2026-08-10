@@ -51,12 +51,16 @@ it('exposes stable component lifecycle evidence for mounts and nested components
                 return;
             }
 
+            $observedParentId = $parent instanceof Component
+                ? $parent->getId()
+                : (is_string($parent) ? $parent : null);
+            $knownIds = array_column($mounts, 'id');
             $mounts[] = [
                 'id' => $component->getId(),
                 'name' => $component->getName(),
                 'class' => $component::class,
                 'key' => $key,
-                'parent_id' => $parent instanceof Component ? $parent->getId() : null,
+                'parent_id' => in_array($observedParentId, $knownIds, true) ? $observedParentId : null,
             ];
         }),
         on('profile', function (string $phase, string $componentId, array $range) use (&$profiles): void {
