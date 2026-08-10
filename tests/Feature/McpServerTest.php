@@ -189,6 +189,24 @@ it('masks full query bindings and log labels again at the MCP boundary', functio
         ->toBe('[log message hidden]');
 });
 
+it('masks captured view values at the MCP boundary', function () {
+    $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
+
+    expect(json_encode(app(ProfileStore::class)->get($profileId)['sections']['views']))
+        ->toContain('view-data-value');
+
+    $views = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'views',
+    ])->assertOk()
+        ->assertDontSee('view-data-value'));
+
+    expect($views['data']['payload']['items'][0]['data'])
+        ->label->toBe('[string]')
+        ->private_value->toBe('[string]');
+});
+
 it('paginates one section and hides private request values', function () {
     $response = $this->post('/profiled-input?name=query-secret', [
         'clinic' => ['name' => 'patient-secret'],

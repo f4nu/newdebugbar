@@ -24,3 +24,18 @@ it('can disable call site capture', function () {
 
     expect($location)->toBe(['callsite' => null, 'stack' => []]);
 });
+
+it('resolves template files without applying the application call site filter', function () {
+    $root = dirname(__DIR__, 2);
+    $resolver = new CallSiteResolver(
+        projectPath: $root,
+        packagePath: $root,
+        enabled: false,
+    );
+
+    expect($resolver->location($root.'/vendor/autoload.php'))->toBeNull()
+        ->and($resolver->templateLocation($root.'/vendor/autoload.php'))->toBe([
+            'file' => 'vendor/autoload.php',
+            'line' => 1,
+        ]);
+});

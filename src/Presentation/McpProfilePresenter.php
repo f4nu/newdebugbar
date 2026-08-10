@@ -319,6 +319,8 @@ final class McpProfilePresenter
             ];
         } elseif ($section === 'models' && array_key_exists('key', $item)) {
             $item['key'] = $item['key'] === null ? null : '[identifier]';
+        } elseif ($section === 'views' && is_array($item['data'] ?? null)) {
+            $item['data'] = $this->redactor->cleanBindings($item['data'], 'safe');
         } elseif ($section === 'timeline') {
             if (($item['section'] ?? null) === 'logs') {
                 $item['label'] = '[log message hidden]';

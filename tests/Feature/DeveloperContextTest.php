@@ -35,7 +35,8 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
         ->context->step->toBe(2)
         ->context->token->toBe('[redacted]')
         ->and($profile['sections']['views']['payload']['items'][0])
-        ->data_keys->toContain('label', 'private_value')
+        ->data->label->toBe('Context view')
+        ->data->private_value->toBe('view-data-value')
         ->render_order->toBe(1)
         ->source->file->toBe('tests/views/context.blade.php')
         ->and($profile['sections']['lifecycle']['summary']['count'])->toBeGreaterThanOrEqual(2)
@@ -47,7 +48,7 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
             'Final response preparation',
         )
         ->not->toContain('Response preparation')
-        ->and(json_encode($profile))->not->toContain('private-developer-token', 'not-collected');
+        ->and(json_encode($profile))->not->toContain('private-developer-token');
 
     $event = collect($profile['sections']['events']['payload']['items'])
         ->firstWhere('name', ProfiledApplicationEvent::class);

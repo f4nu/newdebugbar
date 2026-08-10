@@ -918,6 +918,8 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->click('[data-ndb-select-section="views"]')
         ->click('[data-ndb-section-panel="views"] details summary')
         ->assertSee('tests/views/context.blade.php')
+        ->assertSee('view-data-value')
+        ->assertPresent('[data-ndb-view-data]')
         ->assertMissing('a[href^="vscode://file/"]')
         ->click('[data-ndb-select-section="events"]')
         ->click('[data-ndb-event-item]:first-child summary')

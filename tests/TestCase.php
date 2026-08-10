@@ -187,7 +187,7 @@ abstract class TestCase extends Orchestra
             DB::rollBack();
             $view = view()->file(__DIR__.'/views/context.blade.php', [
                 'label' => 'Context view',
-                'private_value' => 'not-collected',
+                'private_value' => 'view-data-value',
             ])->render();
 
             return response('<!doctype html><html><body>'.$view.'</body></html>');

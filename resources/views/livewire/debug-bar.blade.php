@@ -2257,66 +2257,140 @@
                                             @endforeach
                                         </div>
                                     @elseif ($sectionKey === 'views')
-                                        <div class="ndb:flex ndb:items-end ndb:justify-between ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:dark:border-zinc-800">
-                                            <div>
-                                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                    Unique views
-                                                </p>
-                                                <p class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
-                                                    {{ $section['summary']['unique_views'] }}
-                                                </p>
-                                            </div>
-                                            <p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">
-                                                Timing appears when Laravel exposes reliable render spans.
+                                        @php($viewGroups = $section['payload']['groups'] ?? [])
+                                        @php(
+                                            $formatViewDataValue = static fn (mixed $value): string => match (true) {
+                                                $value === null => 'null',
+                                                is_bool($value) => $value ? 'true' : 'false',
+                                                is_array($value) => (string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                                                default => (string) $value,
+                                            }
+                                        )
+                                        <div data-ndb-views class="ndb:space-y-5">
+                                            <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                                See which Blade templates rendered and the data each received. Use this
+                                                to spot missing variables, unexpected partials, and repeated renders.
                                             </p>
-                                        </div>
-                                        @forelse ($section['payload']['groups'] as $index => $group)
-                                            <details
-                                                wire:key="view-group-{{ $index }}"
-                                                class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"
-                                            >
-                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3">
-                                                    <span
-                                                        class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold"
-                                                        >{{ $group['name'] }}</span
-                                                    ><span
-                                                        class="ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                                                        >{{ $group['count'] }}</span
-                                                    ><x-newdebugbar::icon
-                                                        name="chevron-down"
-                                                        class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
-                                                    />
-                                                </summary>
-                                                <div class="ndb:space-y-2 ndb:border-t ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">
-                                                    @foreach ($group['items'] as $view)
-                                                        <article class="ndb:rounded-lg ndb:bg-zinc-50/70 ndb:p-3 ndb:dark:bg-zinc-900/60">
-                                                            <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
-                                                                <span
-                                                                    class="ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
-                                                                    >#{{ $view['render_order'] }}</span
-                                                                ><code
-                                                                    class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]"
-                                                                    >{{ $view['source']['file'] ?? 'Source not exposed' }}
-                                                                    @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
-                                                                </code>
-                                                            </div>
-                                                            <p class="ndb:mt-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                                                Data keys: {{ implode(', ', $view['data_keys'] ?? []) ?: 'none' }}
-                                                            </p>
-                                                            @if (($view['composers'] ?? []) !== [])
-                                                                <div class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-2">
-                                                                    @foreach ($view['composers'] as $composer)
-                                                                        <span class="ndb:text-[10px] ndb:font-semibold">{{ $composer['name'] }}</span>
+
+                                            <dl class="ndb:flex ndb:flex-wrap ndb:gap-x-10 ndb:gap-y-3 ndb:border-y ndb:border-zinc-200/90 ndb:py-3 ndb:dark:border-zinc-800">
+                                                <div>
+                                                    <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                        Unique views
+                                                    </dt>
+                                                    <dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
+                                                        {{ $section['summary']['unique_views'] }}
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                                        Total renders
+                                                    </dt>
+                                                    <dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
+                                                        {{ $section['summary']['count'] }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+
+                                            @if ($viewGroups !== [])
+                                                <div>
+                                                    <div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_5rem_1.5rem] ndb:items-end ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
+                                                        <span class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">View</span>
+                                                        <span class="ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Renders</span>
+                                                        <span class="ndb:sr-only">Details</span>
+                                                    </div>
+
+                                                    <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+                                                        @foreach ($viewGroups as $index => $group)
+                                                            <details
+                                                                data-ndb-view-group
+                                                                wire:key="view-group-{{ $index }}"
+                                                                class="ndb:group"
+                                                            >
+                                                                <summary class="ndb:grid ndb:cursor-pointer ndb:list-none ndb:grid-cols-[minmax(0,1fr)_5rem_1.5rem] ndb:items-center ndb:gap-x-3 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
+                                                                    <span class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold">{{ $group['name'] }}</span>
+                                                                    <span class="ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $group['count'] }}</span>
+                                                                    <x-newdebugbar::icon
+                                                                        name="chevron-down"
+                                                                        class="ndb:size-3.5 ndb:justify-self-end ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
+                                                                    />
+                                                                </summary>
+
+                                                                <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:border-t ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                                                    @foreach ($group['items'] as $view)
+                                                                        @php($viewData = is_array($view['data'] ?? null) ? $view['data'] : [])
+                                                                        <article data-ndb-view-render class="ndb:py-4">
+                                                                            <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
+                                                                                <span class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400">Render #{{ $view['render_order'] }}</span>
+                                                                                <code class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]">
+                                                                                    {{ $view['source']['file'] ?? 'Template path unavailable' }}
+                                                                                    @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
+                                                                                </code>
+                                                                            </div>
+
+                                                                            <div class="ndb:mt-4">
+                                                                                <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3">
+                                                                                    <h3 class="ndb:text-[10px] ndb:font-bold">
+                                                                                        Data
+                                                                                    </h3>
+                                                                                    <span class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400">{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span>
+                                                                                </div>
+
+                                                                                @if ($viewData !== [])
+                                                                                    <dl
+                                                                                        data-ndb-view-data
+                                                                                        class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
+                                                                                    >
+                                                                                        @foreach ($viewData as $key => $value)
+                                                                                            <div class="ndb:grid ndb:grid-cols-1 ndb:gap-1 ndb:py-2.5 ndb:sm:grid-cols-[minmax(9rem,0.4fr)_minmax(0,1fr)] ndb:sm:gap-4">
+                                                                                                <dt class="ndb:min-w-0">
+                                                                                                    <code class="ndb:break-all ndb:text-[10px] ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $key }}</code>
+                                                                                                </dt>
+                                                                                                <dd class="ndb:min-w-0">
+                                                                                                    @if (is_array($value))
+                                                                                                        <pre class="ndb-scrollbar ndb:max-h-48 ndb:overflow-auto ndb:whitespace-pre-wrap ndb:break-words ndb:font-mono ndb:text-[10px] ndb:leading-4 ndb:text-zinc-700 ndb:dark:text-zinc-200">{{ $formatViewDataValue($value) }}</pre>
+                                                                                                    @else
+                                                                                                        <code class="ndb:block ndb:break-words ndb:text-[10px] ndb:leading-4 ndb:text-zinc-700 ndb:dark:text-zinc-200">{{ $formatViewDataValue($value) }}</code>
+                                                                                                    @endif
+                                                                                                </dd>
+                                                                                            </div>
+                                                                                        @endforeach
+                                                                                    </dl>
+                                                                                @else
+                                                                                    <p class="ndb:mt-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                                                                        No data was passed directly to
+                                                                                        this view.
+                                                                                    </p>
+                                                                                @endif
+                                                                            </div>
+
+                                                                            @if (($view['composers'] ?? []) !== [])
+                                                                                <div class="ndb:mt-4">
+                                                                                    <h3 class="ndb:text-[10px] ndb:font-bold">
+                                                                                        View composers
+                                                                                    </h3>
+                                                                                    <ul class="ndb:mt-2 ndb:list-none ndb:space-y-2">
+                                                                                        @foreach ($view['composers'] as $composer)
+                                                                                            <li class="ndb:min-w-0">
+                                                                                                <code class="ndb:block ndb:break-all ndb:text-[10px] ndb:font-semibold">{{ $composer['name'] }}</code>
+                                                                                                @if (is_string($composer['source']['file'] ?? null))
+                                                                                                    <code class="ndb:mt-0.5 ndb:block ndb:break-all ndb:text-[9px] ndb:text-zinc-400">{{ $composer['source']['file'] }}:{{ $composer['source']['line'] ?? 1 }}</code>
+                                                                                                @endif
+                                                                                            </li>
+                                                                                        @endforeach
+                                                                                    </ul>
+                                                                                </div>
+                                                                            @endif
+                                                                        </article>
                                                                     @endforeach
                                                                 </div>
-                                                            @endif
-                                                        </article>
-                                                    @endforeach
+                                                            </details>
+                                                        @endforeach
+                                                    </div>
                                                 </div>
-                                            </details>
-                                        @empty
-                                            <x-newdebugbar::empty-state label="No views were captured." />
-                                        @endforelse
+                                            @else
+                                                <x-newdebugbar::empty-state label="No views were captured." />
+                                            @endif
+                                        </div>
                                     @elseif ($sectionKey === 'events')
                                         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800">
                                             <div class="ndb:flex-1">

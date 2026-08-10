@@ -387,14 +387,13 @@ final class EventRegistrar
             $view = $payload[0] ?? null;
             $viewName = str($name)->after('composing: ')->toString();
             $path = is_object($view) && method_exists($view, 'getPath') ? $view->getPath() : null;
+            $data = is_object($view) && method_exists($view, 'getData') ? $view->getData() : [];
 
             $this->manager()->record('views', [
                 'name' => $viewName,
-                'source' => is_string($path) ? $this->callSites->location($path) : null,
+                'source' => is_string($path) ? $this->callSites->templateLocation($path) : null,
                 'composers' => $this->listenerDetails('composing: '.$viewName),
-                'data_keys' => is_object($view) && method_exists($view, 'getData')
-                    ? array_keys($view->getData())
-                    : [],
+                'data' => is_array($data) ? $data : [],
                 'timing' => 'composition_marker',
             ]);
         });

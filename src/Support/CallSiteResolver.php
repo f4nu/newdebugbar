@@ -68,6 +68,23 @@ final class CallSiteResolver
         ];
     }
 
+    /** @return array{file: string, line: int}|null */
+    public function templateLocation(string $path, int $line = 1): ?array
+    {
+        $file = $this->normalizePath($path);
+
+        if ($file === null) {
+            return null;
+        }
+
+        $project = rtrim(str_replace('\\', '/', $this->projectPath), '/').'/';
+
+        return [
+            'file' => str_starts_with($file, $project) ? substr($file, strlen($project)) : $file,
+            'line' => max(1, $line),
+        ];
+    }
+
     private function normalizePath(string $path): ?string
     {
         $realPath = realpath($path);
