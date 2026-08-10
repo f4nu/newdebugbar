@@ -637,13 +637,27 @@ it('filters the timeline without inventing spans for point events', function () 
         ->assertVisible('[data-ndb-timeline-waterfall]')
         ->assertScript(<<<'JS'
             (() => {
-                const tabs = document.querySelector('[data-ndb-timeline-tabs]').getBoundingClientRect();
+                const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
                 const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
                 const resultsHeader = document.querySelector('[data-ndb-timeline-results-header]').getBoundingClientRect();
 
-                return tabs.bottom <= resultsHeader.top
+                return toolbar.getBoundingClientRect().bottom <= resultsHeader.top
+                    && toolbar.scrollWidth <= toolbar.clientWidth
                     && search.top >= resultsHeader.top
                     && search.bottom <= resultsHeader.bottom;
+            })()
+            JS)
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-filter]").length', 3)
+        ->assertScript(<<<'JS'
+            (() => {
+                const values = Array.from(document.querySelector('[data-ndb-timeline-more]').options)
+                    .map((option) => option.value);
+
+                return values[0] === ''
+                    && !values.includes('request')
+                    && values.includes('lifecycle')
+                    && values.includes('queries')
+                    && values.includes('events');
             })()
             JS)
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-filter=key]")).whiteSpace === "nowrap"')
@@ -657,16 +671,23 @@ it('filters the timeline without inventing spans for point events', function () 
             JS)
         ->keys('[data-ndb-timeline-filter="all"]', 'Enter')
         ->assertAttribute('[data-ndb-timeline-filter="all"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-timeline-more]', '')
         ->assertScript('document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").getBoundingClientRect().left > document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").parentElement.parentElement.getBoundingClientRect().left + 4')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
         ->assertScript(<<<'JS'
             Number(document.querySelector('[data-ndb-section-panel="timeline"] [x-text="visibleTimelineCount"]').textContent)
                 === document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])').length
             JS)
-        ->click('[data-ndb-timeline-filter="queries"]')
+        ->select('[data-ndb-timeline-more]', 'queries')
+        ->assertValue('[data-ndb-timeline-more]', 'queries')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-filter][aria-pressed=true]").length', 0)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
                 .every((item) => item.dataset.section === 'queries')
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item][hidden]'))
+                .every((item) => getComputedStyle(item).display === 'none')
             JS)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item][data-section="queries"]'))
@@ -682,11 +703,32 @@ it('filters the timeline without inventing spans for point events', function () 
                         && mark.right <= track.right + 1;
                 })
             JS)
-        ->click('[data-ndb-timeline-filter="events"]')
+        ->select('[data-ndb-timeline-more]', 'events')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
                 .every((item) => item.dataset.kind === 'point'
                     && item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect().width > 0)
+            JS)
+        ->click('[data-ndb-timeline-filter="request"]')
+        ->assertAttribute('[data-ndb-timeline-filter="request"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-timeline-more]', '')
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
+                .every((item) => item.dataset.section === 'request')
+            JS)
+        ->assertScript(<<<'JS'
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item][hidden]'))
+                .every((item) => getComputedStyle(item).display === 'none')
+            JS)
+        ->resize(390, 844)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
+
+                return toolbar.scrollWidth <= toolbar.clientWidth
+                    && document.querySelector('[data-ndb-timeline-tabs]').scrollWidth
+                        <= document.querySelector('[data-ndb-timeline-tabs]').clientWidth;
+            })()
             JS)
         ->type('[data-ndb-timeline-search]', 'nothing can match this')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length', 0)

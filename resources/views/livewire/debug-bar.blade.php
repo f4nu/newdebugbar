@@ -831,15 +831,19 @@
                                     @if ($sectionKey === 'timeline')
                                         @php($timelineItems = $section['payload']['items'])
                                         @php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
+                                        @php($timelineMoreSections = array_values(array_filter($timelineSections, fn ($timelineSection) => $timelineSection !== 'request')))
                                         @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
                                         @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
                                         @php($timelineTicks = [0, 25, 50, 75, 100])
-                                        <div data-ndb-timeline-toolbar>
+                                        <div
+                                            data-ndb-timeline-toolbar
+                                            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2"
+                                        >
                                             <div
                                                 data-ndb-timeline-tabs
-                                                class="ndb:scrollbar ndb:flex ndb:gap-1 ndb:overflow-x-auto"
+                                                class="ndb:flex ndb:gap-1"
                                                 role="group"
-                                                aria-label="Filter timeline"
+                                                aria-label="Timeline view"
                                             >
                                                 <x-newdebugbar::filter-tab
                                                     data-ndb-timeline-filter="key"
@@ -855,16 +859,38 @@
                                                 >
                                                     All
                                                 </x-newdebugbar::filter-tab>
-                                                @foreach ($timelineSections as $timelineSection)
-                                                    <x-newdebugbar::filter-tab
-                                                        data-ndb-timeline-filter="{{ $timelineSection }}"
-                                                        @click="setTimelineFilter({{ \Illuminate\Support\Js::from($timelineSection) }})"
-                                                        ::aria-pressed="timelineFilter === {{ \Illuminate\Support\Js::from($timelineSection) }}"
-                                                    >
-                                                        {{ str($timelineSection)->title() }}
-                                                    </x-newdebugbar::filter-tab>
-                                                @endforeach
+                                                <x-newdebugbar::filter-tab
+                                                    data-ndb-timeline-filter="request"
+                                                    @click="setTimelineFilter('request')"
+                                                    ::aria-pressed="timelineFilter === 'request'"
+                                                >
+                                                    Request
+                                                </x-newdebugbar::filter-tab>
                                             </div>
+                                            <label class="ndb:relative ndb:min-w-40 ndb:flex-1 ndb:sm:flex-none">
+                                                <span class="ndb:sr-only">Filter timeline by source</span>
+                                                <select
+                                                    data-ndb-timeline-more
+                                                    x-effect="
+                                                        $el.value = ['key', 'all', 'request'].includes(timelineFilter)
+                                                            ? ''
+                                                            : timelineFilter
+                                                    "
+                                                    @change="setTimelineFilter($event.target.value)"
+                                                    class="ndb:h-9 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                                >
+                                                    <option value="" disabled>More activity</option>
+                                                    @foreach ($timelineMoreSections as $timelineSection)
+                                                        <option value="{{ $timelineSection }}">
+                                                            {{ str($timelineSection)->replace('_', ' ')->title() }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <x-newdebugbar::icon
+                                                    name="chevron-down"
+                                                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                                                />
+                                            </label>
                                         </div>
                                         <div
                                             data-ndb-timeline-results-header

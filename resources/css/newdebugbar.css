@@ -77,7 +77,8 @@
 }
 
 #newdebugbar [data-ndb-section-panel][hidden],
-#newdebugbar [data-ndb-history-profile][hidden] {
+#newdebugbar [data-ndb-history-profile][hidden],
+#newdebugbar [data-ndb-timeline-item][hidden] {
     display: none !important;
 }
 
