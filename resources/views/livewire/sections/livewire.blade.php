@@ -88,27 +88,24 @@
         role="tablist"
         aria-label="Livewire diagnostics"
         data-ndb-livewire-tabs
-        class="ndb-scrollbar ndb:flex ndb:overflow-x-auto ndb:border-b ndb:border-zinc-200 ndb:dark:border-zinc-800"
+        class="ndb-scrollbar ndb:flex ndb:gap-1 ndb:overflow-x-auto"
     >
         @foreach ($livewire['tabs'] ?? [] as $tab)
-            <button
-                type="button"
+            <x-newdebugbar::filter-tab
                 id="newdebugbar-livewire-tab-{{ $tab['key'] }}"
                 role="tab"
                 data-ndb-livewire-tab="{{ $tab['key'] }}"
-                @click="selectLivewireTab(@js($tab['key']))"
+                @click="selectLivewireTab({{ \Illuminate\Support\Js::from($tab['key']) }})"
                 @keydown="handleLivewireTabKey($event)"
-                :aria-selected="livewireTab === @js($tab['key'])"
-                :tabindex="livewireTab === @js($tab['key']) ? 0 : -1"
+                ::aria-selected="livewireTab === {{ \Illuminate\Support\Js::from($tab['key']) }}"
+                ::tabindex="livewireTab === {{ \Illuminate\Support\Js::from($tab['key']) }} ? 0 : -1"
                 aria-controls="newdebugbar-livewire-panel-{{ $tab['key'] }}"
-                class="ndb:flex ndb:min-w-max ndb:items-center ndb:gap-2 ndb:border-b-2 ndb:px-3 ndb:py-2.5 ndb:text-xs ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-[-2px] ndb:focus-visible:outline-indigo-500"
-                :class="livewireTab === @js($tab['key']) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:hover:text-zinc-900 ndb:dark:text-zinc-400 ndb:dark:hover:text-white'"
             >
                 <span>{{ $tab['label'] }}</span>
                 @if ($tab['count'] !== null)
-                    <span class="ndb:tabular-nums ndb:text-[10px] ndb:text-zinc-400">{{ $tab['count'] }}</span>
+                    <span class="ndb:tabular-nums ndb:text-[10px] ndb:font-bold ndb:opacity-65">{{ $tab['count'] }}</span>
                 @endif
-            </button>
+            </x-newdebugbar::filter-tab>
         @endforeach
     </div>
 
