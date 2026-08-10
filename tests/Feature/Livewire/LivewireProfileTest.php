@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\File;
 use Livewire\Drawer\Utils;
 use Livewire\Livewire;
+use NewDebugBar\Livewire\LivewireTraceToken;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Fixtures\Livewire\DiagnosticsChildFixture;
 use NewDebugBar\Tests\Fixtures\Livewire\DiagnosticsFixture;
@@ -63,15 +64,24 @@ it('profiles one property update without storing a Livewire snapshot', function 
         'components' => [profiledDiagnosticsMessage($snapshot, ['search' => 'northline'])],
     ], ['X-Livewire' => '1']);
 
-    $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
+    $response
+        ->assertOk()
+        ->assertHeader('X-NewDebugBar-Profile')
+        ->assertHeader(LivewireTraceToken::HEADER);
     $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $livewire = $profile['sections']['livewire'];
+    $traceUrl = $response->headers->get(LivewireTraceToken::HEADER);
+
+    parse_str((string) parse_url($traceUrl, PHP_URL_QUERY), $traceQuery);
 
     expect($profile)
         ->schema_version->toBe(1)
         ->id->toBe($response->headers->get('X-NewDebugBar-Profile'))
         ->sections->request->payload->input->snapshot_data_stored->toBeFalse()
         ->sections->request->payload->input->messages->toHaveCount(1)
+        ->and($traceUrl)->toContain('/__newdebugbar/livewire-trace/'.$profile['id'])
+        ->and($traceQuery['revision'])->toBe('1')
+        ->and(ProfileStore::validId($traceQuery['nonce']))->toBeTrue()
         ->and(json_encode($profile['sections']['request']['payload']['input']))
         ->not->toContain('initial-secret', 'wire:snapshot', 'checksum')
         ->and($livewire)

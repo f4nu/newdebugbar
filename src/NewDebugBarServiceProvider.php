@@ -29,12 +29,14 @@ use NewDebugBar\Collectors\QueueCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Http\Controllers\AssetController;
+use NewDebugBar\Http\Controllers\LivewireTraceController;
 use NewDebugBar\Http\Controllers\MailPreviewController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Livewire\ExecutionContext;
 use NewDebugBar\Livewire\InteractionRecorder;
 use NewDebugBar\Livewire\LivewireGateway;
+use NewDebugBar\Livewire\LivewireTraceToken;
 use NewDebugBar\Livewire\StateDiff;
 use NewDebugBar\Mcp\Legacy\NewDebugBarServer as LegacyNewDebugBarServer;
 use NewDebugBar\Mcp\NewDebugBarServer as ModernNewDebugBarServer;
@@ -121,6 +123,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxItems: (int) config('newdebugbar.collection.max_items_per_collector', 500),
         ));
         $this->app->singleton(LivewireGateway::class);
+        $this->app->singleton(LivewireTraceToken::class);
 
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
             $maxItems = (int) config('newdebugbar.collection.max_items_per_collector', 500);
@@ -219,6 +222,10 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             ->whereNumber('index')
             ->whereIn('format', ['html', 'text', 'eml'])
             ->name('newdebugbar.mail-preview');
+        $router->post('/__newdebugbar/livewire-trace/{profile}', LivewireTraceController::class)
+            ->middleware(['web', 'signed'])
+            ->where('profile', ProfileStore::ID_PATTERN)
+            ->name('newdebugbar.livewire-trace');
         $kernel = $this->app->make(HttpKernel::class);
 
         if (method_exists($kernel, 'pushMiddleware')) {
