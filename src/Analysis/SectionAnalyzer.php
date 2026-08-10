@@ -208,7 +208,13 @@ final class SectionAnalyzer
         $items = $this->items($profile, 'views');
         $groups = [];
 
-        foreach ($items as $item) {
+        foreach ($items as $index => $item) {
+            $item['render_order'] = $index + 1;
+
+            if (isset($profile['sections']['views']['payload']['items'][$index])) {
+                $profile['sections']['views']['payload']['items'][$index]['render_order'] = $index + 1;
+            }
+
             $name = (string) ($item['name'] ?? 'unknown');
             $groups[$name] ??= ['name' => $name, 'count' => 0, 'items' => []];
             $groups[$name]['count']++;

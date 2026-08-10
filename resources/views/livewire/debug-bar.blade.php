@@ -1051,7 +1051,6 @@
                                         @php($requestSession = is_array($requestPayload['session'] ?? null) ? $requestPayload['session'] : [])
                                         @php($requestAuthentication = is_array($requestPayload['authentication'] ?? null) ? $requestPayload['authentication'] : [])
                                         @php($requestMiddleware = is_array($requestPayload['middleware'] ?? null) ? $requestPayload['middleware'] : [])
-                                        @php($requestActionLocation = is_array($profile['sections']['overview']['payload']['action_location'] ?? null) ? $profile['sections']['overview']['payload']['action_location'] : [])
                                         @php($requestPath = ($requestPayload['path'] ?? null) ?: ($requestPayload['url'] ?? null) ?: '—')
                                         @php($requestHost = parse_url((string) ($requestPayload['url'] ?? ''), PHP_URL_HOST) ?: '—')
                                         @php(
@@ -1212,14 +1211,8 @@
                                                                     <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                                                         Controller
                                                                     </dt>
-                                                                    <dd class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2">
+                                                                    <dd class="ndb:mt-1 ndb:min-w-0">
                                                                         <code class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-semibold">{{ ($requestPayload['action'] ?? null) ?: 'Closure' }}</code>
-                                                                        @if (is_string($requestActionLocation['editor_url'] ?? null))
-                                                                            <a
-                                                                                href="{{ $requestActionLocation['editor_url'] }}"
-                                                                                class="ndb:shrink-0 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                                            >Open in editor</a>
-                                                                        @endif
                                                                     </dd>
                                                                 </div>
                                                                 <div class="ndb:min-w-0">
@@ -1519,14 +1512,8 @@
                                                             {{ ($item['failed'] ?? false) ? ($item['exception_message'] ?? $item['exception_class'] ?? 'Request failed') : 'HTTP '.$item['status'] }}
                                                         </p>
                                                         @if (is_array($item['callsite'] ?? null))
-                                                            <p class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:text-zinc-400">
+                                                            <p class="ndb:mt-1 ndb:min-w-0 ndb:truncate ndb:text-[10px] ndb:text-zinc-400">
                                                                 <span class="ndb:min-w-0 ndb:truncate">{{ $item['callsite']['copy'] ?? (($item['callsite']['file'] ?? 'Unknown source').':'.($item['callsite']['line'] ?? '?')) }}</span>
-                                                                @if (is_string($item['callsite']['editor_url'] ?? null))
-                                                                    <a
-                                                                        href="{{ $item['callsite']['editor_url'] }}"
-                                                                        class="ndb:shrink-0 ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                                    >Open</a>
-                                                                @endif
                                                             </p>
                                                         @endif
                                                     </div>
@@ -1788,14 +1775,8 @@
                                                             {{ implode(', ', array_filter([$item['user_type'] ?? null, ...($item['argument_types'] ?? [])])) ?: 'No typed arguments' }}
                                                         </p>
                                                         @if (is_array($item['callsite'] ?? null))
-                                                            <p class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:text-zinc-400">
+                                                            <p class="ndb:w-full ndb:min-w-0 ndb:truncate ndb:text-[10px] ndb:text-zinc-400">
                                                                 <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $item['callsite']['copy'] ?? (($item['callsite']['file'] ?? 'Unknown source').':'.($item['callsite']['line'] ?? '?')) }}</span>
-                                                                @if (is_string($item['callsite']['editor_url'] ?? null))
-                                                                    <a
-                                                                        href="{{ $item['callsite']['editor_url'] }}"
-                                                                        class="ndb:shrink-0 ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                                    >Open in editor</a>
-                                                                @endif
                                                             </p>
                                                         @endif
                                                     </article>
@@ -2318,12 +2299,6 @@
                                                                     >{{ $view['source']['file'] ?? 'Source not exposed' }}
                                                                     @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
                                                                 </code>
-                                                                @if (is_string($view['source']['editor_url'] ?? null))
-                                                                    <a
-                                                                        href="{{ $view['source']['editor_url'] }}"
-                                                                        class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                                    >Open in editor</a>
-                                                                @endif
                                                             </div>
                                                             <p class="ndb:mt-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                                                 Data keys: {{ implode(', ', $view['data_keys'] ?? []) ?: 'none' }}
@@ -2331,15 +2306,7 @@
                                                             @if (($view['composers'] ?? []) !== [])
                                                                 <div class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-2">
                                                                     @foreach ($view['composers'] as $composer)
-                                                                        <span class="ndb:text-[10px] ndb:font-semibold"
-                                                                            >{{ $composer['name'] }}
-                                                                            @if (is_string($composer['source']['editor_url'] ?? null))
-                                                                                <a
-                                                                                    href="{{ $composer['source']['editor_url'] }}"
-                                                                                    class="ndb:text-indigo-600 ndb:dark:text-indigo-300"
-                                                                                >Open</a>
-                                                                            @endif
-                                                                        </span>
+                                                                        <span class="ndb:text-[10px] ndb:font-semibold">{{ $composer['name'] }}</span>
                                                                     @endforeach
                                                                 </div>
                                                             @endif
@@ -2418,12 +2385,6 @@
                                                         @forelse ($item['listeners'] ?? [] as $listener)
                                                             <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
                                                                 <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px]">{{ $listener['name'] }}</code>
-                                                                @if (is_string($listener['source']['editor_url'] ?? null))
-                                                                    <a
-                                                                        href="{{ $listener['source']['editor_url'] }}"
-                                                                        class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                                    >Open in editor</a>
-                                                                @endif
                                                             </div>
                                                         @empty
                                                             <p class="ndb:text-[10px] ndb:text-zinc-400">
@@ -2524,12 +2485,6 @@
                                                             >
                                                                 Copy file and line
                                                             </button>
-                                                            @if (is_string($logCallsite['editor_url'] ?? null))
-                                                                <a
-                                                                    href="{{ $logCallsite['editor_url'] }}"
-                                                                    class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                                                                >Open in editor</a>
-                                                            @endif
                                                         </div>
                                                     @endif
                                                     <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
@@ -2566,12 +2521,6 @@
                                                             >
                                                                 {{ $exception['file'] }}:{{ $exception['line'] }}
                                                             </button>
-                                                            @if (is_string($exception['location']['editor_url'] ?? null))
-                                                                <a
-                                                                    href="{{ $exception['location']['editor_url'] }}"
-                                                                    class="ndb:shrink-0 ndb:text-[10px] ndb:font-bold ndb:text-red-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-red-300"
-                                                                >Open in editor</a>
-                                                            @endif
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2591,12 +2540,6 @@
                                                                 ><span
                                                                     class="ndb:max-w-[35%] ndb:truncate ndb:text-zinc-400"
                                                                     >{{ $frame['function'] }}</span>
-                                                                @if (is_string($frame['editor_url'] ?? null))
-                                                                    <a
-                                                                        href="{{ $frame['editor_url'] }}"
-                                                                        class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300"
-                                                                    >Open</a>
-                                                                @endif
                                                             </li>
                                                         @empty
                                                             <li class="ndb:text-xs ndb:text-zinc-400">
@@ -2621,12 +2564,6 @@
                                                                     ><span
                                                                         class="ndb:max-w-[35%] ndb:truncate ndb:text-zinc-400"
                                                                         >{{ $frame['function'] }}</span>
-                                                                    @if (is_string($frame['editor_url'] ?? null))
-                                                                        <a
-                                                                            href="{{ $frame['editor_url'] }}"
-                                                                            class="ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300"
-                                                                        >Open</a>
-                                                                    @endif
                                                                 </li>
                                                             @endforeach
                                                         </ol>

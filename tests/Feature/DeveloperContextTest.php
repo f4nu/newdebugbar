@@ -38,7 +38,6 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
         ->data_keys->toContain('label', 'private_value')
         ->render_order->toBe(1)
         ->source->file->toBe('tests/views/context.blade.php')
-        ->source->editor_url->toStartWith('vscode://file/')
         ->and($profile['sections']['lifecycle']['summary']['count'])->toBeGreaterThanOrEqual(2)
         ->and(array_column($profile['sections']['timeline']['payload']['items'], 'label'))
         ->toContain(
@@ -56,8 +55,7 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
     expect($event)->not->toBeNull()
         ->and($event['broadcast'])->toBeFalse()
         ->and($event['listeners'][0]['name'])->toBe(ProfiledApplicationListener::class.'@handle')
-        ->and($event['listeners'][0]['source']['file'])->toBe('tests/TestCase.php')
-        ->and($event['listeners'][0]['source']['editor_url'])->toStartWith('vscode://file/');
+        ->and($event['listeners'][0]['source']['file'])->toBe('tests/TestCase.php');
 });
 
 it('captures validation field and rule names with the rendered redirect status', function () {

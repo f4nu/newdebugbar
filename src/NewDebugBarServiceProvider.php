@@ -40,7 +40,6 @@ use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
-use NewDebugBar\Support\EditorLink;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\LivewireMountRecorder;
@@ -94,12 +93,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxApplicationFrames: (int) config('newdebugbar.collection.exception_application_frames', 12),
             maxVendorFrames: (int) config('newdebugbar.collection.exception_vendor_frames', 12),
             sourceContextLines: (int) config('newdebugbar.collection.exception_source_context_lines', 9),
-        ));
-        $this->app->singleton(EditorLink::class, fn (): EditorLink => new EditorLink(
-            projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
-            editor: (string) config('newdebugbar.editor.name', 'vscode'),
-            remotePath: config('newdebugbar.editor.remote_path'),
-            localPath: config('newdebugbar.editor.local_path'),
         ));
         $this->app->singleton(RequestContext::class, fn (): RequestContext => new RequestContext(
             maxKeys: (int) config('newdebugbar.collection.max_items_per_array', 100),

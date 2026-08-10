@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use NewDebugBar\Tests\ProfiledApplicationListener;
 
 function assertDebugSectionSelected($page, string $section): void
 {
@@ -891,7 +892,7 @@ it('shows log call sites', function () {
     assertDebugSectionSelected($page, 'logs');
 });
 
-it('presents Laravel decisions lifecycle messages and editor links', function () {
+it('presents Laravel decisions lifecycle messages and source context without editor links', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
@@ -916,10 +917,12 @@ it('presents Laravel decisions lifecycle messages and editor links', function ()
         ->assertSee('Checkout checkpoint')
         ->click('[data-ndb-select-section="views"]')
         ->click('[data-ndb-section-panel="views"] details summary')
-        ->assertPresent('[data-ndb-section-panel="views"] a[href^="vscode://file/"]')
+        ->assertSee('tests/views/context.blade.php')
+        ->assertMissing('a[href^="vscode://file/"]')
         ->click('[data-ndb-select-section="events"]')
         ->click('[data-ndb-event-item]:first-child summary')
-        ->assertPresent('[data-ndb-section-panel="events"] a[href^="vscode://file/"]')
+        ->assertSee(ProfiledApplicationListener::class.'@handle')
+        ->assertMissing('a[href^="vscode://file/"]')
         ->assertNoJavaScriptErrors();
 
     assertDebugSectionSelected($page, 'events');

@@ -43,24 +43,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Editor Links
-    |--------------------------------------------------------------------------
-    |
-    | "name" selects the URL scheme used by source links and defaults to
-    | "vscode" so links work in a common editor without setup. The two path
-    | values map source paths from a remote or container path to this machine.
-    | Both default to null because normal local Laravel paths need no mapping.
-    |
-    */
-
-    'editor' => [
-        'name' => env('NEWDEBUGBAR_EDITOR', 'vscode'),
-        'remote_path' => env('NEWDEBUGBAR_REMOTE_PATH'),
-        'local_path' => env('NEWDEBUGBAR_LOCAL_PATH'),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Slow Work Thresholds
     |--------------------------------------------------------------------------
     |
