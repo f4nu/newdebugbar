@@ -834,65 +834,70 @@
                                         @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
                                         @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
                                         @php($timelineTicks = [0, 25, 50, 75, 100])
-                                        <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:pb-3 ndb:lg:flex-row ndb:lg:items-end ndb:dark:border-zinc-800">
-                                            <div class="ndb:min-w-0 ndb:flex-1">
-                                                <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                        <div
+                                            data-ndb-timeline-toolbar
+                                            class="ndb:border-b ndb:border-zinc-200/80 ndb:pb-3 ndb:dark:border-zinc-800"
+                                        >
+                                            <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end ndb:sm:justify-between">
+                                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:pb-2.5">
                                                     Activity
                                                 </p>
-                                                <div
-                                                    class="ndb:flex ndb:overflow-x-auto"
-                                                    role="group"
-                                                    aria-label="Filter timeline"
+                                                <label class="ndb:min-w-0 ndb:sm:w-72"
+                                                    ><span
+                                                        class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                        >Search</span
+                                                    ><input
+                                                        data-ndb-timeline-search
+                                                        x-model="timelineSearch"
+                                                        @input.debounce.100ms="applyTimelineFilters()"
+                                                        type="search"
+                                                        placeholder="Event or section"
+                                                        class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                                /></label>
+                                            </div>
+
+                                            <div
+                                                data-ndb-timeline-tabs
+                                                class="ndb:scrollbar ndb:mt-3 ndb:flex ndb:overflow-x-auto"
+                                                role="group"
+                                                aria-label="Filter timeline"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    data-ndb-timeline-filter="key"
+                                                    @click="setTimelineFilter('key')"
+                                                    :aria-pressed="timelineFilter === 'key'"
+                                                    class="ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                    :class="timelineFilter === 'key'
+                                                        ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
+                                                        : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
                                                 >
+                                                    Key activity</button
+                                                ><button
+                                                    type="button"
+                                                    data-ndb-timeline-filter="all"
+                                                    @click="setTimelineFilter('all')"
+                                                    :aria-pressed="timelineFilter === 'all'"
+                                                    class="ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                    :class="timelineFilter === 'all'
+                                                        ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
+                                                        : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                >
+                                                    All
+                                                </button>
+                                                @foreach ($timelineSections as $timelineSection)
                                                     <button
                                                         type="button"
-                                                        data-ndb-timeline-filter="key"
-                                                        @click="setTimelineFilter('key')"
-                                                        :aria-pressed="timelineFilter === 'key'"
-                                                        class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                        :class="timelineFilter === 'key'
-                                                            ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                                                            : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
+                                                        data-ndb-timeline-filter="{{ $timelineSection }}"
+                                                        @click="setTimelineFilter(@js($timelineSection))"
+                                                        :aria-pressed="timelineFilter === @js($timelineSection)"
+                                                        class="ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                        :class="timelineFilter === @js($timelineSection) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
                                                     >
-                                                        Key activity</button
-                                                    ><button
-                                                        type="button"
-                                                        data-ndb-timeline-filter="all"
-                                                        @click="setTimelineFilter('all')"
-                                                        :aria-pressed="timelineFilter === 'all'"
-                                                        class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                        :class="timelineFilter === 'all'
-                                                            ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                                                            : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
-                                                    >
-                                                        All
+                                                        {{ str($timelineSection)->title() }}
                                                     </button>
-                                                    @foreach ($timelineSections as $timelineSection)
-                                                        <button
-                                                            type="button"
-                                                            data-ndb-timeline-filter="{{ $timelineSection }}"
-                                                            @click="setTimelineFilter(@js($timelineSection))"
-                                                            :aria-pressed="timelineFilter === @js($timelineSection)"
-                                                            class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
-                                                            :class="timelineFilter === @js($timelineSection) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
-                                                        >
-                                                            {{ str($timelineSection)->title() }}
-                                                        </button>
-                                                    @endforeach
-                                                </div>
+                                                @endforeach
                                             </div>
-                                            <label class="ndb:min-w-0 ndb:lg:w-72"
-                                                ><span
-                                                    class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
-                                                    >Search</span
-                                                ><input
-                                                    data-ndb-timeline-search
-                                                    x-model="timelineSearch"
-                                                    @input.debounce.100ms="applyTimelineFilters()"
-                                                    type="search"
-                                                    placeholder="Event or section"
-                                                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                                            /></label>
                                         </div>
                                         <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
                                             <div>
@@ -2277,7 +2282,10 @@
                                                     <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                                         Unique views
                                                     </dt>
-                                                    <dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
+                                                    <dd
+                                                        data-ndb-view-summary-value="unique"
+                                                        class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums"
+                                                    >
                                                         {{ $section['summary']['unique_views'] }}
                                                     </dd>
                                                 </div>
@@ -2285,7 +2293,10 @@
                                                     <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                                         Total renders
                                                     </dt>
-                                                    <dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">
+                                                    <dd
+                                                        data-ndb-view-summary-value="renders"
+                                                        class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums"
+                                                    >
                                                         {{ $section['summary']['count'] }}
                                                     </dd>
                                                 </div>
@@ -2308,7 +2319,10 @@
                                                             >
                                                                 <summary class="ndb:grid ndb:cursor-pointer ndb:list-none ndb:grid-cols-[minmax(0,1fr)_5rem_1.5rem] ndb:items-center ndb:gap-x-3 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
                                                                     <span class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold">{{ $group['name'] }}</span>
-                                                                    <span class="ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $group['count'] }}</span>
+                                                                    <span
+                                                                        data-ndb-view-group-count
+                                                                        class="ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums"
+                                                                    >{{ $group['count'] }}</span>
                                                                     <x-newdebugbar::icon
                                                                         name="chevron-down"
                                                                         class="ndb:size-3.5 ndb:justify-self-end ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
@@ -2320,8 +2334,14 @@
                                                                         @php($viewData = is_array($view['data'] ?? null) ? $view['data'] : [])
                                                                         <article data-ndb-view-render class="ndb:py-4">
                                                                             <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
-                                                                                <span class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400">Render #{{ $view['render_order'] }}</span>
-                                                                                <code class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]">
+                                                                                <span
+                                                                                    data-ndb-view-render-order
+                                                                                    class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
+                                                                                >Render #{{ $view['render_order'] }}</span>
+                                                                                <code
+                                                                                    data-ndb-view-source
+                                                                                    class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]"
+                                                                                >
                                                                                     {{ $view['source']['file'] ?? 'Template path unavailable' }}
                                                                                     @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
                                                                                 </code>
@@ -2332,7 +2352,10 @@
                                                                                     <h3 class="ndb:text-[10px] ndb:font-bold">
                                                                                         Data
                                                                                     </h3>
-                                                                                    <span class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400">{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span>
+                                                                                    <span
+                                                                                        data-ndb-view-data-count
+                                                                                        class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
+                                                                                    >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span>
                                                                                 </div>
 
                                                                                 @if ($viewData !== [])
@@ -2392,6 +2415,9 @@
                                             @endif
                                         </div>
                                     @elseif ($sectionKey === 'events')
+                                        @php($eventItems = $section['payload']['items'] ?? [])
+                                        @php($eventSourceCounts = array_replace(['application' => 0, 'framework' => 0], array_count_values(array_column($eventItems, 'source'))))
+                                        @php($eventSourceCounts['all'] = count($eventItems))
                                         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800">
                                             <div class="ndb:flex-1">
                                                 <p class="ndb:mb-1.5 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
@@ -2404,10 +2430,14 @@
                                                             data-ndb-event-source="{{ $source }}"
                                                             @click="setEventSource(@js($source))"
                                                             :aria-pressed="eventSource === @js($source)"
-                                                            class="ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                            class="ndb:flex ndb:shrink-0 ndb:items-baseline ndb:gap-1.5 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
                                                             :class="eventSource === @js($source) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
                                                         >
-                                                            {{ $label }}
+                                                            <span>{{ $label }}</span>
+                                                            <span
+                                                                data-ndb-event-source-count="{{ $source }}"
+                                                                class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
+                                                            >{{ $eventSourceCounts[$source] ?? 0 }}</span>
                                                         </button>
                                                     @endforeach
                                                 </div>
@@ -2426,7 +2456,7 @@
                                             /></label>
                                         </div>
                                         <p class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">
-                                            <span x-text="visibleEventCount"></span> events
+                                            <span data-ndb-event-visible-count x-text="visibleEventCount"></span> events
                                             <span x-show.important="eventSource === 'application'">from application code</span>
                                         </p>
                                         <div

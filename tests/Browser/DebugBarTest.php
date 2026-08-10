@@ -635,6 +635,17 @@ it('filters the timeline without inventing spans for point events', function () 
     $page
         ->assertPresent('[data-ndb-timeline-item="request-start"]')
         ->assertVisible('[data-ndb-timeline-waterfall]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const tabs = document.querySelector('[data-ndb-timeline-tabs]').getBoundingClientRect();
+                const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
+
+                return tabs.top >= search.bottom;
+            })()
+            JS)
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-filter=key]")).whiteSpace === "nowrap"')
+        ->keys('[data-ndb-timeline-filter="all"]', 'Enter')
+        ->assertAttribute('[data-ndb-timeline-filter="all"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").getBoundingClientRect().left > document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").parentElement.parentElement.getBoundingClientRect().left + 4')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
         ->assertScript(<<<'JS'
@@ -781,6 +792,16 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->assertSee('Hit rate')
         ->assertSee('Misses')
         ->click('[data-ndb-select-section="events"]')
+        ->assertScript(<<<'JS'
+            ['application', 'all', 'framework'].every((source) => {
+                const expected = source === 'all'
+                    ? document.querySelectorAll('[data-ndb-event-item]').length
+                    : document.querySelectorAll(`[data-ndb-event-item][data-source="${source}"]`).length;
+                const count = document.querySelector(`[data-ndb-event-source-count="${source}"]`);
+
+                return count && Number(count.textContent.trim()) === expected;
+            })
+            JS)
         ->click('[data-ndb-event-source="application"]')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-event-item]:not([hidden])'))

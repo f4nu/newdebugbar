@@ -185,7 +185,7 @@ abstract class TestCase extends Orchestra
             Event::dispatch(new ProfiledApplicationEvent);
             DB::beginTransaction();
             DB::rollBack();
-            $view = view()->file(__DIR__.'/views/context.blade.php', [
+            $view = view('context', [
                 'label' => 'Context view',
                 'private_value' => 'view-data-value',
             ])->render();

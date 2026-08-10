@@ -94,7 +94,7 @@ function visualDebugPage(string $section, string $theme)
         return $page;
     }
 
-    if (in_array($section, ['authorization', 'lifecycle', 'messages'], true)) {
+    if (in_array($section, ['authorization', 'lifecycle', 'messages', 'views'], true)) {
         $page = visit('/profiled-context');
         setVisualDebugTheme($page, $theme);
 
@@ -183,8 +183,17 @@ function stabilizeVisualDebugValues($page): void
                     [data-ndb-model-raw],
                     [data-ndb-model-boot]
                 `) !== null;
+                const preservesSectionEvidence = parent?.closest(`
+                    [data-ndb-event-source-count],
+                    [data-ndb-event-visible-count],
+                    [data-ndb-view-summary-value],
+                    [data-ndb-view-group-count],
+                    [data-ndb-view-render-order],
+                    [data-ndb-view-source],
+                    [data-ndb-view-data-count]
+                `) !== null;
 
-                if (preservesQueryEvidence || preservesModelEvidence || ['queries', 'repeated', 'extra-runs'].includes(summaryValue)) {
+                if (preservesQueryEvidence || preservesModelEvidence || preservesSectionEvidence || ['queries', 'repeated', 'extra-runs'].includes(summaryValue)) {
                     continue;
                 }
 
@@ -304,6 +313,12 @@ it('matches the visual baseline for the :dataset section', function (string $sec
 
     $page
         ->assertVisible("[data-ndb-section-panel=\"{$section}\"]");
+
+    if ($section === 'views') {
+        $page
+            ->click('[data-ndb-view-group] > summary')
+            ->assertVisible('[data-ndb-view-render]');
+    }
 
     stabilizeVisualDebugValues($page);
 
