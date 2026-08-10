@@ -103,6 +103,7 @@ it('captures a local web request and its Laravel activity', function () {
         ->toContain('retrieved');
 
     expect($profile['metrics'])->not->toHaveKey('memory_mb')
+        ->and($profile['sections'])->not->toHaveKey('livewire')
         ->and($profile['sections']['request']['payload'])->not->toHaveKey('early_bootstrap_measured');
 
     expect($profile['sections']['logs']['payload']['items'][0]['callsite'])

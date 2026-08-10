@@ -2,7 +2,6 @@
 
 namespace NewDebugBar\Presentation;
 
-use Composer\InstalledVersions;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
@@ -45,10 +44,6 @@ final class ProfilePresenter
             ];
             $profile['sections']['queries']['payload']['items'] = $queryAnalysis['items'];
             $profile['sections']['queries']['payload']['repeated_groups'] = $queryAnalysis['repeated_groups'];
-        }
-
-        if (isset($profile['sections']['livewire']) && (int) ($profile['sections']['livewire']['summary']['count'] ?? 0) > 0) {
-            $profile['sections']['livewire']['summary']['version'] = InstalledVersions::getPrettyVersion('livewire/livewire') ?? 'installed';
         }
 
         $profile = $this->sections->analyze($profile);

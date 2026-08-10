@@ -211,10 +211,10 @@ test('a new application profile resets stale section state and reloads open deta
   state.inspectorOpen = true;
   state.detailsRequested = true;
 
-  state.switchProfile({ ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/livewire/update' });
+  state.switchProfile({ ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/api/jobs' });
   await Promise.resolve();
 
-  assert.equal(state.summary.path, '/livewire/update');
+  assert.equal(state.summary.path, '/api/jobs');
   assert.equal(state.selected, 'overview');
   assert.equal(state.detailsRequested, true);
   assert.equal(detailsLoaded, 1);
@@ -747,7 +747,7 @@ test('the command palette keeps quiet collectors behind one reveal action', () =
     sections: [
       { key: 'overview', label: 'Overview', active: true },
       { key: 'queries', label: 'Queries', active: true },
-      { key: 'livewire', label: 'Livewire', active: false },
+      { key: 'redis', label: 'Redis', active: false },
       { key: 'mail', label: 'Mail', active: false },
     ],
   }, runtime());
@@ -762,13 +762,13 @@ test('the command palette keeps quiet collectors behind one reveal action', () =
   assert.deepEqual(state.filteredCommands.filter((command) => command.id.startsWith('section:')).map((command) => command.id), [
     'section:overview',
     'section:queries',
-    'section:livewire',
     'section:mail',
+    'section:redis',
   ]);
 
-  state.paletteSearch = 'livewire';
+  state.paletteSearch = 'redis';
   state.paletteShowQuiet = false;
-  assert.deepEqual(state.filteredCommands.map((command) => command.id), ['section:livewire']);
+  assert.deepEqual(state.filteredCommands.map((command) => command.id), ['section:redis']);
 });
 
 test('broken browser preferences never break initialization or persistence', () => {

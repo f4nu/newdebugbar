@@ -114,7 +114,6 @@ final class TimelineBuilder
             'queries' => ($item['kind'] ?? null) !== null
                 ? 'Transaction '.($item['kind'] ?? 'event').' '.($item['connection'] ?? '')
                 : ($item['normalized_sql'] ?? $item['sql'] ?? 'Query'),
-            'livewire' => trim(($item['component'] ?? 'Livewire').' '.implode(' ', $item['actions'] ?? [])),
             'http_client' => trim(($item['method'] ?? '').' '.($item['url'] ?? 'HTTP request')),
             'queue' => trim(($item['kind'] ?? '').' '.($item['job'] ?? 'Job')),
             'mail' => 'Mail sent'.(($item['mailable'] ?? null) ? ' '.$item['mailable'] : ''),

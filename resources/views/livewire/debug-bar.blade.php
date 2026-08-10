@@ -854,7 +854,7 @@
                                         @php($timelineItems = $section['payload']['items'])
                                         @php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
                                         @php($timelineSourceSections = array_values(array_filter($timelineSections, fn ($timelineSection) => $timelineSection !== 'request')))
-                                        @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
+                                        @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'queue'])
                                         @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
                                         @php($timelineTicks = [0, 25, 50, 75, 100])
                                         <div data-ndb-timeline-results-header class="ndb:space-y-3">
@@ -1436,68 +1436,6 @@
                                             :query-explains="$queryExplains"
                                             :query-explain-errors="$queryExplainErrors"
                                         />
-                                    @elseif ($sectionKey === 'livewire')
-                                        <div class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                                            @foreach ([['Initial renders', $section['summary']['initial_render_count'] ?? 0], ['Updates', $section['summary']['update_count'] ?? 0], ['Components', $section['summary']['component_count'] ?? 0], ['Livewire', $section['summary']['version'] ?? ((int) ($section['summary']['count'] ?? 0) > 0 ? 'Version unknown' : 'Not active')]] as [$label, $value])
-                                                <div class="ndb:min-w-0 ndb:px-3.5 ndb:py-3">
-                                                    <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                        {{ $label }}
-                                                    </p>
-                                                    <p class="ndb:mt-1 ndb:truncate ndb:text-lg ndb:font-bold ndb:tabular-nums">
-                                                        {{ $value }}
-                                                    </p>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                        <div class="ndb:space-y-3">
-                                            @forelse ($section['payload']['items'] as $index => $item)
-                                                <article
-                                                    wire:key="livewire-{{ $index }}"
-                                                    class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30"
-                                                >
-                                                    <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800">
-                                                        <span class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300">{{ $item['kind'] ?? 'update' }}</span>
-                                                        <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $item['component'] }}</code>
-                                                        <span class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">{{ isset($item['duration_ms']) ? $item['duration_ms'].' ms render' : ($item['at_ms'].' ms') }}</span>
-                                                    </div>
-                                                    @if (is_string($item['parent_component'] ?? null))
-                                                        <p class="ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800">
-                                                            Parent: <code>{{ $item['parent_component'] }}</code>
-                                                        </p>
-                                                    @endif
-                                                    <dl class="ndb:grid ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:divide-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800">
-                                                        @foreach ([
-                                                            ['Actions', ($item['actions'] ?? []) === [] ? '—' : implode(', ', $item['actions'])],
-                                                            ['Updated properties', ($item['updated_properties'] ?? []) === [] ? '—' : implode(', ', $item['updated_properties'])],
-                                                            ['Request', number_format($item['payload_size_bytes'] ?? 0).' B'],
-                                                            ['Response', number_format($item['response_size_bytes'] ?? 0).' B'],
-                                                        ] as [$label, $value])
-                                                            <div class="ndb:min-w-0 ndb:px-3.5 ndb:py-3">
-                                                                <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                                                    {{ $label }}
-                                                                </dt>
-                                                                <dd class="ndb:mt-1 ndb:truncate ndb:text-xs ndb:font-semibold">
-                                                                    {{ $value }}
-                                                                </dd>
-                                                            </div>
-                                                        @endforeach
-                                                    </dl>
-                                                    @if (($item['validation_failure_count'] ?? 0) > 0)
-                                                        <div class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/45 ndb:px-4 ndb:py-3 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20">
-                                                            <p class="ndb:text-[9px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-amber-700 ndb:dark:text-amber-300">
-                                                                {{ $item['validation_failure_count'] }} validation
-                                                                failure{{ $item['validation_failure_count'] === 1 ? '' : 's' }}
-                                                            </p>
-                                                            <p class="ndb:mt-1 ndb:text-xs ndb:font-semibold">
-                                                                {{ implode(', ', $item['validation_fields'] ?? []) }}
-                                                            </p>
-                                                        </div>
-                                                    @endif
-                                                </article>
-                                            @empty
-                                                <x-newdebugbar::empty-state label="No application Livewire updates were captured." />
-                                            @endforelse
-                                        </div>
                                     @elseif ($sectionKey === 'http_client')
                                         <dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                                             @foreach ([['Requests', $section['summary']['count']], ['Total time', $section['summary']['duration_ms'].' ms'], ['Failures', $section['summary']['failed_count']]] as [$label, $value])

@@ -71,15 +71,6 @@ function assertVisualDebugBaseline($page, string $name): void
 
 function visualDebugPage(string $section, string $theme)
 {
-    if ($section === 'livewire') {
-        $page = visit('/profiled-livewire');
-        setVisualDebugTheme($page, $theme);
-
-        return $page
-            ->click('[data-testid="profiled-increment"]')
-            ->waitForText('1');
-    }
-
     if ($section === 'exceptions') {
         $page = visit('/profiled-reported-exception');
         setVisualDebugTheme($page, $theme);
@@ -278,7 +269,6 @@ $visualSections = [
     'request',
     'timeline',
     'queries',
-    'livewire',
     'http_client',
     'queue',
     'mail',

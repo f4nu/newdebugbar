@@ -17,7 +17,6 @@ final class McpProfilePresenter
         'request',
         'timeline',
         'queries',
-        'livewire',
         'http_client',
         'queue',
         'mail',

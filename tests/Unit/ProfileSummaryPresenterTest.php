@@ -28,23 +28,6 @@ function historySummaryProfile(string $requestType, array $request = [], array $
     ];
 }
 
-it('summarizes the application event behind Livewire requests', function () {
-    $summary = (new ProfileSummaryPresenter(new Redactor))->present(historySummaryProfile('livewire', sections: [
-        'livewire' => ['payload' => ['items' => [[
-            'phase' => 'response',
-            'component' => 'work-order-board',
-            'actions' => ['advance'],
-            'updated_properties' => [],
-            'validation_fields' => [],
-        ]]], 'summary' => ['count' => 1]],
-    ]));
-
-    expect($summary['activity'])->toBe('Work Order Board → advance()')
-        ->and($summary['environment'])->toBe('testing')
-        ->and($summary['status_meaning'])->toBe('Success')
-        ->and($summary['response_size'])->toBe('13.43 KB');
-});
-
 it('summarizes status families and response sizes for the request header', function (int $status, string $meaning) {
     $profile = historySummaryProfile('full_page', [
         'response_size_bytes' => 2_621_440,

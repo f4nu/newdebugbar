@@ -4,7 +4,7 @@ New Debug Bar is a modern debugging tool for Laravel, built for developers and c
 
 A compact bar at the bottom of the page gives you quick access to database queries, errors, logs, events, jobs, mail, cache use, and more.
 
-It supports Livewire and Inertia.
+It supports Inertia.
 
 ## Why I built New Debug Bar
 
