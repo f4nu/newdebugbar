@@ -15,7 +15,7 @@
                 {{ $headline['detail'] ?? 'The trigger is unknown.' }}
             </p>
             <p class="ndb:mt-2 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400">
-                {{ ucfirst($headline['confidence'] ?? 'unknown') }} title
+                {{ ($headline['confidence'] ?? 'unknown') === 'unknown' ? 'Title not derived' : ucfirst($headline['confidence']).' title' }}
             </p>
         </div>
         <div class="ndb:border-t ndb:border-zinc-200 ndb:pt-4 ndb:lg:border-t-0 ndb:lg:border-l ndb:lg:pt-0 ndb:lg:pl-5 ndb:dark:border-zinc-800">

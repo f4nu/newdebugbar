@@ -27,7 +27,7 @@ The package records facts before findings. It does not invent a single interacti
 - Baseline package checks on 2026-08-10: 140 PHP tests passed with 1,221 assertions and 2 expected skips; 36 JavaScript tests passed; the production asset build passed.
 - The canonical Livewire example rendered cleanly and a real search update completed with a clean browser console. That checkout used its public package dependency, so it is baseline product evidence rather than proof of this worktree.
 
-The final overhead delta will be measured against the same fixtures after collection is enabled. No fixed performance budget is invented before that measurement.
+The final local Testbench microbenchmark ran three times with 30 property-update requests per lane on PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The disabled medians were 1.023–1.030 ms; enabled medians were 1.883–1.902 ms; measured median deltas were 0.856–0.876 ms. Disabled p95 was 1.089–1.144 ms and enabled p95 was 2.007–2.059 ms. This is repeatable local evidence, not a production latency promise or an invented pass/fail budget.
 
 ## Source order
 
@@ -183,7 +183,7 @@ The section uses the same evidence model for every state. Hidden panels remain i
 | Empty events | Exchange with no dispatch | Events tab shows a zero count and a calm empty state |
 | Corrupt or partial profile | Missing or wrong-shaped optional fields | Generic unknown labels and visible evidence gaps, never a render failure |
 
-Polling, browser-skipped callbacks, and parallel request ordering use the same model, but their deeper correlation remains a hardening task until a real public contract is proven.
+Polling is inferred only when one correlated refresh has an observed `wire:poll` source. A browser-skipped callback is shown beside, and never replaces, the server result. Parallel and out-of-order requests keep separate request objects, profile IDs, append tokens, and revisions.
 
 ## Known unknowns and deferred scope
 
