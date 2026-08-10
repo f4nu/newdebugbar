@@ -4,6 +4,7 @@ import json from 'highlight.js/lib/languages/json';
 import sql from 'highlight.js/lib/languages/sql';
 import { installProfileDiscoveryBridge, installRequestDiscovery } from './request-discovery.js';
 import { installLivewireTrace } from './livewire-trace.js';
+import { createLivewireSection } from './livewire-section.js';
 import { createNewDebugBar } from './state.js';
 
 const php = (language) => ({
@@ -35,6 +36,7 @@ window.newDebugBarHighlight = (root = document) => {
 };
 
 window.newDebugBar = (summary) => createNewDebugBar(summary);
+window.newDebugBarLivewireSection = () => createLivewireSection();
 
 installProfileDiscoveryBridge();
 installRequestDiscovery();

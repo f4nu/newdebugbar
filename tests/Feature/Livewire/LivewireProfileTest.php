@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\File;
 use Livewire\Drawer\Utils;
 use Livewire\Livewire;
+use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Livewire\LivewireTraceToken;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Fixtures\Livewire\DiagnosticsChildFixture;
@@ -56,6 +57,12 @@ function postProfiledDiagnosticsMessage(array $message): array
     $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
 
     return app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+}
+
+function renderedDiagnosticsBar(array $profile): mixed
+{
+    return Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
+        ->call('loadDetails');
 }
 
 it('profiles one property update without storing a Livewire snapshot', function () {
@@ -114,6 +121,11 @@ it('profiles one property update without storing a Livewire snapshot', function 
 
     expect($livewire['payload']['server_spans'])->not->toBeEmpty()
         ->and(json_encode($livewire))->not->toContain('initial-secret', 'wire:snapshot', 'checksum');
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Updated search')
+        ->assertSee('Before and server state after the exchange')
+        ->assertSee('northline');
 });
 
 it('profiles one named action and links its server state change', function () {
@@ -150,6 +162,11 @@ it('profiles one named action and links its server state change', function () {
         ->and($change['caused_by'])->toBe([['type' => 'action', 'id' => $action['id']]])
         ->and($livewire['payload']['messages'][0]['action_ids'])->toBe([$action['id']])
         ->and($livewire['payload']['messages'][0]['state_change_ids'])->toBe([$change['id']]);
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Ran saveReview')
+        ->assertSee('saveReview')
+        ->assertSee('reviewScore');
 });
 
 it('shows a secret property changed without retaining either value', function () {
@@ -167,6 +184,11 @@ it('shows a secret property changed without retaining either value', function ()
         ->server->toBe('[redacted]')
         ->redacted->toBeTrue()
         ->and($encoded)->not->toContain('initial-secret', 'replacement-secret');
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Changed, value hidden')
+        ->assertDontSee('initial-secret')
+        ->assertDontSee('replacement-secret');
 });
 
 it('profiles an initial nested mount as an affected hierarchy', function () {
@@ -192,6 +214,12 @@ it('profiles an initial nested mount as an affected hierarchy', function () {
         ->and($child['parent_id'])->toBe($parent['id'])
         ->and($child['depth'])->toBe(1)
         ->and($livewire['payload']['completeness']['components'])->toBe('affected_only');
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Affected component relationships')
+        ->assertSee('This is not a full page component tree.')
+        ->assertSee('diagnostics-parent')
+        ->assertSee('diagnostics-child');
 });
 
 it('keeps a seventeen message batch distinct and bounded', function () {
@@ -222,6 +250,11 @@ it('keeps a seventeen message batch distinct and bounded', function () {
         ->payload->state_changes->toHaveCount(17)
         ->and(collect($livewire['payload']['messages'])->pluck('component_id')->unique())->toHaveCount(17)
         ->and($profile['sections']['request']['payload']['input']['component_message_count'])->toBe(17);
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Livewire exchange')
+        ->assertSee('17 actions ran across this exchange.')
+        ->assertSee('11 more messages are listed in the profile data.');
 });
 
 it('keeps emitted and received event evidence separate', function () {
@@ -238,6 +271,10 @@ it('keeps emitted and received event evidence separate', function () {
         ->declared_target->toBeNull()
         ->observed_recipient_ids->toBe([])
         ->recipient_status->toBe('unknown');
+
+    renderedDiagnosticsBar($emitted)
+        ->assertSee('vendor-checked-in')
+        ->assertSee('Unknown');
 
     $childHtml = (string) app('livewire')->mount('diagnostics-child');
     $childSnapshot = Utils::extractAttributeDataFromHtml($childHtml, 'wire:snapshot');
@@ -257,6 +294,10 @@ it('keeps emitted and received event evidence separate', function () {
         ->declared_target->toBeNull()
         ->observed_recipient_ids->toBe([$childSnapshot['memo']['id']])
         ->recipient_status->toBe('observed');
+
+    renderedDiagnosticsBar($received)
+        ->assertSee('vendor-checked-in')
+        ->assertSee('diagnostics-child');
 });
 
 it('records validation redirect download and renderless outcomes safely', function () {
@@ -269,6 +310,10 @@ it('records validation redirect download and renderless outcomes safely', functi
         ->result->toBe('validation_failed')
         ->validation_errors->toHaveKey('search');
 
+    renderedDiagnosticsBar($validation)
+        ->assertSee('Validation stopped the action')
+        ->assertSee('Validation fields: search');
+
     $redirect = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
         profiledDiagnosticsSnapshot(),
         calls: [['method' => 'goToVendor', 'params' => []]],
@@ -277,6 +322,10 @@ it('records validation redirect download and renderless outcomes safely', functi
     expect($redirect['sections']['livewire']['payload']['messages'][0])
         ->result->toBe('redirected')
         ->effects->redirect->toBe('/vendors?token=%5Bredacted%5D');
+
+    renderedDiagnosticsBar($redirect)
+        ->assertSee('Returned a redirect')
+        ->assertSee('/vendors?token=%5Bredacted%5D');
 
     $download = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
         profiledDiagnosticsSnapshot(),
@@ -292,6 +341,11 @@ it('records validation redirect download and renderless outcomes safely', functi
         ->effects->download->content_stored->toBeFalse()
         ->and($downloadJson)->not->toContain('private report body', base64_encode('private report body'));
 
+    renderedDiagnosticsBar($download)
+        ->assertSee('Returned a download')
+        ->assertSee('review-report.txt')
+        ->assertDontSee('private report body');
+
     $renderless = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
         profiledDiagnosticsSnapshot(),
         calls: [['method' => 'recordHeartbeat', 'params' => []]],
@@ -300,6 +354,10 @@ it('records validation redirect download and renderless outcomes safely', functi
     expect($renderless['sections']['livewire']['payload']['messages'][0])
         ->result->toBe('renderless')
         ->and($renderless['sections']['livewire']['payload']['components'][0]['rendered'])->toBe('no');
+
+    renderedDiagnosticsBar($renderless)
+        ->assertSee('Completed without a render')
+        ->assertSee('Renderless');
 });
 
 it('adds compact Livewire attribution to work proven inside an action', function () {
@@ -335,6 +393,11 @@ it('falls back visibly without debug timings and clears attribution afterward', 
         ->server_spans->toBe([])
         ->completeness->server_spans->toBe('unknown')
         ->completeness->unknown_reasons->toContain('Livewire server timing evidence requires app.debug=true.');
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Browser trace is missing')
+        ->assertSee('Server phase timing is unavailable')
+        ->assertSee('Livewire server timing evidence requires app.debug=true.');
 
     $ordinary = $this->get('/profiled')->assertOk()->assertHeader('X-NewDebugBar-Profile');
     $ordinaryProfile = app(ProfileStore::class)->get($ordinary->headers->get('X-NewDebugBar-Profile'));

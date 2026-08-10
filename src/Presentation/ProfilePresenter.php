@@ -15,6 +15,7 @@ final class ProfilePresenter
         private readonly ProfileAnalyzer $profiles,
         private readonly SectionAnalyzer $sections,
         private readonly TimelineBuilder $timeline,
+        private readonly LivewirePresenter $livewire,
     ) {}
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */
@@ -47,6 +48,10 @@ final class ProfilePresenter
         }
 
         $profile = $this->sections->analyze($profile);
+
+        if (isset($profile['sections']['livewire']) && is_array($profile['sections']['livewire'])) {
+            $profile['sections']['livewire'] = $this->livewire->present($profile['sections']['livewire']);
+        }
 
         if (isset($profile['sections']['request'])) {
             $timeline = $this->timeline->build($profile);

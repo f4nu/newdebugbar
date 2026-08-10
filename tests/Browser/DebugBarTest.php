@@ -182,6 +182,42 @@ it('provides stateful window controls and closes until reload', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('moves the compact toolbar away from host dialogs at either screen edge', function () {
+    $page = visit('/profiled')
+        ->resize(1440, 900)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom');
+
+    $page->script(<<<'JS'
+        const dialog = document.createElement('dialog');
+        dialog.dataset.testid = 'host-dialog';
+        dialog.setAttribute('open', '');
+        Object.assign(dialog.style, {
+            position: 'fixed',
+            inset: 'auto 0 0 0',
+            width: '100vw',
+            height: '180px',
+            margin: '0',
+        });
+        document.body.append(dialog);
+        JS);
+
+    $page
+        ->wait(0.2)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13');
+
+    $page->script(<<<'JS'
+        const dialog = document.querySelector('[data-testid="host-dialog"]');
+        dialog.style.inset = '0 0 auto 0';
+        JS);
+
+    $page
+        ->wait(0.2)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().bottom >= window.innerHeight - 13')
+        ->assertNoJavaScriptErrors();
+});
+
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
@@ -603,6 +639,51 @@ it('appends one value-free browser trace after a real Livewire update', function
                     && updates[0].revision === 2;
             })()
             JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('renders a real Livewire mount as an accessible evidence section', function () {
+    $page = visit('/profiled-livewire')
+        ->resize(1440, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="livewire"]')
+        ->assertVisible('[data-ndb-livewire]')
+        ->assertSee('Mounted diagnostics-fixture')
+        ->assertAttribute('[data-ndb-livewire-tab="overview"]', 'aria-selected', 'true')
+        ->click('[data-ndb-livewire-tab="components"]')
+        ->assertAttribute('[data-ndb-livewire-tab="components"]', 'aria-selected', 'true')
+        ->assertVisible('[data-ndb-livewire-panel="components"]')
+        ->assertSee('This is not a full page component tree.')
+        ->assertSee('diagnostics-fixture')
+        ->keys('[data-ndb-livewire-tab="components"]', 'ArrowRight')
+        ->assertAttribute('[data-ndb-livewire-tab="timeline"]', 'aria-selected', 'true')
+        ->assertVisible('[data-ndb-livewire-panel="timeline"]')
+        ->click('[data-ndb-livewire-tab="events"]')
+        ->assertAttribute('[data-ndb-livewire-tab="events"]', 'aria-selected', 'true')
+        ->assertSee('No Livewire events were observed.')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows the correlated state and timing evidence from a real Livewire update', function () {
+    $page = visit('/profiled-livewire')
+        ->type('[data-testid="diagnostics-fixture"] input[type="search"]', 'northline')
+        ->wait(1)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="history"]')
+        ->click('[data-ndb-open-profile]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="livewire"]')
+        ->assertVisible('[data-ndb-livewire]')
+        ->assertSee('Livewire exchange')
+        ->assertSee('2 actions ran across this exchange.')
+        ->assertSeeIn('[data-ndb-livewire-overview-state]', 'search')
+        ->assertSeeIn('[data-ndb-livewire-overview-state]', 'northline')
+        ->assertDontSee('Browser trace is missing')
+        ->click('[data-ndb-livewire-tab="timeline"]')
+        ->assertVisible('[data-ndb-livewire-lane="browser"]')
+        ->assertSee('Browser and server clocks have different origins.')
         ->assertNoJavaScriptErrors();
 });
 

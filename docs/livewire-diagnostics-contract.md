@@ -156,6 +156,32 @@ Render reasons use the same observed trigger language. Multiple possible causes 
 - The execution context is a stack. Every scoped operation unwinds in `finally`, and request finalization clears any remaining frames.
 - No Livewire method, request, component, response, DOM node, or effect is monkey-patched.
 
+## Interface state matrix
+
+The section uses the same evidence model for every state. Hidden panels remain in the rendered profile so keyboard and browser checks can switch between them without fetching a second interpretation.
+
+| State | Real fixture or evidence | Required visible result |
+| --- | --- | --- |
+| Initial mount | Nested parent and child mount | Mount headline, affected-only explanation, stable instance IDs, parent link |
+| One property update | `search` update | One inferred title, before-to-server diff, optional submitted and browser layers |
+| Named action | `saveReview` | Action name, component, state change, render reason |
+| Multi-action batch | 17 distinct messages | Generic exchange title, exact counts, bounded rows |
+| Nested subcomponents | Parent and child fixture | Affected relationships, never a claimed full page tree |
+| Emitted event | `vendor-checked-in` dispatch | Source, declared target, recipient unknown when not observed |
+| Received event | `__dispatch` on child | Concrete observed recipient without inventing a source |
+| Validation failure | Empty `search` validation | Validation result and affected field |
+| Redirect | Redacted vendor redirect | Redirect result and safe destination |
+| Download | Text report effect | Name, type, and size only; no content |
+| Renderless or no-op | Renderless heartbeat | Completed without a render; no automatic warning |
+| Missing browser trace | Server-only profile | Visible missing status and a safe next check |
+| Partial browser trace | Unmatched callback evidence | Visible partial status; unmatched facts stay unknown |
+| Truncated evidence | Collector bound exceeded | Retained facts plus explicit truncation notice |
+| Redacted change | Secret property update | Changed and hidden; no before, submitted, or server secret |
+| Empty events | Exchange with no dispatch | Events tab shows a zero count and a calm empty state |
+| Corrupt or partial profile | Missing or wrong-shaped optional fields | Generic unknown labels and visible evidence gaps, never a render failure |
+
+Polling, browser-skipped callbacks, and parallel request ordering use the same model, but their deeper correlation remains a hardening task until a real public contract is proven.
+
 ## Known unknowns and deferred scope
 
 - A conceptual interaction may span several requests. Deep multi-request correlation is deferred.

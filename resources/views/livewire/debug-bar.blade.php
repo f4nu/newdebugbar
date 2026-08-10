@@ -30,7 +30,10 @@
         x-transition.opacity.duration.150ms
         role="toolbar"
         aria-label="Debug toolbar"
-        class="ndb:pointer-events-auto ndb:fixed ndb:bottom-3 ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:max-w-5xl ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
+        data-ndb-toolbar-shell
+        :data-placement="toolbarPlacement"
+        :class="toolbarPlacement === 'top' ? 'ndb:top-3' : 'ndb:bottom-3'"
+        class="ndb:pointer-events-auto ndb:fixed ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-2.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:max-w-5xl ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
     >
         <x-newdebugbar::toolbar-button
             section="request"
@@ -1430,6 +1433,8 @@
                                                 </dl>
                                             </div>
                                         @endif
+                                    @elseif ($sectionKey === 'livewire')
+                                        @include('newdebugbar::livewire.sections.livewire', ['livewireSection' => $section])
                                     @elseif ($sectionKey === 'queries')
                                         <x-newdebugbar::query-section
                                             :section="$section"

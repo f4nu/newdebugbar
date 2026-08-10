@@ -155,6 +155,36 @@ test('selecting a section resets content and highlights its code', async () => {
   assert.equal(highlighted, 1);
 });
 
+test('moves the compact toolbar to the edge with less host dialog overlap', () => {
+  const browser = runtime();
+  let placement = 'top';
+  let watcher = null;
+  let stopped = 0;
+  browser.toolbarPlacement = () => placement;
+  browser.watchHostDialogs = (_root, callback) => {
+    watcher = callback;
+
+    return () => stopped++;
+  };
+  const state = createNewDebugBar(summary, browser);
+  state.$root = {};
+  state.$nextTick = (callback) => callback();
+
+  state.init();
+  assert.equal(state.toolbarPlacement, 'top');
+
+  placement = 'bottom';
+  watcher();
+  assert.equal(state.toolbarPlacement, 'bottom');
+
+  placement = 'invalid';
+  watcher();
+  assert.equal(state.toolbarPlacement, 'bottom');
+
+  state.destroy();
+  assert.equal(stopped, 1);
+});
+
 test('query findings reveal and scroll to grouped slow evidence', () => {
   const state = createNewDebugBar(summary, runtime());
   const content = { scrollTop: 60 };

@@ -48,6 +48,70 @@ const defaultRuntime = () => ({
     previous.inert.forEach(([element, inert]) => { element.inert = inert; });
     delete root.__newDebugBarHostLock;
   },
+  toolbarPlacement: (root) => {
+    const toolbar = root?.querySelector?.('[data-ndb-toolbar-shell]');
+    if (!toolbar) return 'bottom';
+
+    const toolbarBox = toolbar.getBoundingClientRect();
+    const width = Math.min(toolbarBox.width, Math.max(0, window.innerWidth - 24));
+    const height = toolbarBox.height;
+    const left = (window.innerWidth - width) / 2;
+    const candidates = {
+      top: { left, right: left + width, top: 12, bottom: 12 + height },
+      bottom: {
+        left,
+        right: left + width,
+        top: window.innerHeight - height - 12,
+        bottom: window.innerHeight - 12,
+      },
+    };
+    const dialogs = [...document.querySelectorAll('dialog[open], [role="dialog"]')]
+      .filter((dialog) => !root.contains(dialog))
+      .map((dialog) => ({ dialog, box: dialog.getBoundingClientRect() }))
+      .filter(({ dialog, box }) => {
+        const style = window.getComputedStyle(dialog);
+
+        return box.width > 0
+          && box.height > 0
+          && style.display !== 'none'
+          && style.visibility !== 'hidden';
+      })
+      .map(({ box }) => box);
+    const overlap = (candidate) => dialogs.reduce((area, dialog) => {
+      const widthOverlap = Math.max(0, Math.min(candidate.right, dialog.right) - Math.max(candidate.left, dialog.left));
+      const heightOverlap = Math.max(0, Math.min(candidate.bottom, dialog.bottom) - Math.max(candidate.top, dialog.top));
+
+      return area + widthOverlap * heightOverlap;
+    }, 0);
+
+    return overlap(candidates.top) < overlap(candidates.bottom) ? 'top' : 'bottom';
+  },
+  watchHostDialogs: (_root, callback) => {
+    let frame = null;
+    const schedule = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        callback();
+      });
+    };
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['open', 'aria-hidden', 'aria-modal', 'class', 'style'],
+      childList: true,
+      subtree: true,
+    });
+    window.addEventListener('resize', schedule);
+    window.addEventListener('scroll', schedule, true);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', schedule);
+      window.removeEventListener('scroll', schedule, true);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  },
 });
 
 export function createNewDebugBar(summary = {}, runtime = null) {
@@ -65,6 +129,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     selected: 'overview',
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
+    toolbarPlacement: 'bottom',
+    stopToolbarPlacementWatch: null,
     favorites: [],
     favoriteDrag: null,
     favoriteDrop: null,
@@ -109,6 +175,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.$nextTick?.(() => {
         this.syncSectionPanels();
         this.syncHostLock();
+        this.syncToolbarPlacement();
+        this.stopToolbarPlacementWatch = browser.watchHostDialogs?.(
+          this.$root,
+          () => this.syncToolbarPlacement(),
+        ) ?? null;
       });
       this.colorScheme?.addEventListener?.('change', this.colorSchemeListener);
     },
@@ -117,6 +188,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.colorScheme?.removeEventListener?.('change', this.colorSchemeListener);
       this.colorScheme = null;
       this.colorSchemeListener = null;
+      this.stopToolbarPlacementWatch?.();
+      this.stopToolbarPlacementWatch = null;
       browser.unlockHost?.(this.$root);
     },
 
@@ -306,6 +379,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     syncHostLock() {
       if (this.barVisible && (this.inspectorOpen || this.paletteOpen)) browser.lockHost?.(this.$root);
       else browser.unlockHost?.(this.$root);
+    },
+
+    syncToolbarPlacement() {
+      const placement = browser.toolbarPlacement?.(this.$root);
+
+      if (['top', 'bottom'].includes(placement)) this.toolbarPlacement = placement;
     },
 
     openInspector(section = this.selected, returnFocus = null) {
