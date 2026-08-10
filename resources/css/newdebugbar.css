@@ -107,6 +107,15 @@
     padding: 0;
 }
 
+#newdebugbar [data-ndb-view-data] {
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+#newdebugbar [data-ndb-view-data] .hljs-attr {
+    color: #0369a1;
+}
+
 #newdebugbar .hljs-keyword,
 #newdebugbar .hljs-literal,
 #newdebugbar .hljs-selector-tag {
@@ -155,6 +164,10 @@
 }
 
 #newdebugbar[data-theme="dark"] :is(.hljs-title, .hljs-property, .hljs-variable) {
+    color: #7dd3fc;
+}
+
+#newdebugbar[data-theme="dark"] [data-ndb-view-data] .hljs-attr {
     color: #7dd3fc;
 }
 

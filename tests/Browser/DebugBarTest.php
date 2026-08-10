@@ -940,10 +940,30 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->click('[data-ndb-select-section="messages"]')
         ->assertSee('Checkout checkpoint')
         ->click('[data-ndb-select-section="views"]')
-        ->click('[data-ndb-section-panel="views"] details summary')
+        ->click('[data-ndb-view-group] > summary')
         ->assertSee('tests/views/context.blade.php')
-        ->assertSee('view-data-value')
         ->assertPresent('[data-ndb-view-data]')
+        ->assertScript('document.querySelector("[data-ndb-view-data-details]").open === false')
+        ->click('[data-ndb-view-data-details] > summary')
+        ->assertVisible('[data-ndb-view-data]')
+        ->assertSee('view-data-value')
+        ->assertScript(<<<'JS'
+            (() => {
+                const code = document.querySelector('[data-ndb-view-data] code[data-ndb-language="json"][data-highlighted]');
+                const property = code?.querySelector('.hljs-attr');
+                const string = code?.querySelector('.hljs-string');
+
+                return code !== null
+                    && code.textContent.includes('\n')
+                    && code.textContent.includes('"private_value": "view-data-value"')
+                    && code.textContent.includes('"rows": [')
+                    && Number.parseFloat(getComputedStyle(code).fontSize) >= 12
+                    && property !== null
+                    && string !== null
+                    && code.querySelector('.hljs-literal') !== null
+                    && getComputedStyle(property).color !== getComputedStyle(string).color;
+            })()
+            JS)
         ->assertMissing('a[href^="vscode://file/"]')
         ->click('[data-ndb-select-section="events"]')
         ->click('[data-ndb-event-item]:first-child summary')

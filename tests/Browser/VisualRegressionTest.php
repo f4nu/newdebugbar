@@ -317,7 +317,9 @@ it('matches the visual baseline for the :dataset section', function (string $sec
     if ($section === 'views') {
         $page
             ->click('[data-ndb-view-group] > summary')
-            ->assertVisible('[data-ndb-view-render]');
+            ->assertVisible('[data-ndb-view-render]')
+            ->click('[data-ndb-view-data-details] > summary')
+            ->assertVisible('[data-ndb-view-data]');
     }
 
     stabilizeVisualDebugValues($page);

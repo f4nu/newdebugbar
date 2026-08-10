@@ -188,6 +188,13 @@ abstract class TestCase extends Orchestra
             $view = view('context', [
                 'label' => 'Context view',
                 'private_value' => 'view-data-value',
+                'rows' => collect([
+                    [
+                        'reference' => 'NL-1042',
+                        'ready' => true,
+                        'version_count' => 2,
+                    ],
+                ]),
             ])->render();
 
             return response('<!doctype html><html><body>'.$view.'</body></html>');

@@ -2259,14 +2259,6 @@
                                         </div>
                                     @elseif ($sectionKey === 'views')
                                         @php($viewGroups = $section['payload']['groups'] ?? [])
-                                        @php(
-                                            $formatViewDataValue = static fn (mixed $value): string => match (true) {
-                                                $value === null => 'null',
-                                                is_bool($value) => $value ? 'true' : 'false',
-                                                is_array($value) => (string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                                                default => (string) $value,
-                                            }
-                                        )
                                         <div data-ndb-views class="ndb:space-y-5">
                                             <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                                 See which Blade templates rendered and the data each received. Use this
@@ -2343,44 +2335,34 @@
                                                                                 </code>
                                                                             </div>
 
-                                                                            <div class="ndb:mt-4">
-                                                                                <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3">
-                                                                                    <h3 class="ndb:text-[10px] ndb:font-bold">
-                                                                                        Data
-                                                                                    </h3>
+                                                                            <details
+                                                                                data-ndb-view-data-details
+                                                                                class="ndb:mt-3"
+                                                                            >
+                                                                                <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-2 ndb:py-2 ndb:text-[10px] ndb:font-bold ndb:transition ndb:hover:bg-zinc-100/70 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900/70">
+                                                                                    <span>View data</span>
                                                                                     <span
                                                                                         data-ndb-view-data-count
-                                                                                        class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
-                                                                                    >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span>
-                                                                                </div>
+                                                                                        class="ndb:ml-auto ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
+                                                                                        >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span
+                                                                                    ><x-newdebugbar::icon
+                                                                                        name="chevron-down"
+                                                                                        class="ndb-details-chevron ndb:size-3.5 ndb:text-zinc-400 ndb:transition"
+                                                                                    />
+                                                                                </summary>
 
                                                                                 @if ($viewData !== [])
-                                                                                    <dl
+                                                                                    <pre
                                                                                         data-ndb-view-data
-                                                                                        class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
-                                                                                    >
-                                                                                        @foreach ($viewData as $key => $value)
-                                                                                            <div class="ndb:grid ndb:grid-cols-1 ndb:gap-1 ndb:py-2.5 ndb:sm:grid-cols-[minmax(9rem,0.4fr)_minmax(0,1fr)] ndb:sm:gap-4">
-                                                                                                <dt class="ndb:min-w-0">
-                                                                                                    <code class="ndb:break-all ndb:text-[10px] ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $key }}</code>
-                                                                                                </dt>
-                                                                                                <dd class="ndb:min-w-0">
-                                                                                                    @if (is_array($value))
-                                                                                                        <pre class="ndb-scrollbar ndb:max-h-48 ndb:overflow-auto ndb:whitespace-pre-wrap ndb:break-words ndb:font-mono ndb:text-[10px] ndb:leading-4 ndb:text-zinc-700 ndb:dark:text-zinc-200">{{ $formatViewDataValue($value) }}</pre>
-                                                                                                    @else
-                                                                                                        <code class="ndb:block ndb:break-words ndb:text-[10px] ndb:leading-4 ndb:text-zinc-700 ndb:dark:text-zinc-200">{{ $formatViewDataValue($value) }}</code>
-                                                                                                    @endif
-                                                                                                </dd>
-                                                                                            </div>
-                                                                                        @endforeach
-                                                                                    </dl>
+                                                                                        class="ndb-code ndb-scrollbar ndb:mt-2 ndb:max-h-80 ndb:overflow-auto ndb:border ndb:border-zinc-200/80 ndb:dark:border-zinc-800"
+                                                                                    ><code data-ndb-language="json">{{ json_encode($viewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</code></pre>
                                                                                 @else
                                                                                     <p class="ndb:mt-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                                                                         No data was passed directly to
                                                                                         this view.
                                                                                     </p>
                                                                                 @endif
-                                                                            </div>
+                                                                            </details>
 
                                                                             @if (($view['composers'] ?? []) !== [])
                                                                                 <div class="ndb:mt-4">

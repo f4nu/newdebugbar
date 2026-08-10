@@ -15,6 +15,7 @@ use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
@@ -393,7 +394,7 @@ final class EventRegistrar
                 'name' => $viewName,
                 'source' => is_string($path) ? $this->callSites->templateLocation($path) : null,
                 'composers' => $this->listenerDetails('composing: '.$viewName),
-                'data' => is_array($data) ? $data : [],
+                'data' => is_array($data) ? $this->normalizeViewData($data) : [],
                 'timing' => 'composition_marker',
             ]);
         });
@@ -471,6 +472,41 @@ final class EventRegistrar
         $key = $model->getKeyName();
 
         return array_key_exists($key, $attributes) ? $attributes[$key] : null;
+    }
+
+    /** @param array<array-key, mixed> $data @return array<array-key, mixed> */
+    private function normalizeViewData(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            $data[$key] = $this->normalizeViewDataValue($value);
+        }
+
+        return $data;
+    }
+
+    private function normalizeViewDataValue(mixed $value, int $depth = 0): mixed
+    {
+        if ($depth >= 5) {
+            return $value;
+        }
+
+        if ($value instanceof Arrayable) {
+            try {
+                $value = $value->toArray();
+            } catch (Throwable) {
+                return $value;
+            }
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->normalizeViewDataValue($item, $depth + 1);
+        }
+
+        return $value;
     }
 
     private function manager(): ProfileManager
