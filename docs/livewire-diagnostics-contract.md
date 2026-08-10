@@ -29,6 +29,17 @@ The package records facts before findings. It does not invent a single interacti
 
 The final local Testbench microbenchmark ran three times with 30 property-update requests per lane on PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The disabled medians were 1.023–1.030 ms; enabled medians were 1.883–1.902 ms; measured median deltas were 0.856–0.876 ms. Disabled p95 was 1.089–1.144 ms and enabled p95 was 2.007–2.059 ms. This is repeatable local evidence, not a production latency promise or an invented pass/fail budget.
 
+## Final verification
+
+- The current stack used PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The package suite passed 180 tests with 1,646 assertions and 2 expected skips. The full browser suite passed 112 tests with 1,324 assertions.
+- The JavaScript suite passed 47 tests. Overall line, branch, and function coverage was 91.28%, 85.44%, and 94.90%. The production build, strict Composer validation, dependency audit, formatting check, and a static check for dynamic code evaluation passed.
+- An isolated dependency lane resolved the declared floor of PHP 8.1, Laravel 10.50.2, and Livewire 4.1.0. Its full package suite completed 182 tests with 1,402 assertions and no failures. The available runtime binary was PHP 8.5.7, so the old dependency lane reported dependency deprecations and is dependency-resolution proof, not an actual PHP 8.1 runtime run.
+- The four new Livewire visual baselines passed after manual inspection: desktop light and dark, plus 390px light and dark. The final full visual suite passed without changing a baseline.
+- The canonical Livewire example ran against this worktree without source or Composer changes. Its workspace feature group passed 5 tests with 47 assertions. A real search update produced one value-free trace append, kept the typed search text out of the trace payload, resolved `App\Livewire\ApplicationBoard` and its project-relative source, and left the browser console clean.
+- The canonical example's older `test:debugbar` group passed 6 tests and failed 2 assertions that still expect the removed pre-rebuild `payload.items` and request-type shape. The app was restored unchanged. Migrating those separate example-repository assertions is deferred because restoring the retired package shape would conflict with this clean-sheet contract.
+- Response-safety tests cover exact response bytes, payload, application headers, status, redirects, and downloads. Browser trace headers are the only intentional response additions for an eligible profile.
+- No database, migration, editor, replay, hot-reload, or browser-extension changes were added.
+
 ## Source order
 
 Use the strongest available source and keep its provenance:
