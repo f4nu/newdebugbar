@@ -834,31 +834,10 @@
                                         @php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'livewire', 'queue'])
                                         @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
                                         @php($timelineTicks = [0, 25, 50, 75, 100])
-                                        <div
-                                            data-ndb-timeline-toolbar
-                                            class="ndb:border-b ndb:border-zinc-200/80 ndb:pb-3 ndb:dark:border-zinc-800"
-                                        >
-                                            <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end ndb:sm:justify-between">
-                                                <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:pb-2.5">
-                                                    Activity
-                                                </p>
-                                                <label class="ndb:min-w-0 ndb:sm:w-72"
-                                                    ><span
-                                                        class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
-                                                        >Search</span
-                                                    ><input
-                                                        data-ndb-timeline-search
-                                                        x-model="timelineSearch"
-                                                        @input.debounce.100ms="applyTimelineFilters()"
-                                                        type="search"
-                                                        placeholder="Event or section"
-                                                        class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                                                /></label>
-                                            </div>
-
+                                        <div data-ndb-timeline-toolbar>
                                             <div
                                                 data-ndb-timeline-tabs
-                                                class="ndb:scrollbar ndb:mt-3 ndb:flex ndb:overflow-x-auto"
+                                                class="ndb:scrollbar ndb:flex ndb:overflow-x-auto ndb:border-b ndb:border-zinc-200/80 ndb:dark:border-zinc-800"
                                                 role="group"
                                                 aria-label="Filter timeline"
                                             >
@@ -867,7 +846,7 @@
                                                     data-ndb-timeline-filter="key"
                                                     @click="setTimelineFilter('key')"
                                                     :aria-pressed="timelineFilter === 'key'"
-                                                    class="ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                    class="ndb:-mb-px ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
                                                     :class="timelineFilter === 'key'
                                                         ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
                                                         : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
@@ -878,7 +857,7 @@
                                                     data-ndb-timeline-filter="all"
                                                     @click="setTimelineFilter('all')"
                                                     :aria-pressed="timelineFilter === 'all'"
-                                                    class="ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                    class="ndb:-mb-px ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
                                                     :class="timelineFilter === 'all'
                                                         ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300'
                                                         : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
@@ -891,7 +870,7 @@
                                                         data-ndb-timeline-filter="{{ $timelineSection }}"
                                                         @click="setTimelineFilter(@js($timelineSection))"
                                                         :aria-pressed="timelineFilter === @js($timelineSection)"
-                                                        class="ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
+                                                        class="ndb:-mb-px ndb:shrink-0 ndb:whitespace-nowrap ndb:border-b-2 ndb:px-3 ndb:py-1.5 ndb:text-xs ndb:font-semibold"
                                                         :class="timelineFilter === @js($timelineSection) ? 'ndb:border-indigo-500 ndb:text-indigo-700 ndb:dark:text-indigo-300' : 'ndb:border-transparent ndb:text-zinc-500 ndb:dark:text-zinc-400'"
                                                     >
                                                         {{ str($timelineSection)->title() }}
@@ -899,29 +878,46 @@
                                                 @endforeach
                                             </div>
                                         </div>
-                                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
-                                            <div>
-                                                <h3 class="ndb:text-xs ndb:font-bold">Waterfall</h3>
-                                                <p
-                                                    data-ndb-timeline-summary
-                                                    class="ndb:mt-0.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"
+                                        <div
+                                            data-ndb-timeline-results-header
+                                            class="ndb:flex ndb:flex-col ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end ndb:sm:justify-between"
+                                        >
+                                            <div class="ndb:flex ndb:flex-wrap ndb:items-end ndb:justify-between ndb:gap-3 ndb:sm:min-w-0 ndb:sm:flex-1 ndb:sm:justify-start ndb:sm:gap-6">
+                                                <div>
+                                                    <h3 class="ndb:text-xs ndb:font-bold">Waterfall</h3>
+                                                    <p
+                                                        data-ndb-timeline-summary
+                                                        class="ndb:mt-0.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400"
+                                                    >
+                                                        <span x-text="visibleTimelineCount"></span> events across {{ number_format($timelineDuration, $timelineDuration < 10 ? 1 : 0) }} ms
+                                                    </p>
+                                                </div>
+                                                <div
+                                                    class="ndb:flex ndb:items-center ndb:gap-4 ndb:pb-0.5 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                    aria-label="Timeline legend"
                                                 >
-                                                    <span x-text="visibleTimelineCount"></span> events across {{ number_format($timelineDuration, $timelineDuration < 10 ? 1 : 0) }} ms
-                                                </p>
+                                                    <span class="ndb:flex ndb:items-center ndb:gap-1.5"
+                                                        ><span
+                                                            class="ndb:h-1.5 ndb:w-5 ndb:rounded-sm ndb:bg-indigo-500"
+                                                        ></span
+                                                        >Duration</span
+                                                    ><span class="ndb:flex ndb:items-center ndb:gap-1.5"
+                                                        ><span class="ndb:size-2 ndb:rounded-full ndb:bg-sky-500"></span
+                                                        >Event</span>
+                                                </div>
                                             </div>
-                                            <div
-                                                class="ndb:flex ndb:items-center ndb:gap-4 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                                aria-label="Timeline legend"
-                                            >
-                                                <span class="ndb:flex ndb:items-center ndb:gap-1.5"
-                                                    ><span
-                                                        class="ndb:h-1.5 ndb:w-5 ndb:rounded-sm ndb:bg-indigo-500"
-                                                    ></span
-                                                    >Duration</span
-                                                ><span class="ndb:flex ndb:items-center ndb:gap-1.5"
-                                                    ><span class="ndb:size-2 ndb:rounded-full ndb:bg-sky-500"></span
-                                                    >Event</span>
-                                            </div>
+                                            <label class="ndb:min-w-0 ndb:sm:w-64 ndb:sm:shrink-0"
+                                                ><span
+                                                    class="ndb:mb-1.5 ndb:block ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                                                    >Search activity</span
+                                                ><input
+                                                    data-ndb-timeline-search
+                                                    x-model="timelineSearch"
+                                                    @input.debounce.100ms="applyTimelineFilters()"
+                                                    type="search"
+                                                    placeholder="Event or section"
+                                                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                            /></label>
                                         </div>
                                         <div
                                             data-ndb-timeline-waterfall

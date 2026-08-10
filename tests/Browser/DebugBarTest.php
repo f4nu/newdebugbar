@@ -639,8 +639,11 @@ it('filters the timeline without inventing spans for point events', function () 
             (() => {
                 const tabs = document.querySelector('[data-ndb-timeline-tabs]').getBoundingClientRect();
                 const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
+                const resultsHeader = document.querySelector('[data-ndb-timeline-results-header]').getBoundingClientRect();
 
-                return tabs.top >= search.bottom;
+                return tabs.bottom <= resultsHeader.top
+                    && search.top >= resultsHeader.top
+                    && search.bottom <= resultsHeader.bottom;
             })()
             JS)
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-filter=key]")).whiteSpace === "nowrap"')
