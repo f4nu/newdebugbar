@@ -948,16 +948,23 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->assertScript(<<<'JS'
             (() => {
                 const render = document.querySelector('[data-ndb-view-render]');
-                const renderHeader = render?.querySelector('[data-ndb-view-render-order]')?.parentElement;
+                const renderRow = render?.querySelector('[data-ndb-view-render-row]');
+                const renderContext = render?.querySelector('[data-ndb-view-render-context]');
                 const viewDataTrigger = render?.querySelector('[data-ndb-view-data-trigger]');
                 const viewDataPopover = render?.querySelector('[data-ndb-view-data-popover]');
+                const contextRect = renderContext?.getBoundingClientRect();
+                const triggerRect = viewDataTrigger?.getBoundingClientRect();
 
                 return render !== null
-                    && renderHeader !== null
+                    && renderRow !== null
+                    && renderContext !== null
                     && viewDataTrigger !== null
                     && viewDataPopover !== null
-                    && viewDataTrigger.parentElement === renderHeader
-                    && getComputedStyle(renderHeader).alignItems === 'baseline'
+                    && viewDataTrigger.parentElement === renderRow
+                    && renderContext.parentElement === renderRow
+                    && getComputedStyle(renderRow).alignItems === 'center'
+                    && getComputedStyle(renderContext).alignItems === 'baseline'
+                    && Math.abs((contextRect.top + contextRect.bottom) / 2 - (triggerRect.top + triggerRect.bottom) / 2) <= 1
                     && Math.abs(viewDataTrigger.getBoundingClientRect().right - render.getBoundingClientRect().right) <= 1
                     && viewDataTrigger.getAttribute('aria-controls') === viewDataPopover.id
                     && viewDataPopover.getAttribute('role') === 'region'

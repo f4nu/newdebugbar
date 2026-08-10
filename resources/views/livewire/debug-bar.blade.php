@@ -2337,18 +2337,26 @@
                                                                                 "
                                                                                 class="ndb:relative"
                                                                             >
-                                                                                <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
-                                                                                    <span
-                                                                                        data-ndb-view-render-order
-                                                                                        class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
-                                                                                    >Render #{{ $view['render_order'] }}</span>
-                                                                                    <code
-                                                                                        data-ndb-view-source
-                                                                                        class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]"
+                                                                                <div
+                                                                                    data-ndb-view-render-row
+                                                                                    class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3"
+                                                                                >
+                                                                                    <div
+                                                                                        data-ndb-view-render-context
+                                                                                        class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-baseline ndb:gap-3"
                                                                                     >
-                                                                                        {{ $view['source']['file'] ?? 'Template path unavailable' }}
-                                                                                        @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
-                                                                                    </code>
+                                                                                        <span
+                                                                                            data-ndb-view-render-order
+                                                                                            class="ndb:shrink-0 ndb:text-[9px] ndb:font-bold ndb:text-zinc-400"
+                                                                                        >Render #{{ $view['render_order'] }}</span>
+                                                                                        <code
+                                                                                            data-ndb-view-source
+                                                                                            class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[10px]"
+                                                                                        >
+                                                                                            {{ $view['source']['file'] ?? 'Template path unavailable' }}
+                                                                                            @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
+                                                                                        </code>
+                                                                                    </div>
                                                                                     <button
                                                                                         x-ref="viewDataButton"
                                                                                         type="button"
@@ -2361,14 +2369,16 @@
                                                                                         @click="
                                                                                             viewDataOpen = ! viewDataOpen
                                                                                         "
-                                                                                        class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/60"
+                                                                                        class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/60"
                                                                                     >
-                                                                                        <span>View data</span>
+                                                                                        <span class="ndb:flex ndb:flex-col ndb:items-start ndb:gap-0.5 ndb:leading-none">
+                                                                                            <span>View data</span>
+                                                                                            <span
+                                                                                                data-ndb-view-data-count
+                                                                                                class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
+                                                                                            >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span>
+                                                                                        </span>
                                                                                         <span
-                                                                                            data-ndb-view-data-count
-                                                                                            class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
-                                                                                            >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span
-                                                                                        ><span
                                                                                             :class="{
                                                                                                 'ndb:rotate-180':
                                                                                                     viewDataOpen,
