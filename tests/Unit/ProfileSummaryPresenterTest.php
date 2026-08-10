@@ -16,6 +16,7 @@ function historySummaryProfile(string $requestType, array $request = [], array $
                 'payload' => [
                     'path' => '/example',
                     'request_type' => $requestType,
+                    'response_size_bytes' => 13_752,
                     ...$request,
                 ],
             ],
@@ -39,8 +40,28 @@ it('summarizes the application event behind Livewire requests', function () {
     ]));
 
     expect($summary['activity'])->toBe('Work Order Board → advance()')
-        ->and($summary['environment'])->toBe('testing');
+        ->and($summary['environment'])->toBe('testing')
+        ->and($summary['status_meaning'])->toBe('Success')
+        ->and($summary['response_size'])->toBe('13.43 KB');
 });
+
+it('summarizes status families and response sizes for the request header', function (int $status, string $meaning) {
+    $profile = historySummaryProfile('full_page', [
+        'response_size_bytes' => 2_621_440,
+    ]);
+    $profile['sections']['request']['summary']['status'] = $status;
+
+    $summary = (new ProfileSummaryPresenter(new Redactor))->present($profile);
+
+    expect($summary['status_meaning'])->toBe($meaning)
+        ->and($summary['response_size'])->toBe('2.50 MB');
+})->with([
+    'informational' => [101, 'Informational'],
+    'success' => [204, 'Success'],
+    'redirect' => [302, 'Redirect'],
+    'client error' => [404, 'Client error'],
+    'server error' => [503, 'Server error'],
+]);
 
 it('summarizes Inertia partial reloads and redirects', function () {
     $presenter = new ProfileSummaryPresenter(new Redactor);

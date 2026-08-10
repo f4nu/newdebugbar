@@ -36,6 +36,8 @@ final class ProfileSummaryPresenter
             'method' => $request['summary']['method'] ?? null,
             'path' => $request['payload']['path'] ?? null,
             'status' => $status,
+            'status_meaning' => $this->statusMeaning($status),
+            'response_size' => $this->formatBytes($request['payload']['response_size_bytes'] ?? null),
             'duration_ms' => $profile['metrics']['duration_ms'] ?? 0,
             'peak_memory_mb' => $profile['metrics']['peak_memory_mb'] ?? 0,
             'query_count' => $queries['total_count'] ?? $queries['count'] ?? 0,
@@ -51,6 +53,33 @@ final class ProfileSummaryPresenter
         ]);
 
         return $summary;
+    }
+
+    private function statusMeaning(int $status): ?string
+    {
+        return match (true) {
+            $status >= 100 && $status < 200 => 'Informational',
+            $status >= 200 && $status < 300 => 'Success',
+            $status >= 300 && $status < 400 => 'Redirect',
+            $status >= 400 && $status < 500 => 'Client error',
+            $status >= 500 && $status < 600 => 'Server error',
+            default => null,
+        };
+    }
+
+    private function formatBytes(mixed $bytes): ?string
+    {
+        if (! is_numeric($bytes) || (float) $bytes < 0) {
+            return null;
+        }
+
+        $bytes = (float) $bytes;
+
+        return match (true) {
+            $bytes >= 1024 * 1024 => number_format($bytes / (1024 * 1024), 2).' MB',
+            $bytes >= 1024 => number_format($bytes / 1024, 2).' KB',
+            default => number_format($bytes).' B',
+        };
     }
 
     /** @param array<string, mixed> $request */

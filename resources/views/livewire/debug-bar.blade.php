@@ -35,7 +35,7 @@
         <x-newdebugbar::toolbar-button
             section="request"
             data-ndb-toolbar="request"
-            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:flex-1"
+            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-64"
             aria-label="Open request details"
         >
             <span
@@ -45,15 +45,26 @@
             <span class="ndb:min-w-0">
                 <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
                 <span
-                    class="ndb:block ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"
-                    x-text="summary.status"
+                    class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"
+                    ><span data-ndb-toolbar-status x-text="summary.status"></span
+                    ><span
+                        data-ndb-toolbar-status-meaning
+                        class="ndb:hidden ndb:sm:inline"
+                        x-text="summary.status_meaning"
+                    ></span
+                    ><span
+                        data-ndb-toolbar-response-size
+                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:sm:inline ndb:dark:text-zinc-300"
+                        x-show="summary.response_size"
+                        x-text="summary.response_size"
+                    ></span
                 ></span>
             </span>
         </x-newdebugbar::toolbar-button>
 
         <div
             data-ndb-toolbar-facts
-            class="ndb-toolbar-facts ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:sm:flex-none ndb:sm:overflow-visible"
+            class="ndb-toolbar-facts ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:sm:ml-auto ndb:sm:flex-none ndb:sm:overflow-visible"
         >
             <x-newdebugbar::toolbar-button
                 section="overview"
@@ -139,7 +150,7 @@
             </x-newdebugbar::toolbar-button>
         </div>
 
-        <div data-ndb-toolbar-actions class="ndb:ml-auto ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5">
+        <div data-ndb-toolbar-actions class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-0.5">
             <div
                 data-ndb-toolbar-utility-actions
                 role="group"
@@ -201,7 +212,7 @@
                     <x-newdebugbar::toolbar-button
                         section="request"
                         data-ndb-header-request
-                        class="ndb:flex ndb:min-w-0 ndb:flex-1"
+                        class="ndb:flex ndb:min-w-0 ndb:flex-none ndb:max-w-64"
                         aria-label="Open request details"
                     >
                         <span
@@ -214,8 +225,19 @@
                                 x-text="summary.path"
                             ></span>
                             <span
-                                class="ndb:flex ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"
+                                class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"
                                 ><span data-ndb-header-status x-text="summary.status"></span
+                                ><span
+                                    data-ndb-header-status-meaning
+                                    class="ndb:hidden ndb:sm:inline"
+                                    x-text="summary.status_meaning"
+                                ></span
+                                ><span
+                                    data-ndb-header-response-size
+                                    class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:sm:inline ndb:dark:text-zinc-300"
+                                    x-show="summary.response_size"
+                                    x-text="summary.response_size"
+                                ></span
                                 ><span x-text="summary.is_current_profile ? '' : 'History profile'"></span
                             ></span>
                         </span>
@@ -245,7 +267,7 @@
 
                         <div
                             data-ndb-header-facts
-                            class="ndb-scrollbar ndb:flex ndb:min-w-0 ndb:flex-1 ndb:gap-2 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:pb-0.5 ndb:sm:order-none ndb:sm:w-auto ndb:sm:flex-none ndb:sm:gap-1 ndb:sm:overflow-visible ndb:sm:pb-0"
+                            class="ndb-scrollbar ndb:flex ndb:min-w-0 ndb:flex-1 ndb:gap-2 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:pb-0.5 ndb:sm:order-none ndb:sm:ml-auto ndb:sm:w-auto ndb:sm:flex-none ndb:sm:gap-1 ndb:sm:overflow-visible ndb:sm:pb-0"
                         >
                             <x-newdebugbar::toolbar-button
                                 section="overview"
@@ -335,7 +357,7 @@
                         </div>
                     </div>
 
-                    <div data-ndb-inspector-actions class="ndb:ml-auto ndb:flex ndb:items-center ndb:gap-0.5">
+                    <div data-ndb-inspector-actions class="ndb:flex ndb:items-center ndb:gap-0.5">
                         <div
                             data-ndb-inspector-utility-actions
                             role="group"

@@ -56,7 +56,10 @@ it('opens every compact toolbar destination and shrinks cleanly', function () {
         assertDebugSectionSelected($page, $section);
 
         if ($toolbar === 'expand') {
-            $page->assertScript('document.querySelector("[data-ndb-header-memory]").textContent.includes("MB")');
+            $page
+                ->assertScript('document.querySelector("[data-ndb-header-memory]").textContent.includes("MB")')
+                ->assertScript('document.querySelector("[data-ndb-header-status-meaning]").textContent.trim() === "Success"')
+                ->assertScript('/^\\d+(?:\\.\\d{2})? (?:B|KB|MB)$/.test(document.querySelector("[data-ndb-header-response-size]").textContent.trim())');
         }
 
         $page
@@ -304,10 +307,12 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                 return Math.abs(box.width - 1024) <= 1
                     && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
                     && Math.abs(window.innerWidth - box.right - box.left) <= 1
-                    && requestStyles.flexGrow === '1'
+                    && requestStyles.flexGrow === '0'
+                    && request.getBoundingClientRect().width <= 256
                     && factsStyles.flexGrow === '0'
-                    && request.getBoundingClientRect().right <= facts.getBoundingClientRect().left
+                    && facts.getBoundingClientRect().left - request.getBoundingClientRect().right >= 32
                     && facts.getBoundingClientRect().right <= actions.getBoundingClientRect().left
+                    && actions.getBoundingClientRect().left - facts.getBoundingClientRect().right <= 8
                     && JSON.stringify(factOrder) === JSON.stringify(['environment', 'queries', 'duration', 'memory']);
             })()
             JS)
@@ -316,6 +321,9 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const request = document.querySelector('[data-ndb-header-request]');
+                const facts = document.querySelector('[data-ndb-header-facts]');
+                const actions = document.querySelector('[data-ndb-inspector-actions]');
                 const factOrder = Array.from(document.querySelectorAll('[data-ndb-header-fact]'))
                     .sort((left, right) => left.getBoundingClientRect().left - right.getBoundingClientRect().left)
                     .map((fact) => fact.dataset.ndbHeaderFact);
@@ -324,6 +332,11 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                 return Math.abs(box.width - 1024) <= 1
                     && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
                     && Math.abs(window.innerWidth - box.right - box.left) <= 1
+                    && getComputedStyle(request).flexGrow === '0'
+                    && request.getBoundingClientRect().width <= 256
+                    && facts.getBoundingClientRect().left - request.getBoundingClientRect().right >= 32
+                    && facts.getBoundingClientRect().right <= actions.getBoundingClientRect().left
+                    && actions.getBoundingClientRect().left - facts.getBoundingClientRect().right <= 8
                     && JSON.stringify(factOrder) === JSON.stringify(['environment', 'queries', 'duration', 'memory']);
             })()
             JS)
@@ -1520,9 +1533,17 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && actionsBox.left >= factsBox.right;
             })()
             JS)
+        ->assertScript(<<<'JS'
+            getComputedStyle(document.querySelector('[data-ndb-toolbar-status-meaning]')).display === 'none'
+                && getComputedStyle(document.querySelector('[data-ndb-toolbar-response-size]')).display === 'none'
+            JS)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertVisible('[data-ndb-header-memory]')
+        ->assertScript(<<<'JS'
+            getComputedStyle(document.querySelector('[data-ndb-header-status-meaning]')).display === 'none'
+                && getComputedStyle(document.querySelector('[data-ndb-header-response-size]')).display === 'none'
+            JS)
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
         ->assertScript(<<<'JS'
