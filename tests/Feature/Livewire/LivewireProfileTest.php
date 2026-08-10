@@ -94,7 +94,7 @@ it('profiles one property update without storing a Livewire snapshot', function 
         ->and($livewire)
         ->schema_version->toBe(1)
         ->profile_revision->toBe(1)
-        ->summary->title->toBe('Updated search')
+        ->summary->title->toBe('Search changed')
         ->summary->message_count->toBe(1)
         ->summary->action_count->toBe(1)
         ->summary->state_change_count->toBe(1)
@@ -123,8 +123,8 @@ it('profiles one property update without storing a Livewire snapshot', function 
         ->and(json_encode($livewire))->not->toContain('initial-secret', 'wire:snapshot', 'checksum');
 
     renderedDiagnosticsBar($profile)
-        ->assertSee('Updated search')
-        ->assertSee('Before and server state after the exchange')
+        ->assertSee('Search changed')
+        ->assertSee('Safe server values before and after the request')
         ->assertSee('northline');
 });
 
@@ -164,8 +164,7 @@ it('profiles one named action and links its server state change', function () {
         ->and($livewire['payload']['messages'][0]['state_change_ids'])->toBe([$change['id']]);
 
     renderedDiagnosticsBar($profile)
-        ->assertSee('Ran saveReview')
-        ->assertSee('saveReview')
+        ->assertSee('Save Review')
         ->assertSee('reviewScore');
 });
 
@@ -216,10 +215,10 @@ it('profiles an initial nested mount as an affected hierarchy', function () {
         ->and($livewire['payload']['completeness']['components'])->toBe('affected_only');
 
     renderedDiagnosticsBar($profile)
-        ->assertSee('Affected component relationships')
-        ->assertSee('This is not a full page component tree.')
-        ->assertSee('diagnostics-parent')
-        ->assertSee('diagnostics-child');
+        ->assertSee('Affected components')
+        ->assertSee('This is not a full page inventory.')
+        ->assertSee('Diagnostics Parent')
+        ->assertSee('Diagnostics Child');
 });
 
 it('keeps a seventeen message batch distinct and bounded', function () {
@@ -238,7 +237,7 @@ it('keeps a seventeen message batch distinct and bounded', function () {
     $livewire = $profile['sections']['livewire'];
 
     expect($livewire)
-        ->summary->title->toBe('Livewire exchange')
+        ->summary->title->toBe('Multiple component updates')
         ->summary->message_count->toBe(17)
         ->summary->action_count->toBe(17)
         ->summary->component_count->toBe(17)
@@ -252,12 +251,11 @@ it('keeps a seventeen message batch distinct and bounded', function () {
         ->and($profile['sections']['request']['payload']['input']['component_message_count'])->toBe(17);
 
     renderedDiagnosticsBar($profile)
-        ->assertSee('Livewire exchange')
-        ->assertSee('17 actions ran across this exchange.')
-        ->assertSee('Title not derived')
-        ->assertSee('17 Livewire messages ran in one exchange.')
-        ->assertSee('Inspect the message and action links')
-        ->assertSee('11 more messages are listed in the profile data.');
+        ->assertSee('Multiple components updated')
+        ->assertSee('17 affected components ran work in this request.')
+        ->assertSee('No clear problem found')
+        ->assertDontSee('Title not derived')
+        ->assertDontSee('Inspect the message and action links');
 });
 
 it('keeps emitted and received event evidence separate', function () {
@@ -276,8 +274,8 @@ it('keeps emitted and received event evidence separate', function () {
         ->recipient_status->toBe('unknown');
 
     renderedDiagnosticsBar($emitted)
-        ->assertSee('vendor-checked-in')
-        ->assertSee('Unknown');
+        ->assertSee('Vendor Checked In')
+        ->assertSee('Not observed');
 
     $childHtml = (string) app('livewire')->mount('diagnostics-child');
     $childSnapshot = Utils::extractAttributeDataFromHtml($childHtml, 'wire:snapshot');
@@ -299,8 +297,8 @@ it('keeps emitted and received event evidence separate', function () {
         ->recipient_status->toBe('observed');
 
     renderedDiagnosticsBar($received)
-        ->assertSee('vendor-checked-in')
-        ->assertSee('diagnostics-child');
+        ->assertSee('Vendor Checked In')
+        ->assertSee('Diagnostics Child');
 });
 
 it('records validation redirect download and renderless outcomes safely', function () {
@@ -314,8 +312,9 @@ it('records validation redirect download and renderless outcomes safely', functi
         ->validation_errors->toHaveKey('search');
 
     renderedDiagnosticsBar($validation)
-        ->assertSee('Validation stopped the action')
-        ->assertSee('Validation fields: search');
+        ->assertSee('Validation failed')
+        ->assertSee('Fields with errors: search')
+        ->assertSee('No clear problem found');
 
     $redirect = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
         profiledDiagnosticsSnapshot(),
@@ -327,7 +326,7 @@ it('records validation redirect download and renderless outcomes safely', functi
         ->effects->redirect->toBe('/vendors?token=%5Bredacted%5D');
 
     renderedDiagnosticsBar($redirect)
-        ->assertSee('Returned a redirect')
+        ->assertSee('Redirected')
         ->assertSee('/vendors?token=%5Bredacted%5D');
 
     $download = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
@@ -345,7 +344,7 @@ it('records validation redirect download and renderless outcomes safely', functi
         ->and($downloadJson)->not->toContain('private report body', base64_encode('private report body'));
 
     renderedDiagnosticsBar($download)
-        ->assertSee('Returned a download')
+        ->assertSee('Downloaded')
         ->assertSee('review-report.txt')
         ->assertDontSee('private report body');
 
@@ -359,8 +358,8 @@ it('records validation redirect download and renderless outcomes safely', functi
         ->and($renderless['sections']['livewire']['payload']['components'][0]['rendered'])->toBe('no');
 
     renderedDiagnosticsBar($renderless)
-        ->assertSee('Completed without a render')
-        ->assertSee('Renderless');
+        ->assertSee('Finished without rendering')
+        ->assertSee('No clear problem found');
 });
 
 it('adds compact Livewire attribution to work proven inside an action', function () {
@@ -385,6 +384,24 @@ it('adds compact Livewire attribution to work proven inside an action', function
         ->and($log['livewire'])->toMatchArray($query['livewire']);
 });
 
+it('turns observed slow Livewire work into a useful problem', function () {
+    $profile = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
+        profiledDiagnosticsSnapshot(),
+        calls: [['method' => 'loadReviewOptions', 'params' => []]],
+    ));
+
+    expect(collect($profile['sections']['livewire']['payload']['server_spans'])->max('duration_ms'))
+        ->toBeGreaterThanOrEqual(100);
+
+    renderedDiagnosticsBar($profile)
+        ->assertSee('Problems to check')
+        ->assertSee('Load Review Options')
+        ->assertSee('Impact')
+        ->assertSee('Origin')
+        ->assertSee('Next check')
+        ->assertSee('lazy loading or an island');
+});
+
 it('falls back visibly without debug timings and clears attribution afterward', function () {
     config(['app.debug' => false]);
     $profile = postProfiledDiagnosticsMessage(profiledDiagnosticsMessage(
@@ -398,8 +415,8 @@ it('falls back visibly without debug timings and clears attribution afterward', 
         ->completeness->unknown_reasons->toContain('Livewire server timing evidence requires app.debug=true.');
 
     renderedDiagnosticsBar($profile)
-        ->assertSee('Browser trace is missing')
-        ->assertSee('Server phase timing is unavailable')
+        ->assertSee('Browser evidence is missing')
+        ->assertSee('Server timing is unavailable')
         ->assertSee('Livewire server timing evidence requires app.debug=true.');
 
     $ordinary = $this->get('/profiled')->assertOk()->assertHeader('X-NewDebugBar-Profile');

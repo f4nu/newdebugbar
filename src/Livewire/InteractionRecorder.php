@@ -955,14 +955,14 @@ final class InteractionRecorder
         }
 
         if (count($this->actions) !== 1 || $this->dropped['actions'] > 0) {
-            return ['text' => 'Livewire exchange', 'confidence' => 'unknown'];
+            return ['text' => 'Multiple component updates', 'confidence' => 'unknown'];
         }
 
         $action = $this->actions[0];
 
         return match ($action['kind']) {
             'property_update' => [
-                'text' => 'Updated '.($action['property_paths'][0] ?? 'property'),
+                'text' => str((string) ($action['property_paths'][0] ?? 'property'))->headline().' changed',
                 'confidence' => 'inferred',
             ],
             'event_received' => ['text' => 'Received '.$action['name'], 'confidence' => 'inferred'],

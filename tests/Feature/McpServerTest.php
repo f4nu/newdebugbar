@@ -302,12 +302,15 @@ it('exposes Livewire causal records with UI parity and no state values', functio
             'browser_span' => 1,
         ])
         ->and($content['data']['payload']['exchange']['title'])
-        ->toBe($ui['sections']['livewire']['payload']['presentation']['headline']['title'])
+        ->toBe($ui['sections']['livewire']['payload']['presentation']['activity']['title'])
         ->and($content['data']['summary']['result'])
         ->toBe($ui['sections']['livewire']['payload']['presentation']['outcome']['result'])
         ->and($records['action'])
         ->id->toBe('action-1')
         ->message_id->toBe('message-1')
+        ->name->toBe('saveReview')
+        ->display_name->toBe('Save Review')
+        ->framework_name_included->toBeFalse()
         ->parameters_included->toBeFalse()
         ->browser_source->directive->toBe('wire:click')
         ->and($records['state_change'])
@@ -318,6 +321,10 @@ it('exposes Livewire causal records with UI parity and no state values', functio
         ->and($records['event'])
         ->parameters_included->toBeFalse()
         ->recipient_status->toBe('unknown')
+        ->display_name->toBe('Review Saved')
+        ->source_component_name->toBe('Diagnostics Fixture')
+        ->observed_recipient_names->toBe([])
+        ->and($records['component']['display_name'])->toBe('Diagnostics Fixture')
         ->and($records['component']['source']['file'])->toBe('app/Livewire/DiagnosticsFixture.php')
         ->and($content['data']['payload']['trace']['raw_values_included'])->toBeFalse();
 

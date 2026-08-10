@@ -30,6 +30,12 @@ final class DiagnosticsFixture extends Component
         $this->reviewScore = 5;
     }
 
+    public function loadReviewOptions(): void
+    {
+        usleep(125_000);
+        $this->reviewScore = 3;
+    }
+
     public function validateReview(): void
     {
         $this->validate(['search' => ['required', 'min:3']]);
@@ -74,6 +80,8 @@ final class DiagnosticsFixture extends Component
                     <input type="search" wire:model.live="search">
                 </label>
                 <button type="button" wire:click="saveReview(5)">Save review</button>
+                <button type="button" data-testid="slow-review" wire:click="loadReviewOptions">Load review options</button>
+                <button type="button" data-testid="announce-check-in" wire:click="announceCheckIn">Announce check-in</button>
                 <p>{{ $search }}</p>
                 <output>{{ $reviewScore }}</output>
             </section>

@@ -2,27 +2,18 @@
 
 use NewDebugBar\Presentation\LivewirePresenter;
 
-it('builds one truthful Livewire view model with separate timing lanes', function () {
+it('builds three focused Livewire views from safe correlated evidence', function () {
     $section = (new LivewirePresenter)->present([
         'schema_version' => 1,
         'profile_revision' => 2,
         'label' => 'Livewire',
         'summary' => [
-            'title' => 'Updated search',
             'message_count' => 1,
-            'action_count' => 1,
-            'component_count' => 1,
-            'state_change_count' => 2,
             'result' => 'rendered',
             'trace_status' => 'complete',
         ],
         'payload' => [
-            'exchange' => [
-                'kind' => 'update',
-                'title' => 'Updated search',
-                'title_confidence' => 'inferred',
-                'result' => 'rendered',
-            ],
+            'exchange' => ['kind' => 'update', 'result' => 'rendered'],
             'messages' => [[
                 'id' => 'message-1',
                 'component_id' => 'component-12345678',
@@ -35,18 +26,16 @@ it('builds one truthful Livewire view model with separate timing lanes', functio
                 'kind' => 'property_update',
                 'name' => '$set',
                 'property_paths' => ['search'],
-                'confidence' => 'observed',
             ]],
             'components' => [[
                 'id' => 'component-12345678',
-                'name' => 'diagnostics-fixture',
+                'name' => 'pages::diagnostics-fixture',
                 'class' => 'App\\Livewire\\DiagnosticsFixture',
                 'parent_id' => null,
                 'depth' => 0,
                 'source' => ['file' => 'app/Livewire/DiagnosticsFixture.php', 'line' => 8],
                 'view' => 'resources/views/livewire/diagnostics-fixture.blade.php',
                 'rendered' => 'yes',
-                'render_reason' => ['kind' => 'property_update', 'confidence' => 'inferred'],
             ]],
             'state_changes' => [
                 [
@@ -57,7 +46,7 @@ it('builds one truthful Livewire view model with separate timing lanes', functio
                     'before' => '',
                     'submitted' => 'north',
                     'server' => 'northline',
-                    'browser' => ['status' => 'observed', 'matches_server' => true, 'type' => 'string'],
+                    'browser' => ['status' => 'observed', 'matches_server' => true],
                     'redacted' => false,
                 ],
                 [
@@ -75,6 +64,8 @@ it('builds one truthful Livewire view model with separate timing lanes', functio
             'events' => [],
             'server_spans' => [[
                 'id' => 'server-span-1',
+                'component_id' => 'component-12345678',
+                'action_id' => 'action-1',
                 'phase' => 'render',
                 'start_ms' => 2,
                 'duration_ms' => 8,
@@ -89,12 +80,6 @@ it('builds one truthful Livewire view model with separate timing lanes', functio
                         'element' => 'input',
                     ],
                 ]],
-                'spans' => [[
-                    'id' => 'browser-span-1',
-                    'phase' => 'request_wait',
-                    'start_ms' => 0,
-                    'duration_ms' => 18,
-                ]],
             ],
             'completeness' => [
                 'components' => 'affected_only',
@@ -108,32 +93,32 @@ it('builds one truthful Livewire view model with separate timing lanes', functio
     $view = $section['payload']['presentation'];
 
     expect($section['summary']['count'])->toBe(1)
-        ->and($view['headline'])
-        ->title->toBe('Updated search')
-        ->kind->toBe('update')
-        ->confidence->toBe('inferred')
-        ->and($view['outcome']['title'])->toBe('Rendered successfully')
-        ->and(array_column($view['tabs'], 'count'))->toBe([null, 1, 2, 0])
-        ->and($view['actions'][0])
-        ->component_name->toBe('diagnostics-fixture')
-        ->source_label->toBe('wire:model.live on <input>')
-        ->and($view['components'][0])
-        ->source_label->toBe('app/Livewire/DiagnosticsFixture.php:8')
-        ->render_reason_label->toBe('Property update')
+        ->and(array_column($view['tabs'], 'key'))->toBe(['overview', 'components', 'events'])
+        ->and($view)->not->toHaveKeys(['facts', 'lanes', 'messages', 'actions'])
+        ->and($view['activity'])
+        ->title->toBe('Search changed')
+        ->detail->toBe('Diagnostics Fixture handled the property change.')
+        ->and($view['outcome']['title'])->toBe('Rendered')
         ->and($view['state_changes'][0])
-        ->before_display->toBe('""')
-        ->server_display->toBe('northline')
-        ->submitted_material->toBeTrue()
+        ->before_display->toBe('empty')
+        ->after_display->toBe('northline')
         ->browser_matches_server->toBeTrue()
         ->and($view['state_changes'][1])
         ->before_display->toBe('Changed, value hidden')
-        ->server_display->toBe('Changed, value hidden')
-        ->and($view['lanes'][0])
-        ->label->toBe('Server')
-        ->duration_ms->toBe(10.0)
-        ->and($view['lanes'][1])
-        ->label->toBe('Browser')
-        ->duration_ms->toBe(18.0)
+        ->after_display->toBe('Changed, value hidden')
+        ->and($view['components'][0])
+        ->display_name->toBe('Diagnostics Fixture')
+        ->raw_name->toBe('pages::diagnostics-fixture')
+        ->trigger_label->toBe('Search changed')
+        ->rendered_label->toBe('Rendered')
+        ->source_label->toBe('app/Livewire/DiagnosticsFixture.php:8')
+        ->and($view['components'][0]['copy_details'])
+        ->toContain('search: empty -> northline')
+        ->toContain('password: Changed, value hidden -> Changed, value hidden')
+        ->not->toContain('$set')
+        ->and($view['server_work'][0])
+        ->label->toBe('Rendered')
+        ->component_name->toBe('Diagnostics Fixture')
         ->and($view['notices'])->toBe([])
         ->and($view['affected_hierarchy_only'])->toBeTrue();
 });
@@ -157,32 +142,26 @@ it('keeps missing and malformed evidence visible instead of inventing facts', fu
 
     $view = $section['payload']['presentation'];
 
-    expect($view['headline'])
-        ->title->toBe('Livewire exchange')
-        ->detail->toBe('The trigger could not be derived from the available evidence.')
-        ->confidence->toBe('unknown')
-        ->and($view['outcome']['title'])->toBe('Result is not fully known')
+    expect($view['activity'])
+        ->title->toBe('Livewire request')
+        ->detail->toBe('The exact trigger was not observed.')
+        ->and($view['outcome']['title'])->toBe('Result not observed')
         ->and($view['components'][0])
-        ->name->toBe('Unknown component')
-        ->rendered->toBe('unknown')
+        ->display_name->toBe('Unknown component')
+        ->rendered_label->toBe('Render not observed')
         ->and(array_column($view['notices'], 'title'))->toBe([
-            'Browser trace is missing',
-            'Server phase timing is unavailable',
+            'Browser evidence is missing',
+            'Server timing is unavailable',
             'Some evidence was truncated',
         ])
         ->and($view['events'])->toBe([]);
 });
 
-it('surfaces an observed poll and a browser-skipped callback without changing the server result', function () {
+it('presents polling and renderless work as normal outcomes', function () {
     $section = (new LivewirePresenter)->present([
-        'summary' => ['title' => 'Refreshed status-panel', 'result' => 'renderless'],
+        'summary' => ['result' => 'renderless'],
         'payload' => [
-            'exchange' => [
-                'kind' => 'update',
-                'title' => 'Refreshed status-panel',
-                'title_confidence' => 'inferred',
-                'result' => 'renderless',
-            ],
+            'exchange' => ['kind' => 'update', 'result' => 'renderless'],
             'messages' => [[
                 'id' => 'message-poll',
                 'component_id' => 'component-poll',
@@ -190,7 +169,6 @@ it('surfaces an observed poll and a browser-skipped callback without changing th
             ]],
             'actions' => [[
                 'id' => 'action-poll',
-                'message_id' => 'message-poll',
                 'component_id' => 'component-poll',
                 'kind' => 'refresh',
                 'name' => '$refresh',
@@ -202,10 +180,6 @@ it('surfaces an observed poll and a browser-skipped callback without changing th
             ]],
             'browser_trace' => [
                 'status' => 'complete',
-                'messages' => [[
-                    'message_id' => 'message-poll',
-                    'outcome' => 'skipped',
-                ]],
                 'actions' => [[
                     'action_id' => 'action-poll',
                     'source' => [
@@ -220,18 +194,67 @@ it('surfaces an observed poll and a browser-skipped callback without changing th
 
     $view = $section['payload']['presentation'];
 
-    expect($view['headline'])
-        ->title->toBe('Polled status-panel')
-        ->kind->toBe('poll')
-        ->confidence->toBe('inferred')
-        ->detail->toContain('source directive was observed')
-        ->and($view['actions'][0])
-        ->kind->toBe('poll')
-        ->source_label->toBe('wire:poll.5s on <div>')
-        ->and($view['messages'][0])
-        ->result->toBe('renderless')
-        ->browser_outcome->toBe('skipped')
+    expect($view['activity'])
+        ->title->toBe('Polled')
+        ->detail->toBe('Status Panel handled the scheduled check.')
         ->and($view['outcome'])
-        ->result->toBe('renderless')
-        ->title->toBe('Completed without a render');
+        ->title->toBe('Finished without rendering')
+        ->detail->toBe('The action finished without a render.')
+        ->and($view['findings'])->toBe([]);
+});
+
+it('keeps declared event targets separate from observed recipients', function () {
+    $section = (new LivewirePresenter)->present([
+        'payload' => [
+            'components' => [
+                ['id' => 'component-1', 'name' => 'application-board', 'class' => 'App\\Livewire\\ApplicationBoard'],
+                ['id' => 'component-2', 'name' => 'application-board-child', 'class' => 'App\\Livewire\\ApplicationBoard'],
+            ],
+            'events' => [
+                [
+                    'id' => 'event-1',
+                    'name' => 'review-requested',
+                    'mode' => 'targeted',
+                    'source_component_id' => 'component-1',
+                    'declared_target' => 'App\\Livewire\\ApplicationBoard',
+                    'observed_recipient_ids' => [],
+                    'recipient_status' => 'unknown',
+                    'parameters' => ['email' => '[redacted]', 'count' => 2],
+                ],
+                [
+                    'id' => 'event-2',
+                    'name' => 'review-requested',
+                    'mode' => 'received',
+                    'source_component_id' => null,
+                    'declared_target' => null,
+                    'observed_recipient_ids' => ['component-2'],
+                    'recipient_status' => 'observed',
+                    'parameters' => [],
+                ],
+            ],
+            'browser_trace' => ['status' => 'complete'],
+        ],
+    ]);
+
+    $view = $section['payload']['presentation'];
+
+    expect(array_column($view['components'], 'list_label'))->toBe([
+        'Application Board (component-1)',
+        'Application Board (component-2)',
+    ])
+        ->and($view['events'][0]['sequence'])->toBe(1)
+        ->and($view['events'][0])
+        ->display_name->toBe('Review Requested')
+        ->mode_label->toBe('Named target')
+        ->source_name->toBe('Application Board')
+        ->declared_target_label->toBe('Application Board')
+        ->recipient_label->toBe('Not observed')
+        ->and($view['events'][0]['copy_details'])
+        ->toContain('Observed recipients: Not observed')
+        ->toContain('"email": "[redacted]"')
+        ->and($view['events'][1]['sequence'])->toBe(2)
+        ->and($view['events'][1])
+        ->mode_label->toBe('Received')
+        ->source_name->toBeNull()
+        ->recipient_names->toBe(['Application Board']);
 });

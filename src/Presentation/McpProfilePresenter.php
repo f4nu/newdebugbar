@@ -303,9 +303,34 @@ final class McpProfilePresenter
     {
         $payload = is_array($section['payload'] ?? null) ? $section['payload'] : [];
         $exchange = is_array($payload['exchange'] ?? null) ? $payload['exchange'] : [];
+        $presentation = is_array($payload['presentation'] ?? null) ? $payload['presentation'] : [];
+        $activity = is_array($presentation['activity'] ?? null) ? $presentation['activity'] : [];
         $browserTrace = is_array($payload['browser_trace'] ?? null) ? $payload['browser_trace'] : [];
         $records = $this->livewireRecords($payload);
         $recordCounts = [];
+        $safeSummary = $this->clean($section['summary'] ?? []);
+        $safeExchange = $this->clean(array_intersect_key($exchange, array_flip([
+            'id',
+            'request_id',
+            'kind',
+            'title',
+            'title_confidence',
+            'result',
+            'status',
+            'path',
+            'request_bytes',
+            'response_bytes',
+            'duration_ms',
+            'server_clock',
+            'browser_clock',
+            'source',
+            'confidence',
+        ])));
+
+        if (is_string($activity['title'] ?? null)) {
+            $safeSummary['title'] = $activity['title'];
+            $safeExchange['title'] = $activity['title'];
+        }
 
         foreach ($records as $record) {
             $type = (string) ($record['record_type'] ?? 'unknown');
@@ -320,27 +345,11 @@ final class McpProfilePresenter
                 'profile_id' => $profileId,
                 'section' => 'livewire',
                 'label' => 'Livewire',
-                'summary' => $this->clean($section['summary'] ?? []),
+                'summary' => $safeSummary,
                 'payload' => [
                     'schema_version' => $section['schema_version'] ?? null,
                     'profile_revision' => $section['profile_revision'] ?? null,
-                    'exchange' => $this->clean(array_intersect_key($exchange, array_flip([
-                        'id',
-                        'request_id',
-                        'kind',
-                        'title',
-                        'title_confidence',
-                        'result',
-                        'status',
-                        'path',
-                        'request_bytes',
-                        'response_bytes',
-                        'duration_ms',
-                        'server_clock',
-                        'browser_clock',
-                        'source',
-                        'confidence',
-                    ]))),
+                    'exchange' => $safeExchange,
                     'trace' => [
                         'status' => $browserTrace['status'] ?? 'missing',
                         'appended_at' => $browserTrace['appended_at'] ?? null,
@@ -364,9 +373,15 @@ final class McpProfilePresenter
     {
         $records = [];
         $browserTrace = is_array($payload['browser_trace'] ?? null) ? $payload['browser_trace'] : [];
+        $presentation = is_array($payload['presentation'] ?? null) ? $payload['presentation'] : [];
         $browserActions = collect(is_array($browserTrace['actions'] ?? null) ? $browserTrace['actions'] : [])
             ->filter(fn (mixed $item): bool => is_array($item))
             ->keyBy('action_id');
+        $presentedActions = collect($this->arrayItems($presentation['components'] ?? null))
+            ->flatMap(fn (array $component): array => $this->arrayItems($component['actions'] ?? null))
+            ->keyBy('id');
+        $presentedComponents = collect($this->arrayItems($presentation['components'] ?? null))->keyBy('id');
+        $presentedEvents = collect($this->arrayItems($presentation['events'] ?? null))->keyBy('id');
 
         foreach ($this->arrayItems($payload['messages'] ?? null) as $message) {
             $effects = is_array($message['effects'] ?? null) ? $message['effects'] : [];
@@ -399,13 +414,18 @@ final class McpProfilePresenter
 
         foreach ($this->arrayItems($payload['actions'] ?? null) as $action) {
             $browser = $browserActions->get($action['id'] ?? null);
+            $presented = $presentedActions->get($action['id'] ?? null);
+            $rawName = is_string($action['name'] ?? null) ? $action['name'] : null;
+            $frameworkName = $rawName !== null && ($rawName === '__dispatch' || str_starts_with($rawName, '$'));
             $records[] = [
                 'record_type' => 'action',
                 'id' => $action['id'] ?? null,
                 'message_id' => $action['message_id'] ?? null,
                 'component_id' => $action['component_id'] ?? null,
                 'kind' => $action['kind'] ?? 'unknown',
-                'name' => $action['name'] ?? null,
+                'name' => $frameworkName ? null : $rawName,
+                'display_name' => is_array($presented) ? ($presented['display_name'] ?? null) : null,
+                'framework_name_included' => false,
                 'property_paths' => $action['property_paths'] ?? [],
                 'execution_status' => $action['execution_status'] ?? null,
                 'parameters_included' => false,
@@ -417,11 +437,13 @@ final class McpProfilePresenter
         }
 
         foreach ($this->arrayItems($payload['components'] ?? null) as $component) {
+            $presented = $presentedComponents->get($component['id'] ?? null);
             $records[] = [
                 'record_type' => 'component',
                 'id' => $component['id'] ?? null,
                 'mount_scope' => $component['mount_scope'] ?? null,
                 'name' => $component['name'] ?? null,
+                'display_name' => is_array($presented) ? ($presented['display_name'] ?? null) : null,
                 'class' => $component['class'] ?? null,
                 'source' => $component['source'] ?? null,
                 'view' => $component['view'] ?? null,
@@ -456,15 +478,19 @@ final class McpProfilePresenter
         }
 
         foreach ($this->arrayItems($payload['events'] ?? null) as $event) {
+            $presented = $presentedEvents->get($event['id'] ?? null);
             $records[] = [
                 'record_type' => 'event',
                 'id' => $event['id'] ?? null,
                 'action_id' => $event['action_id'] ?? null,
                 'source_component_id' => $event['source_component_id'] ?? null,
                 'name' => $event['name'] ?? null,
+                'display_name' => is_array($presented) ? ($presented['display_name'] ?? null) : null,
                 'mode' => $event['mode'] ?? null,
                 'declared_target' => $event['declared_target'] ?? null,
                 'observed_recipient_ids' => $event['observed_recipient_ids'] ?? [],
+                'source_component_name' => is_array($presented) ? ($presented['source_name'] ?? null) : null,
+                'observed_recipient_names' => is_array($presented) ? ($presented['recipient_names'] ?? []) : [],
                 'recipient_status' => $event['recipient_status'] ?? 'unknown',
                 'parameters_included' => false,
                 'source' => $event['source'] ?? null,

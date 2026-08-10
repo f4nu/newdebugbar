@@ -2,43 +2,54 @@
 
 use NewDebugBar\Analysis\LivewireAnalyzer;
 
-it('reports only a bounded large batch with causal evidence IDs', function () {
-    $messages = array_map(
-        fn (int $index): array => ['id' => 'message-'.$index],
-        range(1, 10),
-    );
-    $actions = array_map(
-        fn (int $index): array => ['id' => 'action-'.$index],
-        range(1, 10),
-    );
+it('reports bounded observed slow server work with causal evidence IDs', function () {
     $findings = (new LivewireAnalyzer)->analyze([
         'payload' => [
             'exchange' => ['id' => 'exchange-1'],
-            'messages' => $messages,
-            'actions' => $actions,
+            'components' => [[
+                'id' => 'component-1',
+                'class' => 'App\\Livewire\\ApplicationBoard',
+            ]],
+            'actions' => [[
+                'id' => 'action-1',
+                'name' => 'loadReviewOptions',
+            ]],
+            'server_spans' => [[
+                'id' => 'span-1',
+                'component_id' => 'component-1',
+                'action_id' => 'action-1',
+                'phase' => 'call',
+                'duration_ms' => 124.56,
+            ]],
         ],
     ]);
 
     expect($findings)->toHaveCount(1)
         ->and($findings[0])
-        ->rule_id->toBe('livewire.large_batch')
-        ->severity->toBe('info')
+        ->rule_id->toBe('livewire.slow_server_work')
+        ->severity->toBe('warning')
         ->section->toBe('livewire')
-        ->summary->toBe('10 Livewire messages ran in one exchange.')
+        ->summary->toBe('Application Board spent 124.6 ms in Load Review Options.')
+        ->why->toBe('The Livewire response waited for this server work to finish.')
+        ->origin->toBe('Observed Load Review Options work on Application Board.')
+        ->next->toContain('lazy loading or an island')
         ->and($findings[0]['evidence'])
         ->exchange_id->toBe('exchange-1')
-        ->message_count->toBe(10)
-        ->action_count->toBe(10)
-        ->threshold->toBe(10)
-        ->message_ids->toBe(array_column($messages, 'id'))
-        ->action_ids->toBe(array_column($actions, 'id'));
+        ->span_id->toBe('span-1')
+        ->component_id->toBe('component-1')
+        ->action_id->toBe('action-1')
+        ->duration_ms->toBe(124.6)
+        ->threshold_ms->toBe(100.0);
 });
 
-it('does not turn ordinary Livewire results into findings', function (string $result) {
-    $messages = array_fill(0, 9, ['id' => 'message', 'result' => $result]);
+it('does not turn normal Livewire behavior or a large batch into findings', function (string $result) {
+    $messages = array_fill(0, 17, ['id' => 'message', 'result' => $result]);
 
     expect((new LivewireAnalyzer)->analyze([
-        'payload' => ['messages' => $messages],
+        'payload' => [
+            'messages' => $messages,
+            'server_spans' => [['phase' => 'render', 'duration_ms' => 99.9]],
+        ],
     ]))->toBe([]);
 })->with([
     'rendered',
