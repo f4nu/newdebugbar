@@ -16,6 +16,31 @@ use NewDebugBar\Support\QueryExplainer;
 /** Loads a request summary first and defers full inspector data. */
 final class DebugBar extends Component
 {
+    /** @var array<string, string> */
+    private const SECTION_DESCRIPTIONS = [
+        'overview' => 'Review the important request activity and the runtime behind it.',
+        'authorization' => 'Review authorization decisions, their results, handlers, and call sites.',
+        'cache' => 'Review cache reads and writes, including hits, misses, keys, and timing.',
+        'events' => 'See which events Laravel dispatched, where they came from, and how they were handled.',
+        'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',
+        'http_client' => 'Review outbound HTTP requests, responses, timing, and their source.',
+        'history' => 'Inspect recent requests, background work, and earlier pages. Compare requests that use the same path.',
+        'lifecycle' => 'See how long Laravel spent in each measured request lifecycle stage.',
+        'livewire' => 'Inspect the Livewire action, component changes, events, and outcome for this request.',
+        'logs' => 'Review log messages, their context, and the application code that wrote them.',
+        'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
+        'messages' => 'Review developer messages, their context, and when they were recorded.',
+        'models' => 'See which Eloquent models this request loaded or changed. Find repeated record loads, unexpected writes, and when the work happened. Repeated means extra retrievals after a record’s first load.',
+        'notifications' => 'Inspect notifications sent during the request and the channels they used.',
+        'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
+        'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',
+        'redis' => 'Inspect direct Redis commands, their keys, connections, and timing.',
+        'request' => 'Follow the request from the incoming URL through routing, middleware, and the response.',
+        'timeline' => 'Follow important work in the order it happened across the request.',
+        'validation' => 'Review validation failures, affected fields, rules, and messages.',
+        'views' => 'See which Blade templates rendered and the data each received. Use this to spot missing variables, unexpected partials, and repeated renders.',
+    ];
+
     #[Locked]
     public string $profileId;
 
@@ -283,6 +308,7 @@ final class DebugBar extends Component
             $sectionLinks[] = [
                 'key' => $key,
                 'label' => $section['label'] ?? ucfirst($key),
+                'description' => $this->sectionDescription((string) $key, (string) ($section['label'] ?? ucfirst($key)), $profile),
                 'count' => $count,
                 'active' => $count === null || (int) $count > 0 || $attention,
                 'attention' => $attention,
@@ -296,6 +322,7 @@ final class DebugBar extends Component
         $sectionLinks[] = [
             'key' => 'history',
             'label' => 'History',
+            'description' => self::SECTION_DESCRIPTIONS['history'],
             'count' => null,
             'active' => true,
             'attention' => false,
@@ -316,6 +343,20 @@ final class DebugBar extends Component
             'sections' => $sectionLinks,
             'section_counts' => $sectionCounts,
         ];
+    }
+
+    /** @param array<string, mixed> $profile */
+    private function sectionDescription(string $key, string $label, array $profile): string
+    {
+        if (
+            $key === 'lifecycle'
+            && ($profile['sections']['request']['payload']['timing_scope'] ?? null) === 'global_middleware_entry'
+        ) {
+            return self::SECTION_DESCRIPTIONS['lifecycle'].' Timing starts at the debug middleware, so early Laravel bootstrap is not measured.';
+        }
+
+        return self::SECTION_DESCRIPTIONS[$key]
+            ?? 'Review the collected '.strtolower($label).' details for this request.';
     }
 
     private function refreshHistoryData(

@@ -43,10 +43,14 @@ it('loads full profile details only after the inspector asks', function () {
         ->assertSet('detailsLoaded', true)
         ->assertDispatched('newdebugbar-content-updated')
         ->assertSee('Profiled request completed')
-        ->assertSeeHtml('data-ndb-lifecycle-scope');
+        ->assertSeeHtml('data-ndb-section-description')
+        ->assertDontSeeHtml('data-ndb-lifecycle-scope');
 
-    expect(preg_replace('/\s+/', ' ', $component->html()))
-        ->toContain('Early Laravel bootstrap is not measured.');
+    $component->assertSet('summary.sections', function (array $sections): bool {
+        $lifecycle = collect($sections)->firstWhere('key', 'lifecycle');
+
+        return str_contains($lifecycle['description'], 'early Laravel bootstrap is not measured');
+    });
 });
 
 it('locks server-owned profile state', function () {
@@ -176,7 +180,8 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
         ->assertSet('summary.sections', function (array $sections): bool {
             $sections = collect($sections)->keyBy('key');
 
-            return $sections['overview']['active'] === true
+            return $sections->every(fn (array $section): bool => filled($section['description'] ?? null))
+                && $sections['overview']['active'] === true
                 && $sections['request']['active'] === true
                 && $sections['queries']['active'] === false
                 && $sections['logs']['active'] === false

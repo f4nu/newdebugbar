@@ -173,7 +173,6 @@ function stabilizeVisualDebugValues($page): void
                     code[data-ndb-language="sql"]
                 `) !== null;
                 const preservesModelEvidence = parent?.closest(`
-                    [data-ndb-model-finding],
                     [data-ndb-model-load-count],
                     [data-ndb-model-record-count],
                     [data-ndb-model-repeat-count],

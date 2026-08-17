@@ -276,7 +276,7 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertNoJavaScriptErrors();
 });
 
-it('prioritizes relevant activity and opens the runtime details', function () {
+it('prioritizes relevant activity and keeps runtime details collapsed until requested', function () {
     $page = visit('/profiled-rich')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
@@ -292,7 +292,8 @@ it('prioritizes relevant activity and opens the runtime details', function () {
             })()
             JS)
         ->assertVisible('[data-ndb-overview-runtime]')
-        ->assertAttribute('[data-ndb-overview-runtime]', 'open', '')
+        ->assertScript('document.querySelector("[data-ndb-overview-runtime]").open === false')
+        ->click('[data-ndb-overview-runtime] > summary')
         ->assertVisible('[data-ndb-runtime-detail-panel="runtime"]')
         ->assertVisible('[data-ndb-runtime-detail-navigation]')
         ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-select-wrapper]\')).display === "none"')
@@ -321,6 +322,46 @@ it('prioritizes relevant activity and opens the runtime details', function () {
             })()
             JS)
         ->assertNoJavaScriptErrors();
+});
+
+it('uses one non-sticky title and description hierarchy for every section', function () {
+    $page = visit('/profiled-context')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->assertCount('[data-ndb-section-header]', 1)
+        ->assertScript(<<<'JS'
+            (() => {
+                const header = document.querySelector('[data-ndb-section-header]');
+                const heading = header?.querySelector('[data-ndb-section-heading]');
+                const description = header?.querySelector('[data-ndb-section-description]');
+
+                return header !== null
+                    && heading !== null
+                    && description !== null
+                    && getComputedStyle(header).position === 'static'
+                    && getComputedStyle(heading).fontSize === '14px'
+                    && getComputedStyle(description).fontSize === '12px'
+                    && heading.getBoundingClientRect().bottom <= description.getBoundingClientRect().top
+                    && heading.getAttribute('aria-describedby') === description.id;
+            })()
+            JS);
+
+    foreach (['authorization', 'lifecycle', 'views', 'history'] as $section) {
+        $page
+            ->click("[data-ndb-select-section=\"{$section}\"]")
+            ->assertScript(<<<JS
+                (() => {
+                    const selected = document.querySelector('[data-ndb-select-section="{$section}"]');
+                    const heading = document.querySelector('[data-ndb-section-heading]');
+                    const description = document.querySelector('[data-ndb-section-description]');
+
+                    return heading.textContent.trim() === selected.querySelector('.ndb-section-label').textContent.trim()
+                        && description.textContent.trim().length > 0;
+                })()
+                JS);
+    }
+
+    $page->assertNoJavaScriptErrors();
 });
 
 it('caps the compact and expanded bars at the large breakpoint', function () {
@@ -949,8 +990,7 @@ it('presents useful model evidence with progressive controls', function () {
         ->click('[data-ndb-select-section="models"]')
         ->assertSee('Find repeated record loads, unexpected writes, and when the work happened.')
         ->assertSee('Repeated means extra retrievals after a record’s first load.')
-        ->assertSee('20 repeated loads')
-        ->assertSee('44 retrievals across 24 distinct records')
+        ->assertMissing('[data-ndb-model-finding]')
         ->assertScript(<<<'JS'
             JSON.stringify(Array.from(document.querySelectorAll('[data-ndb-model-group]'))
                 .map((group) => [group.querySelector('[data-ndb-model-name]').textContent.trim(), group.dataset.changes, group.dataset.repeated, group.dataset.loads]))
@@ -1027,8 +1067,7 @@ it('puts model changes before repeated retrievals', function () {
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="models"]')
-        ->assertSee('1 model change')
-        ->assertSee('Changes appear first because they can affect application state.')
+        ->assertMissing('[data-ndb-model-finding]')
         ->assertScript(<<<'JS'
             (() => {
                 const first = document.querySelector('[data-ndb-model-group]');
@@ -1037,7 +1076,7 @@ it('puts model changes before repeated retrievals', function () {
                     && first.querySelector('[data-ndb-model-name]').textContent.trim() === 'Client';
             })()
             JS)
-        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
+        ->click('[data-ndb-model-group]:first-of-type > summary')
         ->assertSee('Model changes')
         ->assertSee('1 updated')
         ->assertNoJavaScriptErrors();

@@ -25,9 +25,9 @@ function runtime(saved = null) {
 
 const summary = {
   sections: [
-    { key: 'overview', label: 'Overview' },
-    { key: 'queries', label: 'Queries' },
-    { key: 'logs', label: 'Logs' },
+    { key: 'overview', label: 'Overview', description: 'Request summary.' },
+    { key: 'queries', label: 'Queries', description: 'Query evidence.' },
+    { key: 'logs', label: 'Logs', description: 'Log evidence.' },
   ],
 };
 
@@ -141,7 +141,11 @@ test('selecting a section resets content and highlights its code', async () => {
     { dataset: { ndbSectionPanel: 'queries' }, hidden: true },
   ];
   state.$root = { querySelectorAll: () => panels };
-  state.$refs = { content: { scrollTop: 60 }, sectionHeading: { textContent: '' } };
+  state.$refs = {
+    content: { scrollTop: 60 },
+    sectionHeading: { textContent: '' },
+    sectionDescription: { textContent: '' },
+  };
   state.$nextTick = (callback) => callback();
 
   state.selectSection('queries');
@@ -149,6 +153,7 @@ test('selecting a section resets content and highlights its code', async () => {
 
   assert.equal(state.selected, 'queries');
   assert.equal(state.$refs.sectionHeading.textContent, 'Queries');
+  assert.equal(state.$refs.sectionDescription.textContent, 'Query evidence.');
   assert.equal(panels[0].hidden, true);
   assert.equal(panels[1].hidden, false);
   assert.equal(state.$refs.content.scrollTop, 0);

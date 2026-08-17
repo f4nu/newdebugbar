@@ -19,10 +19,6 @@
 @endphp
 
 <div data-ndb-queries class="ndb:space-y-4">
-    <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-        Find repeated work, slow SQL, and the application code that triggered it.
-    </p>
-
     <div class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
         <dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:divide-zinc-200/80 ndb:dark:divide-zinc-800">
             @foreach ([

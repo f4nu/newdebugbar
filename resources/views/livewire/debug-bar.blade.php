@@ -758,15 +758,26 @@
                     :inert="mobileSectionsOpen"
                     class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
                 >
-                    <div class="ndb:sticky ndb:top-0 ndb:z-10 ndb:flex ndb:h-12 ndb:items-center ndb:border-b ndb:border-zinc-100/80 ndb:bg-white/65 ndb:px-4 ndb:backdrop-blur-xl ndb:sm:px-6 ndb:dark:border-zinc-900/80 ndb:dark:bg-zinc-950/65">
+                    <header
+                        data-ndb-section-header
+                        class="ndb:px-4 ndb:pt-4 ndb:sm:px-6 ndb:sm:pt-6"
+                    >
                         <h2
                             data-ndb-section-heading
                             x-ref="sectionHeading"
                             tabindex="-1"
-                            class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-sm ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                            aria-describedby="newdebugbar-section-description"
+                            class="ndb:text-sm ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                             x-text="selectedSection.label"
                         ></h2>
-                    </div>
+                        <p
+                            id="newdebugbar-section-description"
+                            data-ndb-section-description
+                            x-ref="sectionDescription"
+                            class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            x-text="selectedSection.description"
+                        ></p>
+                    </header>
 
                     <div
                         wire:loading.flex
@@ -933,7 +944,6 @@
                                             </div>
                                         @endif
                                         <details
-                                            open
                                             data-ndb-overview-runtime
                                             class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
                                         >
@@ -2026,15 +2036,6 @@
                                         </div>
                                     @elseif ($sectionKey === 'lifecycle')
                                         <div class="ndb:space-y-2">
-                                            @if (($profile['sections']['request']['payload']['timing_scope'] ?? null) === 'global_middleware_entry')
-                                                <p
-                                                    data-ndb-lifecycle-scope
-                                                    class="ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60 ndb:dark:text-zinc-400"
-                                                >
-                                                    Timing starts at the debug middleware. Early Laravel bootstrap is
-                                                    not measured.
-                                                </p>
-                                            @endif
                                             @forelse ($section['payload']['items'] as $index => $item)
                                                 <article
                                                     wire:key="lifecycle-{{ $index }}"
@@ -2078,58 +2079,11 @@
                                         </div>
                                     @elseif ($sectionKey === 'models')
                                         @php($modelGroups = $section['payload']['model_groups'] ?? [])
-                                        @php($changedModelCount = count(array_filter($modelGroups, fn (array $group): bool => $group['change_count'] > 0)))
                                         <div
                                             data-ndb-models
                                             x-data="{ modelsAllExpanded: false }"
                                             class="ndb:space-y-5"
                                         >
-                                            <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                                See which Eloquent models this request loaded or changed. Find repeated
-                                                record loads, unexpected writes, and when the work happened. Repeated
-                                                means extra retrievals after a record’s first load.
-                                            </p>
-
-                                            @if (($section['summary']['model_change_count'] ?? 0) > 0)
-                                                <div
-                                                    data-ndb-model-finding="changes"
-                                                    class="ndb:rounded-xl ndb:border ndb:border-amber-200 ndb:bg-amber-50/55 ndb:px-4 ndb:py-3 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20"
-                                                >
-                                                    <p class="ndb:text-xs ndb:font-bold ndb:text-amber-900 ndb:dark:text-amber-200">
-                                                        {{ $section['summary']['model_change_count'] }} model {{ $section['summary']['model_change_count'] === 1 ? 'change' : 'changes' }}
-                                                    </p>
-                                                    <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-amber-800/80 ndb:dark:text-amber-300/80">
-                                                        {{ $changedModelCount }} {{ $changedModelCount === 1 ? 'model class changed' : 'model classes changed' }}.
-                                                        Changes appear first because they can affect application state.
-                                                    </p>
-                                                </div>
-                                            @elseif (($section['summary']['repeated_load_count'] ?? 0) > 0)
-                                                <div
-                                                    data-ndb-model-finding="repeated"
-                                                    class="ndb:rounded-xl ndb:border ndb:border-amber-200 ndb:bg-amber-50/55 ndb:px-4 ndb:py-3 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20"
-                                                >
-                                                    <p class="ndb:text-xs ndb:font-bold ndb:text-amber-900 ndb:dark:text-amber-200">
-                                                        {{ $section['summary']['repeated_load_count'] }} repeated {{ $section['summary']['repeated_load_count'] === 1 ? 'load' : 'loads' }}
-                                                    </p>
-                                                    <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-amber-800/80 ndb:dark:text-amber-300/80">
-                                                        {{ $section['summary']['retrieval_count'] }} retrievals across {{ $section['summary']['distinct_record_count'] }} distinct {{ $section['summary']['distinct_record_count'] === 1 ? 'record' : 'records' }}.
-                                                        Check repeated rows for avoidable database work.
-                                                    </p>
-                                                </div>
-                                            @elseif (($section['summary']['retrieval_count'] ?? 0) > 0)
-                                                <div
-                                                    data-ndb-model-finding="clear"
-                                                    class="ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-zinc-50/55 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
-                                                >
-                                                    <p class="ndb:text-xs ndb:font-bold">
-                                                        No repeated identified loads
-                                                    </p>
-                                                    <p class="ndb:mt-1 ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                                        {{ $section['summary']['retrieval_count'] }} retrievals across {{ $section['summary']['distinct_record_count'] }} distinct {{ $section['summary']['distinct_record_count'] === 1 ? 'record' : 'records' }}.
-                                                    </p>
-                                                </div>
-                                            @endif
-
                                             @if ($modelGroups !== [])
                                                 <div>
                                                     <div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-end ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:sm:grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem] ndb:dark:border-zinc-800">
@@ -2435,11 +2389,6 @@
                                     @elseif ($sectionKey === 'views')
                                         @php($viewGroups = $section['payload']['groups'] ?? [])
                                         <div data-ndb-views class="ndb:space-y-5">
-                                            <p class="ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                                See which Blade templates rendered and the data each received. Use this
-                                                to spot missing variables, unexpected partials, and repeated renders.
-                                            </p>
-
                                             <dl class="ndb:flex ndb:flex-wrap ndb:gap-x-10 ndb:gap-y-3 ndb:border-y ndb:border-zinc-200/90 ndb:py-3 ndb:dark:border-zinc-800">
                                                 <div>
                                                     <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
@@ -2926,20 +2875,6 @@
                                 wire:key="section-history"
                                 class="ndb:space-y-4"
                             >
-                                <div>
-                                    <p class="ndb:text-sm ndb:font-semibold">
-                                        History keeps recent requests so you can inspect background work and earlier
-                                        pages.
-                                    </p>
-                                    <p class="ndb:mt-1 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                        Compare appears when two requests use the same path.
-                                    </p>
-                                    @if (count($history) === 1)
-                                        <p class="ndb:mt-1 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                            New requests will appear here as you use the app.
-                                        </p>
-                                    @endif
-                                </div>
                                 @if ($discoveredProfileId !== null)
                                     <div class="ndb:rounded-lg ndb:border ndb:border-indigo-200 ndb:bg-indigo-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-indigo-800 ndb:dark:border-indigo-900 ndb:dark:bg-indigo-950/30 ndb:dark:text-indigo-200">
                                         A background request was added to History.

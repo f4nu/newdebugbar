@@ -283,7 +283,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
     get selectedSection() {
       return (this.summary.sections ?? []).find((section) => section.key === this.selected)
-        ?? { key: 'overview', label: 'Overview', count: null };
+        ?? { key: 'overview', label: 'Overview', description: '', count: null };
     },
 
     isFavorite(key) {
@@ -375,6 +375,9 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     syncSectionHeading() {
       if (this.$refs?.sectionHeading) {
         this.$refs.sectionHeading.textContent = this.selectedSection.label;
+      }
+      if (this.$refs?.sectionDescription) {
+        this.$refs.sectionDescription.textContent = this.selectedSection.description ?? '';
       }
     },
 
