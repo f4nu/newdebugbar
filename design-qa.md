@@ -1,49 +1,51 @@
-# Mobile Toolbar Design QA
+# Mobile Toolbar Design QA — Pointer and Metric Refinement
 
 ## Comparison target
 
 - Source visual truth:
-  - Facts open: `/Users/benjamin/.codex/generated_images/01a00e9f-8958-7c80-bf58-058f100a25fc/exec-a6110b76-e668-4922-8072-3ede1d9eb9a2.png`
-  - Actions open: `/Users/benjamin/.codex/generated_images/01a00e9f-8958-7c80-bf58-058f100a25fc/exec-c817087b-d8bd-42d3-b0b1-89b2d8eec7b4.png`
+  - Facts open: `/Users/benjamin/.codex/generated_images/01a00e9f-8958-7c80-bf58-058f100a25fc/exec-a6110b76-e668-4922-8072-3ede1d9eb9a2.png` (853 × 1844 pixels).
+  - Actions open: `/Users/benjamin/.codex/generated_images/01a00e9f-8958-7c80-bf58-058f100a25fc/exec-c817087b-d8bd-42d3-b0b1-89b2d8eec7b4.png` (852 × 1854 pixels).
 - Rendered implementation:
-  - Facts open: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-facts-light.png`
-  - Actions open: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-actions-light.png`
-  - Dark checks: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-facts-dark.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-actions-dark.png`
-- Viewport: 390 × 844 CSS pixels.
-- Source density normalization: the 853 × 1844 and 852 × 1854 generated sources were scaled to 390 × 844 for comparison. Implementation captures are 390 × 844 at browser screenshot density.
-- States: request-facts menu open and action menu open, with the compact toolbar at the bottom.
+  - Closed: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-dark.png`.
+  - Facts open: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-facts-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-facts-dark.png`.
+  - Actions open: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-actions-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-actions-dark.png`.
+- Viewport and density: both generated sources were normalized to 390 × 844 pixels. Implementation captures are 390 × 844 CSS pixels at 1× screenshot density.
+- States: toolbar closed, request-facts menu open, and action menu open, in light and dark themes.
 
 ## Evidence
 
-- Full-view facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-comparison.png`
-- Full-view actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-comparison.png`
-- Focused facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-focused-comparison.png`
-- Focused actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-focused-comparison.png`
+- Full-view facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-comparison-v2.png`.
+- Full-view actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-comparison-v2.png`.
+- Focused facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-focused-comparison-v2.png`.
+- Focused actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-focused-comparison-v2.png`.
+- Isolated in-app browser check: `http://example-blade-app.test/login` at 390 × 844. Both menus opened, both pointers aligned to their triggers, real values `7.05 ms` and `10 MB` fit without clipping, and the console had no errors or warnings.
 
 The source and implementation use different host-page fixtures, so the component region is the fidelity target. Focused comparison was required because the toolbar labels and icons are too small to judge reliably in the full view.
 
 ## Findings
 
 - No actionable P0, P1, or P2 differences remain.
-- Fonts and typography: the implementation keeps New Debug Bar's existing Outfit type system and preserves the source hierarchy of a stronger value with a quieter secondary value.
-- Spacing and layout rhythm: the request, centered summary control, and bare ellipsis match the selected structure. Menu rows are slightly taller than the generated source so every action keeps a 44-pixel touch target; this is an accepted P3 fidelity difference.
-- Colors and visual tokens: the neutral glass surface, indigo summary state, borders, and shadows match the existing product tokens in light and dark themes.
-- Image and icon fidelity: no raster assets are needed. The toolbar uses the package's established outlined icon system, with one centered activity icon in the summary control and a borderless ellipsis control.
-- Copy and content: all four request facts and all three actions are present. The visible “Request facts” and “Debug bar” headings from the generated references were intentionally removed, as requested.
+- Fonts and typography: the implementation keeps New Debug Bar's Outfit type system. Three 11-pixel tabular values sit above quieter 9-pixel labels; real request values remain fully visible at 390 pixels.
+- Spacing and layout rhythm: the request control gives 16 pixels back to the summary, which now uses the available width for Queries, Time, and Peak. Menu rows remain slightly taller and wider than the generated source to preserve 44-pixel touch targets; this is an accepted P3 difference.
+- Colors and visual tokens: the neutral glass surfaces, indigo summary state, dividers, borders, and shadows retain light/dark parity with the existing product tokens.
+- Image and icon fidelity: no raster assets are needed. The toolbar keeps one centered activity icon and the established outlined icon set. Both popovers now use the same 14-pixel pointer treatment and align that pointer with the opening control.
+- Copy and content: the compact bar now exposes query count, total request time, and peak memory before opening the facts menu. All four facts and all three actions remain available. The visible “Request facts” and “Debug bar” headings remain intentionally removed.
 - Accessibility and interaction: both triggers expose expanded state, menus close with Escape or an outside click, focus returns to the trigger, and opening the palette or inspector hands focus to the new surface.
 
 ## Comparison history
 
-1. The first visual capture exposed inconsistent test-normalized numbers between the summary trigger and facts menu. The visual stabilizer was corrected and the browser test now asserts that query count and duration match across both surfaces.
-2. The revised light and dark captures were inspected. No P0, P1, or P2 findings remain.
+1. P2, fixed: the previous implementation omitted the pointer under both popovers. The repeated surface, transition, alignment, and placement logic now lives in one shared component with a pointer for both menu variants.
+2. P2, fixed: the first three-metric pass clipped a real `7.74 ms` value in the isolated browser preview. The request control was narrowed, metric padding and type were tightened, and a browser assertion now rejects clipped metric values.
+3. The revised closed and open captures were inspected in both themes, then the same visual group passed again without baseline-update mode. No P0, P1, or P2 findings remain.
 
 ## Implementation checklist
 
 - [x] Keep desktop toolbar controls unchanged.
-- [x] Show request, summary, and ellipsis on mobile.
+- [x] Show request, three useful metrics, and ellipsis on mobile.
 - [x] Remove visible popover headings.
+- [x] Reuse one arrowed popover shell for both menus.
 - [x] Keep facts and action menus mutually exclusive.
-- [x] Verify 44-pixel targets, focus return, Escape, palette, and inspector actions.
+- [x] Verify 44-pixel targets, unclipped values, focus return, Escape, palette, and inspector actions.
 - [x] Capture and pass closed, facts-open, and actions-open baselines in both themes.
 
 final result: passed

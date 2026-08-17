@@ -39,7 +39,7 @@
         <x-newdebugbar::toolbar-button
             section="request"
             data-ndb-toolbar="request"
-            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-64"
+            class="ndb:flex ndb:w-24 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-64"
             aria-label="Open request details"
         >
             <span
@@ -81,131 +81,112 @@
                 :class="mobileToolbarMenu === 'facts'
                     ? 'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300'
                     : 'ndb:bg-indigo-50/70 ndb:text-zinc-900 ndb:hover:bg-indigo-100/80 ndb:dark:bg-indigo-950/45 ndb:dark:text-zinc-100 ndb:dark:hover:bg-indigo-950/75'"
-                class="ndb:flex ndb:w-full ndb:min-w-0 ndb:self-stretch ndb:items-center ndb:justify-center ndb:gap-2 ndb:rounded-xl ndb:px-2 ndb:py-1.5 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                class="ndb:flex ndb:w-full ndb:min-w-0 ndb:self-stretch ndb:items-center ndb:gap-1.5 ndb:rounded-xl ndb:px-2 ndb:py-1.5 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
             >
                 <x-newdebugbar::icon
                     name="activity"
-                    class="ndb:size-5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400"
+                    class="ndb:size-4.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400"
                 />
-                <span class="ndb:min-w-0">
-                    <span
-                        data-ndb-mobile-toolbar-summary="queries"
-                        class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                        x-text="summary.query_count + (summary.query_count === 1 ? ' query' : ' queries')"
-                    ></span>
-                    <span
-                        data-ndb-mobile-toolbar-summary="duration"
-                        class="ndb:block ndb:truncate ndb:text-[10px] ndb:font-medium ndb:text-zinc-500 ndb:tabular-nums ndb:dark:text-zinc-400"
-                        x-text="summary.duration_ms + ' ms'"
-                    ></span>
+                <span
+                    data-ndb-mobile-toolbar-metrics
+                    class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-3 ndb:items-center"
+                >
+                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:px-0.5">
+                        <span
+                            data-ndb-mobile-toolbar-summary="queries"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
+                            x-text="summary.query_count"
+                        ></span>
+                        <span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Queries</span>
+                    </span>
+                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:border-l ndb:border-indigo-200/70 ndb:px-0.5 ndb:dark:border-indigo-800/70">
+                        <span
+                            data-ndb-mobile-toolbar-summary="duration"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
+                            x-text="summary.duration_ms + ' ms'"
+                        ></span>
+                        <span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Time</span>
+                    </span>
+                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:border-l ndb:border-indigo-200/70 ndb:px-0.5 ndb:dark:border-indigo-800/70">
+                        <span
+                            data-ndb-mobile-toolbar-summary="memory"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
+                            x-text="summary.peak_memory_mb + ' MB'"
+                        ></span>
+                        <span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Peak</span>
+                    </span>
                 </span>
             </button>
 
-            <div
+            <x-newdebugbar::mobile-toolbar-popover
                 id="newdebugbar-mobile-request-facts"
-                x-cloak
-                x-show.important="mobileToolbarMenu === 'facts'"
-                x-transition:enter="ndb:transition ndb:duration-150 ndb:ease-out"
-                x-transition:enter-start="ndb:scale-95 ndb:opacity-0"
-                x-transition:enter-end="ndb:scale-100 ndb:opacity-100"
-                x-transition:leave="ndb:transition ndb:duration-100 ndb:ease-in"
-                x-transition:leave-start="ndb:scale-100 ndb:opacity-100"
-                x-transition:leave-end="ndb:scale-95 ndb:opacity-0"
-                role="menu"
-                aria-label="Request facts"
-                data-ndb-mobile-toolbar-menu="facts"
-                :class="toolbarPlacement === 'top'
-                    ? 'ndb:top-[calc(100%+0.5rem)] ndb:origin-top'
-                    : 'ndb:bottom-[calc(100%+0.5rem)] ndb:origin-bottom'"
-                class="ndb:absolute ndb:left-1/2 ndb:z-50 ndb:w-[min(20rem,calc(100vw-32px))] ndb:-translate-x-1/2 ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200/80 ndb:bg-white/95 ndb:p-1.5 ndb:shadow-[0_18px_50px_-16px_rgba(24,24,27,0.45)] ndb:backdrop-blur-xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/95 ndb:dark:shadow-[0_18px_50px_-16px_rgba(0,0,0,0.85)]"
+                menu="facts"
+                label="Request facts"
             >
-                <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-700/80">
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-request-fact="environment"
-                        @click="openInspector('overview')"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon
-                            name="server"
-                            class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                        />
-                        <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Environment</span>
-                        <span
-                            class="ndb:max-w-24 ndb:truncate ndb:text-right ndb:text-sm ndb:font-semibold"
-                            x-text="summary.environment"
-                        ></span>
-                        <x-newdebugbar::icon
-                            name="chevron-down"
-                            class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400"
-                        />
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-request-fact="queries"
-                        @click="openInspector('queries')"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon
-                            name="database"
-                            class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                        />
-                        <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Queries</span>
-                        <span
-                            data-ndb-mobile-toolbar-fact-value="queries"
-                            class="ndb:text-sm ndb:font-semibold ndb:tabular-nums"
-                            x-text="summary.query_count"
-                        ></span>
-                        <x-newdebugbar::icon
-                            name="chevron-down"
-                            class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400"
-                        />
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-request-fact="duration"
-                        @click="openInspector('request')"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon name="clock" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
-                        <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Duration</span>
-                        <span
-                            data-ndb-mobile-toolbar-fact-value="duration"
-                            class="ndb:text-sm ndb:font-semibold ndb:tabular-nums"
-                            x-text="summary.duration_ms + ' ms'"
-                        ></span>
-                        <x-newdebugbar::icon
-                            name="chevron-down"
-                            class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400"
-                        />
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-request-fact="memory"
-                        @click="openInspector('overview')"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon
-                            name="memory"
-                            class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                        />
-                        <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Peak</span>
-                        <span
-                            data-ndb-mobile-toolbar-fact-value="memory"
-                            class="ndb:text-sm ndb:font-semibold ndb:tabular-nums"
-                            x-text="summary.peak_memory_mb + ' MB'"
-                        ></span>
-                        <x-newdebugbar::icon
-                            name="chevron-down"
-                            class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400"
-                        />
-                    </button>
-                </div>
-            </div>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-request-fact="environment"
+                    @click="openInspector('overview')"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="server" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Environment</span>
+                    <span
+                        class="ndb:max-w-24 ndb:truncate ndb:text-right ndb:text-sm ndb:font-semibold"
+                        x-text="summary.environment"
+                    ></span>
+                    <x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400" />
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-request-fact="queries"
+                    @click="openInspector('queries')"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="database" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Queries</span>
+                    <span
+                        data-ndb-mobile-toolbar-fact-value="queries"
+                        class="ndb:text-sm ndb:font-semibold ndb:tabular-nums"
+                        x-text="summary.query_count"
+                    ></span>
+                    <x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400" />
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-request-fact="duration"
+                    @click="openInspector('request')"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="clock" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Duration</span>
+                    <span
+                        data-ndb-mobile-toolbar-fact-value="duration"
+                        class="ndb:text-sm ndb:font-semibold ndb:tabular-nums"
+                        x-text="summary.duration_ms + ' ms'"
+                    ></span>
+                    <x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400" />
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-request-fact="memory"
+                    @click="openInspector('overview')"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="memory" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:min-w-0 ndb:flex-1 ndb:text-sm ndb:font-medium">Peak</span>
+                    <span
+                        data-ndb-mobile-toolbar-fact-value="memory"
+                        class="ndb:text-sm ndb:font-semibold ndb:tabular-nums"
+                        x-text="summary.peak_memory_mb + ' MB'"
+                    ></span>
+                    <x-newdebugbar::icon name="chevron-down" class="ndb:size-3.5 ndb:-rotate-90 ndb:text-zinc-400" />
+                </button>
+            </x-newdebugbar::mobile-toolbar-popover>
         </div>
 
         <div
@@ -314,63 +295,44 @@
                 <x-newdebugbar::icon name="ellipsis" class="ndb:size-5" />
             </button>
 
-            <div
+            <x-newdebugbar::mobile-toolbar-popover
                 id="newdebugbar-mobile-actions"
-                x-cloak
-                x-show.important="mobileToolbarMenu === 'actions'"
-                x-transition:enter="ndb:transition ndb:duration-150 ndb:ease-out"
-                x-transition:enter-start="ndb:scale-95 ndb:opacity-0"
-                x-transition:enter-end="ndb:scale-100 ndb:opacity-100"
-                x-transition:leave="ndb:transition ndb:duration-100 ndb:ease-in"
-                x-transition:leave-start="ndb:scale-100 ndb:opacity-100"
-                x-transition:leave-end="ndb:scale-95 ndb:opacity-0"
-                role="menu"
-                aria-label="Debug bar actions"
-                data-ndb-mobile-toolbar-menu="actions"
-                :class="toolbarPlacement === 'top'
-                    ? 'ndb:top-[calc(100%+0.5rem)] ndb:origin-top'
-                    : 'ndb:bottom-[calc(100%+0.5rem)] ndb:origin-bottom'"
-                class="ndb:absolute ndb:right-0 ndb:z-50 ndb:w-64 ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200/80 ndb:bg-white/95 ndb:p-1.5 ndb:shadow-[0_18px_50px_-16px_rgba(24,24,27,0.45)] ndb:backdrop-blur-xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/95 ndb:dark:shadow-[0_18px_50px_-16px_rgba(0,0,0,0.85)]"
+                menu="actions"
+                label="Debug bar actions"
+                align="end"
+                width="actions"
             >
-                <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-700/80">
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-toolbar-action="palette"
-                        @click="openPalette()"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon
-                            name="search"
-                            class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                        />
-                        <span class="ndb:text-sm ndb:font-medium">Command palette</span>
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-toolbar-action="inspector"
-                        @click="openInspector('overview')"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon
-                            name="expand"
-                            class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                        />
-                        <span class="ndb:text-sm ndb:font-medium">Open inspector</span>
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        data-ndb-mobile-toolbar-action="dismiss"
-                        @click="dismissBar()"
-                        class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
-                    >
-                        <x-newdebugbar::icon name="close" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
-                        <span class="ndb:text-sm ndb:font-medium">Hide until reload</span>
-                    </button>
-                </div>
-            </div>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-toolbar-action="palette"
+                    @click="openPalette()"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="search" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:text-sm ndb:font-medium">Command palette</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-toolbar-action="inspector"
+                    @click="openInspector('overview')"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="expand" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:text-sm ndb:font-medium">Open inspector</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    data-ndb-mobile-toolbar-action="dismiss"
+                    @click="dismissBar()"
+                    class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+                >
+                    <x-newdebugbar::icon name="close" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />
+                    <span class="ndb:text-sm ndb:font-medium">Hide until reload</span>
+                </button>
+            </x-newdebugbar::mobile-toolbar-popover>
         </div>
 
         <div data-ndb-toolbar-actions class="ndb:hidden ndb:shrink-0 ndb:items-center ndb:gap-0.5 ndb:sm:flex">
