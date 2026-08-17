@@ -1778,8 +1778,11 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && factsBox.height >= 44
                     && facts.querySelectorAll('svg').length === 1
                     && Math.abs((factsIconBox.top + factsIconBox.height / 2) - (factsBox.top + factsBox.height / 2)) <= 1
-                    && facts.textContent.includes('queries')
-                    && facts.textContent.includes('ms')
+                        && facts.querySelectorAll('[data-ndb-mobile-toolbar-summary]').length === 3
+                        && facts.textContent.includes('Queries')
+                        && facts.textContent.includes('Time')
+                        && facts.textContent.includes('Peak')
+                        && facts.textContent.includes('ms')
                     && actionsBox.width >= 44
                     && actionsBox.height >= 44
                     && actions.querySelectorAll('svg').length === 1
