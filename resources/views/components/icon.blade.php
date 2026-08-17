@@ -15,6 +15,19 @@
             <circle cx="11" cy="11" r="7"
             /><path d="m20 20-4-4" />
             @break
+        @case ('activity')
+            <path d="M3 12h4l2.5-7 5 14 2.5-7H21" />
+            @break
+        @case ('ellipsis')
+            <circle cx="5" cy="12" r="1.25" fill="currentColor" stroke="none"
+            /><circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none"
+            /><circle cx="19" cy="12" r="1.25" fill="currentColor" stroke="none" />
+            @break
+        @case ('server')
+            <rect x="3" y="3" width="18" height="8" rx="2"
+            /><rect x="3" y="13" width="18" height="8" rx="2"
+            /><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6" />
+            @break
         @case ('expand')
             <rect x="5" y="5" width="14" height="14" rx="1" />
             @break

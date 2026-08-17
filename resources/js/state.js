@@ -123,6 +123,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     inspectorReturnFocus: null,
     mobileSectionsOpen: false,
     mobileSectionsReturnFocus: null,
+    mobileToolbarMenu: null,
+    mobileToolbarReturnFocus: null,
     detailsRequested: false,
     detailsError: false,
     detailRequestVersion: 0,
@@ -391,9 +393,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       if (!this.barVisible) return;
 
       if (!this.inspectorOpen) {
-        this.inspectorReturnFocus = returnFocus ?? browser.activeElement?.();
+        this.inspectorReturnFocus = returnFocus
+          ?? (this.mobileToolbarMenu ? this.mobileToolbarReturnFocus : null)
+          ?? browser.activeElement?.();
       }
 
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.selectSection(section);
@@ -467,6 +473,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.inspectorReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
       this.paletteOpen = false;
       this.paletteSearch = '';
       this.paletteIndex = 0;
@@ -873,12 +881,50 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.paletteOpen ? this.closePalette() : this.openPalette();
     },
 
+    toggleMobileToolbarMenu(menu, returnFocus = null) {
+      if (this.mobileToolbarMenu === menu) {
+        this.closeMobileToolbarMenu();
+
+        return;
+      }
+
+      this.openMobileToolbarMenu(menu, returnFocus);
+    },
+
+    openMobileToolbarMenu(menu, returnFocus = null) {
+      if (!this.barVisible || this.inspectorOpen || !['facts', 'actions'].includes(menu)) return;
+
+      this.mobileToolbarMenu = menu;
+      this.mobileToolbarReturnFocus = returnFocus ?? browser.activeElement?.();
+      this.$nextTick?.(() => {
+        const focus = () => this.$root
+          ?.querySelector?.(`[data-ndb-mobile-toolbar-menu="${menu}"] [role="menuitem"]`)
+          ?.focus?.();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    closeMobileToolbarMenu(restoreFocus = true) {
+      if (!this.mobileToolbarMenu) return;
+
+      const returnFocus = this.mobileToolbarReturnFocus;
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
+
+      if (restoreFocus) this.$nextTick?.(() => {
+        const focus = () => returnFocus?.focus?.();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
     openPalette() {
       if (!this.barVisible) return;
 
-      this.paletteReturnFocus = this.mobileSectionsOpen
-        ? this.mobileSectionsReturnFocus
-        : browser.activeElement?.();
+      this.paletteReturnFocus = this.mobileToolbarMenu
+        ? this.mobileToolbarReturnFocus
+        : (this.mobileSectionsOpen ? this.mobileSectionsReturnFocus : browser.activeElement?.());
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.paletteOpen = true;
@@ -956,6 +1002,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       if (event.key === 'Escape') {
         if (this.paletteOpen) this.closePalette();
+        else if (this.mobileToolbarMenu) this.closeMobileToolbarMenu();
         else if (this.mobileSectionsOpen) this.closeMobileSections();
         else if (this.inspectorOpen && !this.returnToCurrentProfile()) this.closeInspector();
       }

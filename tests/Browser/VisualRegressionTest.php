@@ -203,6 +203,19 @@ function stabilizeVisualDebugValues($page): void
                     .replaceAll('N_PLUS_ONE', 'N+1');
             }
 
+            const stableMobileToolbarValues = {
+                '[data-ndb-mobile-toolbar-summary="queries"]': '3 queries',
+                '[data-ndb-mobile-toolbar-summary="duration"]': '4 ms',
+                '[data-ndb-mobile-toolbar-fact-value="queries"]': '3',
+                '[data-ndb-mobile-toolbar-fact-value="duration"]': '4 ms',
+                '[data-ndb-mobile-toolbar-fact-value="memory"]': '7 MB',
+            };
+
+            Object.entries(stableMobileToolbarValues).forEach(([selector, value]) => {
+                const element = document.querySelector(selector);
+                if (element) element.textContent = value;
+            });
+
             const normalizeQueryMetrics = (articles) => {
                 let totalDuration = 0;
                 let totalPercent = 0;
@@ -438,6 +451,36 @@ it('matches the visual baseline for the :dataset narrow toolbar', function (stri
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset narrow request facts menu', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->click('[data-ndb-mobile-toolbar-trigger="facts"]')
+        ->assertVisible('[data-ndb-mobile-toolbar-menu="facts"]')
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-narrow-facts-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset narrow action menu', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-narrow-actions-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset command palette', function (string $theme) {

@@ -364,6 +364,8 @@ test('dismissing the bar lasts for the page lifetime without becoming a preferen
   state.$nextTick = (callback) => callback();
   state.inspectorOpen = true;
   state.paletteOpen = true;
+  state.mobileToolbarMenu = 'actions';
+  state.mobileToolbarReturnFocus = active;
 
   state.dismissBar();
 
@@ -371,6 +373,8 @@ test('dismissing the bar lasts for the page lifetime without becoming a preferen
   assert.equal(state.inspectorOpen, false);
   assert.equal(state.paletteOpen, false);
   assert.equal(state.mobileSectionsOpen, false);
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(state.mobileToolbarReturnFocus, null);
   assert.equal(browser.host.unlocks, 1);
   assert.equal(blurred, 1);
   assert.equal(browser.values.has(STORAGE_KEY), false);
@@ -439,6 +443,79 @@ test('mobile section navigation manages focus and layered dismissal', () => {
   assert.equal(state.mobileSectionsOpen, false);
   assert.equal(state.inspectorOpen, true);
   assert.equal(openerFocused, 2);
+});
+
+test('mobile toolbar menus manage focus and hand off to overlays', () => {
+  let active = null;
+  let factsFocused = 0;
+  let actionsFocused = 0;
+  let menuItemFocused = 0;
+  let paletteFocused = 0;
+  let shrinkFocused = 0;
+  const factsOpener = { focus() { active = factsOpener; factsFocused++; } };
+  const actionsOpener = { focus() { active = actionsOpener; actionsFocused++; } };
+  const menuItem = { focus() { active = menuItem; menuItemFocused++; } };
+  const paletteSearch = { focus() { active = paletteSearch; paletteFocused++; } };
+  const shrink = { focus() { active = shrink; shrinkFocused++; } };
+  const browser = runtime();
+  browser.activeElement = () => active;
+  const state = createNewDebugBar(summary, browser);
+  state.$wire = { loadDetails: async () => {} };
+  state.$refs = { paletteSearch };
+  state.$root = {
+    querySelector: (selector) => selector.includes('data-ndb-mobile-toolbar-menu') ? menuItem : shrink,
+    querySelectorAll: () => [],
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.openMobileToolbarMenu('unknown', factsOpener);
+  assert.equal(state.mobileToolbarMenu, null);
+
+  state.inspectorOpen = true;
+  state.openMobileToolbarMenu('facts', factsOpener);
+  assert.equal(state.mobileToolbarMenu, null);
+
+  state.inspectorOpen = false;
+  state.barVisible = false;
+  state.openMobileToolbarMenu('facts', factsOpener);
+  assert.equal(state.mobileToolbarMenu, null);
+  state.barVisible = true;
+
+  active = factsOpener;
+  state.toggleMobileToolbarMenu('facts', factsOpener);
+  assert.equal(state.mobileToolbarMenu, 'facts');
+  assert.equal(menuItemFocused, 1);
+
+  state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(factsFocused, 1);
+
+  state.toggleMobileToolbarMenu('facts', factsOpener);
+  state.toggleMobileToolbarMenu('facts', factsOpener);
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(factsFocused, 2);
+
+  state.openMobileToolbarMenu('facts', factsOpener);
+  state.closeMobileToolbarMenu(false);
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(factsFocused, 2);
+
+  state.openMobileToolbarMenu('actions', actionsOpener);
+  state.openPalette();
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(state.paletteReturnFocus, actionsOpener);
+  assert.equal(paletteFocused, 1);
+
+  state.closePalette();
+  assert.equal(actionsFocused, 1);
+
+  state.openMobileToolbarMenu('facts', factsOpener);
+  state.openInspector('queries');
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(state.inspectorOpen, true);
+  assert.equal(state.selected, 'queries');
+  assert.equal(state.inspectorReturnFocus, factsOpener);
+  assert.equal(shrinkFocused, 1);
 });
 
 test('modal focus wraps at both edges', () => {
