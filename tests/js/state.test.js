@@ -482,6 +482,15 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
   state.openMobileToolbarMenu('facts', factsOpener);
   assert.equal(state.mobileToolbarMenu, null);
 
+  state.openMobileToolbarMenu('header-actions', actionsOpener);
+  assert.equal(state.mobileToolbarMenu, 'header-actions');
+  assert.equal(menuItemFocused, 1);
+  state.openMobileSectionsFromToolbar();
+  assert.equal(state.mobileToolbarMenu, null);
+  assert.equal(state.mobileSectionsOpen, true);
+  assert.equal(state.mobileSectionsReturnFocus, actionsOpener);
+  state.closeMobileSections(false);
+
   state.inspectorOpen = false;
   state.barVisible = false;
   state.openMobileToolbarMenu('facts', factsOpener);
@@ -491,7 +500,7 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
   active = factsOpener;
   state.toggleMobileToolbarMenu('facts', factsOpener);
   assert.equal(state.mobileToolbarMenu, 'facts');
-  assert.equal(menuItemFocused, 1);
+  assert.equal(menuItemFocused, 2);
 
   state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
   assert.equal(state.mobileToolbarMenu, null);

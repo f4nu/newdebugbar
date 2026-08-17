@@ -463,6 +463,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.inspectorReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
       this.syncHostLock();
       this.$nextTick?.(() => {
         const focus = () => returnFocus?.focus?.();
@@ -924,7 +926,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     openMobileToolbarMenu(menu, returnFocus = null) {
-      if (!this.barVisible || this.inspectorOpen || !['facts', 'actions'].includes(menu)) return;
+      const compactMenu = ['facts', 'actions'].includes(menu);
+      const inspectorMenu = ['header-facts', 'header-actions'].includes(menu);
+
+      if (!this.barVisible
+        || (!compactMenu && !inspectorMenu)
+        || (compactMenu && this.inspectorOpen)
+        || (inspectorMenu && !this.inspectorOpen)) return;
 
       this.mobileToolbarMenu = menu;
       this.mobileToolbarReturnFocus = returnFocus ?? browser.activeElement?.();
@@ -934,6 +942,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
           ?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
+    },
+
+    openMobileSectionsFromToolbar() {
+      const returnFocus = this.mobileToolbarReturnFocus;
+      this.closeMobileToolbarMenu(false);
+      this.openMobileSections(returnFocus);
     },
 
     closeMobileToolbarMenu(restoreFocus = true) {

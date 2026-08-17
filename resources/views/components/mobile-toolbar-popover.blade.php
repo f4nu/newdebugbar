@@ -4,10 +4,11 @@
     'label',
     'align' => 'center',
     'width' => 'facts',
+    'direction' => 'dynamic',
 ])
 
 @php
-    $positionClass = match ($align) {
+    $alignmentClass = match ($align) {
         'center' => 'ndb:left-1/2 ndb:-translate-x-1/2',
         'end' => 'ndb:right-0',
         default => throw new InvalidArgumentException("Unsupported mobile toolbar popover alignment [{$align}]."),
@@ -20,8 +21,22 @@
 
     $widthClass = match ($width) {
         'facts' => 'ndb:w-[calc(100vw-82px)] ndb:max-w-80 ndb:min-[390px]:w-[min(20rem,calc(100vw-32px))]',
+        'header-facts' => 'ndb:w-[calc(100vw-82px)] ndb:max-w-[19rem] ndb:min-[390px]:w-[min(19rem,calc(100vw-32px))]',
         'actions' => 'ndb:w-64',
         default => throw new InvalidArgumentException("Unsupported mobile toolbar popover width [{$width}]."),
+    };
+
+    $directionClass = match ($direction) {
+        'dynamic' => '',
+        'below' => 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top',
+        'above' => 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom',
+        default => throw new InvalidArgumentException("Unsupported mobile toolbar popover direction [{$direction}]."),
+    };
+
+    $arrowDirectionClass = match ($direction) {
+        'dynamic' => '',
+        'below' => 'ndb:-top-[7px] ndb:border-l ndb:border-t',
+        'above' => 'ndb:-bottom-[7px] ndb:border-r ndb:border-b',
     };
 @endphp
 
@@ -38,18 +53,22 @@
     role="menu"
     aria-label="{{ $label }}"
     data-ndb-mobile-toolbar-menu="{{ $menu }}"
-    :class="toolbarPlacement === 'top'
-        ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
-        : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom'"
-    class="ndb:absolute ndb:z-50 {{ $positionClass }} {{ $widthClass }}"
+    @if ($direction === 'dynamic')
+        :class="toolbarPlacement === 'top'
+            ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
+            : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom'"
+    @endif
+    class="ndb:absolute ndb:z-50 {{ $alignmentClass }} {{ $directionClass }} {{ $widthClass }}"
 >
     <span
         aria-hidden="true"
         data-ndb-mobile-toolbar-popover-arrow="{{ $menu }}"
-        :class="toolbarPlacement === 'top'
-            ? 'ndb:-top-[7px] ndb:border-l ndb:border-t'
-            : 'ndb:-bottom-[7px] ndb:border-r ndb:border-b'"
-        class="ndb:pointer-events-none ndb:absolute ndb:z-0 ndb:size-3.5 ndb:rotate-45 ndb:border-zinc-300/90 ndb:bg-white/95 {{ $arrowPositionClass }} ndb:dark:border-zinc-700/90 ndb:dark:bg-zinc-900/95"
+        @if ($direction === 'dynamic')
+            :class="toolbarPlacement === 'top'
+                ? 'ndb:-top-[7px] ndb:border-l ndb:border-t'
+                : 'ndb:-bottom-[7px] ndb:border-r ndb:border-b'"
+        @endif
+        class="ndb:pointer-events-none ndb:absolute ndb:z-0 ndb:size-3.5 ndb:rotate-45 ndb:border-zinc-300/90 ndb:bg-white/95 {{ $arrowPositionClass }} {{ $arrowDirectionClass }} ndb:dark:border-zinc-700/90 ndb:dark:bg-zinc-900/95"
     ></span>
 
     <div

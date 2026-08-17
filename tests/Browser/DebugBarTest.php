@@ -1763,26 +1763,23 @@ it('keeps the main interactions usable on a phone viewport', function () {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
                 const request = document.querySelector('[data-ndb-toolbar="request"]');
                 const facts = document.querySelector('[data-ndb-mobile-toolbar-trigger="facts"]');
-                const factsIcon = facts.querySelector('svg');
                 const actions = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
                 const toolbarBox = toolbar.getBoundingClientRect();
                 const requestBox = request.getBoundingClientRect();
                 const factsBox = facts.getBoundingClientRect();
                 const actionsBox = actions.getBoundingClientRect();
-                const factsIconBox = factsIcon.getBoundingClientRect();
                 const actionStyles = getComputedStyle(actions);
 
                 return requestBox.width <= 113
                     && requestBox.width < toolbarBox.width / 3
                     && factsBox.width > 120
                     && factsBox.height >= 44
-                    && facts.querySelectorAll('svg').length === 1
-                    && Math.abs((factsIconBox.top + factsIconBox.height / 2) - (factsBox.top + factsBox.height / 2)) <= 1
-                        && facts.querySelectorAll('[data-ndb-mobile-toolbar-summary]').length === 3
-                        && facts.textContent.includes('Queries')
-                        && facts.textContent.includes('Time')
-                        && facts.textContent.includes('Peak')
-                        && facts.textContent.includes('ms')
+                    && facts.querySelectorAll('svg').length === 0
+                    && facts.querySelectorAll('[data-ndb-mobile-toolbar-summary]').length === 3
+                    && facts.textContent.includes('Queries')
+                    && facts.textContent.includes('Time')
+                    && facts.textContent.includes('Peak')
+                    && facts.textContent.includes('ms')
                     && actionsBox.width >= 44
                     && actionsBox.height >= 44
                     && actions.querySelectorAll('svg').length === 1
@@ -1809,10 +1806,10 @@ it('keeps the main interactions usable on a phone viewport', function () {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
                 const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="facts"]');
                 const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
-                const summaryQueries = document.querySelector('[data-ndb-mobile-toolbar-summary="queries"]').textContent;
-                const summaryDuration = document.querySelector('[data-ndb-mobile-toolbar-summary="duration"]').textContent;
-                const factQueries = document.querySelector('[data-ndb-mobile-toolbar-fact-value="queries"]').textContent;
-                const factDuration = document.querySelector('[data-ndb-mobile-toolbar-fact-value="duration"]').textContent;
+                const summaryQueries = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"] [data-ndb-mobile-toolbar-summary="queries"]').textContent;
+                const summaryDuration = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"] [data-ndb-mobile-toolbar-summary="duration"]').textContent;
+                const factQueries = document.querySelector('[data-ndb-mobile-request-fact-scope="toolbar"] [data-ndb-mobile-toolbar-fact-value="queries"]').textContent;
+                const factDuration = document.querySelector('[data-ndb-mobile-request-fact-scope="toolbar"] [data-ndb-mobile-toolbar-fact-value="duration"]').textContent;
 
                 return menu.querySelector('h1, h2, h3, [role="heading"]') === null
                     && !menu.textContent.includes('Request facts')
@@ -1824,7 +1821,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && document.activeElement === items[0];
             })()
             JS)
-        ->keys('[data-ndb-mobile-request-fact="environment"]', 'Escape')
+        ->keys('[data-ndb-mobile-request-fact-scope="toolbar"][data-ndb-mobile-request-fact="environment"]', 'Escape')
         ->assertAttribute('[data-ndb-mobile-toolbar-trigger="facts"]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-toolbar-trigger=\"facts\"]")')
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
@@ -1850,45 +1847,26 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->click('[data-ndb-mobile-toolbar-action="inspector"]')
         ->wait(0.2)
-        ->assertVisible('[data-ndb-header-memory]')
-        ->assertScript(<<<'JS'
-            getComputedStyle(document.querySelector('[data-ndb-header-status-meaning]')).display === 'none'
-                && getComputedStyle(document.querySelector('[data-ndb-header-response-size]')).display === 'none'
-            JS)
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
+        ->assertVisible('[data-ndb-header-mobile-toolbar]')
+        ->assertVisible('[data-ndb-mobile-request-metrics="header"]')
         ->assertScript(<<<'JS'
             (() => {
-                const toggle = document.querySelector('[data-ndb-mobile-sections-toggle]');
-                const box = toggle.getBoundingClientRect();
-                const styles = getComputedStyle(toggle);
+                const toolbar = document.querySelector('[data-ndb-header-mobile-toolbar]');
+                const facts = document.querySelector('[data-ndb-header-mobile-trigger="facts"]');
+                const actions = document.querySelector('[data-ndb-header-mobile-trigger="actions"]');
+                const actionStyles = getComputedStyle(actions);
 
-                return box.width >= 44
-                    && box.height >= 44
-                    && Number.parseFloat(styles.borderTopWidth) === 0
-                    && styles.boxShadow === 'none'
-                    && styles.backgroundColor === 'rgba(0, 0, 0, 0)';
-            })()
-            JS)
-        ->assertScript(<<<'JS'
-            (() => {
-                const facts = document.querySelector('[data-ndb-header-facts]');
-                const cards = Array.from(facts.querySelectorAll('[data-ndb-header-fact]'));
-                const firstTop = cards[0].getBoundingClientRect().top;
-                const styles = getComputedStyle(facts);
-
-                return styles.overflowX === 'auto'
-                    && Number.parseFloat(styles.columnGap) >= 8
-                    && facts.scrollWidth > facts.clientWidth
-                    && facts.getBoundingClientRect().height < 55
-                    && cards.length === 4
-                    && cards.every((card) => {
-                        const box = card.getBoundingClientRect();
-
-                        return box.width > 0
-                            && Math.abs(box.top - firstTop) <= 1
-                            && getComputedStyle(card).flexShrink === '0';
-                    });
+                return toolbar.scrollWidth <= toolbar.clientWidth + 1
+                    && facts.querySelector('svg') === null
+                    && facts.querySelectorAll('[data-ndb-mobile-toolbar-summary]').length === 3
+                    && facts.getBoundingClientRect().height >= 44
+                    && actions.getBoundingClientRect().width >= 44
+                    && actions.getBoundingClientRect().height >= 44
+                    && actions.querySelectorAll('svg').length === 1
+                    && Number.parseFloat(actionStyles.borderTopWidth) === 0
+                    && actionStyles.boxShadow === 'none'
+                    && actionStyles.backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && document.querySelector('[data-ndb-mobile-sections-toggle]').getClientRects().length === 0;
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -1911,20 +1889,12 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && visibilityDelay >= transformDuration;
             })()
             JS)
-        ->click('[data-ndb-mobile-sections-toggle]')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'true')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Close sections')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->assertAttribute('[data-ndb-header-mobile-trigger="actions"]', 'aria-expanded', 'true')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->assertAttribute('[data-ndb-header-mobile-trigger="actions"]', 'aria-expanded', 'false')
         ->assertVisible('#newdebugbar-section-navigation')
         ->assertVisible('[data-ndb-mobile-sections-backdrop]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const styles = getComputedStyle(document.querySelector('[data-ndb-mobile-sections-toggle]'));
-
-                return Number.parseFloat(styles.borderTopWidth) === 0
-                    && styles.boxShadow === 'none'
-                    && styles.backgroundColor === 'rgba(0, 0, 0, 0)';
-            })()
-            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const navigation = document.querySelector('#newdebugbar-section-navigation');
@@ -1937,16 +1907,14 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && document.activeElement === navigation.querySelector('[data-ndb-select-section][aria-current="page"]');
             })()
             JS)
-        ->click('[data-ndb-mobile-sections-toggle]')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-label', 'Open sections')
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->keys('#newdebugbar-section-navigation [data-ndb-select-section][aria-current="page"]', 'Escape')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-header-mobile-trigger=\\"actions\\"]")')
         ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "visible"')
         ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"')
-        ->click('[data-ndb-mobile-sections-toggle]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
         ->click('[data-ndb-select-section="queries"]')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-section-heading]")')
         ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"');
@@ -1954,19 +1922,19 @@ it('keeps the main interactions usable on a phone viewport', function () {
     assertDebugSectionSelected($page, 'queries');
 
     $page
-        ->click('[data-ndb-mobile-sections-toggle]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
         ->click('[data-ndb-toggle-favorite="queries"]')
         ->assertAttribute('[data-ndb-toggle-favorite="queries"]', 'aria-pressed', 'true')
         ->keys('[data-ndb-toggle-favorite="queries"]', 'Escape')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-header-mobile-trigger=\\"actions\\"]")')
         ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"')
-        ->click('[data-ndb-mobile-sections-toggle]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
         ->click('[data-ndb-mobile-sections-backdrop]')
-        ->assertAttribute('[data-ndb-mobile-sections-toggle]', 'aria-expanded', 'false')
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-mobile-sections-toggle]")')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-header-mobile-trigger=\\"actions\\"]")')
         ->wait(0.25)
         ->assertScript('getComputedStyle(document.querySelector("#newdebugbar-section-navigation")).visibility === "hidden"')
         ->resize(1440, 900)
@@ -1974,8 +1942,12 @@ it('keeps the main interactions usable on a phone viewport', function () {
             (() => {
                 const toggle = document.querySelector('[data-ndb-mobile-sections-toggle]');
                 const navigation = document.querySelector('#newdebugbar-section-navigation');
+                const mobileToolbar = document.querySelector('[data-ndb-header-mobile-toolbar]');
+                const desktopToolbar = document.querySelector('[data-ndb-header-toolbar]');
 
                 return getComputedStyle(toggle).display === 'none'
+                    && getComputedStyle(mobileToolbar).display === 'none'
+                    && getComputedStyle(desktopToolbar).display !== 'none'
                     && getComputedStyle(navigation).position === 'static'
                     && getComputedStyle(navigation).visibility === 'visible';
             })()
