@@ -129,10 +129,17 @@ function setVisualDebugTheme($page, string $theme, array $favorites = []): void
         ->assertAttribute('#newdebugbar', 'data-theme', $theme);
 }
 
-function selectVisualDebugSection($page, string $section): void
+function selectVisualDebugSection($page, string $section, bool $narrow = false): void
 {
+    if ($narrow) {
+        $page
+            ->click('[data-ndb-header-mobile-trigger="actions"]')
+            ->click('[data-ndb-header-mobile-action="palette"]');
+    } else {
+        $page->click('[data-ndb-inspector-action="palette"]');
+    }
+
     $page
-        ->click('[data-ndb-inspector-action="palette"]')
         ->assertVisible('[role="dialog"][aria-label="Command palette"]')
         ->click('[data-ndb-command="collectors:show"]')
         ->wait(0.1)
@@ -392,7 +399,7 @@ it('matches the visual baseline for the :dataset narrow Models section', functio
     openNarrowVisualDebugInspector($page);
     $page->waitForText('Runtime details');
 
-    selectVisualDebugSection($page, 'models');
+    selectVisualDebugSection($page, 'models', true);
 
     $page
         ->assertVisible('[data-ndb-section-panel="models"]')
@@ -409,7 +416,7 @@ it('matches the visual baseline for the :dataset narrow Livewire section', funct
     openNarrowVisualDebugInspector($page);
     $page->waitForText('Runtime details');
 
-    selectVisualDebugSection($page, 'livewire');
+    selectVisualDebugSection($page, 'livewire', true);
 
     $page
         ->assertVisible('[data-ndb-section-panel="livewire"]')
@@ -521,6 +528,40 @@ it('matches the visual baseline for the :dataset narrow action menu', function (
     assertVisualDebugBaseline($page, "toolbar-narrow-actions-{$theme}");
 })->with(['light', 'dark']);
 
+it('matches the visual baseline for the :dataset narrow inspector facts menu', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->click('[data-ndb-header-mobile-trigger="facts"]')
+        ->assertVisible('[data-ndb-mobile-toolbar-menu="header-facts"]')
+        ->wait(0.2)
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "inspector-narrow-facts-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset narrow inspector action menu', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->assertVisible('[data-ndb-mobile-toolbar-menu="header-actions"]')
+        ->wait(0.2)
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "inspector-narrow-actions-{$theme}");
+})->with(['light', 'dark']);
+
 it('matches the visual baseline for the :dataset command palette', function (string $theme) {
     $page = visit('/profiled-rich');
     setVisualDebugTheme($page, $theme);
@@ -593,7 +634,7 @@ it('matches the visual baseline for the :dataset narrow Queries section', functi
     openNarrowVisualDebugInspector($page);
     $page->waitForText('Runtime details');
 
-    selectVisualDebugSection($page, 'queries');
+    selectVisualDebugSection($page, 'queries', true);
 
     $page
         ->assertVisible('[data-ndb-section-panel="queries"]')
@@ -695,7 +736,7 @@ it('matches the visual baseline for the :dataset narrow inspector', function (st
         ->wait(0.2)
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]');
 
-    selectVisualDebugSection($page, 'queries');
+    selectVisualDebugSection($page, 'queries', true);
 
     $page
         ->assertVisible('[data-ndb-section-panel="queries"]');
@@ -715,7 +756,8 @@ it('matches the visual baseline for the :dataset narrow section drawer', functio
 
     $page
         ->wait(0.2)
-        ->click('[data-ndb-mobile-sections-toggle]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
         ->assertVisible('#newdebugbar-section-navigation')
         ->assertVisible('[data-ndb-mobile-sections-backdrop]')
         ->assertScript(<<<'JS'
