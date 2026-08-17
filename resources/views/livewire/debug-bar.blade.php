@@ -759,10 +759,7 @@
                     :inert="mobileSectionsOpen"
                     class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
                 >
-                    <header
-                        data-ndb-section-header
-                        class="ndb:px-4 ndb:pt-4 ndb:sm:px-6 ndb:sm:pt-6"
-                    >
+                    <header data-ndb-section-header class="ndb:px-4 ndb:pt-4 ndb:sm:px-6 ndb:sm:pt-6">
                         <h2
                             data-ndb-section-heading
                             x-ref="sectionHeading"
