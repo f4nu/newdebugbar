@@ -1820,7 +1820,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && items.length === 4
                     && items.every((item) => item.getBoundingClientRect().height >= 44)
                     && Number.parseInt(summaryQueries, 10) === Number.parseInt(factQueries, 10)
-                    && summaryDuration === factDuration
+                    && Number.parseFloat(summaryDuration) === Number.parseFloat(factDuration)
                     && document.activeElement === items[0];
             })()
             JS)

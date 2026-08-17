@@ -211,8 +211,8 @@ function stabilizeVisualDebugValues($page): void
 
             const stableMobileToolbarValues = {
                 '[data-ndb-mobile-toolbar-summary="queries"]': '3',
-                '[data-ndb-mobile-toolbar-summary="duration"]': '4 ms',
-                '[data-ndb-mobile-toolbar-summary="memory"]': '7 MB',
+                '[data-ndb-mobile-toolbar-summary="duration"]': '4',
+                '[data-ndb-mobile-toolbar-summary="memory"]': '7',
                 '[data-ndb-mobile-toolbar-fact-value="queries"]': '3',
                 '[data-ndb-mobile-toolbar-fact-value="duration"]': '4 ms',
                 '[data-ndb-mobile-toolbar-fact-value="memory"]': '7 MB',
@@ -459,6 +459,34 @@ it('matches the visual baseline for the :dataset narrow toolbar', function (stri
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset small-phone toolbar', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(320, 844);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->assertVisible('[data-ndb-mobile-toolbar-trigger="facts"]')
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-small-phone-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset tablet toolbar', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(768, 844);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->assertVisible('[data-ndb-mobile-toolbar-trigger="facts"]')
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-tablet-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset narrow request facts menu', function (string $theme) {

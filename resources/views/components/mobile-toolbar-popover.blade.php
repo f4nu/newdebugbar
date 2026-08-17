@@ -19,7 +19,7 @@
     };
 
     $widthClass = match ($width) {
-        'facts' => 'ndb:w-[min(20rem,calc(100vw-32px))]',
+        'facts' => 'ndb:w-[calc(100vw-82px)] ndb:max-w-80 ndb:min-[390px]:w-[min(20rem,calc(100vw-32px))]',
         'actions' => 'ndb:w-64',
         default => throw new InvalidArgumentException("Unsupported mobile toolbar popover width [{$width}]."),
     };

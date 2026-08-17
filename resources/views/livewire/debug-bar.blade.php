@@ -34,12 +34,12 @@
         data-ndb-toolbar-shell
         :data-placement="toolbarPlacement"
         :class="toolbarPlacement === 'top' ? 'ndb:top-3' : 'ndb:bottom-3'"
-        class="ndb:pointer-events-auto ndb:fixed ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:max-w-5xl ndb:sm:pr-2.5 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
+        class="ndb:pointer-events-auto ndb:fixed ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:lg:max-w-5xl ndb:lg:pr-2.5 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
     >
         <x-newdebugbar::toolbar-button
             section="request"
             data-ndb-toolbar="request"
-            class="ndb:flex ndb:w-24 ndb:min-w-0 ndb:flex-none ndb:sm:w-auto ndb:sm:max-w-64"
+            class="ndb:flex ndb:w-[5.5rem] ndb:min-w-0 ndb:flex-none ndb:min-[360px]:w-24 ndb:min-[420px]:w-28 ndb:sm:w-40 ndb:lg:w-auto ndb:lg:max-w-64"
             aria-label="Open request details"
         >
             <span
@@ -47,18 +47,23 @@
                 x-text="summary.method"
             ></span>
             <span class="ndb:min-w-0">
-                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
+                <span
+                    data-ndb-toolbar-request-path
+                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
+                    :title="summary.path"
+                    x-text="summary.path"
+                ></span>
                 <span
                     class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[10px] ndb:font-medium ndb:text-zinc-400"
                     ><span data-ndb-toolbar-status x-text="summary.status"></span
                     ><span
                         data-ndb-toolbar-status-meaning
-                        class="ndb:hidden ndb:sm:inline"
+                        class="ndb:hidden ndb:lg:inline"
                         x-text="summary.status_meaning"
                     ></span
                     ><span
                         data-ndb-toolbar-response-size
-                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:sm:inline ndb:dark:text-zinc-300"
+                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
                         x-show="summary.response_size"
                         x-text="summary.response_size"
                     ></span
@@ -69,7 +74,7 @@
         <div
             data-ndb-mobile-toolbar-control="facts"
             @click.outside="if (mobileToolbarMenu === 'facts') closeMobileToolbarMenu(false);"
-            class="ndb:relative ndb:flex ndb:min-w-0 ndb:flex-1 ndb:sm:hidden"
+            class="ndb:relative ndb:flex ndb:min-w-0 ndb:flex-1 ndb:lg:hidden"
         >
             <button
                 type="button"
@@ -79,41 +84,53 @@
                 aria-controls="newdebugbar-mobile-request-facts"
                 aria-label="Show request facts"
                 :class="mobileToolbarMenu === 'facts'
-                    ? 'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300'
-                    : 'ndb:bg-indigo-50/70 ndb:text-zinc-900 ndb:hover:bg-indigo-100/80 ndb:dark:bg-indigo-950/45 ndb:dark:text-zinc-100 ndb:dark:hover:bg-indigo-950/75'"
-                class="ndb:flex ndb:w-full ndb:min-w-0 ndb:self-stretch ndb:items-center ndb:gap-1.5 ndb:rounded-xl ndb:px-2 ndb:py-1.5 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                    ? 'ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:bg-indigo-950/60 ndb:dark:text-indigo-300'
+                    : 'ndb:bg-transparent ndb:text-zinc-900 ndb:hover:bg-zinc-100/80 ndb:dark:text-zinc-100 ndb:dark:hover:bg-white/10'"
+                class="ndb:mx-auto ndb:flex ndb:w-full ndb:max-w-sm ndb:min-w-0 ndb:self-stretch ndb:items-center ndb:gap-1 ndb:rounded-xl ndb:px-1.5 ndb:py-1.5 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:min-[360px]:gap-1.5 ndb:min-[360px]:px-2"
             >
                 <x-newdebugbar::icon
                     name="activity"
-                    class="ndb:size-4.5 ndb:shrink-0 ndb:text-indigo-500 ndb:dark:text-indigo-400"
+                    class="ndb:size-4 ndb:shrink-0 ndb:text-indigo-500 ndb:min-[360px]:size-4.5 ndb:dark:text-indigo-400"
                 />
                 <span
                     data-ndb-mobile-toolbar-metrics
                     class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-3 ndb:items-center"
                 >
-                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:px-0.5">
+                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:min-[360px]:px-0.5">
                         <span
                             data-ndb-mobile-toolbar-summary="queries"
-                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[10px] ndb:font-bold ndb:leading-4 ndb:tabular-nums ndb:min-[360px]:text-[11px]"
                             x-text="summary.query_count"
                         ></span>
-                        <span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Queries</span>
+                        <span
+                            data-ndb-mobile-toolbar-metric-label="queries"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[8px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-normal ndb:text-zinc-400 ndb:min-[360px]:text-[9px]"
+                            ><span class="ndb:min-[360px]:hidden">SQL</span
+                            ><span class="ndb:hidden ndb:min-[360px]:inline">Queries</span></span>
                     </span>
-                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:border-l ndb:border-indigo-200/70 ndb:px-0.5 ndb:dark:border-indigo-800/70">
+                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:border-l ndb:border-zinc-200/80 ndb:min-[360px]:px-0.5 ndb:dark:border-zinc-700/80">
                         <span
                             data-ndb-mobile-toolbar-summary="duration"
-                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
-                            x-text="summary.duration_ms + ' ms'"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[10px] ndb:font-bold ndb:leading-4 ndb:tabular-nums ndb:min-[360px]:text-[11px]"
+                            x-text="summary.duration_ms"
                         ></span>
-                        <span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Time</span>
+                        <span
+                            data-ndb-mobile-toolbar-metric-label="duration"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[8px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-normal ndb:text-zinc-400 ndb:min-[360px]:text-[9px]"
+                            ><span class="ndb:min-[360px]:hidden">ms</span
+                            ><span class="ndb:hidden ndb:min-[360px]:inline">Time ms</span></span>
                     </span>
-                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:border-l ndb:border-indigo-200/70 ndb:px-0.5 ndb:dark:border-indigo-800/70">
+                    <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-center ndb:border-l ndb:border-zinc-200/80 ndb:min-[360px]:px-0.5 ndb:dark:border-zinc-700/80">
                         <span
                             data-ndb-mobile-toolbar-summary="memory"
-                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
-                            x-text="summary.peak_memory_mb + ' MB'"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[10px] ndb:font-bold ndb:leading-4 ndb:tabular-nums ndb:min-[360px]:text-[11px]"
+                            x-text="summary.peak_memory_mb"
                         ></span>
-                        <span class="ndb:block ndb:text-[9px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Peak</span>
+                        <span
+                            data-ndb-mobile-toolbar-metric-label="memory"
+                            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[8px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-normal ndb:text-zinc-400 ndb:min-[360px]:text-[9px]"
+                            ><span class="ndb:min-[360px]:hidden">MB</span
+                            ><span class="ndb:hidden ndb:min-[360px]:inline">Peak MB</span></span>
                     </span>
                 </span>
             </button>
@@ -191,7 +208,7 @@
 
         <div
             data-ndb-toolbar-facts
-            class="ndb-toolbar-facts ndb:hidden ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:sm:ml-auto ndb:sm:flex ndb:sm:flex-none"
+            class="ndb-toolbar-facts ndb:hidden ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:lg:ml-auto ndb:lg:flex ndb:lg:flex-none"
         >
             <x-newdebugbar::toolbar-button
                 section="overview"
@@ -280,7 +297,7 @@
         <div
             data-ndb-mobile-toolbar-control="actions"
             @click.outside="if (mobileToolbarMenu === 'actions') closeMobileToolbarMenu(false);"
-            class="ndb:relative ndb:flex ndb:shrink-0 ndb:sm:hidden"
+            class="ndb:relative ndb:flex ndb:shrink-0 ndb:lg:hidden"
         >
             <button
                 type="button"
@@ -335,7 +352,7 @@
             </x-newdebugbar::mobile-toolbar-popover>
         </div>
 
-        <div data-ndb-toolbar-actions class="ndb:hidden ndb:shrink-0 ndb:items-center ndb:gap-0.5 ndb:sm:flex">
+        <div data-ndb-toolbar-actions class="ndb:hidden ndb:shrink-0 ndb:items-center ndb:gap-0.5 ndb:lg:flex">
             <div
                 data-ndb-toolbar-utility-actions
                 role="group"

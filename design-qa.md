@@ -1,4 +1,4 @@
-# Mobile Toolbar Design QA — Pointer and Metric Refinement
+# Mobile Toolbar Design QA — Responsive Refinement
 
 ## Comparison target
 
@@ -6,28 +6,30 @@
   - Facts open: `/Users/benjamin/.codex/generated_images/01a00e9f-8958-7c80-bf58-058f100a25fc/exec-a6110b76-e668-4922-8072-3ede1d9eb9a2.png` (853 × 1844 pixels).
   - Actions open: `/Users/benjamin/.codex/generated_images/01a00e9f-8958-7c80-bf58-058f100a25fc/exec-c817087b-d8bd-42d3-b0b1-89b2d8eec7b4.png` (852 × 1854 pixels).
 - Rendered implementation:
+  - Small phone: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-small-phone-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-small-phone-dark.png`.
   - Closed: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-dark.png`.
+  - Tablet: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-tablet-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-tablet-dark.png`.
   - Facts open: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-facts-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-facts-dark.png`.
   - Actions open: `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-actions-light.png` and `/Users/benjamin/Sites/new-debug-bar/tests/VisualBaselines/toolbar-narrow-actions-dark.png`.
-- Viewport and density: both generated sources were normalized to 390 × 844 pixels. Implementation captures are 390 × 844 CSS pixels at 1× screenshot density.
-- States: toolbar closed, request-facts menu open, and action menu open, in light and dark themes.
+- Viewport and density: both generated sources were normalized to 390 × 844 pixels. Implementation captures cover 320 × 844, 390 × 844, and 768 × 844 CSS pixels at 1× screenshot density.
+- States: toolbar closed at all three widths, plus request-facts and action menus open at 390 pixels, in light and dark themes.
 
 ## Evidence
 
-- Full-view facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-comparison-v2.png`.
-- Full-view actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-comparison-v2.png`.
-- Focused facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-focused-comparison-v2.png`.
-- Focused actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-focused-comparison-v2.png`.
-- Isolated in-app browser check: `http://example-blade-app.test/login` at 390 × 844. Both menus opened, both pointers aligned to their triggers, real values `7.05 ms` and `10 MB` fit without clipping, and the console had no errors or warnings.
+- Full-view facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-comparison-v3.png`.
+- Full-view actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-comparison-v3.png`.
+- Focused facts comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-facts-focused-comparison-v3.png`.
+- Focused actions comparison: `/Users/benjamin/.codex/visualizations/2026/08/17/01a00e9f-8958-7c80-bf58-058f100a25fc/mobile-toolbar-actions-focused-comparison-v3.png`.
+- Isolated in-app browser check: `http://example-blade-app.test/a/very/long/request/path/that/keeps/going/for/testing` at 320, 360, 390, 430, 640, 768, 900, 1023, 1024, and 1280 pixels. The toolbar had zero horizontal overflow at every width. The long path truncated inside its request control, all three metrics stayed visible, both 320-pixel popovers remained inside the viewport with centered pointers, and the console was empty.
 
 The source and implementation use different host-page fixtures, so the component region is the fidelity target. Focused comparison was required because the toolbar labels and icons are too small to judge reliably in the full view.
 
 ## Findings
 
 - No actionable P0, P1, or P2 differences remain.
-- Fonts and typography: the implementation keeps New Debug Bar's Outfit type system. Three 11-pixel tabular values sit above quieter 9-pixel labels; real request values remain fully visible at 390 pixels.
-- Spacing and layout rhythm: the request control gives 16 pixels back to the summary, which now uses the available width for Queries, Time, and Peak. Menu rows remain slightly taller and wider than the generated source to preserve 44-pixel touch targets; this is an accepted P3 difference.
-- Colors and visual tokens: the neutral glass surfaces, indigo summary state, dividers, borders, and shadows retain light/dark parity with the existing product tokens.
+- Fonts and typography: the implementation keeps New Debug Bar's Outfit type system. At 320 pixels the secondary labels shorten to `SQL`, `ms`, and `MB`; full `Queries`, `Time ms`, and `Peak MB` labels return from 360 pixels onward. The units sit in the labels so real values such as `22.95` and `40.5` do not clip.
+- Spacing and layout rhythm: the request control grows from 88 pixels on the smallest phone to 160 pixels on tablets, while its path truncates instead of changing the toolbar width. The centered facts trigger caps at 384 pixels on larger compact layouts. Menu rows remain slightly taller and wider than the generated source to preserve 44-pixel touch targets; this is an accepted P3 difference.
+- Colors and visual tokens: the closed facts trigger is now transparent, which removes the unexplained blue block. Indigo appears only when that menu is open, where it communicates selected state. Neutral dividers, glass surfaces, borders, and shadows retain light/dark parity.
 - Image and icon fidelity: no raster assets are needed. The toolbar keeps one centered activity icon and the established outlined icon set. Both popovers now use the same 14-pixel pointer treatment and align that pointer with the opening control.
 - Copy and content: the compact bar now exposes query count, total request time, and peak memory before opening the facts menu. All four facts and all three actions remain available. The visible “Request facts” and “Debug bar” headings remain intentionally removed.
 - Accessibility and interaction: both triggers expose expanded state, menus close with Escape or an outside click, focus returns to the trigger, and opening the palette or inspector hands focus to the new surface.
@@ -36,17 +38,23 @@ The source and implementation use different host-page fixtures, so the component
 
 1. P2, fixed: the previous implementation omitted the pointer under both popovers. The repeated surface, transition, alignment, and placement logic now lives in one shared component with a pointer for both menu variants.
 2. P2, fixed: the first three-metric pass clipped a real `7.74 ms` value in the isolated browser preview. The request control was narrowed, metric padding and type were tightened, and a browser assertion now rejects clipped metric values.
-3. The revised closed and open captures were inspected in both themes, then the same visual group passed again without baseline-update mode. No P0, P1, or P2 findings remain.
+3. P2, fixed: at 320 pixels a real duration and peak-memory value clipped. Units moved into the labels, and the smallest labels shorten without removing any metric.
+4. P1, fixed: the desktop toolbar switched on at 640 pixels even though its content required about 800 pixels, causing horizontal overflow through common tablet and narrow-window sizes. The compact toolbar now remains active through 1023 pixels; the full toolbar starts at 1024 pixels.
+5. P2, fixed: the centered facts popover extended six pixels beyond a 320-pixel viewport and increased the toolbar's scroll width. Its shared width variant now narrows below 390 pixels while keeping its pointer centered on the trigger.
+6. The revised 320, 390, and 768 pixel captures were inspected in both themes. The source and current open-state captures were reviewed together. No P0, P1, or P2 findings remain.
 
 ## Implementation checklist
 
 - [x] Keep desktop toolbar controls unchanged.
 - [x] Show request, three useful metrics, and ellipsis on mobile.
+- [x] Truncate long paths without moving or widening the toolbar.
+- [x] Keep the compact layout through tablet and narrow desktop widths.
+- [x] Keep closed-state information neutral and reserve indigo for the open state.
 - [x] Remove visible popover headings.
 - [x] Reuse one arrowed popover shell for both menus.
 - [x] Keep facts and action menus mutually exclusive.
-- [x] Verify 44-pixel targets, unclipped values, focus return, Escape, palette, and inspector actions.
-- [x] Capture and pass closed, facts-open, and actions-open baselines in both themes.
+- [x] Verify 44-pixel targets, unclipped values and labels, no toolbar overflow, focus return, Escape, palette, and inspector actions.
+- [x] Capture and pass 320, 390, and 768 pixel baselines in both themes, including both 390-pixel popovers.
 
 final result: passed
 
