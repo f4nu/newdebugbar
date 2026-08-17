@@ -1032,7 +1032,8 @@ it('presents useful model evidence with progressive controls', function () {
 it('keeps model evidence contained on a narrow screen', function () {
     $page = visit('/profiled-models')
         ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
         ->wait(0.2)
         ->click('[data-ndb-inspector-action="palette"]')
         ->click('[data-ndb-command="collectors:show"]')

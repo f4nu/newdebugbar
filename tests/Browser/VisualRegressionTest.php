@@ -140,6 +140,13 @@ function selectVisualDebugSection($page, string $section): void
         ->wait(0.1);
 }
 
+function openNarrowVisualDebugInspector($page): void
+{
+    $page
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]');
+}
+
 function stabilizeVisualDebugValues($page): void
 {
     $page->wait(0.25)->assertScript(<<<'JS'
@@ -203,8 +210,9 @@ function stabilizeVisualDebugValues($page): void
             }
 
             const stableMobileToolbarValues = {
-                '[data-ndb-mobile-toolbar-summary="queries"]': '3 queries',
+                '[data-ndb-mobile-toolbar-summary="queries"]': '3',
                 '[data-ndb-mobile-toolbar-summary="duration"]': '4 ms',
+                '[data-ndb-mobile-toolbar-summary="memory"]': '7 MB',
                 '[data-ndb-mobile-toolbar-fact-value="queries"]': '3',
                 '[data-ndb-mobile-toolbar-fact-value="duration"]': '4 ms',
                 '[data-ndb-mobile-toolbar-fact-value="memory"]': '7 MB',
@@ -364,9 +372,10 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
     $page = visit('/profiled-rich');
     setVisualDebugTheme($page, $theme);
 
+    $page->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+
     $page
-        ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->waitForText('Runtime details')
         ->assertMissing('[data-ndb-section-mode]')
         ->assertMissing('[data-ndb-quiet-count]')
@@ -379,9 +388,9 @@ it('matches the visual baseline for the :dataset narrow progressive overview', f
 
 it('matches the visual baseline for the :dataset narrow Models section', function (string $theme) {
     $page = visualDebugPage('models', $theme)
-        ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->waitForText('Runtime details');
+        ->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+    $page->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'models');
 
@@ -396,9 +405,9 @@ it('matches the visual baseline for the :dataset narrow Models section', functio
 
 it('matches the visual baseline for the :dataset narrow Livewire section', function (string $theme) {
     $page = visualDebugPage('livewire', $theme)
-        ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->waitForText('Runtime details');
+        ->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+    $page->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'livewire');
 
@@ -550,9 +559,9 @@ it('matches the visual baseline for :dataset repeated query evidence', function 
 
 it('matches the visual baseline for the :dataset narrow Queries section', function (string $theme) {
     $page = visualDebugPage('queries', $theme)
-        ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->waitForText('Runtime details');
+        ->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+    $page->waitForText('Runtime details');
 
     selectVisualDebugSection($page, 'queries');
 
@@ -649,8 +658,10 @@ it('matches the visual baseline for :dataset favorite dragging', function (strin
 
 it('matches the visual baseline for the :dataset narrow inspector', function (string $theme) {
     $page = visualDebugPage('queries', $theme)
-        ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+
+    $page
         ->wait(0.2)
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]');
 
@@ -669,8 +680,10 @@ it('matches the visual baseline for the :dataset narrow inspector', function (st
 
 it('matches the visual baseline for the :dataset narrow section drawer', function (string $theme) {
     $page = visualDebugPage('overview', $theme)
-        ->resize(390, 844)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+
+    $page
         ->wait(0.2)
         ->click('[data-ndb-mobile-sections-toggle]')
         ->assertVisible('#newdebugbar-section-navigation')
