@@ -207,6 +207,18 @@ abstract class TestCase extends Orchestra
             return response('<!doctype html><html><body>'.$view.'</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-views', function () {
+            $context = view('context', [
+                'label' => 'Context view',
+                'private_value' => 'view-data-value',
+                'rows' => collect(),
+            ])->render();
+            $firstResponse = view('original-response', ['label' => 'First response'])->render();
+            $secondResponse = view('original-response', ['label' => 'Second response'])->render();
+
+            return response('<!doctype html><html><body>'.$context.$firstResponse.$secondResponse.'</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-private-query', function () {
             foreach (['private-alpha', 'private-beta', 'private-gamma'] as $value) {
                 DB::select('select ? as private_value', [$value]);

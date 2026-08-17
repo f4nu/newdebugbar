@@ -1227,6 +1227,26 @@ it('shows log call sites', function () {
     assertDebugSectionSelected($page, 'logs');
 });
 
+it('sorts views by render count while keeping render order as the default', function () {
+    $groupNames = <<<'JS'
+        Array.from(document.querySelectorAll('[data-ndb-view-group]'))
+            .map((group) => group.querySelector('summary span').textContent.trim())
+            .join('|')
+        JS;
+
+    visit('/profiled-views')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.2)
+        ->click('[data-ndb-select-section="views"]')
+        ->assertValue('[data-ndb-view-sort]', 'render')
+        ->assertScript($groupNames, 'context|original-response')
+        ->select('[data-ndb-view-sort]', 'count')
+        ->assertScript($groupNames, 'original-response|context')
+        ->select('[data-ndb-view-sort]', 'render')
+        ->assertScript($groupNames, 'context|original-response')
+        ->assertNoJavaScriptErrors();
+});
+
 it('presents Laravel decisions lifecycle messages and source context without editor links', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')

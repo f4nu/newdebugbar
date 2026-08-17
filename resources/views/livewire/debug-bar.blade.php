@@ -12,6 +12,7 @@
         $nextTick(() => {
             syncSectionHeading();
             syncSectionPanels();
+            applyViewSort();
             applyAuthorizationFilters();
             applyHistoryFilters();
             applyTimelineFilters();
@@ -2415,17 +2416,42 @@
                                             </dl>
 
                                             @if ($viewGroups !== [])
-                                                <div>
+                                                <div class="ndb:space-y-2">
+                                                    <div class="ndb:flex ndb:justify-end">
+                                                        <label class="ndb:relative">
+                                                            <span class="ndb:sr-only">Sort views</span>
+                                                            <select
+                                                                data-ndb-view-sort
+                                                                x-model="viewSort"
+                                                                @change="setViewSort($event.target.value)"
+                                                                class="ndb:h-9 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                                            >
+                                                                <option value="render">Render order</option>
+                                                                <option value="count">Most renders</option>
+                                                            </select>
+                                                            <x-newdebugbar::icon
+                                                                name="chevron-down"
+                                                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                                                            />
+                                                        </label>
+                                                    </div>
+
                                                     <div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_5rem_1.5rem] ndb:items-end ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
                                                         <span class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">View</span>
                                                         <span class="ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Renders</span>
                                                         <span class="ndb:sr-only">Details</span>
                                                     </div>
 
-                                                    <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+                                                    <div
+                                                        x-ref="viewGroups"
+                                                        x-init="$nextTick(() => applyViewSort())"
+                                                        class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800"
+                                                    >
                                                         @foreach ($viewGroups as $index => $group)
                                                             <details
                                                                 data-ndb-view-group
+                                                                data-order="{{ $index }}"
+                                                                data-count="{{ $group['count'] }}"
                                                                 wire:key="view-group-{{ $index }}"
                                                                 class="ndb:group"
                                                             >

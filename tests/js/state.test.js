@@ -245,6 +245,7 @@ test('a new application profile resets stale section state and reloads open deta
   state.selected = 'logs';
   state.inspectorOpen = true;
   state.detailsRequested = true;
+  state.viewSort = 'count';
 
   state.switchProfile({ ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/api/jobs' });
   await Promise.resolve();
@@ -252,6 +253,7 @@ test('a new application profile resets stale section state and reloads open deta
   assert.equal(state.summary.path, '/api/jobs');
   assert.equal(state.selected, 'overview');
   assert.equal(state.detailsRequested, true);
+  assert.equal(state.viewSort, 'render');
   assert.equal(detailsLoaded, 1);
 
   state.selected = 'history';
@@ -699,6 +701,36 @@ test('authorization controls filter decisions and overview navigation opens deni
 
   state.setAuthorizationFilter('invalid');
   assert.equal(state.authorizationFilter, 'denied');
+});
+
+test('view sorting keeps render order by default and can prioritize render count', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const first = { dataset: { order: '0', count: '1' } };
+  const second = { dataset: { order: '1', count: '3' } };
+  const third = { dataset: { order: '2', count: '3' } };
+  const children = [first, second, third];
+  state.$refs = {
+    viewGroups: {
+      children,
+      appendChild(group) {
+        children.splice(children.indexOf(group), 1);
+        children.push(group);
+      },
+    },
+  };
+
+  state.applyViewSort();
+  assert.deepEqual(children, [first, second, third]);
+
+  state.setViewSort('count');
+  assert.equal(state.viewSort, 'count');
+  assert.deepEqual(children, [second, third, first]);
+
+  state.setViewSort('render');
+  assert.deepEqual(children, [first, second, third]);
+
+  state.setViewSort('invalid');
+  assert.equal(state.viewSort, 'render');
 });
 
 test('history controls combine path method status and warning filters', () => {

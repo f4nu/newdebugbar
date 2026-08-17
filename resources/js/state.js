@@ -140,6 +140,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
+    viewSort: 'render',
     visibleQueryCount: summary.query_count ?? 0,
     authorizationFilter: 'all',
     visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
@@ -319,6 +320,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
             this.$refs?.queryResults?.querySelector?.(selector)?.scrollIntoView?.({ block: 'start' });
           }
         }
+        if (this.selected === 'views') this.applyViewSort();
         if (this.selected === 'authorization') this.applyAuthorizationFilters();
         if (this.selected === 'history') this.applyHistoryFilters();
         if (this.selected === 'timeline') this.applyTimelineFilters();
@@ -435,6 +437,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
           this.$nextTick?.(() => {
             this.syncSectionPanels();
             this.applyQueryView();
+            this.applyViewSort();
             this.applyAuthorizationFilters();
             this.applyHistoryFilters();
             this.applyTimelineFilters();
@@ -500,6 +503,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
+      this.viewSort = 'render';
       this.authorizationFilter = 'all';
       if (!keepHistoryOpen) {
         this.historyPath = '';
@@ -610,6 +614,31 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       }
 
       return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+    },
+
+    setViewSort(sort) {
+      if (!['render', 'count'].includes(sort)) return;
+
+      this.viewSort = sort;
+      this.applyViewSort();
+    },
+
+    applyViewSort() {
+      const groups = this.$refs?.viewGroups
+        ?? this.$root?.querySelector?.('[x-ref="viewGroups"]');
+
+      if (!groups?.children) return;
+
+      [...groups.children]
+        .sort((left, right) => {
+          if (this.viewSort === 'count') {
+            return Number(right.dataset.count ?? 0) - Number(left.dataset.count ?? 0)
+              || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
+          }
+
+          return Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
+        })
+        .forEach((group) => groups.appendChild?.(group));
     },
 
     setAuthorizationFilter(filter) {
