@@ -471,6 +471,7 @@ it('matches the visual baseline for the :dataset narrow request facts menu', fun
     $page
         ->click('[data-ndb-mobile-toolbar-trigger="facts"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="facts"]')
+        ->wait(0.2)
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-facts-{$theme}");
@@ -486,6 +487,7 @@ it('matches the visual baseline for the :dataset narrow action menu', function (
     $page
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
+        ->wait(0.2)
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-actions-{$theme}");
