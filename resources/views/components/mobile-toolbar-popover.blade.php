@@ -65,6 +65,6 @@
         data-ndb-mobile-toolbar-popover-surface
         class="ndb:relative ndb:z-10 ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200/80 ndb:bg-white/95 ndb:p-1.5 ndb:shadow-[0_18px_50px_-16px_rgba(24,24,27,0.45)] ndb:backdrop-blur-xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/95 ndb:dark:shadow-[0_18px_50px_-16px_rgba(0,0,0,0.85)]"
     >
-        <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-700/80">{{ $slot }}</div>
+        <div data-ndb-mobile-toolbar-popover-items class="ndb:flex ndb:flex-col ndb:gap-0.5">{{ $slot }}</div>
     </div>
 </div>

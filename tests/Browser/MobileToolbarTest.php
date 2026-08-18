@@ -20,6 +20,7 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
                     && buttons.length === 3
                     && buttons.every((button) => button.getBoundingClientRect().height >= 44)
                     && buttons.every((button) => button.querySelector('svg') === null)
+                    && buttons.every((button) => button.querySelector('[aria-hidden="true"]') === null)
                     && buttons.every((button) => button.getAttribute('aria-label')?.startsWith('Open '))
                     && values.every((value) => value.getBoundingClientRect().width > 0 && value.scrollWidth <= value.clientWidth)
                     && values[0].textContent.trim() !== ''
@@ -49,6 +50,7 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
                 const trigger = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
                 const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="actions"]');
                 const surface = menu.querySelector('[data-ndb-mobile-toolbar-popover-surface]');
+                const items = menu.querySelector('[data-ndb-mobile-toolbar-popover-items]');
                 const arrow = menu.querySelector('[data-ndb-mobile-toolbar-popover-arrow="actions"]');
                 const triggerBox = trigger.getBoundingClientRect();
                 const surfaceBox = surface.getBoundingClientRect();
@@ -62,7 +64,9 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
                     && Math.abs((arrowBox.left + arrowBox.width / 2) - (triggerBox.left + triggerBox.width / 2)) <= 1
                     && paths.length === 2
                     && getComputedStyle(paths[0]).fill !== 'none'
-                    && getComputedStyle(paths[1]).stroke !== 'none';
+                    && getComputedStyle(paths[1]).stroke !== 'none'
+                    && parseFloat(getComputedStyle(items).rowGap) > 0
+                    && Array.from(items.children).every((item) => parseFloat(getComputedStyle(item).borderTopWidth) === 0);
             })()
             JS)
         ->assertNoJavaScriptErrors();
@@ -93,6 +97,7 @@ it('stays compact and unclipped from narrow phones through tablets', function ()
                         && buttons.length === 3
                         && buttons.every((button) => button.getBoundingClientRect().height >= 44)
                         && buttons.every((button) => button.querySelector('svg') === null)
+                        && buttons.every((button) => button.querySelector('[aria-hidden="true"]') === null)
                         && actions.getBoundingClientRect().width >= 44
                         && actions.getBoundingClientRect().height >= 44;
                 })()
@@ -180,6 +185,7 @@ it('gives the expanded header the same direct metrics and clean window menu thro
                         && buttons.length === 3
                         && buttons.every((button) => button.getBoundingClientRect().height >= 44)
                         && buttons.every((button) => button.querySelector('svg') === null)
+                        && buttons.every((button) => button.querySelector('[aria-hidden="true"]') === null)
                         && actions.getBoundingClientRect().width >= 44
                         && actions.getBoundingClientRect().height >= 44
                         && actions.querySelectorAll('svg').length === 1
@@ -211,6 +217,7 @@ it('gives the expanded header the same direct metrics and clean window menu thro
                 const trigger = document.querySelector('[data-ndb-header-mobile-trigger="actions"]');
                 const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="header-actions"]');
                 const surface = menu.querySelector('[data-ndb-mobile-toolbar-popover-surface]');
+                const items = menu.querySelector('[data-ndb-mobile-toolbar-popover-items]');
                 const arrow = menu.querySelector('[data-ndb-mobile-toolbar-popover-arrow="header-actions"]');
                 const visibleItems = Array.from(menu.querySelectorAll('[role="menuitem"]'))
                     .filter((item) => item.getClientRects().length > 0);
@@ -229,6 +236,8 @@ it('gives the expanded header the same direct metrics and clean window menu thro
                     && Math.abs(arrowBox.height - 8) <= 0.5
                     && Math.abs((arrowBox.left + arrowBox.width / 2) - (triggerBox.left + triggerBox.width / 2)) <= 1
                     && arrow.querySelectorAll('path').length === 2
+                    && parseFloat(getComputedStyle(items).rowGap) > 0
+                    && visibleItems.every((item) => parseFloat(getComputedStyle(item).borderTopWidth) === 0)
                     && visibleItems.length === 5
                     && visibleItems.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === visibleItems[0];
