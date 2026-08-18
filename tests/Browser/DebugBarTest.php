@@ -251,6 +251,72 @@ it('moves the compact toolbar away from host dialogs at either screen edge', fun
         ->assertNoJavaScriptErrors();
 });
 
+it('drags the compact toolbar between animated persistent anchors', function () {
+    $page = visit('/profiled')
+        ->resize(1440, 900)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertScript(<<<'JS'
+            (() => {
+                const top = document.createElement('div');
+                top.dataset.testid = 'toolbar-top-drop-target';
+                Object.assign(top.style, {
+                    position: 'fixed',
+                    top: '0',
+                    left: '50%',
+                    width: '48px',
+                    height: '48px',
+                    zIndex: '1',
+                });
+                const bottom = top.cloneNode();
+                bottom.dataset.testid = 'toolbar-bottom-drop-target';
+                bottom.style.top = 'auto';
+                bottom.style.bottom = '0';
+                document.body.append(top, bottom);
+
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                const hint = document.getElementById(toolbar.getAttribute('aria-describedby'));
+
+                return getComputedStyle(toolbar).transitionProperty.includes('transform')
+                    && hint.textContent.includes('Drag vertically');
+            })()
+            JS);
+
+    $page
+        ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-top-drop-target"]')
+        ->wait(0.6)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-preferred-placement', 'top')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").dataset.dragging !== "true"')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").dataset.snapping !== "true"')
+        ->assertScript("JSON.parse(localStorage.getItem('newdebugbar.preferences.v1')).toolbarAnchor === 'top'")
+        ->refresh()
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13');
+
+    $page->script(<<<'JS'
+        const bottom = document.createElement('div');
+        bottom.dataset.testid = 'toolbar-bottom-drop-target';
+        Object.assign(bottom.style, {
+            position: 'fixed',
+            bottom: '0',
+            left: '50%',
+            width: '48px',
+            height: '48px',
+            zIndex: '1',
+        });
+        document.body.append(bottom);
+        JS);
+
+    $page
+        ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-bottom-drop-target"]')
+        ->wait(0.6)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-preferred-placement', 'bottom')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().bottom >= window.innerHeight - 13')
+        ->assertNoJavaScriptErrors();
+});
+
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
@@ -1465,6 +1531,13 @@ it('uses the command palette, theme preference, and escape layers', function () 
         ->click('[data-ndb-toolbar="palette"]')
         ->assertVisible('[role="dialog"][aria-label="Command palette"]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
+        ->type('[data-ndb-palette-search]', 'pin toolbar to top')
+        ->keys('[data-ndb-palette-search]', 'Enter')
+        ->wait(0.6)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->refresh()
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->click('[data-ndb-toolbar="palette"]')
         ->type('[data-ndb-palette-search]', 'models')
         ->keys('[data-ndb-palette-search]', 'Enter')
         ->wait(0.2);
@@ -1806,7 +1879,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
 
                 return menu.querySelector('h1, h2, h3, [role="heading"]') === null
                     && !menu.textContent.includes('Debug bar')
-                    && items.length === 4
+                    && items.length === 5
                     && items.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === items[0];
             })()

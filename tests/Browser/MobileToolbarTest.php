@@ -75,6 +75,28 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
                     && Array.from(items.children).every((item) => parseFloat(getComputedStyle(item).borderTopWidth) === 0);
             })()
             JS)
+        ->assertSeeIn('[data-ndb-mobile-toolbar-action="placement"]', 'Pin to top')
+        ->click('[data-ndb-mobile-toolbar-action="placement"]')
+        ->wait(0.6)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13')
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->assertSeeIn('[data-ndb-mobile-toolbar-action="placement"]', 'Pin to bottom')
+        ->assertScript(<<<'JS'
+            (() => {
+                const trigger = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
+                const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="actions"]');
+                const surface = menu.querySelector('[data-ndb-mobile-toolbar-popover-surface]');
+                const arrow = menu.querySelector('[data-ndb-mobile-toolbar-popover-arrow="actions"]');
+                const triggerBox = trigger.getBoundingClientRect();
+                const surfaceBox = surface.getBoundingClientRect();
+                const arrowBox = arrow.getBoundingClientRect();
+
+                return surfaceBox.top > triggerBox.bottom
+                    && arrowBox.top < surfaceBox.top
+                    && arrowBox.bottom > surfaceBox.top;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 

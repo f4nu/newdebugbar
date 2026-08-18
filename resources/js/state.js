@@ -10,6 +10,9 @@ const defaultRuntime = () => ({
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
+  schedule: (callback, delay) => window.setTimeout(callback, delay),
+  cancelSchedule: (timer) => window.clearTimeout(timer),
+  viewportHeight: () => window.innerHeight,
   lockHost: (root) => {
     if (!root || root.__newDebugBarHostLock) return;
 
@@ -48,7 +51,7 @@ const defaultRuntime = () => ({
     previous.inert.forEach(([element, inert]) => { element.inert = inert; });
     delete root.__newDebugBarHostLock;
   },
-  toolbarPlacement: (root) => {
+  toolbarPlacement: (root, preferred = 'bottom') => {
     const toolbar = root?.querySelector?.('[data-ndb-toolbar-shell]');
     if (!toolbar) return 'bottom';
 
@@ -84,7 +87,12 @@ const defaultRuntime = () => ({
       return area + widthOverlap * heightOverlap;
     }, 0);
 
-    return overlap(candidates.top) < overlap(candidates.bottom) ? 'top' : 'bottom';
+    const topOverlap = overlap(candidates.top);
+    const bottomOverlap = overlap(candidates.bottom);
+
+    if (topOverlap === bottomOverlap && ['top', 'bottom'].includes(preferred)) return preferred;
+
+    return topOverlap < bottomOverlap ? 'top' : 'bottom';
   },
   watchHostDialogs: (_root, callback) => {
     let frame = null;
@@ -132,7 +140,21 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
     toolbarPlacement: 'bottom',
+    toolbarPreferredPlacement: 'bottom',
     stopToolbarPlacementWatch: null,
+    toolbarDragging: false,
+    toolbarSnapping: false,
+    toolbarDragPointerId: null,
+    toolbarDragStartX: 0,
+    toolbarDragStartY: 0,
+    toolbarDragPointerOffsetY: 0,
+    toolbarDragHeight: 0,
+    toolbarDragOffsetY: 0,
+    toolbarDragTarget: 'bottom',
+    toolbarDragOriginPlacement: 'bottom',
+    toolbarSuppressClick: false,
+    toolbarSnapTimer: null,
+    toolbarClickTimer: null,
     favorites: [],
     favoriteDrag: null,
     favoriteDrop: null,
@@ -188,6 +210,10 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.colorSchemeListener = null;
       this.stopToolbarPlacementWatch?.();
       this.stopToolbarPlacementWatch = null;
+      browser.cancelSchedule?.(this.toolbarSnapTimer);
+      browser.cancelSchedule?.(this.toolbarClickTimer);
+      this.toolbarSnapTimer = null;
+      this.toolbarClickTimer = null;
       browser.unlockHost?.(this.$root);
     },
 
@@ -196,6 +222,12 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         const saved = JSON.parse(browser.storage?.getItem(STORAGE_KEY) ?? '{}');
 
         if (['system', 'light', 'dark'].includes(saved.theme)) this.theme = saved.theme;
+        if (['top', 'bottom'].includes(saved.toolbarAnchor)) {
+          this.toolbarPreferredPlacement = saved.toolbarAnchor;
+          this.toolbarPlacement = saved.toolbarAnchor;
+          this.toolbarDragTarget = saved.toolbarAnchor;
+          this.toolbarDragOriginPlacement = saved.toolbarAnchor;
+        }
         if (Array.isArray(saved.favorites)) {
           const allowed = this.sectionKeys;
           this.favorites = [...new Set(saved.favorites)].filter((key) => allowed.includes(key));
@@ -209,6 +241,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       try {
         browser.storage?.setItem(STORAGE_KEY, JSON.stringify({
           theme: this.theme,
+          toolbarAnchor: this.toolbarPreferredPlacement,
           favorites: this.favorites,
         }));
       } catch {
@@ -233,6 +266,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         { id: 'theme:system', label: 'Use system theme', hint: 'Theme' },
         { id: 'theme:light', label: 'Use light theme', hint: 'Theme' },
         { id: 'theme:dark', label: 'Use dark theme', hint: 'Theme' },
+        { id: 'toolbar:top', label: 'Pin toolbar to top', hint: 'Toolbar' },
+        { id: 'toolbar:bottom', label: 'Pin toolbar to bottom', hint: 'Toolbar' },
       ];
     },
 
@@ -383,9 +418,190 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     syncToolbarPlacement() {
-      const placement = browser.toolbarPlacement?.(this.$root);
+      if (this.toolbarDragging || this.toolbarSnapping) return;
 
-      if (['top', 'bottom'].includes(placement)) this.toolbarPlacement = placement;
+      const placement = browser.toolbarPlacement?.(this.$root, this.toolbarPreferredPlacement);
+
+      if (['top', 'bottom'].includes(placement) && placement !== this.toolbarPlacement) {
+        this.moveToolbarTo(placement);
+      }
+    },
+
+    toolbarAnchorTop(placement, height) {
+      if (placement === 'top') return 12;
+
+      return Math.max(12, (browser.viewportHeight?.() ?? 0) - height - 12);
+    },
+
+    startToolbarDrag(event) {
+      if (!this.barVisible || this.inspectorOpen || this.toolbarDragPointerId !== null) return;
+      if (event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      if (event.target?.closest?.('[role="menu"], [role="dialog"], input, select, textarea')) return;
+
+      const toolbar = event.currentTarget;
+      const box = toolbar?.getBoundingClientRect?.();
+      if (!toolbar || !box || box.height <= 0) return;
+
+      browser.cancelSchedule?.(this.toolbarSnapTimer);
+      this.toolbarSnapTimer = null;
+      this.toolbarSnapping = false;
+      this.toolbarDragPointerId = event.pointerId;
+      this.toolbarDragStartX = event.clientX;
+      this.toolbarDragStartY = event.clientY;
+      this.toolbarDragPointerOffsetY = Math.min(Math.max(event.clientY - box.top, 0), box.height);
+      this.toolbarDragHeight = box.height;
+      this.toolbarDragOffsetY = box.top - this.toolbarAnchorTop(this.toolbarPlacement, box.height);
+      this.toolbarDragTarget = this.toolbarPlacement;
+      this.toolbarDragOriginPlacement = this.toolbarPlacement;
+    },
+
+    moveToolbarDrag(event) {
+      if (event.pointerId !== this.toolbarDragPointerId) return;
+
+      const distance = Math.hypot(
+        event.clientX - this.toolbarDragStartX,
+        event.clientY - this.toolbarDragStartY,
+      );
+
+      if (!this.toolbarDragging && distance < 6) return;
+
+      if (!this.toolbarDragging) {
+        this.toolbarDragging = true;
+        this.mobileToolbarMenu = null;
+        this.mobileToolbarReturnFocus = null;
+        this.$root
+          ?.querySelector?.('[data-ndb-toolbar-shell]')
+          ?.setPointerCapture?.(event.pointerId);
+      }
+
+      event.preventDefault?.();
+      const height = this.toolbarDragHeight;
+      const topAnchor = this.toolbarAnchorTop('top', height);
+      const bottomAnchor = this.toolbarAnchorTop('bottom', height);
+      const top = Math.min(
+        bottomAnchor,
+        Math.max(topAnchor, event.clientY - this.toolbarDragPointerOffsetY),
+      );
+
+      this.toolbarDragOffsetY = top - this.toolbarAnchorTop(this.toolbarPlacement, height);
+      this.toolbarDragTarget = Math.abs(top - topAnchor) <= Math.abs(top - bottomAnchor)
+        ? 'top'
+        : 'bottom';
+    },
+
+    endToolbarDrag(event) {
+      if (event.pointerId !== this.toolbarDragPointerId) return;
+
+      const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
+      const currentTop = toolbar?.getBoundingClientRect?.().top;
+      if (toolbar?.hasPointerCapture?.(event.pointerId)) {
+        toolbar.releasePointerCapture?.(event.pointerId);
+      }
+      this.toolbarDragPointerId = null;
+
+      if (!this.toolbarDragging) {
+        this.toolbarDragOffsetY = 0;
+
+        return;
+      }
+
+      event.preventDefault?.();
+      this.toolbarDragging = false;
+      this.suppressToolbarClick();
+      this.moveToolbarTo(this.toolbarDragTarget, true, currentTop);
+    },
+
+    cancelToolbarDrag(event) {
+      if (event.pointerId !== this.toolbarDragPointerId) return;
+
+      const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
+      const currentTop = toolbar?.getBoundingClientRect?.().top;
+      if (toolbar?.hasPointerCapture?.(event.pointerId)) {
+        toolbar.releasePointerCapture?.(event.pointerId);
+      }
+      this.toolbarDragPointerId = null;
+
+      if (!this.toolbarDragging) {
+        this.toolbarDragOffsetY = 0;
+
+        return;
+      }
+
+      this.toolbarDragging = false;
+      this.suppressToolbarClick();
+      this.moveToolbarTo(this.toolbarDragOriginPlacement, false, currentTop);
+    },
+
+    suppressToolbarClick() {
+      this.toolbarSuppressClick = true;
+      browser.cancelSchedule?.(this.toolbarClickTimer);
+      this.toolbarClickTimer = browser.schedule?.(() => {
+        this.toolbarSuppressClick = false;
+        this.toolbarClickTimer = null;
+      }, 250) ?? null;
+    },
+
+    consumeToolbarClick(event) {
+      if (!this.toolbarSuppressClick) return;
+
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      this.toolbarSuppressClick = false;
+      browser.cancelSchedule?.(this.toolbarClickTimer);
+      this.toolbarClickTimer = null;
+    },
+
+    pinToolbar(placement) {
+      if (!['top', 'bottom'].includes(placement)) return;
+
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
+      this.moveToolbarTo(placement, true);
+    },
+
+    moveToolbarTo(placement, remember = false, currentTop = null) {
+      if (!['top', 'bottom'].includes(placement)) return;
+
+      const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
+      const box = toolbar?.getBoundingClientRect?.();
+      const height = box?.height ?? this.toolbarDragHeight;
+      const fromTop = Number.isFinite(currentTop) ? currentTop : box?.top;
+
+      if (remember) {
+        this.toolbarPreferredPlacement = placement;
+        this.persist();
+      }
+
+      this.toolbarPlacement = placement;
+      this.toolbarDragTarget = placement;
+
+      if (!Number.isFinite(fromTop) || height <= 0) {
+        this.toolbarDragOffsetY = 0;
+        this.toolbarSnapping = false;
+
+        return;
+      }
+
+      const offset = fromTop - this.toolbarAnchorTop(placement, height);
+      this.toolbarDragOffsetY = Math.abs(offset) > 0.5 ? offset : 0;
+      this.toolbarSnapping = this.toolbarDragOffsetY !== 0;
+
+      if (!this.toolbarSnapping) return;
+
+      this.$nextTick?.(() => {
+        const settle = () => { this.toolbarDragOffsetY = 0; };
+        browser.afterPaint ? browser.afterPaint(settle) : settle();
+      });
+      browser.cancelSchedule?.(this.toolbarSnapTimer);
+      this.toolbarSnapTimer = browser.schedule?.(() => this.finishToolbarSnap(), 500) ?? null;
+    },
+
+    finishToolbarSnap() {
+      browser.cancelSchedule?.(this.toolbarSnapTimer);
+      this.toolbarSnapTimer = null;
+      this.toolbarDragOffsetY = 0;
+      this.toolbarSnapping = false;
+      this.syncToolbarPlacement();
     },
 
     openInspector(section = this.selected, returnFocus = null) {
@@ -963,6 +1179,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       }
 
       if (kind === 'theme') this.setTheme(value);
+
+      if (kind === 'toolbar') this.pinToolbar(value);
 
       if (kind === 'collectors' && value === 'show') {
         this.paletteShowQuiet = true;

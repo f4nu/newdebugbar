@@ -5,10 +5,23 @@
     x-transition.opacity.duration.150ms
     role="toolbar"
     aria-label="Debug toolbar"
+    aria-describedby="newdebugbar-toolbar-drag-hint"
     data-ndb-toolbar-shell
     :data-placement="toolbarPlacement"
+    :data-preferred-placement="toolbarPreferredPlacement"
+    :data-dragging="toolbarDragging"
+    :data-drag-target="toolbarDragTarget"
+    :data-snapping="toolbarSnapping"
+    :style="{ '--ndb-toolbar-drag-y': toolbarDragOffsetY + 'px' }"
     :class="toolbarPlacement === 'top' ? 'ndb:top-3' : 'ndb:bottom-3'"
-    class="ndb:pointer-events-auto ndb:fixed ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:grid ndb:sm:grid-cols-[minmax(10rem,1fr)_minmax(0,24rem)_minmax(10rem,1fr)] ndb:lg:flex ndb:lg:max-w-5xl ndb:lg:pr-3 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
+    @pointerdown="startToolbarDrag($event)"
+    @pointermove.window="moveToolbarDrag($event)"
+    @pointerup.window="endToolbarDrag($event)"
+    @pointercancel.window="cancelToolbarDrag($event)"
+    @click.capture="consumeToolbarClick($event)"
+    @dragstart.prevent
+    @transitionend.self="if ($event.propertyName === 'transform') finishToolbarSnap();"
+    class="ndb-toolbar-draggable ndb:pointer-events-auto ndb:fixed ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:grid ndb:sm:grid-cols-[minmax(10rem,1fr)_minmax(0,24rem)_minmax(10rem,1fr)] ndb:lg:flex ndb:lg:max-w-5xl ndb:lg:pr-3 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
 >
     <x-newdebugbar::toolbar-button
         section="request"
@@ -174,6 +187,27 @@
                 <span class="ndb:text-sm ndb:font-medium">Open inspector</span>
             </button>
             <x-newdebugbar::theme-menu-item data-ndb-mobile-toolbar-action="theme" />
+            <button
+                type="button"
+                role="menuitem"
+                data-ndb-mobile-toolbar-action="placement"
+                @click="pinToolbar(toolbarPreferredPlacement === 'top' ? 'bottom' : 'top')"
+                class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+            >
+                <span
+                    :class="toolbarPreferredPlacement === 'bottom' ? 'ndb:rotate-180' : ''"
+                    class="ndb:transition-transform ndb:duration-200"
+                >
+                    <x-newdebugbar::icon
+                        name="chevron-down"
+                        class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                    />
+                </span>
+                <span
+                    class="ndb:text-sm ndb:font-medium"
+                    x-text="toolbarPreferredPlacement === 'top' ? 'Pin to bottom' : 'Pin to top'"
+                ></span>
+            </button>
             <button
                 type="button"
                 role="menuitem"

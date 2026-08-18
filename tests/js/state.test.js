@@ -6,10 +6,12 @@ import { createNewDebugBar, STORAGE_KEY } from '../../resources/js/state.js';
 function runtime(saved = null) {
   const values = new Map(saved ? [[STORAGE_KEY, JSON.stringify(saved)]] : []);
   const host = { locks: 0, unlocks: 0 };
+  const timers = new Set();
 
   return {
     values,
     host,
+    timers,
     storage: {
       getItem: (key) => values.get(key) ?? null,
       setItem: (key, value) => values.set(key, value),
@@ -18,6 +20,18 @@ function runtime(saved = null) {
     activeElement: () => null,
     highlight: () => {},
     afterPaint: (callback) => callback(),
+    schedule: (callback) => {
+      timers.add(callback);
+
+      return callback;
+    },
+    cancelSchedule: (timer) => timers.delete(timer),
+    runTimers: () => {
+      const callbacks = [...timers];
+      timers.clear();
+      callbacks.forEach((callback) => callback());
+    },
+    viewportHeight: () => 900,
     lockHost: () => host.locks++,
     unlockHost: () => host.unlocks++,
   };
@@ -34,6 +48,7 @@ const summary = {
 test('restores safe local preferences', () => {
   const browser = runtime({
     theme: 'dark',
+    toolbarAnchor: 'top',
     sectionMode: 'all',
     favorites: ['logs', 'unknown', 'logs'],
   });
@@ -42,12 +57,15 @@ test('restores safe local preferences', () => {
   state.init();
 
   assert.equal(state.resolvedTheme, 'dark');
+  assert.equal(state.toolbarPlacement, 'top');
+  assert.equal(state.toolbarPreferredPlacement, 'top');
   assert.deepEqual(state.favorites, ['logs']);
   assert.equal('sectionMode' in state, false);
 
   state.setTheme('light');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'light',
+    toolbarAnchor: 'top',
     favorites: ['logs'],
   });
 });
@@ -81,6 +99,7 @@ test('pins overview before alphabetized active sections while keeping selected a
   assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'system',
+    toolbarAnchor: 'bottom',
     favorites: ['cache'],
   });
 });
@@ -212,6 +231,152 @@ test('moves the compact toolbar to the edge with less host dialog overlap', () =
 
   state.destroy();
   assert.equal(stopped, 1);
+});
+
+function toolbarHarness(saved = null) {
+  const browser = runtime(saved);
+  browser.toolbarPlacement = (_root, preferred) => preferred;
+  browser.watchHostDialogs = () => () => {};
+  const state = createNewDebugBar(summary, browser);
+  const capture = { pointerId: null, releases: [] };
+  const toolbar = {
+    setPointerCapture: (pointerId) => { capture.pointerId = pointerId; },
+    hasPointerCapture: (pointerId) => capture.pointerId === pointerId,
+    releasePointerCapture: (pointerId) => {
+      capture.releases.push(pointerId);
+      capture.pointerId = null;
+    },
+    getBoundingClientRect: () => {
+      const height = 60;
+      const baseTop = state.toolbarPlacement === 'top' ? 12 : 828;
+
+      return { top: baseTop + state.toolbarDragOffsetY, height };
+    },
+  };
+  state.$root = {
+    querySelector: (selector) => selector === '[data-ndb-toolbar-shell]' ? toolbar : null,
+    querySelectorAll: () => [],
+  };
+  state.$nextTick = (callback) => callback();
+  state.init();
+
+  const pointer = (overrides = {}) => ({
+    pointerId: 7,
+    pointerType: 'mouse',
+    button: 0,
+    isPrimary: true,
+    clientX: 720,
+    clientY: 850,
+    currentTarget: toolbar,
+    target: { closest: () => null },
+    preventDefault() {},
+    ...overrides,
+  });
+
+  return { browser, capture, pointer, state, toolbar };
+}
+
+test('the compact toolbar follows a pointer and pins to the nearest anchor', () => {
+  const { browser, capture, pointer, state } = toolbarHarness();
+  let prevented = 0;
+  let clickPrevented = 0;
+  let clickStopped = 0;
+
+  state.startToolbarDrag(pointer());
+  state.moveToolbarDrag(pointer({ clientY: 92, preventDefault: () => prevented++ }));
+
+  assert.equal(state.toolbarDragging, true);
+  assert.equal(state.toolbarDragTarget, 'top');
+  assert.equal(state.toolbarDragOffsetY, -758);
+  assert.equal(capture.pointerId, 7);
+  assert.equal(prevented, 1);
+
+  state.endToolbarDrag(pointer({ clientY: 92, preventDefault: () => prevented++ }));
+
+  assert.equal(state.toolbarDragging, false);
+  assert.equal(state.toolbarPlacement, 'top');
+  assert.equal(state.toolbarPreferredPlacement, 'top');
+  assert.equal(state.toolbarSnapping, true);
+  assert.equal(state.toolbarSuppressClick, true);
+  assert.deepEqual(capture.releases, [7]);
+  assert.equal(prevented, 2);
+  assert.equal(JSON.parse(browser.values.get(STORAGE_KEY)).toolbarAnchor, 'top');
+
+  state.consumeToolbarClick({
+    preventDefault: () => clickPrevented++,
+    stopPropagation: () => clickStopped++,
+  });
+  browser.runTimers();
+
+  assert.equal(clickPrevented, 1);
+  assert.equal(clickStopped, 1);
+  assert.equal(state.toolbarSuppressClick, false);
+  assert.equal(state.toolbarSnapping, false);
+  assert.equal(state.toolbarDragOffsetY, 0);
+});
+
+test('a cancelled toolbar drag returns to its original anchor', () => {
+  const { browser, pointer, state } = toolbarHarness({ toolbarAnchor: 'top' });
+
+  state.startToolbarDrag(pointer({ clientY: 36 }));
+  state.moveToolbarDrag(pointer({ clientY: 850 }));
+
+  assert.equal(state.toolbarDragging, true);
+  assert.equal(state.toolbarDragTarget, 'bottom');
+
+  state.cancelToolbarDrag(pointer({ clientY: 850 }));
+  browser.runTimers();
+
+  assert.equal(state.toolbarDragging, false);
+  assert.equal(state.toolbarPlacement, 'top');
+  assert.equal(state.toolbarPreferredPlacement, 'top');
+  assert.equal(state.toolbarSnapping, false);
+});
+
+test('toolbar drag guards preserve ordinary clicks and reject invalid anchors', () => {
+  const { browser, pointer, state } = toolbarHarness();
+
+  state.startToolbarDrag(pointer({ button: 2 }));
+  state.startToolbarDrag(pointer({ isPrimary: false }));
+  state.startToolbarDrag(pointer({ target: { closest: () => ({}) } }));
+  assert.equal(state.toolbarDragPointerId, null);
+
+  state.startToolbarDrag(pointer());
+  state.moveToolbarDrag(pointer({ pointerId: 9, clientY: 100 }));
+  state.moveToolbarDrag(pointer({ clientX: 722, clientY: 852 }));
+  state.endToolbarDrag(pointer({ pointerId: 9 }));
+  assert.equal(state.toolbarDragging, false);
+  assert.equal(state.toolbarDragPointerId, 7);
+
+  state.endToolbarDrag(pointer());
+  assert.equal(state.toolbarDragPointerId, null);
+  assert.equal(state.toolbarSuppressClick, false);
+
+  state.startToolbarDrag(pointer());
+  state.cancelToolbarDrag(pointer());
+  assert.equal(state.toolbarDragPointerId, null);
+  assert.equal(state.toolbarSuppressClick, false);
+
+  state.suppressToolbarClick();
+  browser.runTimers();
+  assert.equal(state.toolbarSuppressClick, false);
+  assert.equal(state.toolbarClickTimer, null);
+
+  state.mobileToolbarMenu = 'actions';
+  state.mobileToolbarReturnFocus = {};
+  state.pinToolbar('top');
+  browser.runTimers();
+  assert.equal(state.toolbarPreferredPlacement, 'top');
+  assert.equal(state.mobileToolbarMenu, null);
+
+  state.pinToolbar('middle');
+  state.moveToolbarTo('middle', true);
+  state.consumeToolbarClick({});
+  assert.equal(state.toolbarPreferredPlacement, 'top');
+
+  state.inspectorOpen = true;
+  state.startToolbarDrag(pointer());
+  assert.equal(state.toolbarDragPointerId, null);
 });
 
 test('query findings reveal and scroll to grouped slow evidence', () => {

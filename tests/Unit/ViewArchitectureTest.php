@@ -71,6 +71,14 @@ it('uses one filter tab treatment across inspector sections', function () {
     }
 });
 
+it('respects reduced motion for toolbar drag animations', function () {
+    $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/newdebugbar.css');
+
+    expect($css)
+        ->toContain('.ndb-toolbar-draggable')
+        ->toMatch('/@media \(prefers-reduced-motion: reduce\)[\s\S]*#newdebugbar \*[\s\S]*transition-duration: 0\.001ms !important;/');
+});
+
 /** @return iterable<SplFileInfo> */
 function bladeFilesIn(string $directory): iterable
 {

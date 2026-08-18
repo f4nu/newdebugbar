@@ -398,6 +398,31 @@ it('matches the visual baseline for the :dataset toolbar', function (string $the
     assertVisualDebugBaseline($page, "toolbar-{$theme}");
 })->with(['light', 'dark']);
 
+it('matches the visual baseline for the :dataset top-pinned toolbar', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(1440, 900);
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                Alpine.$data(toolbar).pinToolbar('top');
+
+                return true;
+            })()
+            JS)
+        ->wait(0.6);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-top-{$theme}");
+})->with(['light', 'dark']);
+
 it('matches the visual baseline for the :dataset narrow toolbar', function (string $theme) {
     $page = visit('/profiled-rich');
 
@@ -454,6 +479,32 @@ it('matches the visual baseline for the :dataset narrow action menu', function (
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-actions-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset top-pinned narrow action menu', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                Alpine.$data(toolbar).pinToolbar('top');
+
+                return true;
+            })()
+            JS)
+        ->wait(0.6);
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
+        ->wait(0.2)
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-top-narrow-actions-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset narrow inspector action menu', function (string $theme) {
