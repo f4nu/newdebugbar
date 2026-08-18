@@ -926,8 +926,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     openMobileToolbarMenu(menu, returnFocus = null) {
-      const compactMenu = ['facts', 'actions'].includes(menu);
-      const inspectorMenu = ['header-facts', 'header-actions'].includes(menu);
+      const compactMenu = menu === 'actions';
+      const inspectorMenu = menu === 'header-actions';
 
       if (!this.barVisible
         || (!compactMenu && !inspectorMenu)

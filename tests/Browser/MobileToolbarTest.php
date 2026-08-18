@@ -1,50 +1,46 @@
 <?php
 
-it('shows three mobile metrics and anchors both menus with arrows', function () {
+it('makes mobile metrics direct actions and anchors the window menu with a clean caret', function () {
     $page = visit('/profiled')
         ->resize(390, 844)
-        ->assertVisible('[data-ndb-mobile-toolbar-trigger="facts"]')
-        ->assertCount('[data-ndb-mobile-request-metrics="toolbar"] [data-ndb-mobile-toolbar-summary]', 3)
+        ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
+        ->assertCount('[data-ndb-mobile-toolbar-metric-scope="toolbar"]', 3)
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
-                const facts = document.querySelector('[data-ndb-mobile-toolbar-trigger="facts"]');
                 const metrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
+                const buttons = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
                 const values = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]'));
                 const labels = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric-label]'));
 
                 return toolbar.scrollWidth <= toolbar.clientWidth
-                    && facts.querySelector('svg') === null
+                    && metrics.getAttribute('role') === 'group'
+                    && metrics.getAttribute('aria-label') === 'Request metrics'
                     && getComputedStyle(metrics).gridTemplateColumns.split(' ').length === 3
+                    && buttons.length === 3
+                    && buttons.every((button) => button.getBoundingClientRect().height >= 44)
+                    && buttons.every((button) => button.querySelector('svg') === null)
+                    && buttons.every((button) => button.getAttribute('aria-label')?.startsWith('Open '))
                     && values.every((value) => value.getBoundingClientRect().width > 0 && value.scrollWidth <= value.clientWidth)
                     && values[0].textContent.trim() !== ''
                     && labels[1].textContent.includes('ms')
                     && labels[2].textContent.includes('MB');
             })()
             JS)
-        ->click('[data-ndb-mobile-toolbar-trigger="facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-menu="facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-popover-arrow="facts"]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const trigger = document.querySelector('[data-ndb-mobile-toolbar-trigger="facts"]');
-                const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="facts"]');
-                const surface = menu.querySelector('[data-ndb-mobile-toolbar-popover-surface]');
-                const arrow = menu.querySelector('[data-ndb-mobile-toolbar-popover-arrow="facts"]');
-                const triggerBox = trigger.getBoundingClientRect();
-                const surfaceBox = surface.getBoundingClientRect();
-                const arrowBox = arrow.getBoundingClientRect();
-                const summaryMemory = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"] [data-ndb-mobile-toolbar-summary="memory"]').textContent.trim();
-                const factMemory = document.querySelector('[data-ndb-mobile-request-fact-scope="toolbar"] [data-ndb-mobile-toolbar-fact-value="memory"]').textContent.trim();
-
-                return arrowBox.top < surfaceBox.bottom
-                    && arrowBox.bottom > surfaceBox.bottom
-                    && Math.abs((arrowBox.left + arrowBox.width / 2) - (triggerBox.left + triggerBox.width / 2)) <= 1
-                    && getComputedStyle(arrow).backgroundColor === getComputedStyle(surface).backgroundColor
-                    && Number.parseFloat(summaryMemory) === Number.parseFloat(factMemory);
-            })()
-            JS)
-        ->keys('[data-ndb-mobile-request-fact-scope="toolbar"][data-ndb-mobile-request-fact="environment"]', 'Escape')
+        ->click('[data-ndb-mobile-toolbar-metric-scope="toolbar"][data-ndb-mobile-toolbar-metric="queries"]')
+        ->wait(0.2)
+        ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
+        ->assertVisible('[data-ndb-section-panel="queries"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Queries"')
+        ->click('[data-ndb-mobile-toolbar-metric-scope="header"][data-ndb-mobile-toolbar-metric="duration"]')
+        ->assertVisible('[data-ndb-section-panel="request"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Request"')
+        ->click('[data-ndb-mobile-toolbar-metric-scope="header"][data-ndb-mobile-toolbar-metric="memory"]')
+        ->assertVisible('[data-ndb-section-panel="overview"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Overview"')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="shrink"]')
+        ->wait(0.2)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-popover-arrow="actions"]')
@@ -57,11 +53,16 @@ it('shows three mobile metrics and anchors both menus with arrows', function () 
                 const triggerBox = trigger.getBoundingClientRect();
                 const surfaceBox = surface.getBoundingClientRect();
                 const arrowBox = arrow.getBoundingClientRect();
+                const paths = arrow.querySelectorAll('path');
 
                 return arrowBox.top < surfaceBox.bottom
                     && arrowBox.bottom > surfaceBox.bottom
+                    && Math.abs(arrowBox.width - 16) <= 0.5
+                    && Math.abs(arrowBox.height - 8) <= 0.5
                     && Math.abs((arrowBox.left + arrowBox.width / 2) - (triggerBox.left + triggerBox.width / 2)) <= 1
-                    && getComputedStyle(arrow).backgroundColor === getComputedStyle(surface).backgroundColor;
+                    && paths.length === 2
+                    && getComputedStyle(paths[0]).fill !== 'none'
+                    && getComputedStyle(paths[1]).stroke !== 'none';
             })()
             JS)
         ->assertNoJavaScriptErrors();
@@ -73,23 +74,25 @@ it('stays compact and unclipped from narrow phones through tablets', function ()
     foreach ([320, 360, 430, 768, 1023] as $width) {
         $page
             ->resize($width, 844)
-            ->assertVisible('[data-ndb-mobile-toolbar-trigger="facts"]')
+            ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
             ->assertScript(<<<'JS'
                 (() => {
                     const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
                     const request = document.querySelector('[data-ndb-toolbar="request"]');
-                    const facts = document.querySelector('[data-ndb-mobile-toolbar-trigger="facts"]');
-                    const values = Array.from(facts.querySelectorAll('[data-ndb-mobile-toolbar-summary]'));
-                    const labels = Array.from(facts.querySelectorAll('[data-ndb-mobile-toolbar-metric-label]'));
+                    const metrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
+                    const buttons = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
+                    const values = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]'));
+                    const labels = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric-label]'));
                     const actions = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
 
                     return toolbar.scrollWidth <= toolbar.clientWidth + 1
                         && request.scrollWidth <= request.clientWidth + 1
                         && values.every((value) => value.scrollWidth <= value.clientWidth + 1)
                         && labels.every((label) => label.scrollWidth <= label.clientWidth + 1)
-                        && facts.getBoundingClientRect().width <= 384
-                        && facts.getBoundingClientRect().height >= 44
-                        && facts.querySelector('svg') === null
+                        && metrics.getBoundingClientRect().width <= 384
+                        && buttons.length === 3
+                        && buttons.every((button) => button.getBoundingClientRect().height >= 44)
+                        && buttons.every((button) => button.querySelector('svg') === null)
                         && actions.getBoundingClientRect().width >= 44
                         && actions.getBoundingClientRect().height >= 44;
                 })()
@@ -101,27 +104,13 @@ it('stays compact and unclipped from narrow phones through tablets', function ()
         ->assertScript(<<<'JS'
             (() => {
                 const path = document.querySelector('[data-ndb-toolbar-request-path]');
-                const facts = document.querySelector('[data-ndb-mobile-toolbar-trigger="facts"]');
+                const metrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
 
                 return path.scrollWidth > path.clientWidth
                     && path.title === path.textContent.trim()
-                    && getComputedStyle(facts).backgroundColor === 'rgba(0, 0, 0, 0)';
+                    && getComputedStyle(metrics).backgroundColor === 'rgba(0, 0, 0, 0)';
             })()
             JS)
-        ->click('[data-ndb-mobile-toolbar-trigger="facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-menu="facts"]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
-                const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="facts"]');
-                const box = menu.getBoundingClientRect();
-
-                return toolbar.scrollWidth <= toolbar.clientWidth + 1
-                    && box.left >= 12
-                    && box.right <= window.innerWidth - 12;
-            })()
-            JS)
-        ->keys('[data-ndb-mobile-request-fact-scope="toolbar"][data-ndb-mobile-request-fact="environment"]', 'Escape')
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
         ->assertScript(<<<'JS'
@@ -139,28 +128,23 @@ it('stays compact and unclipped from narrow phones through tablets', function ()
         ->resize(768, 844)
         ->assertScript(<<<'JS'
             (() => {
-                const control = document.querySelector('[data-ndb-mobile-toolbar-control="facts"]');
-                const facts = document.querySelector('[data-ndb-mobile-toolbar-trigger="facts"]');
-                const controlBox = control.getBoundingClientRect();
-                const factsBox = facts.getBoundingClientRect();
+                const metrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
+                const box = metrics.getBoundingClientRect();
 
-                return Math.abs((window.innerWidth / 2) - (factsBox.left + factsBox.width / 2)) <= 1
-                    && Math.abs(
-                        (controlBox.left + controlBox.width / 2) - (factsBox.left + factsBox.width / 2),
-                    ) <= 1;
+                return Math.abs((window.innerWidth / 2) - (box.left + box.width / 2)) <= 1;
             })()
             JS)
         ->resize(1024, 844)
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
-                const mobileFacts = document.querySelector('[data-ndb-mobile-toolbar-control="facts"]');
+                const mobileMetrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
                 const mobileActions = document.querySelector('[data-ndb-mobile-toolbar-control="actions"]');
                 const desktopFacts = document.querySelector('[data-ndb-toolbar-facts]');
                 const desktopActions = document.querySelector('[data-ndb-toolbar-actions]');
 
                 return toolbar.scrollWidth <= toolbar.clientWidth + 1
-                    && getComputedStyle(mobileFacts).display === 'none'
+                    && getComputedStyle(mobileMetrics).display === 'none'
                     && getComputedStyle(mobileActions).display === 'none'
                     && getComputedStyle(desktopFacts).display !== 'none'
                     && getComputedStyle(desktopActions).display !== 'none';
@@ -169,7 +153,7 @@ it('stays compact and unclipped from narrow phones through tablets', function ()
         ->assertNoJavaScriptErrors();
 });
 
-it('gives the expanded header the same compact treatment through tablet sizes', function () {
+it('gives the expanded header the same direct metrics and clean window menu through tablet sizes', function () {
     $page = visit('/profiled-reported-exception')
         ->resize(390, 844)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
@@ -186,16 +170,16 @@ it('gives the expanded header the same compact treatment through tablet sizes', 
                     const toolbar = document.querySelector('[data-ndb-header-mobile-toolbar]');
                     const request = document.querySelector('[data-ndb-header-mobile-request]');
                     const metrics = document.querySelector('[data-ndb-mobile-request-metrics="header"]');
-                    const facts = document.querySelector('[data-ndb-header-mobile-trigger="facts"]');
+                    const buttons = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
                     const actions = document.querySelector('[data-ndb-header-mobile-trigger="actions"]');
                     const actionStyles = getComputedStyle(actions);
 
                     return dialog.scrollWidth <= dialog.clientWidth + 1
                         && toolbar.scrollWidth <= toolbar.clientWidth + 1
                         && request.scrollWidth <= request.clientWidth + 1
-                        && metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]').length === 3
-                        && facts.querySelector('svg') === null
-                        && facts.getBoundingClientRect().height >= 44
+                        && buttons.length === 3
+                        && buttons.every((button) => button.getBoundingClientRect().height >= 44)
+                        && buttons.every((button) => button.querySelector('svg') === null)
                         && actions.getBoundingClientRect().width >= 44
                         && actions.getBoundingClientRect().height >= 44
                         && actions.querySelectorAll('svg').length === 1
@@ -216,35 +200,9 @@ it('gives the expanded header the same compact treatment through tablet sizes', 
                     && path.title === path.textContent.trim();
             })()
             JS)
-        ->click('[data-ndb-header-mobile-trigger="facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-menu="header-facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-popover-arrow="header-facts"]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const trigger = document.querySelector('[data-ndb-header-mobile-trigger="facts"]');
-                const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="header-facts"]');
-                const surface = menu.querySelector('[data-ndb-mobile-toolbar-popover-surface]');
-                const arrow = menu.querySelector('[data-ndb-mobile-toolbar-popover-arrow="header-facts"]');
-                const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
-                const triggerBox = trigger.getBoundingClientRect();
-                const surfaceBox = surface.getBoundingClientRect();
-                const arrowBox = arrow.getBoundingClientRect();
-
-                return menu.querySelector('h1, h2, h3, [role="heading"]') === null
-                    && !menu.textContent.includes('Request facts')
-                    && surfaceBox.left >= 6
-                    && surfaceBox.right <= window.innerWidth - 6
-                    && surfaceBox.top > triggerBox.bottom
-                    && arrowBox.top < surfaceBox.top
-                    && arrowBox.bottom > surfaceBox.top
-                    && Math.abs((arrowBox.left + arrowBox.width / 2) - (triggerBox.left + triggerBox.width / 2)) <= 1
-                    && items.length === 4
-                    && items.every((item) => item.getBoundingClientRect().height >= 44)
-                    && document.activeElement === items[0];
-            })()
-            JS)
-        ->keys('[data-ndb-mobile-request-fact-scope="header"][data-ndb-mobile-request-fact="environment"]', 'Escape')
-        ->assertScript('document.activeElement === document.querySelector("[data-ndb-header-mobile-trigger=\\"facts\\"]")')
+        ->click('[data-ndb-mobile-toolbar-metric-scope="header"][data-ndb-mobile-toolbar-metric="queries"]')
+        ->assertVisible('[data-ndb-section-panel="queries"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Queries"')
         ->click('[data-ndb-header-mobile-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="header-actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-popover-arrow="header-actions"]')
@@ -267,7 +225,10 @@ it('gives the expanded header the same compact treatment through tablet sizes', 
                     && surfaceBox.top > triggerBox.bottom
                     && arrowBox.top < surfaceBox.top
                     && arrowBox.bottom > surfaceBox.top
+                    && Math.abs(arrowBox.width - 16) <= 0.5
+                    && Math.abs(arrowBox.height - 8) <= 0.5
                     && Math.abs((arrowBox.left + arrowBox.width / 2) - (triggerBox.left + triggerBox.width / 2)) <= 1
+                    && arrow.querySelectorAll('path').length === 2
                     && visibleItems.length === 5
                     && visibleItems.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === visibleItems[0];
@@ -280,8 +241,8 @@ it('gives the expanded header the same compact treatment through tablet sizes', 
         ->resize(768, 844)
         ->assertScript(<<<'JS'
             (() => {
-                const facts = document.querySelector('[data-ndb-header-mobile-trigger="facts"]');
-                const box = facts.getBoundingClientRect();
+                const metrics = document.querySelector('[data-ndb-mobile-request-metrics="header"]');
+                const box = metrics.getBoundingClientRect();
 
                 return Math.abs((window.innerWidth / 2) - (box.left + box.width / 2)) <= 1;
             })()

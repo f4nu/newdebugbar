@@ -454,13 +454,12 @@ test('mobile section navigation manages focus and layered dismissal', () => {
 
 test('mobile toolbar menus manage focus and hand off to overlays', () => {
   let active = null;
-  let factsFocused = 0;
   let actionsFocused = 0;
   let menuItemFocused = 0;
   let paletteFocused = 0;
   let shrinkFocused = 0;
-  const factsOpener = { focus() { active = factsOpener; factsFocused++; } };
   const actionsOpener = { focus() { active = actionsOpener; actionsFocused++; } };
+  const metricOpener = { focus() { active = metricOpener; } };
   const menuItem = { focus() { active = menuItem; menuItemFocused++; } };
   const paletteSearch = { focus() { active = paletteSearch; paletteFocused++; } };
   const shrink = { focus() { active = shrink; shrinkFocused++; } };
@@ -475,11 +474,11 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
   };
   state.$nextTick = (callback) => callback();
 
-  state.openMobileToolbarMenu('unknown', factsOpener);
+  state.openMobileToolbarMenu('unknown', actionsOpener);
   assert.equal(state.mobileToolbarMenu, null);
 
   state.inspectorOpen = true;
-  state.openMobileToolbarMenu('facts', factsOpener);
+  state.openMobileToolbarMenu('actions', actionsOpener);
   assert.equal(state.mobileToolbarMenu, null);
 
   state.openMobileToolbarMenu('header-actions', actionsOpener);
@@ -493,28 +492,28 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
 
   state.inspectorOpen = false;
   state.barVisible = false;
-  state.openMobileToolbarMenu('facts', factsOpener);
+  state.openMobileToolbarMenu('actions', actionsOpener);
   assert.equal(state.mobileToolbarMenu, null);
   state.barVisible = true;
 
-  active = factsOpener;
-  state.toggleMobileToolbarMenu('facts', factsOpener);
-  assert.equal(state.mobileToolbarMenu, 'facts');
+  active = actionsOpener;
+  state.toggleMobileToolbarMenu('actions', actionsOpener);
+  assert.equal(state.mobileToolbarMenu, 'actions');
   assert.equal(menuItemFocused, 2);
 
   state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
   assert.equal(state.mobileToolbarMenu, null);
-  assert.equal(factsFocused, 1);
+  assert.equal(actionsFocused, 1);
 
-  state.toggleMobileToolbarMenu('facts', factsOpener);
-  state.toggleMobileToolbarMenu('facts', factsOpener);
+  state.toggleMobileToolbarMenu('actions', actionsOpener);
+  state.toggleMobileToolbarMenu('actions', actionsOpener);
   assert.equal(state.mobileToolbarMenu, null);
-  assert.equal(factsFocused, 2);
+  assert.equal(actionsFocused, 2);
 
-  state.openMobileToolbarMenu('facts', factsOpener);
+  state.openMobileToolbarMenu('actions', actionsOpener);
   state.closeMobileToolbarMenu(false);
   assert.equal(state.mobileToolbarMenu, null);
-  assert.equal(factsFocused, 2);
+  assert.equal(actionsFocused, 2);
 
   state.openMobileToolbarMenu('actions', actionsOpener);
   state.openPalette();
@@ -523,14 +522,14 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
   assert.equal(paletteFocused, 1);
 
   state.closePalette();
-  assert.equal(actionsFocused, 1);
+  assert.equal(actionsFocused, 3);
 
-  state.openMobileToolbarMenu('facts', factsOpener);
+  active = metricOpener;
   state.openInspector('queries');
   assert.equal(state.mobileToolbarMenu, null);
   assert.equal(state.inspectorOpen, true);
   assert.equal(state.selected, 'queries');
-  assert.equal(state.inspectorReturnFocus, factsOpener);
+  assert.equal(state.inspectorReturnFocus, metricOpener);
   assert.equal(shrinkFocused, 1);
 });
 

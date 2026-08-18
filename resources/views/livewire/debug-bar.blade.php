@@ -71,34 +71,11 @@
             </span>
         </x-newdebugbar::toolbar-button>
 
-        <div
-            data-ndb-mobile-toolbar-control="facts"
-            @click.outside="if (mobileToolbarMenu === 'facts') closeMobileToolbarMenu(false);"
-            class="ndb:relative ndb:flex ndb:min-w-0 ndb:flex-1 ndb:lg:hidden"
-        >
-            <button
-                type="button"
-                data-ndb-mobile-toolbar-trigger="facts"
-                @click="toggleMobileToolbarMenu('facts', $el)"
-                :aria-expanded="mobileToolbarMenu === 'facts'"
-                aria-controls="newdebugbar-mobile-request-facts"
-                aria-label="Show request facts"
-                :class="mobileToolbarMenu === 'facts'
-                    ? 'ndb:bg-transparent ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                    : 'ndb:bg-transparent ndb:text-zinc-900 ndb:hover:bg-zinc-100/80 ndb:dark:text-zinc-100 ndb:dark:hover:bg-white/10'"
-                class="ndb:mx-auto ndb:flex ndb:w-full ndb:max-w-sm ndb:min-w-0 ndb:self-stretch ndb:items-center ndb:rounded-xl ndb:px-1.5 ndb:py-1.5 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:min-[360px]:px-2"
-            >
-                <x-newdebugbar::mobile-request-metrics scope="toolbar" />
-            </button>
-
-            <x-newdebugbar::mobile-toolbar-popover
-                id="newdebugbar-mobile-request-facts"
-                menu="facts"
-                label="Request facts"
-            >
-                <x-newdebugbar::mobile-request-facts scope="toolbar" />
-            </x-newdebugbar::mobile-toolbar-popover>
-        </div>
+        <x-newdebugbar::mobile-request-metrics
+            scope="toolbar"
+            data-ndb-mobile-toolbar-control="metrics"
+            class="ndb:lg:hidden"
+        />
 
         <div
             data-ndb-toolbar-facts
@@ -210,8 +187,6 @@
                 id="newdebugbar-mobile-actions"
                 menu="actions"
                 label="Debug bar actions"
-                align="end"
-                width="actions"
             >
                 <button
                     type="button"
@@ -330,36 +305,7 @@
                         </span>
                     </x-newdebugbar::toolbar-button>
 
-                    <div
-                        data-ndb-header-mobile-control="facts"
-                        @click.outside="if (mobileToolbarMenu === 'header-facts') closeMobileToolbarMenu(false);"
-                        class="ndb:relative ndb:flex ndb:min-w-0 ndb:flex-1"
-                    >
-                        <button
-                            type="button"
-                            data-ndb-header-mobile-trigger="facts"
-                            @click="toggleMobileToolbarMenu('header-facts', $el)"
-                            :aria-expanded="mobileToolbarMenu === 'header-facts'"
-                            aria-controls="newdebugbar-header-mobile-request-facts"
-                            aria-label="Show request facts"
-                            :class="mobileToolbarMenu === 'header-facts'
-                                ? 'ndb:bg-transparent ndb:text-indigo-700 ndb:dark:text-indigo-300'
-                                : 'ndb:bg-transparent ndb:text-zinc-900 ndb:hover:bg-zinc-100/80 ndb:dark:text-zinc-100 ndb:dark:hover:bg-white/10'"
-                            class="ndb:mx-auto ndb:flex ndb:w-full ndb:max-w-sm ndb:min-w-0 ndb:self-stretch ndb:items-center ndb:rounded-xl ndb:px-1.5 ndb:py-1.5 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:min-[360px]:px-2"
-                        >
-                            <x-newdebugbar::mobile-request-metrics scope="header" />
-                        </button>
-
-                        <x-newdebugbar::mobile-toolbar-popover
-                            id="newdebugbar-header-mobile-request-facts"
-                            menu="header-facts"
-                            label="Request facts"
-                            width="header-facts"
-                            direction="below"
-                        >
-                            <x-newdebugbar::mobile-request-facts scope="header" />
-                        </x-newdebugbar::mobile-toolbar-popover>
-                    </div>
+                    <x-newdebugbar::mobile-request-metrics scope="header" data-ndb-header-mobile-control="metrics" />
 
                     <div
                         data-ndb-header-mobile-control="actions"
@@ -385,8 +331,6 @@
                             id="newdebugbar-header-mobile-actions"
                             menu="header-actions"
                             label="Inspector actions"
-                            align="end"
-                            width="actions"
                             direction="below"
                         >
                             <button

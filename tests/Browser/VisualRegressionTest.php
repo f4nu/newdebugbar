@@ -220,9 +220,6 @@ function stabilizeVisualDebugValues($page): void
                 '[data-ndb-mobile-toolbar-summary="queries"]': '3',
                 '[data-ndb-mobile-toolbar-summary="duration"]': '4',
                 '[data-ndb-mobile-toolbar-summary="memory"]': '7',
-                '[data-ndb-mobile-toolbar-fact-value="queries"]': '3',
-                '[data-ndb-mobile-toolbar-fact-value="duration"]': '4 ms',
-                '[data-ndb-mobile-toolbar-fact-value="memory"]': '7 MB',
             };
 
             Object.entries(stableMobileToolbarValues).forEach(([selector, value]) => {
@@ -476,7 +473,7 @@ it('matches the visual baseline for the :dataset small-phone toolbar', function 
     stabilizeVisualDebugValues($page);
 
     $page
-        ->assertVisible('[data-ndb-mobile-toolbar-trigger="facts"]')
+        ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-small-phone-{$theme}");
@@ -490,26 +487,10 @@ it('matches the visual baseline for the :dataset tablet toolbar', function (stri
     stabilizeVisualDebugValues($page);
 
     $page
-        ->assertVisible('[data-ndb-mobile-toolbar-trigger="facts"]')
+        ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-tablet-{$theme}");
-})->with(['light', 'dark']);
-
-it('matches the visual baseline for the :dataset narrow request facts menu', function (string $theme) {
-    $page = visit('/profiled-rich');
-
-    setVisualDebugTheme($page, $theme);
-    $page->resize(390, 844);
-    stabilizeVisualDebugValues($page);
-
-    $page
-        ->click('[data-ndb-mobile-toolbar-trigger="facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-menu="facts"]')
-        ->wait(0.2)
-        ->assertNoJavaScriptErrors();
-
-    assertVisualDebugBaseline($page, "toolbar-narrow-facts-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset narrow action menu', function (string $theme) {
@@ -526,23 +507,6 @@ it('matches the visual baseline for the :dataset narrow action menu', function (
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-actions-{$theme}");
-})->with(['light', 'dark']);
-
-it('matches the visual baseline for the :dataset narrow inspector facts menu', function (string $theme) {
-    $page = visit('/profiled-rich');
-
-    setVisualDebugTheme($page, $theme);
-    $page->resize(390, 844);
-    openNarrowVisualDebugInspector($page);
-    stabilizeVisualDebugValues($page);
-
-    $page
-        ->click('[data-ndb-header-mobile-trigger="facts"]')
-        ->assertVisible('[data-ndb-mobile-toolbar-menu="header-facts"]')
-        ->wait(0.2)
-        ->assertNoJavaScriptErrors();
-
-    assertVisualDebugBaseline($page, "inspector-narrow-facts-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset narrow inspector action menu', function (string $theme) {
