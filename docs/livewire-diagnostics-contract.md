@@ -31,7 +31,7 @@ The final local Testbench microbenchmark ran three times with 30 property-update
 
 ## Final verification
 
-- The current stack used PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The package suite passed 184 tests with 1,688 assertions and 2 expected legacy MCP skips. The full browser suite passed 114 tests with 1,342 assertions.
+- The current stack used PHP 8.5.7, Laravel 13.24.0, and Livewire 4.3.5. The package suite passed 184 tests with 1,688 assertions. The full browser suite passed 114 tests with 1,342 assertions.
 - The JavaScript suite passed 50 tests. Overall line, branch, and function coverage was 91.57%, 86.23%, and 95.15%. The production build, strict Composer validation, dependency audit, formatting check, and Git whitespace check passed.
 - An isolated dependency lane resolved the declared floor of PHP 8.1, Laravel 10.50.2, and Livewire 4.1.0. Its full package suite completed 186 tests with 1,437 assertions and no failures. The available runtime binary was PHP 8.5.7, so the older dependency lane reported dependency deprecations and is dependency-resolution proof, not an actual PHP 8.1 runtime run.
 - Four planned Livewire visual baselines passed after manual inspection: desktop light and dark, plus 390px light and dark. The full visual suite passed without changing unrelated baselines.

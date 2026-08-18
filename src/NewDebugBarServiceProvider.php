@@ -39,8 +39,7 @@ use NewDebugBar\Livewire\InteractionRecorder;
 use NewDebugBar\Livewire\LivewireGateway;
 use NewDebugBar\Livewire\LivewireTraceToken;
 use NewDebugBar\Livewire\StateDiff;
-use NewDebugBar\Mcp\Legacy\NewDebugBarServer as LegacyNewDebugBarServer;
-use NewDebugBar\Mcp\NewDebugBarServer as ModernNewDebugBarServer;
+use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
@@ -248,12 +247,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
     private function registerMcpServer(): void
     {
-        if (class_exists(Mcp::class)) {
-            Mcp::local('newdebugbar', ModernNewDebugBarServer::class);
-
-            return;
-        }
-
-        \Laravel\Mcp\Server\Facades\Mcp::local('newdebugbar', LegacyNewDebugBarServer::class);
+        Mcp::local('newdebugbar', NewDebugBarServer::class);
     }
 }
