@@ -8,7 +8,6 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
-use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
@@ -25,7 +24,6 @@ final class DebugBar extends Component
         'events' => 'See which events Laravel dispatched, where they came from, and how they were handled.',
         'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',
         'http_client' => 'Review outbound HTTP requests, responses, timing, and their source.',
-        'history' => 'Inspect recent requests, background work, and earlier pages. Compare requests that use the same path.',
         'lifecycle' => 'See how long Laravel spent in each measured request lifecycle stage.',
         'livewire' => 'Inspect the Livewire action, component changes, events, and outcome for this request.',
         'logs' => 'Review log messages, their context, and the application code that wrote them.',
@@ -45,26 +43,12 @@ final class DebugBar extends Component
     #[Locked]
     public string $profileId;
 
-    #[Locked]
-    public string $currentProfileId;
-
     /** @var array<string, mixed> */
     #[Locked]
     public array $summary = [];
 
     #[Locked]
     public bool $detailsLoaded = false;
-
-    /** @var list<array<string, mixed>> */
-    #[Locked]
-    public array $history = [];
-
-    /** @var array<string, mixed> */
-    #[Locked]
-    public array $comparison = [];
-
-    #[Locked]
-    public ?string $comparisonProfileId = null;
 
     /** @var array<int, array<string, mixed>> */
     #[Locked]
@@ -74,9 +58,6 @@ final class DebugBar extends Component
     #[Locked]
     public array $queryExplainErrors = [];
 
-    #[Locked]
-    public ?string $discoveredProfileId = null;
-
     public function mount(
         string $profileId,
         ProfileStore $store,
@@ -84,7 +65,6 @@ final class DebugBar extends Component
         ProfileSummaryPresenter $summaries,
     ): void {
         $this->profileId = $profileId;
-        $this->currentProfileId = $profileId;
         $profile = $presenter->present($store->get($profileId) ?? []);
         $this->summary = $this->makeSummary($profile, $summaries);
         $this->detailsLoaded = (int) ($this->summary['status'] ?? 0) >= 400
@@ -93,61 +73,11 @@ final class DebugBar extends Component
 
     public function loadDetails(
         ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
     ): void {
         abort_if($store->get($this->profileId) === null, 404);
 
         $this->detailsLoaded = true;
-        $this->refreshHistoryData($store, $presenter, $summaries);
         $this->dispatch('newdebugbar-content-updated');
-    }
-
-    public function compareWith(
-        string $profileId,
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileComparator $comparator,
-    ): void {
-        abort_unless($this->validProfileId($profileId), 422);
-        $current = $store->get($this->profileId);
-        $baseline = $store->get($profileId);
-        abort_if($current === null || $baseline === null, 404);
-
-        $current = $presenter->present($current);
-        $baseline = $presenter->present($baseline);
-        abort_unless(
-            ($current['sections']['request']['payload']['path'] ?? null)
-                === ($baseline['sections']['request']['payload']['path'] ?? null),
-            422,
-        );
-
-        $this->comparisonProfileId = $profileId;
-        $this->comparison = $comparator->compare($baseline, $current);
-        $this->dispatch('newdebugbar-content-updated');
-    }
-
-    public function clearComparison(): void
-    {
-        $this->comparisonProfileId = null;
-        $this->comparison = [];
-        $this->dispatch('newdebugbar-content-updated');
-    }
-
-    public function discoverProfile(
-        string $profileId,
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): void {
-        abort_unless($this->validProfileId($profileId), 422);
-        abort_if($store->get($profileId) === null, 404);
-        $this->discoveredProfileId = $profileId;
-
-        if ($this->detailsLoaded) {
-            $this->refreshHistoryData($store, $presenter, $summaries);
-            $this->dispatch('newdebugbar-content-updated');
-        }
     }
 
     public function refreshProfileTrace(
@@ -167,12 +97,7 @@ final class DebugBar extends Component
         }
 
         if ($profileId !== $this->profileId) {
-            $this->discoveredProfileId = $profileId;
-
-            if ($this->detailsLoaded) {
-                $this->refreshHistoryData($store, $presenter, $summaries);
-                $this->dispatch('newdebugbar-content-updated');
-            }
+            $this->activateProfile($profileId, $store, $presenter, $summaries);
 
             return;
         }
@@ -217,29 +142,11 @@ final class DebugBar extends Component
         ProfilePresenter $presenter,
         ProfileSummaryPresenter $summaries,
     ): void {
-        $this->activateProfile($profileId, true, $store, $presenter, $summaries);
-    }
-
-    public function selectProfile(
-        string $profileId,
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): void {
-        $this->activateProfile($profileId, false, $store, $presenter, $summaries);
-    }
-
-    public function returnToCurrent(
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): void {
-        $this->activateProfile($this->currentProfileId, false, $store, $presenter, $summaries);
+        $this->activateProfile($profileId, $store, $presenter, $summaries);
     }
 
     private function activateProfile(
         string $profileId,
-        bool $makeCurrent,
         ProfileStore $store,
         ProfilePresenter $presenter,
         ProfileSummaryPresenter $summaries,
@@ -249,19 +156,10 @@ final class DebugBar extends Component
         abort_if($profile === null, 404);
 
         $this->profileId = $profileId;
-
-        if ($makeCurrent) {
-            $this->currentProfileId = $profileId;
-        }
-
         $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
         $this->detailsLoaded = false;
-        $this->history = [];
-        $this->comparison = [];
-        $this->comparisonProfileId = null;
         $this->queryExplains = [];
         $this->queryExplainErrors = [];
-        $this->discoveredProfileId = null;
         $this->dispatch('newdebugbar-profile-switched', summary: $this->summary);
     }
 
@@ -326,23 +224,9 @@ final class DebugBar extends Component
             $sectionCounts[$key] = $count;
         }
 
-        $sectionLinks[] = [
-            'key' => 'history',
-            'label' => 'History',
-            'description' => self::SECTION_DESCRIPTIONS['history'],
-            'count' => null,
-            'active' => true,
-            'attention' => false,
-            'finding_count' => 0,
-            'truncated' => false,
-            'incomplete' => false,
-        ];
-        $sectionCounts['history'] = null;
-
         return [
             ...$summary,
             'id' => $summary['id'] ?? $this->profileId,
-            'is_current_profile' => ($summary['id'] ?? $this->profileId) === $this->currentProfileId,
             'theme' => config('newdebugbar.theme', 'system'),
             'environment' => (string) ($summary['environment'] ?? app()->environment()),
             'method' => $summary['method'] ?? 'GET',
@@ -364,36 +248,6 @@ final class DebugBar extends Component
 
         return self::SECTION_DESCRIPTIONS[$key]
             ?? 'Review the collected '.strtolower($label).' details for this request.';
-    }
-
-    private function refreshHistoryData(
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): void {
-        $currentPath = $this->summary['path'] ?? null;
-        $current = [];
-        $retained = [];
-
-        foreach ($store->recent() as $profile) {
-            try {
-                $summary = $summaries->present($presenter->present($profile));
-            } catch (\Throwable) {
-                continue;
-            }
-
-            $summary['is_current'] = ($summary['id'] ?? null) === $this->currentProfileId;
-            $summary['is_selected'] = ($summary['id'] ?? null) === $this->profileId;
-            $summary['comparable'] = ! $summary['is_selected'] && ($summary['path'] ?? null) === $currentPath;
-
-            if ($summary['is_current']) {
-                $current[] = $summary;
-            } else {
-                $retained[] = $summary;
-            }
-        }
-
-        $this->history = [...$current, ...$retained];
     }
 
     private function validProfileId(string $profileId): bool

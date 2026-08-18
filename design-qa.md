@@ -34,7 +34,7 @@ The source and implementation use different host-page fixtures, so the component
 - Copy and content: the compact bar now exposes query count, total request time, and peak memory before opening the facts menu. All four facts and all three actions remain available. The visible “Request facts” and “Debug bar” headings remain intentionally removed.
 - Accessibility and interaction: both triggers expose expanded state, menus close with Escape or an outside click, focus returns to the trigger, and opening the palette or inspector hands focus to the new surface.
 
-## Comparison history
+## Iteration record
 
 1. P2, fixed: the previous implementation omitted the pointer under both popovers. The repeated surface, transition, alignment, and placement logic now lives in one shared component with a pointer for both menu variants.
 2. P2, fixed: the first three-metric pass clipped a real `7.74 ms` value in the isolated browser preview. The request control was narrowed, metric padding and type were tightened, and a browser assertion now rejects clipped metric values.

@@ -5,7 +5,7 @@ namespace NewDebugBar\Presentation;
 use Carbon\CarbonImmutable;
 use NewDebugBar\Support\Redactor;
 
-/** Produces one stable summary for history, comparison, UI, and MCP. */
+/** Produces one stable request summary for the UI and MCP. */
 final class ProfileSummaryPresenter
 {
     public function __construct(private readonly Redactor $redactor) {}

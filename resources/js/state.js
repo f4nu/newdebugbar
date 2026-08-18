@@ -145,12 +145,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     visibleQueryCount: summary.query_count ?? 0,
     authorizationFilter: 'all',
     visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
-    historyPath: '',
-    historyMethod: '',
-    historyStatus: '',
-    historyWarning: 'all',
-    historyShowRuntime: false,
-    visibleHistoryCount: 0,
     timelineFilter: 'key',
     timelineSearch: '',
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
@@ -323,7 +317,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         }
         if (this.selected === 'views') this.applyViewSort();
         if (this.selected === 'authorization') this.applyAuthorizationFilters();
-        if (this.selected === 'history') this.applyHistoryFilters();
         if (this.selected === 'timeline') this.applyTimelineFilters();
         if (this.selected === 'events') this.applyEventFilters();
         if (this.selected === 'logs') this.applyLogFilters();
@@ -440,7 +433,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
             this.applyQueryView();
             this.applyViewSort();
             this.applyAuthorizationFilters();
-            this.applyHistoryFilters();
             this.applyTimelineFilters();
             this.applyEventFilters();
             this.applyLogFilters();
@@ -497,12 +489,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     switchProfile(summary) {
-      const keepHistoryOpen = this.inspectorOpen && this.selected === 'history';
       this.detailRequestVersion++;
       this.summary = summary ?? {};
       this.detailsRequested = false;
       this.detailsError = false;
-      this.selected = keepHistoryOpen ? 'history' : 'overview';
+      this.selected = 'overview';
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
@@ -511,48 +502,18 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.authorizationFilter = 'all';
       this.eventSource = 'application';
       this.eventSearch = '';
-      if (!keepHistoryOpen) {
-        this.historyPath = '';
-        this.historyMethod = '';
-        this.historyStatus = '';
-        this.historyWarning = 'all';
-      }
       if (this.inspectorOpen) {
-        if (keepHistoryOpen) {
-          this.$nextTick?.(() => {
-            this.syncSectionHeading();
-            this.syncSectionPanels();
-          });
-          this.requestDetails();
-        } else {
-          this.openInspector('overview');
-        }
+        this.openInspector('overview');
       } else {
         this.$nextTick?.(() => this.syncSectionPanels());
       }
     },
 
-    noticeProfile(profileId, context = {}) {
+    noticeProfile(profileId) {
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(profileId ?? '')) return;
       if (profileId === this.summary.id) return;
 
-      if (context.foreground === true) {
-        Promise.resolve(this.$wire?.switchProfile(profileId)).catch(() => {});
-
-        return;
-      }
-
-      Promise.resolve(this.$wire?.discoverProfile(profileId))
-        .then(() => this.$nextTick?.(() => this.applyHistoryFilters()))
-        .catch(() => {});
-    },
-
-    returnToCurrentProfile() {
-      if (this.summary.is_current_profile !== false) return false;
-
-      Promise.resolve(this.$wire?.returnToCurrent()).catch(() => {});
-
-      return true;
+      Promise.resolve(this.$wire?.switchProfile(profileId)).catch(() => {});
     },
 
     copyText(value) {
@@ -686,47 +647,6 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
 
       this.visibleAuthorizationCount = visible;
-    },
-
-    setHistoryWarning(filter) {
-      if (!['all', 'warning', 'clean'].includes(filter)) return;
-
-      this.historyWarning = filter;
-      this.applyHistoryFilters();
-    },
-
-    toggleHistoryRuntime() {
-      this.historyShowRuntime = !this.historyShowRuntime;
-      this.applyHistoryFilters();
-    },
-
-    applyHistoryFilters() {
-      const list = this.$refs?.historyList ?? this.$root?.querySelector?.('[x-ref="historyList"]');
-
-      if (!list?.children) {
-        this.visibleHistoryCount = 0;
-
-        return;
-      }
-
-      const path = this.historyPath.toLowerCase().trim();
-      const method = this.historyMethod.toUpperCase().trim();
-      const status = this.historyStatus.trim();
-      let visible = 0;
-
-      [...list.children].forEach((profile) => {
-        const matches = (path === '' || profile.dataset.path?.includes(path))
-          && (method === '' || profile.dataset.method === method)
-          && (status === '' || profile.dataset.status === status)
-          && (this.historyShowRuntime || profile.dataset.runtime !== 'true')
-          && (this.historyWarning === 'all'
-            || (this.historyWarning === 'warning' && profile.dataset.warning === 'true')
-            || (this.historyWarning === 'clean' && profile.dataset.warning === 'false'));
-        profile.hidden = !matches;
-        if (matches) visible++;
-      });
-
-      this.visibleHistoryCount = visible;
     },
 
     setTimelineFilter(filter) {
@@ -1066,7 +986,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         if (this.paletteOpen) this.closePalette();
         else if (this.mobileToolbarMenu) this.closeMobileToolbarMenu();
         else if (this.mobileSectionsOpen) this.closeMobileSections();
-        else if (this.inspectorOpen && !this.returnToCurrentProfile()) this.closeInspector();
+        else if (this.inspectorOpen) this.closeInspector();
       }
     },
   };

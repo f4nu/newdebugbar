@@ -51,7 +51,7 @@ final class OverviewPresenter
         $links = array_values(array_filter(
             $sectionLinks,
             fn (mixed $link): bool => is_array($link)
-                && ! in_array($link['key'] ?? null, ['overview', 'request', 'history'], true)
+                && ! in_array($link['key'] ?? null, ['overview', 'request'], true)
                 && ($link['count'] ?? null) !== null
                 && ($link['active'] ?? true),
         ));

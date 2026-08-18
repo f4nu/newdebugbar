@@ -50,8 +50,8 @@ function runtime() {
 
 test('profile discovery always reaches the current toolbar after a morph', () => {
   const browser = runtime();
-  const first = { discoveries: [], noticeProfile(id, context) { this.discoveries.push([id, context.foreground]); } };
-  const second = { discoveries: [], noticeProfile(id, context) { this.discoveries.push([id, context.foreground]); } };
+  const first = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
+  const second = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
   let state = first;
   browser.document = { getElementById: () => ({}) };
   browser.Alpine = { $data: () => state };
@@ -65,8 +65,8 @@ test('profile discovery always reaches the current toolbar after a morph', () =>
     detail: { profileId: '660e8400-e29b-41d4-a716-446655440000' },
   }));
 
-  assert.deepEqual(first.discoveries, [[profileId, undefined]]);
-  assert.deepEqual(second.discoveries, [['660e8400-e29b-41d4-a716-446655440000', undefined]]);
+  assert.deepEqual(first.discoveries, [profileId]);
+  assert.deepEqual(second.discoveries, ['660e8400-e29b-41d4-a716-446655440000']);
 });
 
 test('profile discovery safely falls back to Livewire while the toolbar initializes', () => {
@@ -74,7 +74,7 @@ test('profile discovery safely falls back to Livewire while the toolbar initiali
   const discoveries = [];
   browser.document = { getElementById: () => null };
   browser.Livewire = {
-    getByName: () => [{ discoverProfile: (id) => discoveries.push(id) }],
+    getByName: () => [{ switchProfile: (id) => discoveries.push(id) }],
   };
   installProfileDiscoveryBridge(browser);
   installProfileDiscoveryBridge(browser);
@@ -94,7 +94,7 @@ test('profile discovery safely falls back to Livewire while the toolbar initiali
   })));
 });
 
-test('discovers same origin fetch and xhr profiles without replacing responses', async () => {
+test('ignores background fetch and xhr profiles without replacing responses', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
@@ -104,13 +104,10 @@ test('discovers same origin fetch and xhr profiles without replacing responses',
   xhr.send();
 
   assert.equal(response.input, '/api/search');
-  assert.deepEqual(browser.events.map((event) => event.detail), [
-    { profileId, transport: 'fetch', foreground: false, purpose: 'background' },
-    { profileId, transport: 'xhr', foreground: false, purpose: 'background' },
-  ]);
+  assert.deepEqual(browser.events, []);
 });
 
-test('marks Inertia visits as foreground and distinguishes partial reloads', async () => {
+test('discovers full Inertia visits and ignores partial reloads', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
@@ -126,11 +123,14 @@ test('marks Inertia visits as foreground and distinguishes partial reloads', asy
   xhr.setRequestHeader('X-Inertia', 'true');
   xhr.setRequestHeader('X-Inertia-Partial-Component', 'WorkOrders/Index');
   xhr.send();
+  const visit = new browser.XMLHttpRequest();
+  visit.open('GET', '/work-orders/2');
+  visit.setRequestHeader('X-Inertia', 'true');
+  visit.send();
 
   assert.deepEqual(browser.events.map((event) => event.detail), [
-    { profileId, transport: 'fetch', foreground: true, purpose: 'inertia_visit' },
-    { profileId, transport: 'fetch', foreground: false, purpose: 'inertia_partial' },
-    { profileId, transport: 'xhr', foreground: false, purpose: 'inertia_partial' },
+    { profileId, transport: 'fetch' },
+    { profileId, transport: 'xhr' },
   ]);
 });
 
@@ -166,5 +166,5 @@ test('malformed request metadata and notification failures never affect fetch re
   const malformed = { get url() { throw new Error('bad request'); } };
 
   assert.equal(await browser.fetch(malformed), response);
-  assert.equal(await browser.fetch('/api'), response);
+  assert.equal(await browser.fetch('/work-orders', { headers: { 'X-Inertia': 'true' } }), response);
 });

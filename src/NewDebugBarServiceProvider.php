@@ -15,7 +15,6 @@ use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
 use NewDebugBar\Analysis\LivewireAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
-use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
 use NewDebugBar\Analysis\TimelineBuilder;
@@ -82,7 +81,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             livewire: $app->make(LivewireAnalyzer::class),
         ));
         $this->app->singleton(ProfileSummaryPresenter::class);
-        $this->app->singleton(ProfileComparator::class);
         $this->app->singleton(SectionAnalyzer::class);
         $this->app->singleton(TimelineBuilder::class);
         $this->app->singleton(CallSiteResolver::class, fn (): CallSiteResolver => new CallSiteResolver(

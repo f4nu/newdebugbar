@@ -85,13 +85,6 @@ function visualDebugPage(string $section, string $theme)
         return $page;
     }
 
-    if ($section === 'history') {
-        $page = visit('/profiled');
-        setVisualDebugTheme($page, $theme);
-
-        return $page;
-    }
-
     if (in_array($section, ['authorization', 'lifecycle', 'messages', 'views'], true)) {
         $page = visit('/profiled-context');
         setVisualDebugTheme($page, $theme);
@@ -311,7 +304,6 @@ $visualSections = [
     'lifecycle',
     'messages',
     'livewire',
-    'history',
 ];
 $visualSectionCases = [];
 

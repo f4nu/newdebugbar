@@ -24,7 +24,6 @@
                 <span
                     class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
                     ><span data-ndb-header-mobile-status x-text="summary.status"></span
-                    ><span x-text="summary.is_current_profile ? '' : 'History profile'"></span
                 ></span>
             </span>
         </x-newdebugbar::toolbar-button>
@@ -125,7 +124,6 @@
                         x-show="summary.response_size"
                         x-text="summary.response_size"
                     ></span
-                    ><span x-text="summary.is_current_profile ? '' : 'History profile'"></span
                 ></span>
             </span>
         </x-newdebugbar::toolbar-button>

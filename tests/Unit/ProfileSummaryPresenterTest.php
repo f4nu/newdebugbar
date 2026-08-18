@@ -3,7 +3,7 @@
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Support\Redactor;
 
-function historySummaryProfile(string $requestType, array $request = [], array $sections = []): array
+function summaryProfile(string $requestType, array $request = [], array $sections = []): array
 {
     return [
         'id' => '550e8400-e29b-41d4-a716-446655440000',
@@ -29,7 +29,7 @@ function historySummaryProfile(string $requestType, array $request = [], array $
 }
 
 it('summarizes status families and response sizes for the request header', function (int $status, string $meaning) {
-    $profile = historySummaryProfile('full_page', [
+    $profile = summaryProfile('full_page', [
         'response_size_bytes' => 2_621_440,
     ]);
     $profile['sections']['request']['summary']['status'] = $status;
@@ -48,10 +48,10 @@ it('summarizes status families and response sizes for the request header', funct
 
 it('summarizes Inertia partial reloads and redirects', function () {
     $presenter = new ProfileSummaryPresenter(new Redactor);
-    $partial = $presenter->present(historySummaryProfile('inertia_partial', [
+    $partial = $presenter->present(summaryProfile('inertia_partial', [
         'headers' => ['x-inertia-partial-data' => ['stats,workOrders']],
     ]));
-    $redirect = $presenter->present(historySummaryProfile('inertia_redirect', [
+    $redirect = $presenter->present(summaryProfile('inertia_redirect', [
         'response_headers' => ['location' => ['/work-orders']],
     ]));
 

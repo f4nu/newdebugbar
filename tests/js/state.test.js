@@ -60,7 +60,6 @@ test('pins overview before alphabetized active sections while keeping selected a
       { key: 'queries', label: 'Queries', count: 3, active: true },
       { key: 'logs', label: 'Logs', count: 0, active: false },
       { key: 'cache', label: 'Cache', count: 0, active: false },
-      { key: 'history', label: 'History', active: true },
     ],
   }, browser);
 
@@ -70,15 +69,15 @@ test('pins overview before alphabetized active sections while keeping selected a
     .filter((section) => state.isSectionVisible(section))
     .map((section) => section.key);
 
-  assert.deepEqual(visibleKeys(), ['overview', 'history', 'queries']);
+  assert.deepEqual(visibleKeys(), ['overview', 'queries']);
   assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.equal(state.isSectionVisible(state.summary.sections[2]), false);
 
   state.selectSection('logs');
-  assert.deepEqual(visibleKeys(), ['overview', 'history', 'logs', 'queries']);
+  assert.deepEqual(visibleKeys(), ['overview', 'logs', 'queries']);
 
   state.toggleFavorite('cache');
-  assert.deepEqual(visibleKeys(), ['cache', 'overview', 'history', 'logs', 'queries']);
+  assert.deepEqual(visibleKeys(), ['cache', 'overview', 'logs', 'queries']);
   assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'system',
@@ -262,68 +261,23 @@ test('a new application profile resets stale section state and reloads open deta
   assert.equal(state.eventSearch, '');
   assert.equal(detailsLoaded, 1);
 
-  state.selected = 'history';
-  state.historyPath = '/profiled';
-  state.switchProfile({ ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' });
-  await Promise.resolve();
-
-  assert.equal(state.selected, 'history');
-  assert.equal(state.historyPath, '/profiled');
-  assert.equal(detailsLoaded, 2);
-
   state.inspectorOpen = false;
   state.selected = 'missing';
   state.switchProfile(summary);
   assert.equal(state.selected, 'overview');
 });
 
-test('background profiles refresh loaded history without switching the active profile', async () => {
-  const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
-  const discoveredProfileId = '550e8400-e29b-41d4-a716-446655440000';
-  const state = createNewDebugBar({ ...summary, id: activeProfileId }, runtime());
-  let discovered = null;
-  state.$wire = { discoverProfile: async (id) => { discovered = id; } };
-  state.$nextTick = (callback) => callback();
-
-  state.noticeProfile(discoveredProfileId);
-  await Promise.resolve();
-
-  assert.equal(discovered, discoveredProfileId);
-  assert.equal(state.summary.id, activeProfileId);
-
-  state.noticeProfile('not-a-profile');
-  assert.equal(discovered, discoveredProfileId);
-});
-
-test('Escape returns from a retained History profile before closing the inspector', async () => {
-  const state = createNewDebugBar({ ...summary, is_current_profile: false }, runtime());
-  let returned = 0;
-  state.inspectorOpen = true;
-  state.$wire = { returnToCurrent: async () => returned++ };
-
-  state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
-  await Promise.resolve();
-
-  assert.equal(returned, 1);
-  assert.equal(state.inspectorOpen, true);
-});
-
-test('foreground profiles replace the current profile instead of entering background history', async () => {
+test('foreground profiles replace the current profile', async () => {
   const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
   const visitProfileId = '550e8400-e29b-41d4-a716-446655440000';
   const state = createNewDebugBar({ ...summary, id: activeProfileId }, runtime());
   let switched = null;
-  let discovered = null;
-  state.$wire = {
-    switchProfile: async (id) => { switched = id; },
-    discoverProfile: async (id) => { discovered = id; },
-  };
+  state.$wire = { switchProfile: async (id) => { switched = id; } };
 
-  state.noticeProfile(visitProfileId, { foreground: true, purpose: 'inertia_visit' });
+  state.noticeProfile(visitProfileId);
   await Promise.resolve();
 
   assert.equal(switched, visitProfileId);
-  assert.equal(discovered, null);
 });
 
 test('stale detail responses cannot resync panels for a newer profile', async () => {
@@ -754,52 +708,6 @@ test('view headers sort names and render counts in both directions', () => {
   assert.equal(state.viewSortDirection, 'asc');
 });
 
-test('history controls combine path method status and warning filters', () => {
-  const state = createNewDebugBar(summary, runtime());
-  const profile = (path, method, status, warning, runtimeProfile = false) => ({
-    dataset: { path, method, status: String(status), warning: String(warning), runtime: String(runtimeProfile) },
-    hidden: false,
-  });
-  const current = profile('/profiled', 'GET', 200, false);
-  const failed = profile('/profiled', 'POST', 422, true);
-  const other = profile('/clinics', 'GET', 200, true);
-  const command = profile('artisan:migrate', 'CLI', 0, false, true);
-  state.$refs = { historyList: { children: [current, failed, other, command] } };
-
-  state.applyHistoryFilters();
-  assert.equal(state.visibleHistoryCount, 3);
-  assert.equal(command.hidden, true);
-
-  state.toggleHistoryRuntime();
-  assert.equal(state.visibleHistoryCount, 4);
-  assert.equal(command.hidden, false);
-  state.toggleHistoryRuntime();
-
-  state.historyPath = 'PROFILED';
-  state.historyMethod = 'post';
-  state.historyStatus = '422';
-  state.setHistoryWarning('warning');
-  assert.equal(current.hidden, true);
-  assert.equal(failed.hidden, false);
-  assert.equal(other.hidden, true);
-  assert.equal(state.visibleHistoryCount, 1);
-
-  state.historyPath = '';
-  state.historyMethod = '';
-  state.historyStatus = '';
-  state.setHistoryWarning('clean');
-  assert.equal(current.hidden, false);
-  assert.equal(failed.hidden, true);
-  assert.equal(state.visibleHistoryCount, 1);
-
-  state.setHistoryWarning('invalid');
-  assert.equal(state.historyWarning, 'clean');
-
-  state.$refs = {};
-  state.applyHistoryFilters();
-  assert.equal(state.visibleHistoryCount, 0);
-});
-
 test('timeline controls filter sections and search labels', () => {
   const state = createNewDebugBar({
     ...summary,
@@ -850,8 +758,13 @@ test('event controls separate framework noise from application events', () => {
   state.applyEventFilters();
   assert.equal(application.hidden, false);
 
+  state.setEventSource('framework');
+  assert.equal(state.eventSource, 'framework');
+  assert.equal(framework.hidden, true);
+  assert.equal(application.hidden, true);
+
   state.setEventSource('invalid');
-  assert.equal(state.eventSource, 'application');
+  assert.equal(state.eventSource, 'framework');
 
   state.$refs = {};
   state.applyEventFilters();
@@ -993,6 +906,9 @@ test('favorite guards and drop positions preserve a valid order', () => {
   assert.equal(state.favoriteDrop, 'overview');
   state.leaveFavorite('queries');
   assert.equal(state.favoriteDrop, 'overview');
+  state.leaveFavorite('overview');
+  assert.equal(state.favoriteDrop, null);
+  state.hoverFavorite('overview');
   state.dropFavorite('overview');
   assert.deepEqual(state.favorites, ['logs', 'overview', 'queries']);
 

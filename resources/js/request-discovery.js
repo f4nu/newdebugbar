@@ -38,17 +38,16 @@ const requestFacts = (runtime, input, init = {}) => {
         && !url.pathname.includes('/livewire/'),
       livewire: livewire !== null,
       foreground: inertia !== null && inertiaPartial === null,
-      purpose: inertia !== null ? (inertiaPartial !== null ? 'inertia_partial' : 'inertia_visit') : 'background',
       url,
     };
   } catch {
-    return { eligible: false, livewire: false, foreground: false, purpose: 'background', url: null };
+    return { eligible: false, livewire: false, foreground: false, url: null };
   }
 };
 
 const notify = (runtime, response, transport, facts) => {
   try {
-    if (!facts.eligible || facts.livewire) return;
+    if (!facts.eligible || facts.livewire || !facts.foreground) return;
 
     const responseUrl = response?.url ? new URL(response.url, runtime.location.href) : facts.url;
     if (!responseUrl || responseUrl.origin !== runtime.location.origin) return;
@@ -60,8 +59,6 @@ const notify = (runtime, response, transport, facts) => {
       detail: {
         profileId,
         transport,
-        foreground: facts.foreground,
-        purpose: facts.purpose,
       },
     }));
   } catch {
@@ -82,13 +79,12 @@ export function installProfileDiscoveryBridge(runtime = window) {
       const state = root ? runtime.Alpine?.$data?.(root) : null;
 
       if (typeof state?.noticeProfile === 'function') {
-        state.noticeProfile(profileId, event.detail);
+        state.noticeProfile(profileId);
         return;
       }
 
       const toolbar = runtime.Livewire?.getByName?.('newdebugbar.toolbar')?.[0];
-      const action = event.detail?.foreground ? toolbar?.switchProfile : toolbar?.discoverProfile;
-      Promise.resolve(action?.call?.(toolbar, profileId)).catch(() => {});
+      Promise.resolve(toolbar?.switchProfile?.(profileId)).catch(() => {});
     } catch {
       // A stale or unavailable toolbar must never affect the host request.
     }
@@ -138,7 +134,6 @@ export function installRequestDiscovery(runtime = window) {
     const facts = requestFacts(runtime, this[XHR_URL]);
     facts.livewire = this[XHR_LIVEWIRE];
     facts.foreground = this[XHR_INERTIA] && !this[XHR_INERTIA_PARTIAL];
-    facts.purpose = this[XHR_INERTIA_PARTIAL] ? 'inertia_partial' : (this[XHR_INERTIA] ? 'inertia_visit' : 'background');
     this.addEventListener?.('loadend', () => notify(runtime, {
       url: this.responseURL,
       headers: { get: (name) => this.getResponseHeader?.(name) },

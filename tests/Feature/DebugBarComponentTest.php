@@ -64,10 +64,6 @@ it('locks server-owned profile state', function () {
         ->toThrow(Exception::class);
 
     expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
-        ->set('currentProfileId', 'changed'))
-        ->toThrow(Exception::class);
-
-    expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
         ->set('summary.status', 500))
         ->toThrow(Exception::class);
 
@@ -192,8 +188,7 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
                 && $sections['views']['finding_count'] === 1
                 && $sections['timeline']['active'] === true
                 && $sections['timeline']['attention'] === true
-                && $sections['timeline']['incomplete'] === true
-                && $sections['history']['active'] === true;
+                && $sections['timeline']['incomplete'] === true;
         })
         ->call('loadDetails')
         ->assertDontSeeHtml('data-ndb-findings')
@@ -279,71 +274,7 @@ it('uses the shared presenter for deferred query details and findings', function
         ->assertSet('profile.findings.0.rule_id', 'query.repeated');
 });
 
-it('loads retained history and compares requests from the same path', function () {
-    $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-
-    Livewire::test(DebugBar::class, ['profileId' => $currentId])
-        ->assertSet('summary.sections', function (array $sections): bool {
-            $keys = collect($sections)->pluck('key');
-
-            return $keys->filter(fn (string $key): bool => $key === 'history')->count() === 1
-                && $keys->contains('timeline');
-        })
-        ->call('loadDetails')
-        ->assertSet('history.0.is_current', true)
-        ->assertSet('history.0.is_selected', true)
-        ->assertSet('history.1.comparable', true)
-        ->call('compareWith', $firstId)
-        ->assertSet('comparisonProfileId', $firstId)
-        ->assertSet('comparison.path', '/profiled')
-        ->assertSet('comparison.metrics.0.key', 'duration_ms')
-        ->assertSee('Compare requests')
-        ->assertSee('Earlier request:')
-        ->assertSee('Current request:')
-        ->call('clearComparison')
-        ->assertSet('comparisonProfileId', null)
-        ->assertSet('comparison', []);
-});
-
-it('adds a discovered background profile to history without switching profiles', function () {
-    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-    $backgroundId = $this->getJson('/api/plain-json')
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-
-    Livewire::test(DebugBar::class, ['profileId' => $currentId])
-        ->call('loadDetails')
-        ->call('discoverProfile', $backgroundId)
-        ->assertSet('profileId', $currentId)
-        ->assertSet('discoveredProfileId', $backgroundId)
-        ->assertSet('history.0.is_current', true)
-        ->assertSet('history.1.id', $backgroundId)
-        ->assertSet('history.1.path', '/api/plain-json')
-        ->assertDispatched('newdebugbar-content-updated');
-});
-
-it('rejects comparisons from a different path', function () {
-    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-    $otherId = $this->get('/profiled-next', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-
-    Livewire::test(DebugBar::class, ['profileId' => $currentId])
-        ->call('loadDetails')
-        ->call('compareWith', $otherId)
-        ->assertStatus(422);
-});
-
-it('switches to an exact retained application profile', function () {
+it('switches to an exact foreground application profile', function () {
     $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
         ->headers->get('X-NewDebugBar-Profile');
@@ -356,35 +287,25 @@ it('switches to an exact retained application profile', function () {
         ->assertSet('detailsLoaded', true)
         ->call('switchProfile', $nextId)
         ->assertSet('profileId', $nextId)
-        ->assertSet('currentProfileId', $nextId)
         ->assertSet('summary.path', '/profiled-next')
         ->assertSet('detailsLoaded', false)
-        ->assertSet('history', [])
         ->assertDispatched('newdebugbar-profile-switched');
 });
 
-it('opens any retained profile without losing the current foreground request', function () {
+it('switches to the latest traced request without retained history', function () {
     $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
         ->headers->get('X-NewDebugBar-Profile');
-    $backgroundId = $this->getJson('/api/plain-json')
+    $latestId = $this->getJson('/api/plain-json')
         ->assertOk()
         ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $currentId])
-        ->call('selectProfile', $backgroundId)
-        ->assertSet('profileId', $backgroundId)
-        ->assertSet('currentProfileId', $currentId)
-        ->assertSet('summary.path', '/api/plain-json')
-        ->assertSet('summary.is_current_profile', false)
         ->call('loadDetails')
-        ->assertSet('history.0.id', $currentId)
-        ->assertSet('history.0.is_current', true)
-        ->assertSet('history.1.id', $backgroundId)
-        ->assertSet('history.1.is_selected', true)
-        ->call('returnToCurrent')
-        ->assertSet('profileId', $currentId)
-        ->assertSet('currentProfileId', $currentId)
-        ->assertSet('summary.is_current_profile', true)
+        ->assertSet('detailsLoaded', true)
+        ->call('refreshProfileTrace', $latestId)
+        ->assertSet('profileId', $latestId)
+        ->assertSet('summary.path', '/api/plain-json')
+        ->assertSet('detailsLoaded', false)
         ->assertDispatched('newdebugbar-profile-switched');
 });

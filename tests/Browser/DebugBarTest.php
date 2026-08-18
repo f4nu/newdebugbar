@@ -379,7 +379,7 @@ it('uses one non-sticky title and description hierarchy for every section', func
             })()
             JS);
 
-    foreach (['authorization', 'lifecycle', 'views', 'history'] as $section) {
+    foreach (['authorization', 'lifecycle', 'views'] as $section) {
         $page
             ->click("[data-ndb-select-section=\"{$section}\"]")
             ->assertScript(<<<JS
@@ -620,7 +620,7 @@ it('keeps package asset updates inside Livewire navigation', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('discovers background fetch profiles without switching reloading or flashing the host', function () {
+it('ignores background fetch profiles without switching reloading or flashing the host', function () {
     $page = visit('/profiled')
         ->assertScript(<<<'JS'
             (() => {
@@ -652,8 +652,7 @@ it('discovers background fetch profiles without switching reloading or flashing 
 
                 return window.__newDebugBarFetchSentinel === true
                     && state.summary.id === window.__newDebugBarActiveProfile
-                    && discoveries.length === 2
-                    && discoveries[0] !== discoveries[1]
+                    && discoveries.length === 0
                     && location.pathname === '/profiled'
                     && document.querySelectorAll('#newdebugbar').length === 1;
             })()
@@ -661,9 +660,8 @@ it('discovers background fetch profiles without switching reloading or flashing 
         ->assertVisible('[data-testid="host-page"]')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
-        ->click('[data-ndb-select-section="history"]')
-        ->assertSee('A background request was added to History.')
-        ->assertSee('/api/plain-json')
+        ->assertMissing('[data-ndb-select-section="history"]')
+        ->assertMissing('[data-ndb-section-panel="history"]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -752,9 +750,6 @@ it('shows correlated changes and copies only prepared component details', functi
         ->wait(1)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
-        ->click('[data-ndb-select-section="history"]')
-        ->click('[data-ndb-open-profile]')
-        ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]')
         ->assertVisible('[data-ndb-livewire]')
         ->assertSee('Search changed')
@@ -801,11 +796,8 @@ it('shows correlated changes and copies only prepared component details', functi
 it('shows a safe event trace without claiming an unobserved recipient', function () {
     $page = visit('/profiled-livewire')
         ->click('[data-testid="announce-check-in"]')
-        ->wait(0.5)
+        ->wait(1)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
-        ->click('[data-ndb-select-section="history"]')
-        ->click('[data-ndb-open-profile]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]')
         ->click('[data-ndb-livewire-tab="events"]')
@@ -852,11 +844,8 @@ it('shows a safe event trace without claiming an unobserved recipient', function
 it('leads with a proven slow Livewire problem', function () {
     visit('/profiled-livewire')
         ->click('[data-testid="slow-review"]')
-        ->wait(0.5)
+        ->wait(1)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
-        ->click('[data-ndb-select-section="history"]')
-        ->click('[data-ndb-open-profile]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="livewire"]')
         ->assertSee('Problems to check')
@@ -900,7 +889,7 @@ it('switches every section after Livewire navigation with one active state', fun
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2);
 
-    foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'history', 'overview', 'models'] as $section) {
+    foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'overview', 'models'] as $section) {
         selectDebugSectionViaPalette($page, $section);
 
         assertDebugSectionSelected($page, $section);
@@ -1923,60 +1912,6 @@ it('filters searches sorts and shows repeated query evidence without another dis
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 0)
         ->assertSee('No queries match these filters.')
-        ->assertNoJavaScriptErrors();
-});
-
-it('filters retained history and compares the current path', function () {
-    $page = visit('/profiled')
-        ->refresh()
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
-        ->click('[data-ndb-select-section="history"]');
-
-    assertDebugSectionSelected($page, 'history');
-
-    $page
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-history-warning]')).every((button) => {
-                const style = getComputedStyle(button);
-
-                return parseFloat(style.borderBottomLeftRadius) > 0
-                    && style.borderTopColor === style.borderBottomColor;
-            })
-            JS)
-        ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length >= 2')
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-history-profile][data-runtime="true"]'))
-                .every((profile) => getComputedStyle(profile).display === 'none')
-            JS)
-        ->click('[data-ndb-history-filters] summary')
-        ->type('[data-ndb-history-method]', 'POST')
-        ->wait(0.2)
-        ->assertScript('document.querySelectorAll("[data-ndb-history-profile]:not([hidden])").length', 0)
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-history-profile]'))
-                .every((profile) => getComputedStyle(profile).display === 'none')
-            JS)
-        ->clear('[data-ndb-history-method]')
-        ->wait(0.2)
-        ->click('[data-ndb-compare-profile]')
-        ->waitForText('Compare requests')
-        ->assertPresent('[data-ndb-comparison]')
-        ->assertPresent('[data-ndb-comparison-baseline]')
-        ->assertPresent('[data-ndb-comparison-current]')
-        ->assertMissing('[data-ndb-comparison] [data-ndb-history-profile]')
-        ->assertScript('!document.querySelector("[data-ndb-comparison]").textContent.includes("#")')
-        ->assertVisible('[data-ndb-section-panel="history"]')
-        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "History"')
-        ->click('[data-ndb-open-profile]')
-        ->waitForText('Back to current request')
-        ->assertVisible('[data-ndb-section-panel="history"]')
-        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "History"')
-        ->click('[data-ndb-return-current]')
-        ->wait(0.3)
-        ->assertMissing('[data-ndb-return-current]')
-        ->assertVisible('[data-ndb-section-panel="history"]')
-        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "History"')
         ->assertNoJavaScriptErrors();
 });
 

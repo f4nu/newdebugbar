@@ -239,8 +239,7 @@
                         Collector details could not be loaded.
                     </p>
                     <p class="ndb:mt-1 ndb:text-xs ndb:text-red-700/80 ndb:dark:text-red-300/80">
-                        The request summary is still available. Retry, return to the current request, or reload the page
-                        to capture a new request.
+                        The request summary is still available. Retry or reload the page to capture a new request.
                     </p>
                     <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
                         <button
@@ -250,14 +249,6 @@
                         >
                             Retry details</button
                         ><button
-                            x-show.important="summary.is_current_profile === false"
-                            type="button"
-                            @click="returnToCurrentProfile()"
-                            class="ndb:rounded-lg ndb:border ndb:border-red-300 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-red-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-red-500 ndb:dark:border-red-900 ndb:dark:text-red-200"
-                        >
-                            Back to current request</button
-                        ><button
-                            x-show.important="summary.is_current_profile !== false"
                             type="button"
                             @click="window.location.reload()"
                             class="ndb:rounded-lg ndb:border ndb:border-red-300 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-red-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-red-500 ndb:dark:border-red-900 ndb:dark:text-red-200"
@@ -316,29 +307,14 @@
                                 @includeFirst(['newdebugbar::livewire.sections.'.$sectionKey, 'newdebugbar::livewire.sections.default'], ['livewireSection' => $section])
                             </section>
                         @endforeach
-
-                        @include('newdebugbar::livewire.history-panel')
                     </div>
                 @elseif ($detailsLoaded)
                     <div class="ndb:p-8 ndb:text-center">
-                        <p class="ndb:text-sm ndb:font-semibold">This saved request is no longer available.</p>
+                        <p class="ndb:text-sm ndb:font-semibold">This request is no longer available.</p>
                         <p class="ndb:mt-1 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
                             It may have expired or been cleared.
                         </p>
-                        @if (! ($summary['is_current_profile'] ?? true))
-                            <button
-                                type="button"
-                                wire:click="returnToCurrent"
-                                wire:loading.attr="disabled"
-                                class="ndb:mt-4 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50"
-                            >
-                                Back to current request
-                            </button>
-                        @else
-                            <p class="ndb:mt-3 ndb:text-xs ndb:font-semibold">
-                                Reload the page to capture a new request.
-                            </p>
-                        @endif
+                        <p class="ndb:mt-3 ndb:text-xs ndb:font-semibold">Reload the page to capture a new request.</p>
                     </div>
                 @endif
             </main>

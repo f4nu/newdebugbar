@@ -14,7 +14,6 @@
             syncSectionPanels();
             applyViewSort();
             applyAuthorizationFilters();
-            applyHistoryFilters();
             applyTimelineFilters();
             applyEventFilters();
             applyLogFilters();
