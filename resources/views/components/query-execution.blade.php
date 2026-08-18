@@ -62,29 +62,31 @@
     ])
 >
     <summary class="ndb:flex ndb:min-h-12 ndb:cursor-pointer ndb:list-none ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:px-4 ndb:py-3 ndb:transition ndb:hover:bg-zinc-50/70 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-900/60">
-        <span data-ndb-query-execution-number class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400"
+        <span data-ndb-query-execution-number class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400"
             >#{{ $query['execution'] }}</span>
         <span
             data-ndb-query-connection
             title="{{ $query['connection'] }}"
-            class="ndb:max-w-20 ndb:truncate ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400"
+            class="ndb:max-w-20 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400"
         >{{ $query['connection'] }}</span>
-        <span class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $query['query_type'] }}</span>
+        <span class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $query['query_type'] }}</span>
         @if ($query['slow'])
-            <span class="ndb:text-[10px] ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300">Slow</span>
+            <span class="ndb:text-[11px] ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300">Slow</span>
         @endif
         @unless ($grouped)
             <code
                 title="{{ $query['normalized_sql'] ?? $sql }}"
-                class="ndb:hidden ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[10px] ndb:text-zinc-500 ndb:sm:block ndb:dark:text-zinc-400"
+                class="ndb:hidden ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:sm:block ndb:dark:text-zinc-400"
             >{{ $query['normalized_sql'] ?? $sql }}</code>
         @endunless
         <span
-            data-ndb-query-percent
-            class="ndb:ml-auto ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
-        >{{ $query['query_time_percent'] }}% of query time</span>
-        <span data-ndb-query-duration class="ndb:min-w-12 ndb:text-right ndb:text-xs ndb:font-bold ndb:tabular-nums"
-            >{{ $query['duration_ms'] }} ms</span>
+            data-ndb-query-timing
+            class="ndb:ml-auto ndb:flex ndb:min-w-24 ndb:shrink-0 ndb:flex-col ndb:items-end ndb:text-right ndb:tabular-nums"
+        >
+            <span data-ndb-query-duration class="ndb:text-xs ndb:font-bold">{{ $query['duration_ms'] }} ms</span>
+            <span data-ndb-query-percent class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                >{{ $query['query_time_percent'] }}% of query time</span>
+        </span>
         <x-newdebugbar::icon
             name="chevron-down"
             class="ndb-details-chevron ndb:size-3.5 ndb:shrink-0 ndb:text-zinc-400 ndb:transition"
@@ -119,7 +121,7 @@
                                 @click="queryTab = 'bindings'"
                                 @keydown.right.prevent="queryTab = @js($stack !== [] ? 'stack' : 'bindings'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
                                 @keydown.left.prevent="queryTab = @js($stack !== [] ? 'stack' : 'bindings'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
-                                class="ndb:min-h-8 ndb:whitespace-nowrap ndb:rounded-md ndb:border ndb:border-transparent ndb:px-3 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                class="ndb:min-h-8 ndb:whitespace-nowrap ndb:rounded-md ndb:border ndb:border-transparent ndb:px-3 ndb:py-1.5 ndb:text-[11px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                                 :class="queryTab === 'bindings'
                                     ? 'ndb:border-zinc-200 ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:dark:border-zinc-700 ndb:dark:bg-zinc-700 ndb:dark:text-indigo-200'
                                     : 'ndb:text-zinc-600 ndb:hover:bg-white/60 ndb:hover:text-zinc-950 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-700/70 ndb:dark:hover:text-white'"
@@ -143,7 +145,7 @@
                                 @click="queryTab = 'stack'"
                                 @keydown.right.prevent="queryTab = @js($bindings !== [] ? 'bindings' : 'stack'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
                                 @keydown.left.prevent="queryTab = @js($bindings !== [] ? 'bindings' : 'stack'); $nextTick(() => $el.parentElement.querySelector('[aria-selected=true]')?.focus())"
-                                class="ndb:min-h-8 ndb:whitespace-nowrap ndb:rounded-md ndb:border ndb:border-transparent ndb:px-3 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                class="ndb:min-h-8 ndb:whitespace-nowrap ndb:rounded-md ndb:border ndb:border-transparent ndb:px-3 ndb:py-1.5 ndb:text-[11px] ndb:font-bold ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                                 :class="queryTab === 'stack'
                                     ? 'ndb:border-zinc-200 ndb:bg-white ndb:text-indigo-700 ndb:shadow-sm ndb:dark:border-zinc-700 ndb:dark:bg-zinc-700 ndb:dark:text-indigo-200'
                                     : 'ndb:text-zinc-600 ndb:hover:bg-white/60 ndb:hover:text-zinc-950 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-700/70 ndb:dark:hover:text-white'"
@@ -199,7 +201,7 @@
                 >
                     <ol class="ndb:divide-y ndb:divide-zinc-100 ndb:dark:divide-zinc-800/80">
                         @foreach ($stack as $frame)
-                            <li class="ndb:grid ndb:min-w-0 ndb:gap-0.5 ndb:py-2.5 ndb:text-[10px] ndb:sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] ndb:sm:gap-4">
+                            <li class="ndb:grid ndb:min-w-0 ndb:gap-0.5 ndb:py-2.5 ndb:text-[11px] ndb:sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] ndb:sm:gap-4">
                                 <code
                                     title="{{ $frame['file'] }}:{{ $frame['line'] }}"
                                     class="ndb:min-w-0 ndb:truncate ndb:font-semibold"
@@ -215,7 +217,7 @@
                     </ol>
                 </div>
             @elseif (($query['callsite'] ?? null) !== null)
-                <p class="ndb:border-t ndb:border-zinc-200/80 ndb:px-4 ndb:py-3 ndb:text-[10px] ndb:dark:border-zinc-800">
+                <p class="ndb:border-t ndb:border-zinc-200/80 ndb:px-4 ndb:py-3 ndb:text-[11px] ndb:dark:border-zinc-800">
                     <span class="ndb:font-semibold ndb:text-zinc-400">Application call site</span>
                     <code class="ndb:ml-2 ndb:font-semibold">{{ $query['callsite']['file'] }}:{{ $query['callsite']['line'] }}</code>
                 </p>
@@ -230,7 +232,7 @@
             wire:loading
             wire:target="explainQuery({{ $query['execution'] }})"
             data-ndb-query-explain-loading
-            class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:px-3 ndb:py-3 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60 ndb:dark:text-zinc-400"
+            class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:px-3 ndb:py-3 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60 ndb:dark:text-zinc-400"
         >
             <span class="ndb:flex ndb:items-center ndb:gap-2">
                 <span class="ndb:size-1.5 ndb:shrink-0 ndb:animate-pulse ndb:rounded-full ndb:bg-indigo-500 ndb:motion-reduce:animate-none"></span>
@@ -243,7 +245,7 @@
                 data-ndb-query-explain-result
                 class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:p-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60"
             >
-                <p class="ndb:mb-2 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                <p class="ndb:mb-2 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                     <span x-text="queryExplain.mode"></span><span x-text="queryExplain.driver"></span>
                 </p>
                 <pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json" x-text="JSON.stringify(queryExplain.rows, null, 2)"></code></pre>
@@ -253,7 +255,7 @@
         <template x-if="queryExplainError !== null">
             <p
                 data-ndb-query-explain-error
-                class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20 ndb:dark:text-amber-300"
+                class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20 ndb:dark:text-amber-300"
                 x-text="queryExplainError"
             ></p>
         </template>

@@ -44,6 +44,12 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
         ->wait(0.2)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
+        ->assertVisible('[data-ndb-mobile-toolbar-action="theme"]')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'light')
+        ->click('[data-ndb-mobile-toolbar-action="theme"]')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-mobile-toolbar-menu=\"actions\"]")).display === "none"')
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-popover-arrow="actions"]')
         ->assertScript(<<<'JS'
             (() => {

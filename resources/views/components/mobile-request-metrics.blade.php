@@ -46,12 +46,12 @@
         >
             <span
                 data-ndb-mobile-toolbar-summary="{{ $metric['key'] }}"
-                class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[10px] ndb:font-bold ndb:leading-4 ndb:tabular-nums ndb:min-[360px]:text-[11px]"
+                class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
                 x-text="{{ $metric['value'] }}"
             ></span>
             <span
                 data-ndb-mobile-toolbar-metric-label="{{ $metric['key'] }}"
-                class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[8px] ndb:font-semibold ndb:leading-3 ndb:uppercase ndb:tracking-normal ndb:text-zinc-400 ndb:min-[360px]:text-[9px]"
+                class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:leading-[14px] ndb:uppercase ndb:tracking-normal ndb:text-zinc-400"
                 ><span class="ndb:min-[360px]:hidden">{{ $metric['shortLabel'] }}</span
                 ><span class="ndb:hidden ndb:min-[360px]:inline">{{ $metric['label'] }}</span></span>
         </button>

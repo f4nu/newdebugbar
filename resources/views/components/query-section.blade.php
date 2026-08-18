@@ -19,7 +19,7 @@
 @endphp
 
 <div data-ndb-queries class="ndb:space-y-4">
-    <div class="ndb:flex ndb:gap-1 ndb:overflow-x-auto" role="group" aria-label="Filter queries">
+    <x-newdebugbar::filter-tabs label="Filter queries">
         @foreach ($queryFilters as $filter => [$label, $count])
             <x-newdebugbar::filter-tab
                 data-ndb-query-filter="{{ $filter }}"
@@ -29,16 +29,16 @@
                 <span>{{ $label }}</span>
                 <span
                     data-ndb-query-filter-count="{{ $filter }}"
-                    class="ndb:text-[10px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
+                    class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
                 >{{ $count }}</span>
             </x-newdebugbar::filter-tab>
         @endforeach
-    </div>
+    </x-newdebugbar::filter-tabs>
 
     <div class="ndb:flex ndb:flex-col ndb:gap-2 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between">
         <p
             data-ndb-query-result-count
-            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
         >
             <span data-ndb-query-result-label>
                 <span x-text="visibleQueryCount"></span>
@@ -116,19 +116,19 @@
                         <h3 class="ndb:text-sm ndb:font-bold">Repeated pattern</h3>
                         <p
                             data-ndb-query-group-count
-                            class="ndb:mt-1 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            class="ndb:mt-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
                         >
                             {{ $group['count'] }} executions,
                             <span data-ndb-query-group-extra>{{ $group['extra_executions'] }} extra {{ $group['extra_executions'] === 1 ? 'run' : 'runs' }}</span>
                         </p>
                         <pre
                             data-ndb-query-group-pattern
-                            class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:font-mono ndb:text-[10px] ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                            class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                         ><code data-ndb-language="sql">{{ $group['sql'] }}</code></pre>
                     </div>
                     <div class="ndb:shrink-0 ndb:text-right">
                         @if ($group['likely_n_plus_one'])
-                            <p class="ndb:text-[10px] ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300">
+                            <p class="ndb:text-[11px] ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300">
                                 Likely N+1 pattern
                             </p>
                         @endif

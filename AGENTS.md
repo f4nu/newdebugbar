@@ -32,6 +32,8 @@
 
 ## Checking interface work
 
+- Keep every Blade file under 500 lines. Split screens by product section and extract repeated controls into package components before a view reaches that limit.
+
 - Start with the built-in browser.
 - Use the canonical example repositories to check Blade, Livewire, and Inertia:
   - Blade: local `../example-blade-app` at `http://example-blade-app.test`; GitHub `newdebugbar/example-blade-app` at `https://github.com/newdebugbar/example-blade-app`

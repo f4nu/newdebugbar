@@ -34,7 +34,30 @@ function selectDebugSectionViaPalette($page, string $section): void
 it('opens every compact toolbar destination and shrinks cleanly', function () {
     $page = visit('/profiled')
         ->assertPresent('[data-testid="host-page"]')
-        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]');
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->assertMissing('[data-ndb-toolbar-status-meaning]')
+        ->assertVisible('[data-ndb-toolbar-action="theme"]')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'light')
+        ->click('[data-ndb-toolbar-action="theme"]')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->click('[data-ndb-toolbar-action="theme"]')
+        ->assertAttribute('#newdebugbar', 'data-theme', 'light')
+        ->assertScript(<<<'JS'
+            (() => {
+                const theme = document.querySelector('[data-ndb-toolbar-action="theme"]');
+                const icon = theme?.querySelector('span:not([style*="display: none"]) svg');
+
+                if (! theme || ! icon) return false;
+
+                const center = (element) => {
+                    const bounds = element.getBoundingClientRect();
+
+                    return bounds.top + bounds.height / 2;
+                };
+
+                return Math.abs(center(theme) - center(icon)) <= 0.5;
+            })()
+            JS);
 
     foreach ([
         'expand' => 'overview',
@@ -57,7 +80,24 @@ it('opens every compact toolbar destination and shrinks cleanly', function () {
         if ($toolbar === 'expand') {
             $page
                 ->assertScript('document.querySelector("[data-ndb-header-memory]").textContent.includes("MB")')
-                ->assertScript('document.querySelector("[data-ndb-header-status-meaning]").textContent.trim() === "Success"')
+                ->assertMissing('[data-ndb-header-status-meaning]')
+                ->assertScript(<<<'JS'
+                    (() => {
+                        const center = (element) => {
+                            const bounds = element.getBoundingClientRect();
+
+                            return bounds.top + bounds.height / 2;
+                        };
+                        const section = document.querySelector('[data-ndb-section="queries"]');
+                        const favorite = section.querySelector('[data-ndb-toggle-favorite]');
+                        const count = section.querySelector('.ndb-section-count');
+                        const theme = document.querySelector('[data-ndb-inspector-action="theme"]');
+
+                        return Math.abs(center(favorite) - center(favorite.querySelector('svg'))) <= 0.5
+                            && Math.abs(center(favorite) - center(count)) <= 0.5
+                            && Math.abs(center(theme) - center(theme.querySelector('svg'))) <= 0.5;
+                    })()
+                    JS)
                 ->assertScript('/^\\d+(?:\\.\\d{2})? (?:B|KB|MB)$/.test(document.querySelector("[data-ndb-header-response-size]").textContent.trim())');
         }
 
@@ -81,9 +121,6 @@ it('provides stateful window controls and closes until reload', function () {
                 const close = controls.querySelector('[data-ndb-window-action="close"]');
                 const utility = document.querySelector('[data-ndb-toolbar-utility-actions]');
                 const separator = document.querySelector('[data-ndb-toolbar-actions] [data-ndb-window-controls-separator]');
-                const utilityBox = utility.getBoundingClientRect();
-                const separatorBox = separator.getBoundingClientRect();
-                const controlsBox = controls.getBoundingClientRect();
 
                 return expand.disabled === false
                     && shrink.disabled === true
@@ -91,9 +128,8 @@ it('provides stateful window controls and closes until reload', function () {
                     && Number.parseFloat(getComputedStyle(shrink).opacity) < Number.parseFloat(getComputedStyle(expand).opacity)
                     && utility.getAttribute('aria-label') === 'Tools'
                     && controls.getAttribute('aria-label') === 'Window controls'
-                    && separatorBox.left >= utilityBox.right
-                    && separatorBox.right <= controlsBox.left
-                    && separatorBox.height > 0;
+                    && separator === null
+                    && Number.parseFloat(getComputedStyle(utility.parentElement).columnGap) > 0;
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -138,16 +174,13 @@ it('provides stateful window controls and closes until reload', function () {
                 const utility = document.querySelector('[data-ndb-inspector-utility-actions]');
                 const separator = document.querySelector('[data-ndb-inspector-actions] [data-ndb-window-controls-separator]');
                 const utilityBox = utility.getBoundingClientRect();
-                const separatorBox = separator.getBoundingClientRect();
                 const controlsBox = controls.getBoundingClientRect();
 
                 return utility.getAttribute('aria-label') === 'Tools'
                     && controls.getAttribute('aria-label') === 'Window controls'
                     && utilityBox.right < controlsBox.left
-                    && separatorBox.width >= 1
-                    && separatorBox.height > 0
-                    && Boolean(utility.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING)
-                    && Boolean(separator.compareDocumentPosition(controls) & Node.DOCUMENT_POSITION_FOLLOWING);
+                    && separator === null
+                    && Number.parseFloat(getComputedStyle(utility.parentElement).columnGap) > 0;
             })()
             JS)
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
@@ -427,7 +460,9 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && Math.abs(window.innerWidth - box.right) <= 1;
             })()
             JS)
-        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->wait(0.2)
+        ->click('[data-ndb-header-mobile-action="shrink"]')
         ->wait(0.2)
         ->assertScript(<<<'JS'
             (() => {
@@ -888,6 +923,14 @@ it('filters the timeline without inventing spans for point events', function () 
         ->assertVisible('[data-ndb-timeline-waterfall]')
         ->assertScript(<<<'JS'
             (() => {
+                const subtitles = Array.from(document.querySelectorAll('[data-ndb-timeline-activity-section]'));
+
+                return subtitles.length > 0
+                    && subtitles.every((subtitle) => getComputedStyle(subtitle).textTransform === 'none');
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
                 const toolbarBounds = toolbar.getBoundingClientRect();
                 const overview = document.querySelector('[data-ndb-timeline-overview]').getBoundingClientRect();
@@ -1020,10 +1063,10 @@ it('presents useful model evidence with progressive controls', function () {
         ->assertSee('studio_jobs')
         ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record]").length', 6)
         ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record][data-loads]:not([data-loads=\"1\"])").length', 5)
-        ->assertScript('document.querySelector("[data-ndb-model-group]:first-of-type [data-ndb-model-raw]").open === false')
+        ->assertMissing('[data-ndb-model-raw]')
+        ->assertDontSee('raw events')
         ->click('[data-ndb-model-expand-all]')
         ->assertScript('Array.from(document.querySelectorAll("[data-ndb-model-group]")).every((group) => group.open)')
-        ->assertScript('Array.from(document.querySelectorAll("[data-ndb-model-raw]")).every((group) => ! group.open)')
         ->click('[data-ndb-model-expand-all]')
         ->assertScript('Array.from(document.querySelectorAll("[data-ndb-model-group]")).every((group) => ! group.open)')
         ->assertNoJavaScriptErrors();
@@ -1035,9 +1078,9 @@ it('keeps model evidence contained on a narrow screen', function () {
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->click('[data-ndb-mobile-toolbar-action="inspector"]')
         ->wait(0.2)
-        ->click('[data-ndb-inspector-action="palette"]')
-        ->click('[data-ndb-command="collectors:show"]')
-        ->wait(0.1)
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="palette"]')
+        ->assertVisible('[data-ndb-command="section:models"]')
         ->click('[data-ndb-command="section:models"]')
         ->assertVisible('[data-ndb-section-panel="models"]')
         ->assertScript(<<<'JS'
@@ -1114,7 +1157,8 @@ it('presents grouped Laravel activity with useful controls', function () {
                 const style = getComputedStyle(button);
 
                 return parseFloat(style.borderBottomLeftRadius) > 0
-                    && style.borderTopColor === style.borderBottomColor;
+                    && style.borderTopColor === style.borderBottomColor
+                    && ! style.transitionProperty.includes('border');
             })
             JS)
         ->click('[data-ndb-event-source="application"]')
@@ -1143,21 +1187,6 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('uses light dividers above expanded shared JSON details', function () {
-    $page = visit('/profiled-models');
-    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
-
-    $page
-        ->refresh()
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
-        ->click('[data-ndb-select-section="models"]')
-        ->click('[data-ndb-model-group]:first-of-type > summary')
-        ->click('[data-ndb-model-group]:first-of-type [data-ndb-model-raw] > summary')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-raw] pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-model-raw]")).borderTopColor')
-        ->assertNoJavaScriptErrors();
-});
-
 it('uses light dividers above expanded cache JSON details', function () {
     $page = visit('/profiled');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
@@ -1178,6 +1207,9 @@ it('shows an aligned request trace and switches request detail groups', function
         ->wait(0.2)
         ->click('[data-ndb-select-section="request"]')
         ->assertVisible('[data-ndb-request-trace]')
+        ->assertScript('document.querySelector("[data-ndb-request-status]").textContent.trim() === "200"')
+        ->assertScript('/^Completed in \\d+(?:\\.\\d+)? ms$/.test(document.querySelector("[data-ndb-request-completion]").textContent.replace(/\\s+/g, " ").trim())')
+        ->assertScript('!["Success", "Failed", "Completed successfully", "Completed with an error"].some((meaning) => document.querySelector("[data-ndb-request-trace]").textContent.includes(meaning))')
         ->assertVisible('[data-ndb-request-details]')
         ->assertScript('document.querySelector("[data-ndb-request-details]").open === false')
         ->click('[data-ndb-request-details] > summary')
@@ -1243,7 +1275,11 @@ it('sorts views from the column headers with clear direction feedback', function
             .join('|')
         JS;
 
-    visit('/profiled-views')
+    $page = visit('/profiled-views');
+    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'dark', favorites: []}))");
+
+    $page
+        ->refresh()
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="views"]')
@@ -1252,9 +1288,28 @@ it('sorts views from the column headers with clear direction feedback', function
         ->assertAttribute('[data-ndb-view-sort="name"]', 'data-ndb-view-sort', 'name')
         ->assertScript('!document.querySelector("[data-ndb-view-sort=\"name\"]").hasAttribute("aria-expanded")')
         ->assertScript('document.querySelector("[data-ndb-view-sort=\"name\"]").parentElement.getAttribute("aria-sort") === "ascending"')
+        ->assertScript(<<<'JS'
+            (() => {
+                const buttons = Array.from(document.querySelectorAll('[data-ndb-view-sort]'));
+
+                return buttons.every((button) => {
+                    const styles = getComputedStyle(button);
+
+                    return button.querySelector('svg') === null
+                        && styles.paddingTop === '0px'
+                        && styles.paddingRight === '0px'
+                        && styles.paddingBottom === '0px'
+                        && styles.paddingLeft === '0px'
+                        && styles.backgroundColor === 'rgba(0, 0, 0, 0)';
+                }) && getComputedStyle(document.querySelector('[data-ndb-view-sort="name"]')).color === 'rgb(255, 255, 255)';
+            })()
+            JS)
+        ->hover('[data-ndb-view-sort="name"]')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-sort=\\"name\\"]")).backgroundColor === "rgba(0, 0, 0, 0)"')
         ->assertScript($groupNames, 'context|original-response')
         ->click('[data-ndb-view-sort="count"]')
         ->assertScript('document.querySelector("[data-ndb-view-sort=\"count\"]").parentElement.getAttribute("aria-sort") === "descending"')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-sort=\\"count\\"]")).color === "rgb(255, 255, 255)"')
         ->assertScript($groupNames, 'original-response|context')
         ->click('[data-ndb-view-sort="count"]')
         ->assertScript('document.querySelector("[data-ndb-view-sort=\"count\"]").parentElement.getAttribute("aria-sort") === "ascending"')
@@ -1271,10 +1326,27 @@ it('presents Laravel decisions lifecycle messages and source context without edi
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
-        ->assertMissing('[data-ndb-findings]')
+        ->assertMissing('[data-ndb-findings]');
+
+    $page
         ->click('[data-ndb-select-section="authorization"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Authorization"')
         ->assertAttribute('[data-ndb-select-section="authorization"]', 'aria-current', 'page')
+        ->assertScript(<<<'JS'
+            (() => {
+                const authorization = document.querySelector('[data-ndb-authorization-filter]');
+                const events = document.querySelector('[data-ndb-event-source]');
+                const queries = document.querySelector('[data-ndb-query-filter]');
+
+                return authorization.className === events.className
+                    && events.className === queries.className
+                    && [authorization, events, queries].every((tab) =>
+                        tab.matches('[data-ndb-filter-tab]')
+                        && tab.closest('[data-ndb-filter-tabs]') !== null
+                        && ! getComputedStyle(tab).transitionProperty.includes('border')
+                    );
+            })()
+            JS)
         ->click('[data-ndb-authorization-filter="denied"]')
         ->assertAttribute('[data-ndb-authorization-filter="denied"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
@@ -1283,13 +1355,17 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->click('[data-ndb-authorization-filter="allowed"]')
         ->assertAttribute('[data-ndb-authorization-filter="allowed"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.result === "allowed"')
-        ->assertSee('inspect-profile')
+        ->assertSee('inspect-profile');
+
+    $page
         ->click('[data-ndb-select-section="lifecycle"]')
         ->assertSee('Route matching')
         ->assertSee('Route response preparation')
         ->assertSee('Final response preparation')
         ->click('[data-ndb-select-section="messages"]')
-        ->assertSee('Checkout checkpoint')
+        ->assertSee('Checkout checkpoint');
+
+    $page
         ->click('[data-ndb-select-section="views"]')
         ->click('[data-ndb-view-group] > summary')
         ->assertSee('tests/views/context.blade.php')
@@ -1331,12 +1407,38 @@ it('presents Laravel decisions lifecycle messages and source context without edi
                     && viewDataPopover.hasAttribute('x-transition:enter')
                     && viewDataPopover.getAttribute('x-transition:enter-start').includes('ndb:scale-95');
             })()
-            JS)
+            JS);
+
+    $page
         ->click('[data-ndb-view-data-trigger]')
         ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'true')
         ->assertVisible('[data-ndb-view-data-popover]')
         ->assertVisible('[data-ndb-view-data]')
         ->assertSee('view-data-value')
+        ->assertScript(<<<'JS'
+            (() => {
+                const popover = document.querySelector('[data-ndb-view-data-popover]');
+                const trigger = document.querySelector('[data-ndb-view-data-trigger]');
+                const surface = popover?.querySelector('[data-ndb-popover-surface]');
+                const arrow = popover?.querySelector('[data-ndb-popover-arrow]');
+                if (! popover || ! trigger || ! surface || ! arrow) return false;
+
+                const surfaceStyle = getComputedStyle(surface);
+                const triggerRect = trigger.getBoundingClientRect();
+                const arrowRect = arrow.getBoundingClientRect();
+
+                return Number.parseFloat(surfaceStyle.borderRadius) === 16
+                    && surfaceStyle.borderStyle === 'solid'
+                    && surfaceStyle.boxShadow !== 'none'
+                    && surfaceStyle.backdropFilter !== 'none'
+                    && Math.abs(
+                        (triggerRect.left + triggerRect.right) / 2
+                        - (arrowRect.left + arrowRect.right) / 2
+                    ) <= 4;
+            })()
+            JS);
+
+    $page
         ->assertScript(<<<'JS'
             (() => {
                 const code = document.querySelector('[data-ndb-view-data] code[data-ndb-language="json"][data-highlighted]');
@@ -1353,7 +1455,9 @@ it('presents Laravel decisions lifecycle messages and source context without edi
                     && code.querySelector('.hljs-literal') !== null
                     && getComputedStyle(property).color !== getComputedStyle(string).color;
             })()
-            JS)
+            JS);
+
+    $page
         ->keys('[data-ndb-view-data-trigger]', 'Escape')
         ->wait(0.2)
         ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
@@ -1365,7 +1469,9 @@ it('presents Laravel decisions lifecycle messages and source context without edi
                 return document.activeElement === trigger
                     && getComputedStyle(popover).display === 'none';
             })()
-            JS)
+            JS);
+
+    $page
         ->click('[data-ndb-view-data-trigger]')
         ->resize(390, 844)
         ->assertScript(<<<'JS'
@@ -1382,7 +1488,9 @@ it('presents Laravel decisions lifecycle messages and source context without edi
                     && viewDataPopover.getBoundingClientRect().left >= 0
                     && viewDataPopover.getBoundingClientRect().right <= window.innerWidth;
             })()
-            JS)
+            JS);
+
+    $page
         ->resize(1440, 900)
         ->click('[data-ndb-view-source]')
         ->wait(0.2)
@@ -1573,6 +1681,25 @@ it('highlights repeated SQL and switches query evidence tabs', function () {
         ->assertSee('Find repeated work, slow SQL, and the application code that triggered it.')
         ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=sql][data-highlighted]").length > 0')
         ->assertAttribute('[data-ndb-query-group-execution][open]', 'open', '')
+        ->assertScript(<<<'JS'
+            (() => {
+                const timing = document.querySelector('[data-ndb-query-group-execution][open] [data-ndb-query-timing]');
+                const duration = timing?.querySelector('[data-ndb-query-duration]');
+                const percent = timing?.querySelector('[data-ndb-query-percent]');
+
+                if (! timing || ! duration || ! percent) return false;
+
+                const timingStyle = getComputedStyle(timing);
+                const durationRect = duration.getBoundingClientRect();
+                const percentRect = percent.getBoundingClientRect();
+
+                return timingStyle.flexDirection === 'column'
+                    && timingStyle.alignItems === 'flex-end'
+                    && timingStyle.textAlign === 'right'
+                    && durationRect.bottom <= percentRect.top
+                    && Math.abs(durationRect.right - percentRect.right) <= 1;
+            })()
+            JS)
         ->click('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]')
         ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'aria-selected', 'true')
         ->assertScript(<<<'JS'
@@ -1597,6 +1724,34 @@ it('highlights repeated SQL and switches query evidence tabs', function () {
         ->assertAttribute('[data-ndb-query-group-execution][open] [data-ndb-query-tab="bindings"]', 'aria-selected', 'true')
         ->click('[data-ndb-query-group-execution][open] [data-ndb-query-actions] > summary')
         ->assertVisible('[data-ndb-query-group-execution][open] [data-ndb-query-actions] button:first-of-type')
+        ->assertScript(<<<'JS'
+            (() => {
+                const actions = document.querySelector('[data-ndb-query-group-execution][open] [data-ndb-query-actions]');
+                const trigger = actions?.querySelector(':scope > summary');
+                const popover = actions?.querySelector('[data-ndb-query-actions-popover]');
+                const surface = popover?.querySelector('[data-ndb-popover-surface]');
+                const arrow = popover?.querySelector('[data-ndb-popover-arrow]');
+                const firstAction = popover?.querySelector('button');
+                if (! trigger || ! popover || ! surface || ! arrow || ! firstAction) return false;
+
+                const surfaceStyle = getComputedStyle(surface);
+                const triggerRect = trigger.getBoundingClientRect();
+                const arrowRect = arrow.getBoundingClientRect();
+
+                return popover.getAttribute('role') === 'menu'
+                    && firstAction.getAttribute('role') === 'menuitem'
+                    && Number.parseFloat(getComputedStyle(firstAction).minHeight) >= 44
+                    && Number.parseFloat(getComputedStyle(firstAction).fontSize) >= 14
+                    && Number.parseFloat(surfaceStyle.borderRadius) === 16
+                    && surfaceStyle.borderStyle === 'solid'
+                    && surfaceStyle.boxShadow !== 'none'
+                    && surfaceStyle.backdropFilter !== 'none'
+                    && Math.abs(
+                        (triggerRect.left + triggerRect.right) / 2
+                        - (arrowRect.left + arrowRect.right) / 2
+                    ) <= 4;
+            })()
+            JS)
         ->keys('[data-ndb-query-group-execution][open] [data-ndb-query-actions] > summary', 'Escape')
         ->assertScript('document.querySelector("[data-ndb-query-group-execution][open] [data-ndb-query-actions]").open === false')
         ->assertNoJavaScriptErrors();
@@ -1876,10 +2031,8 @@ it('keeps the main interactions usable on a phone viewport', function () {
             getComputedStyle(document.querySelector('[data-ndb-toolbar-facts]')).display === 'none'
                 && getComputedStyle(document.querySelector('[data-ndb-toolbar-actions]')).display === 'none'
             JS)
-        ->assertScript(<<<'JS'
-            getComputedStyle(document.querySelector('[data-ndb-toolbar-status-meaning]')).display === 'none'
-                && getComputedStyle(document.querySelector('[data-ndb-toolbar-response-size]')).display === 'none'
-            JS)
+        ->assertMissing('[data-ndb-toolbar-status-meaning]')
+        ->assertScript("getComputedStyle(document.querySelector('[data-ndb-toolbar-response-size]')).display === 'none'")
         ->assertCount('[data-ndb-mobile-toolbar-metric-scope="toolbar"]', 3)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertAttribute('[data-ndb-mobile-toolbar-trigger="actions"]', 'aria-expanded', 'true')
@@ -1891,7 +2044,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
 
                 return menu.querySelector('h1, h2, h3, [role="heading"]') === null
                     && !menu.textContent.includes('Debug bar')
-                    && items.length === 3
+                    && items.length === 4
                     && items.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === items[0];
             })()

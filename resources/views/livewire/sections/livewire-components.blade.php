@@ -1,7 +1,7 @@
 <div data-ndb-livewire-components>
     <div class="ndb:mb-3">
         <h3 class="ndb:text-sm ndb:font-bold">Affected components</h3>
-        <p class="ndb:mt-0.5 ndb:max-w-2xl ndb:text-[10px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+        <p class="ndb:mt-0.5 ndb:max-w-2xl ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
             @if ($livewire['affected_hierarchy_only'] ?? true)
                 Only components observed in this request are listed. This is not a full page inventory.
             @else
@@ -34,7 +34,7 @@
                         style="padding-left: {{ 10 + $component['depth'] * 12 }}px"
                     >
                         <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold ndb:aria-selected:text-indigo-700 ndb:dark:aria-selected:text-indigo-300">{{ $component['list_label'] }}</span>
-                        <span class="ndb:mt-0.5 ndb:block ndb:truncate ndb:text-[10px] ndb:text-zinc-400">{{ $component['trigger_label'] }}</span>
+                        <span class="ndb:mt-0.5 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400">{{ $component['trigger_label'] }}</span>
                     </button>
                 @endforeach
             </div>
@@ -51,26 +51,26 @@
                             <h3 class="ndb:truncate ndb:text-lg ndb:font-bold ndb:tracking-tight">
                                 {{ $component['display_name'] }}
                             </h3>
-                            <p class="ndb:mt-1 ndb:truncate ndb:text-[10px] ndb:text-zinc-400">
+                            <p class="ndb:mt-1 ndb:truncate ndb:text-[11px] ndb:text-zinc-400">
                                 {{ $component['raw_name'] }}
                             </p>
                         </header>
 
                         <dl class="ndb:grid ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-y ndb:border-zinc-200 ndb:py-3 ndb:text-xs ndb:sm:grid-cols-3 ndb:dark:border-zinc-800">
                             <div>
-                                <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                     Trigger
                                 </dt>
                                 <dd class="ndb:mt-1 ndb:font-bold">{{ $component['trigger_label'] }}</dd>
                             </div>
                             <div>
-                                <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                     Result
                                 </dt>
                                 <dd class="ndb:mt-1 ndb:font-bold">{{ $component['result_label'] }}</dd>
                             </div>
                             <div>
-                                <dt class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                     Render
                                 </dt>
                                 <dd class="ndb:mt-1 ndb:font-bold">{{ $component['rendered_label'] }}</dd>
@@ -102,7 +102,7 @@
                                 <div class="ndb:mt-2 ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800">
                                     @foreach ($component['state_changes'] as $change)
                                         <div class="ndb:grid ndb:gap-2 ndb:border-b ndb:border-zinc-200 ndb:py-2.5 ndb:sm:grid-cols-[minmax(7rem,0.5fr)_minmax(0,1.5fr)] ndb:sm:items-center ndb:dark:border-zinc-800">
-                                            <code class="ndb:min-w-0 ndb:truncate ndb:text-[10px] ndb:font-semibold">{{ $change['path'] }}</code>
+                                            <code class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-semibold">{{ $change['path'] }}</code>
                                             <div class="ndb:grid ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] ndb:items-center ndb:gap-2 ndb:text-xs">
                                                 <span
                                                     class="ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400"
@@ -137,7 +137,7 @@
                                 <h4 class="ndb:text-xs ndb:font-bold">Events</h4>
                                 <div class="ndb:mt-2 ndb:grid ndb:gap-3 ndb:sm:grid-cols-2">
                                     <div>
-                                        <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                        <p class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                             Emitted
                                         </p>
                                         <p class="ndb:mt-1 ndb:text-xs ndb:leading-5">
@@ -145,7 +145,7 @@
                                         </p>
                                     </div>
                                     <div>
-                                        <p class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                        <p class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                             Received
                                         </p>
                                         <p class="ndb:mt-1 ndb:text-xs ndb:leading-5">
@@ -175,7 +175,7 @@
                             class="ndb:border-t ndb:border-zinc-200 ndb:pt-4 ndb:dark:border-zinc-800"
                         >
                             <h4 class="ndb:text-xs ndb:font-bold">Source details</h4>
-                            <dl class="ndb:mt-3 ndb:grid ndb:gap-3 ndb:text-[10px] ndb:sm:grid-cols-2">
+                            <dl class="ndb:mt-3 ndb:grid ndb:gap-3 ndb:text-[11px] ndb:sm:grid-cols-2">
                                 @foreach (['Source' => $component['source_label'], 'Class' => $component['class'], 'View' => $component['view_label'], 'Instance' => $component['id']] as $label => $value)
                                     <div class="ndb:min-w-0">
                                         <dt class="ndb:text-zinc-400">{{ $label }}</dt>

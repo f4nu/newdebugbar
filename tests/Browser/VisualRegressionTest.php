@@ -192,7 +192,6 @@ function stabilizeVisualDebugValues($page): void
                     [data-ndb-model-repeat-count],
                     [data-ndb-model-mobile-summary],
                     [data-ndb-model-record],
-                    [data-ndb-model-raw],
                     [data-ndb-model-boot]
                 `) !== null;
                 const preservesSectionEvidence = parent?.closest(`
@@ -565,6 +564,27 @@ it('matches the visual baseline for :dataset expanded query bindings', function 
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "query-bindings-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset query actions popover', function (string $theme) {
+    $page = visualDebugPage('queries', $theme)
+        ->resize(1440, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->waitForText('Runtime details');
+
+    selectVisualDebugSection($page, 'queries');
+
+    $actions = '[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-execution][open] [data-ndb-query-actions]';
+
+    stabilizeVisualDebugValues($page);
+
+    $page
+        ->click("{$actions} > summary")
+        ->assertVisible("{$actions} [data-ndb-query-actions-popover]")
+        ->assertVisible("{$actions} [data-ndb-popover-arrow]")
+        ->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "query-actions-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for :dataset repeated query evidence', function (string $theme) {
