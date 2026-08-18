@@ -32,7 +32,7 @@ use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\NewDebugBarServiceProvider;
 use NewDebugBar\ProfileManager;
-use NewDebugBar\Tests\Fixtures\Livewire\DiagnosticsFixture;
+use NewDebugBar\Tests\Fixtures\HostCounter;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -64,7 +64,7 @@ abstract class TestCase extends Orchestra
 
     protected function defineRoutes($router): void
     {
-        Livewire::component('diagnostics-fixture', DiagnosticsFixture::class);
+        Livewire::component('host-counter', HostCounter::class);
 
         foreach ([StudioJob::class, Client::class, ProofVersion::class, JobActivity::class, User::class] as $modelClass) {
             new $modelClass;
@@ -106,13 +106,13 @@ abstract class TestCase extends Orchestra
         );
 
         $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
-            $component = app('livewire')->mount('diagnostics-fixture', key: 'diagnostics-browser');
+            $component = app('livewire')->mount('host-counter', key: 'host-counter-browser');
 
             return response(<<<HTML
                 <!doctype html>
                 <html>
-                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Livewire diagnostics</title></head>
-                    <body><main><h1 data-testid="host-page">Livewire diagnostics</h1>{$component}</main></body>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Livewire host</title></head>
+                    <body><main><h1 data-testid="host-page">Livewire host</h1>{$component}</main></body>
                 </html>
                 HTML);
         });

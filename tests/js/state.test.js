@@ -111,6 +111,23 @@ test('favorites can be pinned and reordered', () => {
 
 test('favorites can be reordered by dragging', () => {
   const state = createNewDebugBar(summary, runtime({ favorites: ['overview', 'queries', 'logs'] }));
+  const favoriteRow = (key) => {
+    const dropBefore = { hidden: false, toggleAttribute: (_name, hidden) => { dropBefore.hidden = hidden; } };
+    const dropAfter = { hidden: false, toggleAttribute: (_name, hidden) => { dropAfter.hidden = hidden; } };
+    const row = {
+      dataset: { ndbSection: key },
+      dragging: false,
+      dropBefore,
+      dropAfter,
+      classList: { toggle: (_class, active) => { row.dragging = active; } },
+      querySelector: (selector) => selector.includes('before') ? dropBefore : dropAfter,
+    };
+
+    return row;
+  };
+  const overview = favoriteRow('overview');
+  const logs = favoriteRow('logs');
+  state.$root = { querySelectorAll: () => [overview, logs] };
   const transfer = {
     effectAllowed: null,
     value: null,
@@ -120,6 +137,12 @@ test('favorites can be reordered by dragging', () => {
   state.init();
   state.startFavoriteDrag('overview', { dataTransfer: transfer });
   state.hoverFavorite('logs', true);
+
+  assert.equal(overview.dataset.ndbDragging, 'true');
+  assert.equal(overview.dragging, true);
+  assert.equal(logs.dropBefore.hidden, true);
+  assert.equal(logs.dropAfter.hidden, false);
+
   state.dropFavorite('logs', true);
 
   assert.equal(transfer.value, 'overview');
@@ -128,6 +151,8 @@ test('favorites can be reordered by dragging', () => {
   assert.equal(state.favoriteDrag, null);
   assert.equal(state.favoriteDrop, null);
   assert.equal(state.favoriteDropAfter, false);
+  assert.equal(overview.dragging, false);
+  assert.equal(logs.dropAfter.hidden, true);
 });
 
 test('selecting a section resets content and highlights its code', async () => {
@@ -816,7 +841,14 @@ test('the command palette jumps to sections and changes settings', async () => {
   assert.equal(state.inspectorReturnFocus, opener);
   assert.equal(state.paletteReturnFocus, null);
 
-  state.runCommand('theme:light');
+  state.paletteSearch = 'light theme';
+  assert.equal(state.commandIndex('theme:light'), 0);
+  state.paletteIndex = 0;
+  state.runActiveCommand();
+  assert.equal(state.resolvedTheme, 'light');
+
+  state.paletteSearch = 'missing command';
+  state.runActiveCommand();
   assert.equal(state.resolvedTheme, 'light');
 });
 

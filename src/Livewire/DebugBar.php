@@ -25,7 +25,6 @@ final class DebugBar extends Component
         'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',
         'http_client' => 'Review outbound HTTP requests, responses, timing, and their source.',
         'lifecycle' => 'See how long Laravel spent in each measured request lifecycle stage.',
-        'livewire' => 'Inspect the Livewire action, component changes, events, and outcome for this request.',
         'logs' => 'Review log messages, their context, and the application code that wrote them.',
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
         'messages' => 'Review developer messages, their context, and when they were recorded.',
@@ -77,33 +76,6 @@ final class DebugBar extends Component
         abort_if($store->get($this->profileId) === null, 404);
 
         $this->detailsLoaded = true;
-        $this->dispatch('newdebugbar-content-updated');
-    }
-
-    public function refreshProfileTrace(
-        string $profileId,
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): void {
-        if (! $this->validProfileId($profileId)) {
-            return;
-        }
-
-        $profile = $store->get($profileId);
-
-        if ($profile === null) {
-            return;
-        }
-
-        if ($profileId !== $this->profileId) {
-            $this->activateProfile($profileId, $store, $presenter, $summaries);
-
-            return;
-        }
-
-        unset($this->profile);
-        $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
         $this->dispatch('newdebugbar-content-updated');
     }
 

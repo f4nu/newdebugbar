@@ -23,9 +23,7 @@ const requestFacts = (runtime, input, init = {}) => {
     const rawUrl = typeof input === 'string' || input instanceof URL ? String(input) : input?.url;
     const url = new URL(rawUrl, runtime.location.href);
     const livewire = header(init?.headers, 'X-Livewire')
-      ?? header(input?.headers, 'X-Livewire')
-      ?? header(init?.headers, 'X-Livewire-Navigate')
-      ?? header(input?.headers, 'X-Livewire-Navigate');
+      ?? header(input?.headers, 'X-Livewire');
     const inertia = header(init?.headers, 'X-Inertia')
       ?? header(input?.headers, 'X-Inertia');
     const inertiaPartial = header(init?.headers, 'X-Inertia-Partial-Component')
@@ -33,21 +31,18 @@ const requestFacts = (runtime, input, init = {}) => {
 
     return {
       eligible: url.origin === runtime.location.origin
-        && !url.pathname.startsWith('/__newdebugbar/')
-        && !url.pathname.includes('/livewire-')
-        && !url.pathname.includes('/livewire/'),
-      livewire: livewire !== null,
-      foreground: inertia !== null && inertiaPartial === null,
+        && !url.pathname.startsWith('/__newdebugbar/'),
+      foreground: livewire !== null || (inertia !== null && inertiaPartial === null),
       url,
     };
   } catch {
-    return { eligible: false, livewire: false, foreground: false, url: null };
+    return { eligible: false, foreground: false, url: null };
   }
 };
 
 const notify = (runtime, response, transport, facts) => {
   try {
-    if (!facts.eligible || facts.livewire || !facts.foreground) return;
+    if (!facts.eligible || !facts.foreground) return;
 
     const responseUrl = response?.url ? new URL(response.url, runtime.location.href) : facts.url;
     if (!responseUrl || responseUrl.origin !== runtime.location.origin) return;
@@ -124,7 +119,7 @@ export function installRequestDiscovery(runtime = window) {
 
   prototype.setRequestHeader = function newDebugBarSetRequestHeader(name) {
     const normalized = String(name).toLowerCase();
-    if (['x-livewire', 'x-livewire-navigate'].includes(normalized)) this[XHR_LIVEWIRE] = true;
+    if (normalized === 'x-livewire') this[XHR_LIVEWIRE] = true;
     if (normalized === 'x-inertia') this[XHR_INERTIA] = true;
     if (normalized === 'x-inertia-partial-component') this[XHR_INERTIA_PARTIAL] = true;
     return originalSetRequestHeader.apply(this, arguments);
@@ -132,8 +127,7 @@ export function installRequestDiscovery(runtime = window) {
 
   prototype.send = function newDebugBarSend() {
     const facts = requestFacts(runtime, this[XHR_URL]);
-    facts.livewire = this[XHR_LIVEWIRE];
-    facts.foreground = this[XHR_INERTIA] && !this[XHR_INERTIA_PARTIAL];
+    facts.foreground = this[XHR_LIVEWIRE] || (this[XHR_INERTIA] && !this[XHR_INERTIA_PARTIAL]);
     this.addEventListener?.('loadend', () => notify(runtime, {
       url: this.responseURL,
       headers: { get: (name) => this.getResponseHeader?.(name) },

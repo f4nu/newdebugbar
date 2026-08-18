@@ -33,6 +33,24 @@ it('profiles application requests and excludes package owned traffic', function 
         ['components' => [livewireEligibilityMessage('newdebugbar.toolbar')]],
         server: ['HTTP_X_LIVEWIRE' => 'true'],
     ), false],
+    'mixed host and toolbar update' => [fn () => Request::create(
+        '/livewire/update',
+        'POST',
+        ['components' => [
+            livewireEligibilityMessage('appointments'),
+            livewireEligibilityMessage('newdebugbar.toolbar'),
+        ]],
+        server: ['HTTP_X_LIVEWIRE' => 'true'],
+    ), true],
+    'partly malformed Livewire update' => [fn () => Request::create(
+        '/livewire/update',
+        'POST',
+        ['components' => [
+            livewireEligibilityMessage('appointments'),
+            ['snapshot' => 'not-json'],
+        ]],
+        server: ['HTTP_X_LIVEWIRE' => 'true'],
+    ), false],
     'malformed Livewire update' => [fn () => Request::create(
         '/livewire/update',
         'POST',

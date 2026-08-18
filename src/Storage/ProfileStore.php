@@ -120,38 +120,6 @@ final class ProfileStore
         return $this->maxProfiles;
     }
 
-    /**
-     * @template T
-     *
-     * @param  callable(): T  $callback
-     * @return T
-     */
-    public function withWriteLock(callable $callback): mixed
-    {
-        $this->files->ensureDirectoryExists($this->path, 0700);
-        $filename = rtrim($this->path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'.livewire-trace.lock';
-        $handle = @fopen($filename, 'c+');
-
-        if (! is_resource($handle)) {
-            throw new RuntimeException('The debug profile lock could not be opened.');
-        }
-
-        @chmod($filename, 0600);
-
-        if (! flock($handle, LOCK_EX)) {
-            fclose($handle);
-
-            throw new RuntimeException('The debug profile lock could not be acquired.');
-        }
-
-        try {
-            return $callback();
-        } finally {
-            flock($handle, LOCK_UN);
-            fclose($handle);
-        }
-    }
-
     public static function validId(string $id): bool
     {
         return preg_match(self::ID_REGEX, $id) === 1;

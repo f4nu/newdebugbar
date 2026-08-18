@@ -14,7 +14,6 @@ final class RuntimeContext
         'filament' => ['label' => 'Filament', 'packages' => ['filament/filament']],
         'fortify' => ['label' => 'Fortify', 'packages' => ['laravel/fortify']],
         'horizon' => ['label' => 'Horizon', 'packages' => ['laravel/horizon']],
-        'inertia' => ['label' => 'Inertia', 'packages' => ['inertiajs/inertia-laravel']],
         'octane' => ['label' => 'Octane', 'packages' => ['laravel/octane']],
         'pennant' => ['label' => 'Pennant', 'packages' => ['laravel/pennant']],
         'pulse' => ['label' => 'Pulse', 'packages' => ['laravel/pulse']],

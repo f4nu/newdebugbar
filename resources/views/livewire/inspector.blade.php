@@ -304,7 +304,7 @@
                                         events were omitted.
                                     </div>
                                 @endif
-                                @includeFirst(['newdebugbar::livewire.sections.'.$sectionKey, 'newdebugbar::livewire.sections.default'], ['livewireSection' => $section])
+                                @includeFirst(['newdebugbar::livewire.sections.'.$sectionKey, 'newdebugbar::livewire.sections.default'])
                             </section>
                         @endforeach
                     </div>

@@ -13,7 +13,6 @@ final class ProfileAnalyzer
         private readonly int $minimumRepeatedExecutions = 4,
         private readonly float $minimumRepeatedDurationMs = 5,
         private readonly int $maxFindings = 50,
-        private readonly ?LivewireAnalyzer $livewire = null,
     ) {}
 
     /**
@@ -157,13 +156,6 @@ final class ProfileAnalyzer
                     'action' => ['label' => 'Review request timing', 'section' => 'lifecycle'],
                 ],
             );
-        }
-
-        if (is_array($sections['livewire'] ?? null)) {
-            $findings = [
-                ...$findings,
-                ...($this->livewire ?? new LivewireAnalyzer)->analyze($sections['livewire']),
-            ];
         }
 
         $slowQueries = array_values(array_filter(

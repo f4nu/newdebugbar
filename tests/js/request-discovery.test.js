@@ -134,13 +134,10 @@ test('discovers full Inertia visits and ignores partial reloads', async () => {
   ]);
 });
 
-test('ignores external package and Livewire requests', async () => {
+test('discovers host Livewire updates without interfering with navigation', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
-  await browser.fetch('https://example.test/api');
-  await browser.fetch('/__newdebugbar/assets/newdebugbar.js');
-  await browser.fetch('/livewire/update');
   await browser.fetch('/custom-update', { headers: { 'X-Livewire': 'true' } });
   await browser.fetch('/profiled-next', { headers: { 'X-Livewire-Navigate': 'true' } });
   await browser.fetch({ url: '/array-update', headers: [['X-Livewire', 'true']] });
@@ -148,6 +145,21 @@ test('ignores external package and Livewire requests', async () => {
   xhr.open('POST', '/custom-livewire');
   xhr.setRequestHeader('X-Livewire', 'true');
   xhr.send();
+
+  assert.deepEqual(browser.events.map((event) => event.detail), [
+    { profileId, transport: 'fetch' },
+    { profileId, transport: 'fetch' },
+    { profileId, transport: 'xhr' },
+  ]);
+});
+
+test('ignores external package and unmarked background requests', async () => {
+  const browser = runtime();
+  installRequestDiscovery(browser);
+
+  await browser.fetch('https://example.test/api');
+  await browser.fetch('/__newdebugbar/assets/newdebugbar.js');
+  await browser.fetch('/livewire/update');
   installRequestDiscovery(browser);
 
   assert.deepEqual(browser.events, []);

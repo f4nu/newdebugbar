@@ -15,7 +15,6 @@ final class ProfilePresenter
         private readonly ProfileAnalyzer $profiles,
         private readonly SectionAnalyzer $sections,
         private readonly TimelineBuilder $timeline,
-        private readonly LivewirePresenter $livewire,
     ) {}
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */
@@ -75,16 +74,6 @@ final class ProfilePresenter
         }
 
         $profile['findings'] = $this->profiles->analyze($profile);
-
-        if (isset($profile['sections']['livewire']) && is_array($profile['sections']['livewire'])) {
-            $payload = $profile['sections']['livewire']['payload'] ?? [];
-            $profile['sections']['livewire']['payload'] = is_array($payload) ? $payload : [];
-            $profile['sections']['livewire']['payload']['findings'] = array_values(array_filter(
-                $profile['findings'],
-                fn (array $finding): bool => ($finding['section'] ?? null) === 'livewire',
-            ));
-            $profile['sections']['livewire'] = $this->livewire->present($profile['sections']['livewire']);
-        }
 
         return $profile;
     }

@@ -107,13 +107,7 @@ final class ProfileSummaryPresenter
     /** @param array<string, mixed> $request */
     private function activity(array $request, string $requestType): ?string
     {
-        if ($requestType === 'inertia_partial') {
-            $props = $this->header($request, 'x-inertia-partial-data');
-
-            return $props === null ? 'Partial reload' : 'Partial reload: '.$props;
-        }
-
-        if (in_array($requestType, ['redirect', 'inertia_redirect'], true)) {
+        if ($requestType === 'redirect') {
             $location = $this->header($request, 'location', 'response_headers');
 
             return $location === null ? 'Redirect response' : 'Redirected to '.$location;

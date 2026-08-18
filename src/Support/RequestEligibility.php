@@ -3,13 +3,11 @@
 namespace NewDebugBar\Support;
 
 use Illuminate\Http\Request;
-use NewDebugBar\Livewire\LivewireGateway;
+use Throwable;
 
 /** Decides whether an application request can produce a safe stored profile. */
 final class RequestEligibility
 {
-    public function __construct(private readonly LivewireGateway $livewire) {}
-
     public function allows(Request $request): bool
     {
         if (! config('newdebugbar.enabled', true)) {
@@ -21,10 +19,45 @@ final class RequestEligibility
         }
 
         if ($request->headers->has('X-Livewire')) {
-            return $this->livewire->requestOwner($request) === LivewireGateway::HOST_APPLICATION;
+            return $this->isHostLivewireRequest($request);
         }
 
         return true;
+    }
+
+    private function isHostLivewireRequest(Request $request): bool
+    {
+        $messages = $request->input('components');
+
+        if (! is_array($messages) || $messages === []) {
+            return false;
+        }
+
+        $hostMessage = false;
+
+        foreach ($messages as $message) {
+            if (! is_array($message) || ! is_string($message['snapshot'] ?? null)) {
+                return false;
+            }
+
+            try {
+                $snapshot = json_decode($message['snapshot'], true, flags: JSON_THROW_ON_ERROR);
+            } catch (Throwable) {
+                return false;
+            }
+
+            $name = is_array($snapshot) ? data_get($snapshot, 'memo.name') : null;
+
+            if (! is_string($name) || $name === '') {
+                return false;
+            }
+
+            if ($name !== 'newdebugbar.toolbar') {
+                $hostMessage = true;
+            }
+        }
+
+        return $hostMessage;
     }
 
     private function isLivewireAsset(Request $request): bool

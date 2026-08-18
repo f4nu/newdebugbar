@@ -4,32 +4,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
-use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
-
-it('presents a corrupted partial Livewire section as unknown evidence', function () {
-    $profile = app(ProfilePresenter::class)->present([
-        'metrics' => [],
-        'sections' => [
-            'livewire' => [
-                'summary' => 'corrupted',
-                'payload' => 'corrupted',
-            ],
-        ],
-    ]);
-
-    expect($profile['sections']['livewire'])
-        ->label->toBe('Livewire')
-        ->summary->count->toBe(0)
-        ->payload->presentation->activity->title->toBe('Livewire request')
-        ->payload->presentation->outcome->title->toBe('Result not observed')
-        ->payload->presentation->tabs->toBe([
-            ['key' => 'overview', 'label' => 'Overview'],
-            ['key' => 'components', 'label' => 'Components'],
-            ['key' => 'events', 'label' => 'Events'],
-        ])
-        ->payload->presentation->events->toBe([]);
-});
 
 it('loads full profile details only after the inspector asks', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
@@ -288,24 +263,6 @@ it('switches to an exact foreground application profile', function () {
         ->call('switchProfile', $nextId)
         ->assertSet('profileId', $nextId)
         ->assertSet('summary.path', '/profiled-next')
-        ->assertSet('detailsLoaded', false)
-        ->assertDispatched('newdebugbar-profile-switched');
-});
-
-it('switches to the latest traced request without retained history', function () {
-    $currentId = $this->get('/profiled', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-    $latestId = $this->getJson('/api/plain-json')
-        ->assertOk()
-        ->headers->get('X-NewDebugBar-Profile');
-
-    Livewire::test(DebugBar::class, ['profileId' => $currentId])
-        ->call('loadDetails')
-        ->assertSet('detailsLoaded', true)
-        ->call('refreshProfileTrace', $latestId)
-        ->assertSet('profileId', $latestId)
-        ->assertSet('summary.path', '/api/plain-json')
         ->assertSet('detailsLoaded', false)
         ->assertDispatched('newdebugbar-profile-switched');
 });

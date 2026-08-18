@@ -13,7 +13,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
-use NewDebugBar\Analysis\LivewireAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
@@ -29,15 +28,9 @@ use NewDebugBar\Collectors\QueueCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Http\Controllers\AssetController;
-use NewDebugBar\Http\Controllers\LivewireTraceController;
 use NewDebugBar\Http\Controllers\MailPreviewController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
-use NewDebugBar\Livewire\ExecutionContext;
-use NewDebugBar\Livewire\InteractionRecorder;
-use NewDebugBar\Livewire\LivewireGateway;
-use NewDebugBar\Livewire\LivewireTraceToken;
-use NewDebugBar\Livewire\StateDiff;
 use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
@@ -71,14 +64,12 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(QueryAnalyzer::class, fn (): QueryAnalyzer => new QueryAnalyzer(
             (float) config('newdebugbar.slow_query_ms', 100),
         ));
-        $this->app->singleton(LivewireAnalyzer::class);
         $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
             queries: $app->make(QueryAnalyzer::class),
             slowRequestMs: (float) config('newdebugbar.slow_request_ms', 1_000),
             minimumCacheOperations: (int) config('newdebugbar.findings.minimum_cache_operations', 5),
             highCacheMissRate: (float) config('newdebugbar.findings.high_cache_miss_rate', 0.8),
             maxFindings: (int) config('newdebugbar.findings.max_findings', 50),
-            livewire: $app->make(LivewireAnalyzer::class),
         ));
         $this->app->singleton(ProfileSummaryPresenter::class);
         $this->app->singleton(SectionAnalyzer::class);
@@ -108,24 +99,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->scoped(RuntimeProfiler::class);
         $this->app->singleton(RuntimeContext::class);
         $this->app->singleton(SafeUrl::class);
-        $this->app->scoped(ExecutionContext::class);
-        $this->app->singleton(StateDiff::class, fn ($app): StateDiff => new StateDiff(
-            redactor: $app->make(Redactor::class),
-            maxChanges: (int) config('newdebugbar.collection.max_items_per_collector', 500),
-            maxDepth: (int) config('newdebugbar.collection.max_depth', 5),
-        ));
-        $this->app->singleton(LivewireGateway::class);
-        $this->app->scoped(InteractionRecorder::class, fn ($app): InteractionRecorder => new InteractionRecorder(
-            redactor: $app->make(Redactor::class),
-            safeUrl: $app->make(SafeUrl::class),
-            stateDiff: $app->make(StateDiff::class),
-            context: $app->make(ExecutionContext::class),
-            gateway: $app->make(LivewireGateway::class),
-            projectPath: (string) (config('newdebugbar.collection.application_path') ?: base_path()),
-            maxItems: (int) config('newdebugbar.collection.max_items_per_collector', 500),
-        ));
-        $this->app->singleton(LivewireTraceToken::class);
-
         $this->app->scoped(ProfileManager::class, function ($app): ProfileManager {
             $maxItems = (int) config('newdebugbar.collection.max_items_per_collector', 500);
             $redactor = $app->make(Redactor::class);
@@ -156,8 +129,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 $app->make(ExceptionNormalizer::class),
                 $app->make(RuntimeContext::class),
                 $app->make(RequestContext::class),
-                $app->make(InteractionRecorder::class),
-                $app->make(ExecutionContext::class),
             );
         });
 
@@ -199,7 +170,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(Redactor::class),
             $this->app->make(MailPreview::class),
         ))->register();
-        $this->app->make(LivewireGateway::class)->register();
         $exceptions = $this->app->make(ExceptionHandler::class);
 
         if (method_exists($exceptions, 'renderable')) {
@@ -223,10 +193,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             ->whereNumber('index')
             ->whereIn('format', ['html', 'text', 'eml'])
             ->name('newdebugbar.mail-preview');
-        $router->post('/__newdebugbar/livewire-trace/{profile}', LivewireTraceController::class)
-            ->middleware(['web', 'signed'])
-            ->where('profile', ProfileStore::ID_PATTERN)
-            ->name('newdebugbar.livewire-trace');
         $kernel = $this->app->make(HttpKernel::class);
 
         if (method_exists($kernel, 'pushMiddleware')) {

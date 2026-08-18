@@ -10,8 +10,6 @@ use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Contracts\Collector;
-use NewDebugBar\Livewire\ExecutionContext;
-use NewDebugBar\Livewire\InteractionRecorder;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestContext;
@@ -52,8 +50,6 @@ final class ProfileManager
         private readonly ?ExceptionNormalizer $exceptionNormalizer = null,
         private readonly ?RuntimeContext $runtimeContext = null,
         private readonly ?RequestContext $requestContext = null,
-        private readonly ?InteractionRecorder $livewire = null,
-        private readonly ?ExecutionContext $executionContext = null,
     ) {
         foreach ($collectors as $collector) {
             $this->collectors[$collector->key()] = $collector;
@@ -63,16 +59,13 @@ final class ProfileManager
     public function begin(Request $request): void
     {
         $this->start('http', 'Request');
-        $this->livewire?->begin($request, $this->profileId);
         $query = $this->redactor->clean($request->query());
         $this->request = [
             'method' => $request->getMethod(),
             'url' => $this->redactedUrl($request, is_array($query) ? $query : []),
             'path' => '/'.ltrim($request->path(), '/'),
             'query' => $query,
-            'input' => $this->livewire?->isActive() === true
-                ? $this->livewire->safeRequestInput()
-                : $this->redactor->clean($request->input()),
+            'input' => $this->requestInput($request),
             'headers' => $this->redactor->clean($request->headers->all()),
         ];
         $this->collecting = true;
@@ -81,7 +74,6 @@ final class ProfileManager
     /** @param array<string, mixed> $context */
     public function beginRuntime(string $type, string $name, array $context = []): void
     {
-        $this->livewire?->discard();
         $type = in_array($type, ['artisan', 'queue', 'test'], true) ? $type : 'runtime';
         $this->start($type, 'Runtime');
         $safeContext = $this->redactor->clean($context);
@@ -112,11 +104,9 @@ final class ProfileManager
         }
 
         if (isset($this->collectors[$collector])) {
-            $livewire = $this->executionContext?->current();
             $this->collectors[$collector]->record([
                 ...$item,
                 'at_ms' => $this->elapsedMilliseconds(),
-                ...($livewire === null ? [] : ['livewire' => $livewire]),
             ]);
         }
     }
@@ -156,12 +146,9 @@ final class ProfileManager
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
-            $livewire = $this->livewire?->finish($request, $response);
-
-            return $this->buildProfile($livewire);
+            return $this->buildProfile();
         } finally {
             $this->collecting = false;
-            $this->executionContext?->clear();
         }
     }
 
@@ -188,15 +175,12 @@ final class ProfileManager
             return $this->buildProfile();
         } finally {
             $this->collecting = false;
-            $this->executionContext?->clear();
         }
     }
 
     public function discard(): void
     {
         $this->collecting = false;
-        $this->livewire?->discard();
-        $this->executionContext?->clear();
     }
 
     public function recordException(Throwable $exception): void
@@ -245,11 +229,9 @@ final class ProfileManager
         $collector = $this->collectors['queries'] ?? null;
 
         if ($this->collecting && $collector instanceof QueryCollector) {
-            $livewire = $this->executionContext?->current();
             $collector->recordTransaction([
                 ...$item,
                 'at_ms' => $this->elapsedMilliseconds(),
-                ...($livewire === null ? [] : ['livewire' => $livewire]),
             ]);
         }
     }
@@ -343,7 +325,7 @@ final class ProfileManager
     }
 
     /** @return array<string, mixed> */
-    private function buildProfile(?array $livewire = null): array
+    private function buildProfile(): array
     {
         $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
         $metrics = [
@@ -375,10 +357,6 @@ final class ProfileManager
             ];
         }
 
-        if ($livewire !== null) {
-            $sections['livewire'] = $livewire;
-        }
-
         return [
             'schema_version' => 1,
             'id' => $this->profileId !== '' ? $this->profileId : (string) Str::uuid(),
@@ -405,6 +383,23 @@ final class ProfileManager
         }
 
         return strlen(http_build_query($request->request->all(), '', '&', PHP_QUERY_RFC3986));
+    }
+
+    /** @return array<string, mixed> */
+    private function requestInput(Request $request): array
+    {
+        if (! $request->headers->has('X-Livewire')) {
+            $input = $this->redactor->clean($request->input());
+
+            return is_array($input) ? $input : [];
+        }
+
+        $messages = $request->input('components');
+
+        return [
+            'component_message_count' => is_array($messages) ? count($messages) : 0,
+            'snapshot_data_stored' => false,
+        ];
     }
 
     private function hasStartedSession(Request $request): bool
@@ -470,16 +465,6 @@ final class ProfileManager
     private function requestType(Request $request, ?Response $response): string
     {
         $status = $response?->getStatusCode() ?? 500;
-
-        if ($request->headers->has('X-Inertia')) {
-            if ($status >= 300 && $status < 400) {
-                return 'inertia_redirect';
-            }
-
-            return $request->headers->has('X-Inertia-Partial-Component')
-                ? 'inertia_partial'
-                : 'inertia_visit';
-        }
 
         if ($status >= 300 && $status < 400) {
             return 'redirect';

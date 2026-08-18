@@ -17,7 +17,6 @@ use NewDebugBar\Contracts\Collector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Presentation\ProfilePresenter;
-use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\AssetUrl;
@@ -103,7 +102,6 @@ it('captures a local web request and its Laravel activity', function () {
         ->toContain('retrieved');
 
     expect($profile['metrics'])->not->toHaveKey('memory_mb')
-        ->and($profile['sections'])->not->toHaveKey('livewire')
         ->and($profile['sections']['request']['payload'])->not->toHaveKey('early_bootstrap_measured');
 
     expect($profile['sections']['logs']['payload']['items'][0]['callsite'])
@@ -524,34 +522,6 @@ it('profiles API AJAX redirect streamed and binary responses without body inject
             'stream' => 'stream',
             'download' => 'download',
         ]);
-});
-
-it('labels Inertia foreground visits partial reloads and redirects distinctly', function () {
-    $visit = $this->get('/profiled', [
-        'Accept' => 'text/html',
-        'X-Inertia' => 'true',
-    ])->assertOk();
-    $partial = $this->get('/profiled', [
-        'Accept' => 'text/html',
-        'X-Inertia' => 'true',
-        'X-Inertia-Partial-Component' => 'WorkOrders/Index',
-    ])->assertOk();
-    $redirect = $this->get('/profile-redirect', [
-        'Accept' => 'text/html',
-        'X-Inertia' => 'true',
-    ])->assertRedirect('/profiled');
-
-    $profiles = collect([$visit, $partial, $redirect])->map(function ($response): array {
-        $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
-
-        return $profile;
-    });
-
-    $types = $profiles->map(fn (array $profile): string => $profile['sections']['request']['payload']['request_type'])->all();
-    $summaryTypes = $profiles->map(fn (array $profile): string => app(ProfileSummaryPresenter::class)->present($profile)['request_type'])->all();
-
-    expect($types)->toBe(['inertia_visit', 'inertia_partial', 'inertia_redirect'])
-        ->and($summaryTypes)->toBe($types);
 });
 
 it('captures nested input without retaining uploaded files', function () {

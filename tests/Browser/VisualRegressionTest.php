@@ -71,13 +71,6 @@ function assertVisualDebugBaseline($page, string $name): void
 
 function visualDebugPage(string $section, string $theme)
 {
-    if ($section === 'livewire') {
-        $page = visit('/profiled-livewire');
-        setVisualDebugTheme($page, $theme);
-
-        return $page;
-    }
-
     if ($section === 'exceptions') {
         $page = visit('/profiled-reported-exception');
         setVisualDebugTheme($page, $theme);
@@ -188,7 +181,6 @@ function stabilizeVisualDebugValues($page): void
                     [data-ndb-model-boot]
                 `) !== null;
                 const preservesSectionEvidence = parent?.closest(`
-                    [data-ndb-livewire],
                     [data-ndb-event-source-count],
                     [data-ndb-event-visible-count],
                     [data-ndb-view-summary-value],
@@ -303,7 +295,6 @@ $visualSections = [
     'validation',
     'lifecycle',
     'messages',
-    'livewire',
 ];
 $visualSectionCases = [];
 
@@ -391,36 +382,6 @@ it('matches the visual baseline for the :dataset narrow Models section', functio
     stabilizeVisualDebugValues($page);
 
     assertVisualDebugBaseline($page, "section-narrow-{$theme}-models");
-})->with(['light', 'dark']);
-
-it('matches the visual baseline for the :dataset narrow Livewire section', function (string $theme) {
-    $page = visualDebugPage('livewire', $theme)
-        ->resize(390, 844);
-    openNarrowVisualDebugInspector($page);
-    $page->waitForText('Runtime details');
-
-    selectVisualDebugSection($page, 'livewire', true);
-
-    $page
-        ->assertVisible('[data-ndb-section-panel="livewire"]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
-                const tabs = document.querySelector('[data-ndb-livewire-tabs]');
-                const box = inspector.getBoundingClientRect();
-
-                return box.width === window.innerWidth
-                    && box.left === 0
-                    && box.right === window.innerWidth
-                    && tabs.querySelectorAll('[role="tab"]').length === 3
-                    && tabs.scrollWidth <= tabs.clientWidth + 1;
-            })()
-            JS)
-        ->assertNoJavaScriptErrors();
-
-    stabilizeVisualDebugValues($page);
-
-    assertVisualDebugBaseline($page, "section-narrow-{$theme}-livewire");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset toolbar', function (string $theme) {

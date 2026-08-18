@@ -15,7 +15,7 @@ it('builds a focused overview without standalone counts', function () {
                     'drivers' => ['database' => 'sqlite'],
                     'cache_state' => ['configuration' => true],
                     'ecosystem' => [
-                        ['label' => 'Inertia', 'version' => 'v2.1.0'],
+                        ['label' => 'Scout', 'version' => 'v10.0.0'],
                     ],
                 ],
             ],
@@ -58,6 +58,6 @@ it('builds a focused overview without standalone counts', function () {
             'value' => '8.4.0',
         ])
         ->and($overview['runtime']['ecosystem']['items'])->toBe([
-            ['name' => 'Inertia', 'value' => 'v2.1.0'],
+            ['name' => 'Scout', 'value' => 'v10.0.0'],
         ]);
 });

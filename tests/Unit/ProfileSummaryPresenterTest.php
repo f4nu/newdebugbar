@@ -46,15 +46,10 @@ it('summarizes status families and response sizes for the request header', funct
     'server error' => [503, 'Server error'],
 ]);
 
-it('summarizes Inertia partial reloads and redirects', function () {
-    $presenter = new ProfileSummaryPresenter(new Redactor);
-    $partial = $presenter->present(summaryProfile('inertia_partial', [
-        'headers' => ['x-inertia-partial-data' => ['stats,workOrders']],
-    ]));
-    $redirect = $presenter->present(summaryProfile('inertia_redirect', [
+it('summarizes redirect destinations', function () {
+    $summary = (new ProfileSummaryPresenter(new Redactor))->present(summaryProfile('redirect', [
         'response_headers' => ['location' => ['/work-orders']],
     ]));
 
-    expect($partial['activity'])->toBe('Partial reload: stats,workOrders')
-        ->and($redirect['activity'])->toBe('Redirected to /work-orders');
+    expect($summary['activity'])->toBe('Redirected to /work-orders');
 });
