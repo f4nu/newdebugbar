@@ -24,7 +24,7 @@
     </div>
     <ol
         x-ref="authorizationItems"
-        class="ndb:m-0 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
+        class="ndb:m-0 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800"
     >
         @foreach ($authorizationItems as $index => $item)
             @php
@@ -48,39 +48,39 @@
                 wire:key="authorization-{{ $index }}"
                 class="ndb:min-w-0 ndb:py-3"
             >
-                <div class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:font-mono ndb:text-xs ndb:leading-5">
+                <div class="ndb:flex ndb:w-full ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:font-mono ndb:text-xs ndb:leading-5 ndb:sm:grid ndb:sm:gap-x-3 {{ $targets !== [] ? 'ndb:sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]' : 'ndb:sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]' }}">
                     <code
                         data-ndb-authorization-source
                         title="{{ $userType ?? 'Unauthenticated actor' }}"
                         class="ndb:font-bold"
                     >{{ $actor }}</code>
-                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
+                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3 ndb:sm:contents">
                         <span aria-hidden="true" class="ndb:text-zinc-400">→</span>
                         <span
                             data-ndb-authorization-result
-                            class="ndb:font-semibold {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-600 ndb:dark:text-emerald-400' : 'ndb:text-red-600 ndb:dark:text-red-400' }}"
+                            class="ndb:font-semibold ndb:sm:text-center {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-600 ndb:dark:text-emerald-400' : 'ndb:text-red-600 ndb:dark:text-red-400' }}"
                         >{{ $item['result'] }}</span>
                     </span>
-                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
+                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3 ndb:sm:contents">
                         <span aria-hidden="true" class="ndb:text-zinc-400">→</span>
                         <code
                             data-ndb-authorization-ability
-                            class="ndb:min-w-0 ndb:break-words ndb:font-bold"
+                            class="ndb:min-w-0 ndb:break-words ndb:font-bold ndb:sm:text-center"
                         >{{ $item['ability'] }}</code>
                     </span>
                     @if ($targets !== [])
-                        <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
+                        <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3 ndb:sm:contents">
                             <span aria-hidden="true" class="ndb:text-zinc-400">→</span>
                             <code
                                 data-ndb-authorization-target
                                 title="{{ implode(', ', $targetTypes) }}"
-                                class="ndb:min-w-0 ndb:break-words ndb:font-bold"
+                                class="ndb:min-w-0 ndb:break-words ndb:font-bold ndb:sm:text-right"
                             >{{ implode(', ', $targets) }}</code>
                         </span>
                     @endif
                 </div>
                 @if ($callsiteLabel !== null || $showHandler)
-                    <div class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-400">
+                    <div class="ndb:mt-1 ndb:flex ndb:w-full ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-400 ndb:sm:justify-between">
                         @if ($callsiteLabel !== null)
                             <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-2">
                                 <span aria-hidden="true">↳</span>
