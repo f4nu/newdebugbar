@@ -13,6 +13,7 @@
     $stack = is_array($query['stack'] ?? null) ? $query['stack'] : [];
     $sql = (string) ($query['sql'] ?? '');
     $search = mb_strtolower($sql.' '.json_encode($bindings, JSON_UNESCAPED_SLASHES));
+    $hasMultipleEvidence = $bindings !== [] && $stack !== [];
     $defaultTab = $stack !== [] ? 'stack' : 'bindings';
 @endphp
 
@@ -75,7 +76,7 @@
 
         @if ($bindings !== [] || $stack !== [] || ($query['callsite'] ?? null) !== null)
             <div class="ndb:flex ndb:min-h-12 ndb:flex-wrap ndb:items-center ndb:gap-2 ndb:bg-zinc-50/60 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/35 {{ $grouped ? '' : 'ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800' }}">
-                @if ($bindings !== [] || $stack !== [])
+                @if ($hasMultipleEvidence)
                     <div
                         role="tablist"
                         aria-label="Query evidence"
@@ -145,11 +146,16 @@
 
             @if ($bindings !== [])
                 <div
-                    x-cloak
-                    x-show.important="queryTab === 'bindings'"
-                    role="tabpanel"
+                    data-ndb-query-bindings-panel
+                    @if ($hasMultipleEvidence)
+                        x-cloak
+                        x-show.important="queryTab === 'bindings'"
+                        role="tabpanel"
+                    @else
+                        data-ndb-query-evidence-direct="bindings"
+                    @endif
                     id="ndb-query-{{ $identity }}-bindings-panel"
-                    aria-labelledby="ndb-query-{{ $identity }}-bindings-tab"
+                    @if ($hasMultipleEvidence) aria-labelledby="ndb-query-{{ $identity }}-bindings-tab" @endif
                 >
                     <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($bindings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
                 </div>
@@ -157,11 +163,16 @@
 
             @if ($stack !== [])
                 <div
-                    x-cloak
-                    x-show.important="queryTab === 'stack'"
-                    role="tabpanel"
+                    data-ndb-query-stack-panel
+                    @if ($hasMultipleEvidence)
+                        x-cloak
+                        x-show.important="queryTab === 'stack'"
+                        role="tabpanel"
+                    @else
+                        data-ndb-query-evidence-direct="stack"
+                    @endif
                     id="ndb-query-{{ $identity }}-stack-panel"
-                    aria-labelledby="ndb-query-{{ $identity }}-stack-tab"
+                    @if ($hasMultipleEvidence) aria-labelledby="ndb-query-{{ $identity }}-stack-tab" @endif
                     class="ndb:border-t ndb:border-zinc-200/80 ndb:px-4 ndb:dark:border-zinc-800"
                 >
                     <ol class="ndb:divide-y ndb:divide-zinc-100 ndb:dark:divide-zinc-800/80">

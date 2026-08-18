@@ -246,6 +246,9 @@ test('a new application profile resets stale section state and reloads open deta
   state.inspectorOpen = true;
   state.detailsRequested = true;
   state.viewSort = 'count';
+  state.viewSortDirection = 'desc';
+  state.eventSource = 'framework';
+  state.eventSearch = 'booted';
 
   state.switchProfile({ ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/api/jobs' });
   await Promise.resolve();
@@ -253,7 +256,10 @@ test('a new application profile resets stale section state and reloads open deta
   assert.equal(state.summary.path, '/api/jobs');
   assert.equal(state.selected, 'overview');
   assert.equal(state.detailsRequested, true);
-  assert.equal(state.viewSort, 'render');
+  assert.equal(state.viewSort, 'name');
+  assert.equal(state.viewSortDirection, 'asc');
+  assert.equal(state.eventSource, 'application');
+  assert.equal(state.eventSearch, '');
   assert.equal(detailsLoaded, 1);
 
   state.selected = 'history';
@@ -711,11 +717,11 @@ test('authorization controls filter decisions and overview navigation opens deni
   assert.equal(state.authorizationFilter, 'denied');
 });
 
-test('view sorting keeps render order by default and can prioritize render count', () => {
+test('view headers sort names and render counts in both directions', () => {
   const state = createNewDebugBar(summary, runtime());
-  const first = { dataset: { order: '0', count: '1' } };
-  const second = { dataset: { order: '1', count: '3' } };
-  const third = { dataset: { order: '2', count: '3' } };
+  const first = { dataset: { order: '0', count: '1', name: 'zeta' } };
+  const second = { dataset: { order: '1', count: '3', name: 'alpha' } };
+  const third = { dataset: { order: '2', count: '3', name: 'beta' } };
   const children = [first, second, third];
   state.$refs = {
     viewGroups: {
@@ -728,17 +734,24 @@ test('view sorting keeps render order by default and can prioritize render count
   };
 
   state.applyViewSort();
-  assert.deepEqual(children, [first, second, third]);
-
-  state.setViewSort('count');
-  assert.equal(state.viewSort, 'count');
   assert.deepEqual(children, [second, third, first]);
 
-  state.setViewSort('render');
+  state.toggleViewSort('name');
+  assert.equal(state.viewSortDirection, 'desc');
+  assert.deepEqual(children, [first, third, second]);
+
+  state.toggleViewSort('count');
+  assert.equal(state.viewSort, 'count');
+  assert.equal(state.viewSortDirection, 'desc');
+  assert.deepEqual(children, [second, third, first]);
+
+  state.toggleViewSort('count');
+  assert.equal(state.viewSortDirection, 'asc');
   assert.deepEqual(children, [first, second, third]);
 
-  state.setViewSort('invalid');
-  assert.equal(state.viewSort, 'render');
+  state.toggleViewSort('invalid');
+  assert.equal(state.viewSort, 'count');
+  assert.equal(state.viewSortDirection, 'asc');
 });
 
 test('history controls combine path method status and warning filters', () => {

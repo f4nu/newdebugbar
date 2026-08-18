@@ -173,11 +173,11 @@ function stabilizeVisualDebugValues($page): void
 
             while (walker.nextNode()) {
                 const parent = walker.currentNode.parentElement;
-                const summaryValue = parent?.closest('[data-ndb-query-summary-value]')?.dataset.ndbQuerySummaryValue;
                 const preservesQueryEvidence = parent?.closest(`
                     [data-ndb-query-finding-summary],
                     [data-ndb-query-filter-count],
                     [data-ndb-query-result-count],
+                    [data-ndb-query-total-time],
                     [data-ndb-query-group-count],
                     [data-ndb-query-group-extra],
                     [data-ndb-query-execution-number],
@@ -202,11 +202,10 @@ function stabilizeVisualDebugValues($page): void
                     [data-ndb-view-summary-value],
                     [data-ndb-view-group-count],
                     [data-ndb-view-render-order],
-                    [data-ndb-view-source],
-                    [data-ndb-view-data-count]
+                    [data-ndb-view-source]
                 `) !== null;
 
-                if (preservesQueryEvidence || preservesModelEvidence || preservesSectionEvidence || ['queries', 'repeated', 'extra-runs'].includes(summaryValue)) {
+                if (preservesQueryEvidence || preservesModelEvidence || preservesSectionEvidence) {
                     continue;
                 }
 
@@ -229,7 +228,6 @@ function stabilizeVisualDebugValues($page): void
 
             const normalizeQueryMetrics = (articles) => {
                 let totalDuration = 0;
-                let totalPercent = 0;
 
                 articles.forEach((article, index) => {
                     const duration = articles.length - index;
@@ -238,20 +236,17 @@ function stabilizeVisualDebugValues($page): void
                     article.querySelector('[data-ndb-query-duration]').textContent = `${duration} ms`;
                     article.querySelector('[data-ndb-query-percent]').textContent = `${percent}% of query time`;
                     totalDuration += duration;
-                    totalPercent += percent;
                 });
 
-                return { totalDuration, totalPercent };
+                return { totalDuration };
             };
             const queryItems = Array.from(document.querySelectorAll('[data-ndb-query-item]'));
 
             if (queryItems.length > 0) {
                 const totals = normalizeQueryMetrics(queryItems);
-                const queryTime = document.querySelector('[data-ndb-query-summary-value="query-time"]');
-                const requestShare = document.querySelector('[data-ndb-query-summary-value="request-share"]');
+                const queryTime = document.querySelector('[data-ndb-query-total-time]');
 
-                if (queryTime) queryTime.textContent = `${totals.totalDuration} ms`;
-                if (requestShare) requestShare.textContent = `${totals.totalPercent}%`;
+                if (queryTime) queryTime.textContent = `${totals.totalDuration} ms query time`;
             }
 
             document.querySelectorAll('[data-ndb-query-group]').forEach((group) => {

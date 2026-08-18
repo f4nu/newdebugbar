@@ -2403,28 +2403,58 @@
 
                                             @if ($viewGroups !== [])
                                                 <div class="ndb:space-y-2">
-                                                    <div class="ndb:flex ndb:justify-end">
-                                                        <label class="ndb:relative">
-                                                            <span class="ndb:sr-only">Sort views</span>
-                                                            <select
-                                                                data-ndb-view-sort
-                                                                x-model="viewSort"
-                                                                @change="setViewSort($event.target.value)"
-                                                                class="ndb:h-9 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                                                            >
-                                                                <option value="render">Render order</option>
-                                                                <option value="count">Most renders</option>
-                                                            </select>
-                                                            <x-newdebugbar::icon
-                                                                name="chevron-down"
-                                                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                                                            />
-                                                        </label>
-                                                    </div>
-
                                                     <div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_5rem_1.5rem] ndb:items-end ndb:gap-x-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
-                                                        <span class="ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">View</span>
-                                                        <span class="ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Renders</span>
+                                                        <span
+                                                            role="columnheader"
+                                                            :aria-sort="viewSort === 'name'
+                                                                ? viewSortDirection === 'asc'
+                                                                    ? 'ascending'
+                                                                    : 'descending'
+                                                                : 'none'"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                data-ndb-view-sort="name"
+                                                                @click="toggleViewSort('name')"
+                                                                class="ndb:flex ndb:min-h-8 ndb:items-center ndb:gap-1 ndb:rounded-md ndb:px-1 ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:transition-colors ndb:hover:bg-zinc-100 ndb:hover:text-zinc-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-zinc-200"
+                                                            >
+                                                                <span>View</span>
+                                                                <x-newdebugbar::icon
+                                                                    name="chevron-down"
+                                                                    ::class="{
+                                                                        'ndb:opacity-0': viewSort !== 'name',
+                                                                        'ndb:rotate-180': viewSort === 'name' && viewSortDirection === 'asc',
+                                                                    }"
+                                                                    class="ndb:size-3 ndb:transition ndb:duration-150 ndb:motion-reduce:transition-none"
+                                                                />
+                                                            </button>
+                                                        </span>
+                                                        <span
+                                                            role="columnheader"
+                                                            :aria-sort="viewSort === 'count'
+                                                                ? viewSortDirection === 'asc'
+                                                                    ? 'ascending'
+                                                                    : 'descending'
+                                                                : 'none'"
+                                                            class="ndb:flex ndb:justify-end"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                data-ndb-view-sort="count"
+                                                                @click="toggleViewSort('count')"
+                                                                class="ndb:flex ndb:min-h-8 ndb:items-center ndb:justify-end ndb:gap-1 ndb:rounded-md ndb:px-1 ndb:text-right ndb:text-[9px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:transition-colors ndb:hover:bg-zinc-100 ndb:hover:text-zinc-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-zinc-200"
+                                                            >
+                                                                <span>Renders</span>
+                                                                <x-newdebugbar::icon
+                                                                    name="chevron-down"
+                                                                    ::class="{
+                                                                        'ndb:opacity-0': viewSort !== 'count',
+                                                                        'ndb:rotate-180': viewSort === 'count' && viewSortDirection === 'asc',
+                                                                    }"
+                                                                    class="ndb:size-3 ndb:transition ndb:duration-150 ndb:motion-reduce:transition-none"
+                                                                />
+                                                            </button>
+                                                        </span>
                                                         <span class="ndb:sr-only">Details</span>
                                                     </div>
 
@@ -2438,6 +2468,7 @@
                                                                 data-ndb-view-group
                                                                 data-order="{{ $index }}"
                                                                 data-count="{{ $group['count'] }}"
+                                                                data-name="{{ mb_strtolower($group['name']) }}"
                                                                 wire:key="view-group-{{ $index }}"
                                                                 class="ndb:group"
                                                             >
@@ -2505,27 +2536,9 @@
                                                                                         @click="
                                                                                             viewDataOpen = ! viewDataOpen
                                                                                         "
-                                                                                        class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/60"
+                                                                                        class="ndb:flex ndb:min-h-8 ndb:shrink-0 ndb:items-center ndb:rounded-lg ndb:px-2.5 ndb:py-1.5 ndb:text-[10px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/60"
                                                                                     >
-                                                                                        <span class="ndb:flex ndb:flex-col ndb:items-start ndb:gap-0.5 ndb:leading-none">
-                                                                                            <span>View data</span>
-                                                                                            <span
-                                                                                                data-ndb-view-data-count
-                                                                                                class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-400"
-                                                                                            >{{ count($viewData) }} {{ count($viewData) === 1 ? 'variable' : 'variables' }}</span>
-                                                                                        </span>
-                                                                                        <span
-                                                                                            :class="{
-                                                                                                'ndb:rotate-180':
-                                                                                                    viewDataOpen,
-                                                                                            }"
-                                                                                            class="ndb:transition-transform ndb:duration-150 ndb:motion-reduce:transition-none"
-                                                                                        >
-                                                                                            <x-newdebugbar::icon
-                                                                                                name="chevron-down"
-                                                                                                class="ndb:size-3.5 ndb:text-zinc-400"
-                                                                                            />
-                                                                                        </span>
+                                                                                        <span>View data</span>
                                                                                     </button>
                                                                                 </div>
 
@@ -2606,7 +2619,7 @@
                                                     role="group"
                                                     aria-label="Filter events by source"
                                                 >
-                                                    @foreach (['application' => 'Application', 'all' => 'All', 'framework' => 'Framework'] as $source => $label)
+                                                    @foreach (['all' => 'All', 'application' => 'Application', 'framework' => 'Framework'] as $source => $label)
                                                         <x-newdebugbar::filter-tab
                                                             data-ndb-event-source="{{ $source }}"
                                                             @click="setEventSource({{ \Illuminate\Support\Js::from($source) }})"

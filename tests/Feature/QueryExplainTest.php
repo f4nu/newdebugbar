@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Presentation\ProfilePresenter;
@@ -64,3 +65,32 @@ it('rejects unsafe incomplete and mutating explain requests before touching the 
         'connection' => 'testing',
     ]],
 ]);
+
+it('shows bindings directly when there is no application stack', function () {
+    $query = [
+        'execution' => 1,
+        'duration_ms' => 0.4,
+        'slow' => false,
+        'connection' => 'testing',
+        'query_type' => 'read',
+        'sql' => 'select ? as number',
+        'normalized_sql' => 'select ? as number',
+        'bindings' => [1],
+        'stack' => [],
+        'callsite' => null,
+        'repeated' => false,
+        'query_time_percent' => 100,
+        'runnable_available' => false,
+    ];
+
+    $html = Blade::render(
+        '<x-newdebugbar::query-execution :query="$query" identity="bindings-only" />',
+        ['query' => $query],
+    );
+
+    expect($html)
+        ->toContain('data-ndb-query-evidence-direct="bindings"')
+        ->toContain('data-ndb-query-bindings-panel')
+        ->not->toContain('data-ndb-query-tabs')
+        ->not->toContain('role="tab"');
+});

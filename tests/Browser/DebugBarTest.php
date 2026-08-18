@@ -1092,6 +1092,14 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->assertSee('Misses')
         ->click('[data-ndb-select-section="events"]')
         ->assertScript(<<<'JS'
+            (() => {
+                const buttons = Array.from(document.querySelectorAll('[data-ndb-event-source]'));
+
+                return buttons.map((button) => button.dataset.ndbEventSource).join('|') === 'all|application|framework'
+                    && document.querySelector('[data-ndb-event-source="application"]').getAttribute('aria-pressed') === 'true';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
             ['application', 'all', 'framework'].every((source) => {
                 const expected = source === 'all'
                     ? document.querySelectorAll('[data-ndb-event-item]').length
@@ -1228,7 +1236,7 @@ it('shows log call sites', function () {
     assertDebugSectionSelected($page, 'logs');
 });
 
-it('sorts views by render count while keeping render order as the default', function () {
+it('sorts views from the column headers with clear direction feedback', function () {
     $groupNames = <<<'JS'
         Array.from(document.querySelectorAll('[data-ndb-view-group]'))
             .map((group) => group.querySelector('summary span').textContent.trim())
@@ -1239,12 +1247,23 @@ it('sorts views by render count while keeping render order as the default', func
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->click('[data-ndb-select-section="views"]')
-        ->assertValue('[data-ndb-view-sort]', 'render')
+        ->assertMissing('select[data-ndb-view-sort]')
+        ->assertAttribute('[data-ndb-view-sort="name"]', 'type', 'button')
+        ->assertAttribute('[data-ndb-view-sort="name"]', 'data-ndb-view-sort', 'name')
+        ->assertScript('!document.querySelector("[data-ndb-view-sort=\"name\"]").hasAttribute("aria-expanded")')
+        ->assertScript('document.querySelector("[data-ndb-view-sort=\"name\"]").parentElement.getAttribute("aria-sort") === "ascending"')
         ->assertScript($groupNames, 'context|original-response')
-        ->select('[data-ndb-view-sort]', 'count')
+        ->click('[data-ndb-view-sort="count"]')
+        ->assertScript('document.querySelector("[data-ndb-view-sort=\"count\"]").parentElement.getAttribute("aria-sort") === "descending"')
         ->assertScript($groupNames, 'original-response|context')
-        ->select('[data-ndb-view-sort]', 'render')
+        ->click('[data-ndb-view-sort="count"]')
+        ->assertScript('document.querySelector("[data-ndb-view-sort=\"count\"]").parentElement.getAttribute("aria-sort") === "ascending"')
         ->assertScript($groupNames, 'context|original-response')
+        ->keys('[data-ndb-view-sort="name"]', 'Enter')
+        ->assertScript('document.querySelector("[data-ndb-view-sort=\"name\"]").parentElement.getAttribute("aria-sort") === "ascending"')
+        ->keys('[data-ndb-view-sort="name"]', 'Enter')
+        ->assertScript('document.querySelector("[data-ndb-view-sort=\"name\"]").parentElement.getAttribute("aria-sort") === "descending"')
+        ->assertScript($groupNames, 'original-response|context')
         ->assertNoJavaScriptErrors();
 });
 
@@ -1275,6 +1294,15 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->click('[data-ndb-view-group] > summary')
         ->assertSee('tests/views/context.blade.php')
         ->assertPresent('[data-ndb-view-data]')
+        ->assertMissing('[data-ndb-view-data-count]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const trigger = document.querySelector('[data-ndb-view-data-trigger]');
+
+                return trigger.textContent.trim() === 'View data'
+                    && trigger.querySelector('svg') === null;
+            })()
+            JS)
         ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-data-popover]")).display === "none"')
         ->assertScript(<<<'JS'
@@ -1609,6 +1637,17 @@ it('filters searches sorts and shows repeated query evidence without another dis
         ->click('[data-ndb-toolbar="queries"]')
         ->waitForText('Needs attention')
         ->assertMissing('[data-ndb-findings]')
+        ->assertMissing('[data-ndb-query-summary-value]')
+        ->assertVisible('[data-ndb-query-total-time]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const time = document.querySelector('[data-ndb-query-total-time]');
+                const count = document.querySelector('[data-ndb-query-result-label]');
+
+                return time.parentElement === count.parentElement
+                    && /^\d+(?:\.\d+)? ms query time$/.test(time.textContent.trim());
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const buttons = Array.from(document.querySelectorAll('[data-ndb-query-filter]'));
@@ -1652,9 +1691,10 @@ it('filters searches sorts and shows repeated query evidence without another dis
             JS)
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
-        ->assertScript('document.querySelector("[data-ndb-query-result-count]").textContent.replace(/\\s+/g, " ").trim() === "3 results"')
+        ->assertScript('document.querySelector("[data-ndb-query-result-label]").textContent.replace(/\\s+/g, " ").trim() === "3 results"')
         ->click('[data-ndb-query-filter="attention"]')
         ->assertAttribute('[data-ndb-query-filter="attention"]', 'aria-pressed', 'true')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-query-total-time]")).display === "none"')
         ->assertScript('document.querySelectorAll("[data-ndb-query-item]:not([hidden])").length', 0)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden])").length', 1)
         ->assertScript('document.querySelectorAll("[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-pattern] code[data-ndb-language=sql]").length', 1)

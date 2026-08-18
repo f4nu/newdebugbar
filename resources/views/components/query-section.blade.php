@@ -19,28 +19,6 @@
 @endphp
 
 <div data-ndb-queries class="ndb:space-y-4">
-    <div class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
-        <dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:divide-zinc-200/80 ndb:dark:divide-zinc-800">
-            @foreach ([
-                ['Queries', $querySummary['total_count']],
-                ['Query time', $querySummary['total_time_ms'].' ms'],
-                ['Request share', $querySummary['request_time_percent'].'%'],
-            ] as [$label, $value])
-                <div class="ndb:min-w-0 ndb:px-2 ndb:py-3 ndb:text-center ndb:sm:px-4">
-                    <dt class="ndb:text-[9px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        {{ $label }}
-                    </dt>
-                    <dd
-                        data-ndb-query-summary-value="{{ str($label)->slug() }}"
-                        class="ndb:mt-1 ndb:truncate ndb:text-sm ndb:font-bold ndb:tabular-nums"
-                    >
-                        {{ $value }}
-                    </dd>
-                </div>
-            @endforeach
-        </dl>
-    </div>
-
     <div class="ndb:flex ndb:gap-1 ndb:overflow-x-auto" role="group" aria-label="Filter queries">
         @foreach ($queryFilters as $filter => [$label, $count])
             <x-newdebugbar::filter-tab
@@ -60,10 +38,18 @@
     <div class="ndb:flex ndb:flex-col ndb:gap-2 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between">
         <p
             data-ndb-query-result-count
-            class="ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-3 ndb:gap-y-1 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
         >
-            <span x-text="visibleQueryCount"></span>
-            <span x-text="visibleQueryCount === 1 ? 'result' : 'results'">results</span>
+            <span data-ndb-query-result-label>
+                <span x-text="visibleQueryCount"></span>
+                <span x-text="visibleQueryCount === 1 ? 'result' : 'results'">results</span>
+            </span>
+            <span
+                x-cloak
+                x-show.important="queryFilter === 'all' && querySearch.trim() === ''"
+                data-ndb-query-total-time
+                class="ndb:whitespace-nowrap ndb:text-zinc-400"
+            >{{ $querySummary['total_time_ms'] }} ms query time</span>
         </p>
         <div class="ndb:grid ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_auto] ndb:gap-2 ndb:sm:w-[25rem]">
             <label class="ndb:relative ndb:min-w-0">

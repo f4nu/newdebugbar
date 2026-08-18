@@ -140,7 +140,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
-    viewSort: 'render',
+    viewSort: 'name',
+    viewSortDirection: 'asc',
     visibleQueryCount: summary.query_count ?? 0,
     authorizationFilter: 'all',
     visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
@@ -505,8 +506,11 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
-      this.viewSort = 'render';
+      this.viewSort = 'name';
+      this.viewSortDirection = 'asc';
       this.authorizationFilter = 'all';
+      this.eventSource = 'application';
+      this.eventSearch = '';
       if (!keepHistoryOpen) {
         this.historyPath = '';
         this.historyMethod = '';
@@ -618,10 +622,16 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
     },
 
-    setViewSort(sort) {
-      if (!['render', 'count'].includes(sort)) return;
+    toggleViewSort(sort) {
+      if (!['name', 'count'].includes(sort)) return;
 
-      this.viewSort = sort;
+      if (this.viewSort === sort) {
+        this.viewSortDirection = this.viewSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.viewSort = sort;
+        this.viewSortDirection = sort === 'count' ? 'desc' : 'asc';
+      }
+
       this.applyViewSort();
     },
 
@@ -633,12 +643,18 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       [...groups.children]
         .sort((left, right) => {
+          const direction = this.viewSortDirection === 'asc' ? 1 : -1;
+
           if (this.viewSort === 'count') {
-            return Number(right.dataset.count ?? 0) - Number(left.dataset.count ?? 0)
+            return (Number(left.dataset.count ?? 0) - Number(right.dataset.count ?? 0)) * direction
               || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
           }
 
-          return Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
+          return String(left.dataset.name ?? '').localeCompare(
+            String(right.dataset.name ?? ''),
+            undefined,
+            { numeric: true, sensitivity: 'base' },
+          ) * direction || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
         })
         .forEach((group) => groups.appendChild?.(group));
     },
