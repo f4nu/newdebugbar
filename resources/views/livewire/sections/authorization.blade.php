@@ -1,7 +1,10 @@
-{{-- Renders authorization decisions and their source context. --}}
-@php($authorizationItems = $section['payload']['items'])
+{{-- Renders authorization decisions as an adaptive actor-to-target ledger. --}}
+@php
+    $authorizationItems = $section['payload']['items'];
+    $authorizationCounts = array_count_values(array_column($authorizationItems, 'result'));
+    $shortType = static fn (string $type): string => class_basename($type);
+@endphp
 @if ($authorizationItems !== [])
-    @php($authorizationCounts = array_count_values(array_column($authorizationItems, 'result')))
     <div>
         <p class="ndb:mb-1.5 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
             Filter
@@ -19,34 +22,84 @@
             @endforeach
         </x-newdebugbar::filter-tabs>
     </div>
-    <p data-ndb-authorization-result-count class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-        <span x-text="visibleAuthorizationCount"></span> results
-    </p>
-    <div x-ref="authorizationItems" class="ndb:space-y-2">
+    <ol
+        x-ref="authorizationItems"
+        class="ndb:m-0 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
+    >
         @foreach ($authorizationItems as $index => $item)
-            <article
+            @php
+                $userType = is_string($item['user_type'] ?? null) ? $item['user_type'] : null;
+                $actor = $userType === null ? 'Guest' : $shortType($userType);
+                $targetTypes = array_values(array_filter(
+                    $item['argument_types'] ?? [],
+                    static fn (mixed $type): bool => is_string($type) && $type !== '',
+                ));
+                $targets = array_map($shortType, $targetTypes);
+                $handler = is_string($item['handler'] ?? null) ? $item['handler'] : null;
+                $showHandler = $handler !== null && $handler !== '' && $handler !== 'callback';
+                $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
+                $callsiteLabel = $callsite === null
+                    ? null
+                    : ($callsite['copy'] ?? (($callsite['file'] ?? 'Unknown source').':'.($callsite['line'] ?? '?')));
+            @endphp
+            <li
                 data-ndb-authorization-item
                 data-result="{{ $item['result'] }}"
                 wire:key="authorization-{{ $index }}"
-                class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 {{ $item['result'] === 'allowed' ? 'ndb:border-emerald-200 ndb:bg-emerald-50/35 ndb:dark:border-emerald-950 ndb:dark:bg-emerald-950/15' : 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' }}"
+                class="ndb:min-w-0 ndb:py-3"
             >
-                <span class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-700 ndb:dark:text-emerald-300' : 'ndb:text-red-700 ndb:dark:text-red-300' }}">{{ $item['result'] }}</span>
-                <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-bold">{{ $item['ability'] }}</code>
-                <span
-                    title="{{ $item['handler'] }}"
-                    class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
-                >{{ str($item['handler'])->afterLast('\\') }}</span>
-                <p class="ndb:w-full ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                    {{ implode(', ', array_filter([$item['user_type'] ?? null, ...($item['argument_types'] ?? [])])) ?: 'No typed arguments' }}
-                </p>
-                @if (is_array($item['callsite'] ?? null))
-                    <p class="ndb:w-full ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-400">
-                        <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">{{ $item['callsite']['copy'] ?? (($item['callsite']['file'] ?? 'Unknown source').':'.($item['callsite']['line'] ?? '?')) }}</span>
-                    </p>
+                <div class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:font-mono ndb:text-xs ndb:leading-5">
+                    <code
+                        data-ndb-authorization-source
+                        title="{{ $userType ?? 'Unauthenticated actor' }}"
+                        class="ndb:font-bold"
+                    >{{ $actor }}</code>
+                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
+                        <span aria-hidden="true" class="ndb:text-zinc-400">→</span>
+                        <span
+                            data-ndb-authorization-result
+                            class="ndb:font-semibold {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-600 ndb:dark:text-emerald-400' : 'ndb:text-red-600 ndb:dark:text-red-400' }}"
+                        >{{ $item['result'] }}</span>
+                    </span>
+                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
+                        <span aria-hidden="true" class="ndb:text-zinc-400">→</span>
+                        <code
+                            data-ndb-authorization-ability
+                            class="ndb:min-w-0 ndb:break-words ndb:font-bold"
+                        >{{ $item['ability'] }}</code>
+                    </span>
+                    @if ($targets !== [])
+                        <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3">
+                            <span aria-hidden="true" class="ndb:text-zinc-400">→</span>
+                            <code
+                                data-ndb-authorization-target
+                                title="{{ implode(', ', $targetTypes) }}"
+                                class="ndb:min-w-0 ndb:break-words ndb:font-bold"
+                            >{{ implode(', ', $targets) }}</code>
+                        </span>
+                    @endif
+                </div>
+                @if ($callsiteLabel !== null || $showHandler)
+                    <div class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-400">
+                        @if ($callsiteLabel !== null)
+                            <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-2">
+                                <span aria-hidden="true">↳</span>
+                                <code
+                                    data-ndb-authorization-callsite
+                                    title="{{ $callsiteLabel }}"
+                                    class="ndb:min-w-0 ndb:break-words ndb:font-mono"
+                                >{{ $callsiteLabel }}</code>
+                            </span>
+                        @endif
+                        @if ($showHandler)
+                            <span data-ndb-authorization-handler title="{{ $handler }}" class="ndb:font-mono"
+                                >via {{ $shortType($handler) }}</span>
+                        @endif
+                    </div>
                 @endif
-            </article>
+            </li>
         @endforeach
-    </div>
+    </ol>
     <div x-show.important="visibleAuthorizationCount === 0">
         <x-newdebugbar::empty-state label="No authorization decisions match this filter." />
     </div>

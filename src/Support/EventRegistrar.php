@@ -111,7 +111,7 @@ final class EventRegistrar
                 'handler' => $this->authorizationHandler($event),
                 'user_type' => is_object($event->user) ? $event->user::class : null,
                 'argument_types' => array_values(array_map(
-                    fn (mixed $argument): string => is_object($argument) ? $argument::class : get_debug_type($argument),
+                    fn (mixed $argument): string => $this->authorizationArgumentType($argument),
                     $event->arguments,
                 )),
                 'callsite' => $location['callsite'],
@@ -549,6 +549,22 @@ final class EventRegistrar
             'schedule:work',
             'serve',
         ], true);
+    }
+
+    private function authorizationArgumentType(mixed $argument): string
+    {
+        if (is_object($argument)) {
+            return $argument::class;
+        }
+
+        if (
+            is_string($argument)
+            && (class_exists($argument) || interface_exists($argument) || enum_exists($argument))
+        ) {
+            return $argument;
+        }
+
+        return get_debug_type($argument);
     }
 
     private function authorizationHandler(GateEvaluated $event): string

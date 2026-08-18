@@ -215,3 +215,34 @@ passed
 ## Final result
 
 passed
+
+---
+
+# Authorization design QA
+
+## Source and implementation
+
+- Source: `/Users/benjamin/.codex/generated_images/01a015df-8107-7280-a7a6-5284f291a05c/exec-6bd7cdf3-ea16-46b3-a887-4242a1f2985f.png`
+- Implementation: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-implementation-dark.png`
+- Full comparison: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-comparison-full.png`
+- Focused comparison: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-comparison-focused.png`
+- Viewport: 1280 x 720 CSS pixels for both full views. The source was scaled from the same 16:9 canvas. The focused comparison crops the Authorization content from each view.
+
+## Comparison
+
+- Fonts: The implementation keeps the product's Outfit type and uses monospace only for technical facts. Weight and hierarchy match the selected direction.
+- Spacing: The flat rows and dividers match the reference structure while using the existing inspector's tighter spacing. The sequence wraps cleanly without horizontal overflow at 390px.
+- Colors: Allowed and denied states keep the same green and red meaning in light and dark themes. Rows remain transparent.
+- Assets: No image or icon assets are required for this list.
+- Copy: Actor, result, ability, target, callsite, and specific policy handler information remain available. Full type names are preserved in tooltips, including class-string targets used by create-style checks.
+
+## Findings and history
+
+- The reference's selected-row background and left border were intentionally removed per the implementation brief.
+- The target was added after the ability.
+- The shared filter-tab component was kept so Authorization matches the rest of the inspector.
+- No P0, P1, or P2 visual issues remain after desktop dark, desktop light, and 390px checks.
+
+## Final result
+
+passed
