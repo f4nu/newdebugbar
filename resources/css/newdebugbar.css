@@ -229,6 +229,10 @@
     transition: none;
 }
 
+#newdebugbar .ndb-toolbar-draggable[data-rebasing="true"] {
+    transition: none;
+}
+
 #newdebugbar .ndb-toolbar-draggable[data-dragging="true"],
 #newdebugbar .ndb-toolbar-draggable[data-dragging="true"] * {
     cursor: grabbing !important;

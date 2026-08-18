@@ -140,6 +140,43 @@ function openNarrowVisualDebugInspector($page): void
         ->click('[data-ndb-mobile-toolbar-action="inspector"]');
 }
 
+function showVisualToolbarDrag($page): void
+{
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                const state = Alpine.$data(toolbar);
+                const box = toolbar.getBoundingClientRect();
+
+                state.toolbarDragWidth = box.width;
+                state.toolbarDragHeight = box.height;
+                state.toolbarDragTarget = 'top';
+                state.toolbarDragOffsetY = -Math.round(window.innerHeight * 0.45);
+                state.toolbarDragging = true;
+
+                return true;
+            })()
+            JS)
+        ->wait(0.1)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                const state = Alpine.$data(toolbar);
+                const active = document.querySelector('[data-ndb-toolbar-anchor="top"]');
+                const inactive = document.querySelector('[data-ndb-toolbar-anchor="bottom"]');
+                const box = active.getBoundingClientRect();
+
+                return active.dataset.active === 'true'
+                    && inactive.dataset.active !== 'true'
+                    && Math.abs(box.width - state.toolbarDragWidth) <= 1
+                    && Math.abs(box.height - state.toolbarDragHeight) <= 1
+                    && Math.abs(box.top - 12) <= 1
+                    && getComputedStyle(active).borderRadius === '18px';
+            })()
+            JS);
+}
+
 function stabilizeVisualDebugValues($page): void
 {
     $page->wait(0.25)->assertScript(<<<'JS'
@@ -423,6 +460,19 @@ it('matches the visual baseline for the :dataset top-pinned toolbar', function (
     assertVisualDebugBaseline($page, "toolbar-top-{$theme}");
 })->with(['light', 'dark']);
 
+it('matches the visual baseline for the :dataset dragging toolbar', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(1440, 900);
+    stabilizeVisualDebugValues($page);
+    showVisualToolbarDrag($page);
+
+    $page->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-dragging-{$theme}");
+})->with(['light', 'dark']);
+
 it('matches the visual baseline for the :dataset narrow toolbar', function (string $theme) {
     $page = visit('/profiled-rich');
 
@@ -435,6 +485,19 @@ it('matches the visual baseline for the :dataset narrow toolbar', function (stri
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-narrow-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset narrow dragging toolbar', function (string $theme) {
+    $page = visit('/profiled-rich');
+
+    setVisualDebugTheme($page, $theme);
+    $page->resize(390, 844);
+    stabilizeVisualDebugValues($page);
+    showVisualToolbarDrag($page);
+
+    $page->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "toolbar-narrow-dragging-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset small-phone toolbar', function (string $theme) {

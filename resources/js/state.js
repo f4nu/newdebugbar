@@ -10,6 +10,7 @@ const defaultRuntime = () => ({
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
+  nextFrame: (callback) => window.requestAnimationFrame(callback),
   schedule: (callback, delay) => window.setTimeout(callback, delay),
   cancelSchedule: (timer) => window.clearTimeout(timer),
   viewportHeight: () => window.innerHeight,
@@ -143,17 +144,20 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     toolbarPreferredPlacement: 'bottom',
     stopToolbarPlacementWatch: null,
     toolbarDragging: false,
+    toolbarRebasing: false,
     toolbarSnapping: false,
     toolbarDragPointerId: null,
     toolbarDragStartX: 0,
     toolbarDragStartY: 0,
     toolbarDragPointerOffsetY: 0,
+    toolbarDragWidth: 0,
     toolbarDragHeight: 0,
     toolbarDragOffsetY: 0,
     toolbarDragTarget: 'bottom',
     toolbarDragOriginPlacement: 'bottom',
     toolbarSuppressClick: false,
     toolbarSnapTimer: null,
+    toolbarSnapVersion: 0,
     toolbarClickTimer: null,
     favorites: [],
     favoriteDrag: null,
@@ -210,6 +214,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.colorSchemeListener = null;
       this.stopToolbarPlacementWatch?.();
       this.stopToolbarPlacementWatch = null;
+      this.toolbarSnapVersion += 1;
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       browser.cancelSchedule?.(this.toolbarClickTimer);
       this.toolbarSnapTimer = null;
@@ -418,7 +423,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     },
 
     syncToolbarPlacement() {
-      if (this.toolbarDragging || this.toolbarSnapping) return;
+      if (this.toolbarDragging || this.toolbarRebasing || this.toolbarSnapping) return;
 
       const placement = browser.toolbarPlacement?.(this.$root, this.toolbarPreferredPlacement);
 
@@ -444,11 +449,14 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       this.toolbarSnapTimer = null;
+      this.toolbarSnapVersion += 1;
+      this.toolbarRebasing = true;
       this.toolbarSnapping = false;
       this.toolbarDragPointerId = event.pointerId;
       this.toolbarDragStartX = event.clientX;
       this.toolbarDragStartY = event.clientY;
       this.toolbarDragPointerOffsetY = Math.min(Math.max(event.clientY - box.top, 0), box.height);
+      this.toolbarDragWidth = box.width;
       this.toolbarDragHeight = box.height;
       this.toolbarDragOffsetY = box.top - this.toolbarAnchorTop(this.toolbarPlacement, box.height);
       this.toolbarDragTarget = this.toolbarPlacement;
@@ -500,7 +508,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.toolbarDragPointerId = null;
 
       if (!this.toolbarDragging) {
-        this.toolbarDragOffsetY = 0;
+        this.moveToolbarTo(this.toolbarPlacement, false, currentTop);
 
         return;
       }
@@ -522,7 +530,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.toolbarDragPointerId = null;
 
       if (!this.toolbarDragging) {
-        this.toolbarDragOffsetY = 0;
+        this.moveToolbarTo(this.toolbarPlacement, false, currentTop);
 
         return;
       }
@@ -562,10 +570,16 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     moveToolbarTo(placement, remember = false, currentTop = null) {
       if (!['top', 'bottom'].includes(placement)) return;
 
+      const snapVersion = ++this.toolbarSnapVersion;
       const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
       const box = toolbar?.getBoundingClientRect?.();
       const height = box?.height ?? this.toolbarDragHeight;
       const fromTop = Number.isFinite(currentTop) ? currentTop : box?.top;
+
+      browser.cancelSchedule?.(this.toolbarSnapTimer);
+      this.toolbarSnapTimer = null;
+      this.toolbarRebasing = true;
+      this.toolbarSnapping = false;
 
       if (remember) {
         this.toolbarPreferredPlacement = placement;
@@ -577,6 +591,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       if (!Number.isFinite(fromTop) || height <= 0) {
         this.toolbarDragOffsetY = 0;
+        this.toolbarRebasing = false;
         this.toolbarSnapping = false;
 
         return;
@@ -584,22 +599,47 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       const offset = fromTop - this.toolbarAnchorTop(placement, height);
       this.toolbarDragOffsetY = Math.abs(offset) > 0.5 ? offset : 0;
-      this.toolbarSnapping = this.toolbarDragOffsetY !== 0;
 
-      if (!this.toolbarSnapping) return;
+      if (this.toolbarDragOffsetY === 0) {
+        this.toolbarRebasing = false;
+
+        return;
+      }
 
       this.$nextTick?.(() => {
-        const settle = () => { this.toolbarDragOffsetY = 0; };
-        browser.afterPaint ? browser.afterPaint(settle) : settle();
+        const prepare = () => {
+          if (snapVersion !== this.toolbarSnapVersion) return;
+
+          this.toolbarRebasing = false;
+          this.toolbarSnapping = true;
+
+          const settle = () => {
+            if (snapVersion !== this.toolbarSnapVersion) return;
+
+            this.toolbarDragOffsetY = 0;
+            this.toolbarSnapTimer = browser.schedule?.(
+              () => this.finishToolbarSnap(snapVersion),
+              500,
+            ) ?? null;
+          };
+
+          if (browser.nextFrame) browser.nextFrame(settle);
+          else this.$nextTick?.(settle);
+        };
+
+        if (browser.afterPaint) browser.afterPaint(prepare);
+        else prepare();
       });
-      browser.cancelSchedule?.(this.toolbarSnapTimer);
-      this.toolbarSnapTimer = browser.schedule?.(() => this.finishToolbarSnap(), 500) ?? null;
     },
 
-    finishToolbarSnap() {
+    finishToolbarSnap(snapVersion = null) {
+      if (snapVersion !== null && snapVersion !== this.toolbarSnapVersion) return;
+      if (!this.toolbarSnapping || this.toolbarRebasing || this.toolbarDragging) return;
+
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       this.toolbarSnapTimer = null;
       this.toolbarDragOffsetY = 0;
+      this.toolbarRebasing = false;
       this.toolbarSnapping = false;
       this.syncToolbarPlacement();
     },

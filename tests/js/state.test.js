@@ -20,6 +20,7 @@ function runtime(saved = null) {
     activeElement: () => null,
     highlight: () => {},
     afterPaint: (callback) => callback(),
+    nextFrame: (callback) => callback(),
     schedule: (callback) => {
       timers.add(callback);
 
@@ -250,7 +251,7 @@ function toolbarHarness(saved = null) {
       const height = 60;
       const baseTop = state.toolbarPlacement === 'top' ? 12 : 828;
 
-      return { top: baseTop + state.toolbarDragOffsetY, height };
+      return { top: baseTop + state.toolbarDragOffsetY, width: 1024, height };
     },
   };
   state.$root = {
@@ -278,15 +279,19 @@ function toolbarHarness(saved = null) {
 
 test('the compact toolbar follows a pointer and pins to the nearest anchor', () => {
   const { browser, capture, pointer, state } = toolbarHarness();
+  const paintCallbacks = [];
   let prevented = 0;
   let clickPrevented = 0;
   let clickStopped = 0;
+  browser.afterPaint = (callback) => paintCallbacks.push(callback);
+  browser.nextFrame = (callback) => paintCallbacks.push(callback);
 
   state.startToolbarDrag(pointer());
   state.moveToolbarDrag(pointer({ clientY: 92, preventDefault: () => prevented++ }));
 
   assert.equal(state.toolbarDragging, true);
   assert.equal(state.toolbarDragTarget, 'top');
+  assert.equal(state.toolbarDragWidth, 1024);
   assert.equal(state.toolbarDragOffsetY, -758);
   assert.equal(capture.pointerId, 7);
   assert.equal(prevented, 1);
@@ -296,11 +301,20 @@ test('the compact toolbar follows a pointer and pins to the nearest anchor', () 
   assert.equal(state.toolbarDragging, false);
   assert.equal(state.toolbarPlacement, 'top');
   assert.equal(state.toolbarPreferredPlacement, 'top');
-  assert.equal(state.toolbarSnapping, true);
+  assert.equal(state.toolbarRebasing, true);
+  assert.equal(state.toolbarSnapping, false);
   assert.equal(state.toolbarSuppressClick, true);
   assert.deepEqual(capture.releases, [7]);
   assert.equal(prevented, 2);
   assert.equal(JSON.parse(browser.values.get(STORAGE_KEY)).toolbarAnchor, 'top');
+
+  paintCallbacks.shift()();
+  assert.equal(state.toolbarRebasing, false);
+  assert.equal(state.toolbarSnapping, true);
+  assert.equal(state.toolbarDragOffsetY, 58);
+
+  paintCallbacks.shift()();
+  assert.equal(state.toolbarDragOffsetY, 0);
 
   state.consumeToolbarClick({
     preventDefault: () => clickPrevented++,

@@ -11,6 +11,7 @@
     :data-preferred-placement="toolbarPreferredPlacement"
     :data-dragging="toolbarDragging"
     :data-drag-target="toolbarDragTarget"
+    :data-rebasing="toolbarRebasing"
     :data-snapping="toolbarSnapping"
     :style="{ '--ndb-toolbar-drag-y': toolbarDragOffsetY + 'px' }"
     :class="toolbarPlacement === 'top' ? 'ndb:top-3' : 'ndb:bottom-3'"

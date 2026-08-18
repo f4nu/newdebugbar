@@ -27,34 +27,8 @@
     <span id="newdebugbar-toolbar-drag-hint" class="ndb:sr-only"
         >Drag vertically to pin this toolbar to the top or bottom. The command palette offers the same actions.</span>
 
-    <div
-        x-cloak
-        x-show.important="toolbarDragging"
-        x-transition.opacity.duration.150ms
-        aria-hidden="true"
-        data-ndb-toolbar-anchor="top"
-        :data-active="toolbarDragTarget === 'top'"
-        class="ndb:fixed ndb:top-1 ndb:left-1/2 ndb:flex ndb:h-1.5 ndb:-translate-x-1/2 ndb:items-center ndb:justify-center"
-    >
-        <span
-            :class="toolbarDragTarget === 'top' ? 'ndb:w-16 ndb:bg-indigo-500' : 'ndb:w-9 ndb:bg-zinc-400/55'"
-            class="ndb:h-1 ndb:rounded-full ndb:shadow-sm ndb:transition-[width,background-color] ndb:duration-200"
-        ></span>
-    </div>
-    <div
-        x-cloak
-        x-show.important="toolbarDragging"
-        x-transition.opacity.duration.150ms
-        aria-hidden="true"
-        data-ndb-toolbar-anchor="bottom"
-        :data-active="toolbarDragTarget === 'bottom'"
-        class="ndb:fixed ndb:bottom-1 ndb:left-1/2 ndb:flex ndb:h-1.5 ndb:-translate-x-1/2 ndb:items-center ndb:justify-center"
-    >
-        <span
-            :class="toolbarDragTarget === 'bottom' ? 'ndb:w-16 ndb:bg-indigo-500' : 'ndb:w-9 ndb:bg-zinc-400/55'"
-            class="ndb:h-1 ndb:rounded-full ndb:shadow-sm ndb:transition-[width,background-color] ndb:duration-200"
-        ></span>
-    </div>
+    <x-newdebugbar::toolbar-anchor-preview placement="top" />
+    <x-newdebugbar::toolbar-anchor-preview placement="bottom" />
 
     @include('newdebugbar::livewire.toolbar')
 

@@ -317,6 +317,99 @@ it('drags the compact toolbar between animated persistent anchors', function () 
         ->assertNoJavaScriptErrors();
 });
 
+it('animates from the toolbar release point to the nearest anchor', function () {
+    $page = visit('/profiled')->resize(1440, 900);
+
+    $page->script(<<<'JS'
+        const target = document.createElement('div');
+        target.dataset.testid = 'toolbar-middle-top-target';
+        Object.assign(target.style, {
+            position: 'fixed',
+            top: '300px',
+            left: '50%',
+            width: '48px',
+            height: '48px',
+            zIndex: '1',
+        });
+        document.body.append(target);
+
+        const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+        toolbar.addEventListener('pointerup', () => {
+            window.__ndbToolbarDropTop = toolbar.getBoundingClientRect().top;
+            window.__ndbToolbarSnapSamples = [];
+            let remaining = 36;
+            const sample = () => {
+                window.__ndbToolbarSnapSamples.push(toolbar.getBoundingClientRect().top);
+                remaining -= 1;
+                if (remaining > 0) requestAnimationFrame(sample);
+            };
+            requestAnimationFrame(sample);
+        }, { capture: true, once: true });
+        JS);
+
+    $page
+        ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-middle-top-target"]')
+        ->wait(0.8)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertScript(<<<'JS'
+            (() => {
+                const drop = window.__ndbToolbarDropTop;
+                const samples = window.__ndbToolbarSnapSamples ?? [];
+
+                return samples.length >= 20
+                    && Math.abs(samples[0] - drop) <= 3
+                    && samples.every((top) => top >= 10 && top <= drop + 3)
+                    && samples.every((top, index) => index === 0 || top <= samples[index - 1] + 2)
+                    && samples.at(-1) <= 13;
+            })()
+            JS);
+
+    $page->script(<<<'JS'
+        const target = document.createElement('div');
+        target.dataset.testid = 'toolbar-middle-bottom-target';
+        Object.assign(target.style, {
+            position: 'fixed',
+            top: '550px',
+            left: '50%',
+            width: '48px',
+            height: '48px',
+            zIndex: '1',
+        });
+        document.body.append(target);
+
+        const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+        toolbar.addEventListener('pointerup', () => {
+            window.__ndbToolbarDropTop = toolbar.getBoundingClientRect().top;
+            window.__ndbToolbarSnapSamples = [];
+            let remaining = 36;
+            const sample = () => {
+                window.__ndbToolbarSnapSamples.push(toolbar.getBoundingClientRect().top);
+                remaining -= 1;
+                if (remaining > 0) requestAnimationFrame(sample);
+            };
+            requestAnimationFrame(sample);
+        }, { capture: true, once: true });
+        JS);
+
+    $page
+        ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-middle-bottom-target"]')
+        ->wait(0.8)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertScript(<<<'JS'
+            (() => {
+                const drop = window.__ndbToolbarDropTop;
+                const samples = window.__ndbToolbarSnapSamples ?? [];
+
+                return samples.length >= 20
+                    && Math.abs(samples[0] - drop) <= 3
+                    && samples.every((top) => top >= drop - 3 && top <= 830)
+                    && samples.every((top, index) => index === 0 || top >= samples[index - 1] - 2)
+                    && samples.at(-1) >= 827;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
