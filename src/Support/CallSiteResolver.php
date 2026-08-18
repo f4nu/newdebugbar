@@ -21,11 +21,21 @@ final class CallSiteResolver
         }
 
         $frames = [];
+        $compiledViewFrame = null;
 
         foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $this->scanLimit) as $frame) {
             $file = isset($frame['file']) ? $this->normalizePath((string) $frame['file']) : null;
 
-            if ($file === null || ! $this->isApplicationFile($file)) {
+            if ($file === null) {
+                continue;
+            }
+
+            $compiledViewFrame ??= $this->compiledAuthorizationLocation(
+                $file,
+                (int) ($frame['line'] ?? 0),
+            );
+
+            if (! $this->isApplicationFile($file)) {
                 continue;
             }
 
@@ -38,6 +48,14 @@ final class CallSiteResolver
             if (count($frames) >= $this->maxFrames) {
                 break;
             }
+        }
+
+        if ($compiledViewFrame !== null) {
+            array_unshift($frames, [
+                ...$compiledViewFrame,
+                'function' => 'Blade authorization directive',
+            ]);
+            $frames = array_slice($frames, 0, $this->maxFrames);
         }
 
         return [
@@ -108,6 +126,77 @@ final class CallSiteResolver
         $project = rtrim(str_replace('\\', '/', $this->projectPath), '/').'/';
 
         return str_starts_with($file, $project) ? substr($file, strlen($project)) : basename($file);
+    }
+
+    /** @return array{file: string, line: int}|null */
+    private function compiledAuthorizationLocation(string $file, int $line): ?array
+    {
+        if (! str_contains($file, '/storage/framework/views/') || ! str_ends_with($file, '.php')) {
+            return null;
+        }
+
+        if (! is_readable($file)) {
+            return null;
+        }
+
+        $compiled = file_get_contents($file);
+
+        if (! is_string($compiled) || ! preg_match('/<\?php \/\*\*PATH (.+?) ENDPATH\*\*\/ \?>\s*$/s', $compiled, $pathMatch)) {
+            return null;
+        }
+
+        $source = $this->normalizePath($pathMatch[1]);
+
+        if ($source === null || ! $this->isApplicationFile($source)) {
+            return null;
+        }
+
+        if (! is_readable($source) || ! is_string($sourceContents = file_get_contents($source))) {
+            return null;
+        }
+
+        $compiledLines = preg_split('/\R/', $compiled) ?: [];
+        $sourceLines = preg_split('/\R/', $sourceContents) ?: [];
+        $compiledDirectives = [];
+        $sourceDirectives = [];
+
+        foreach ($compiledLines as $index => $compiledLine) {
+            if (
+                str_contains($compiledLine, '\\Illuminate\\Contracts\\Auth\\Access\\Gate::class')
+                && (str_contains($compiledLine, '->check(') || str_contains($compiledLine, '->any('))
+            ) {
+                $compiledDirectives[] = $index + 1;
+            }
+        }
+
+        foreach ($sourceLines as $index => $sourceLine) {
+            if (preg_match('/(?<!@)@(?:can|cannot|canany|elsecan|elsecannot)\s*\(/', $sourceLine) === 1) {
+                $sourceDirectives[] = $index + 1;
+            }
+        }
+
+        $directiveIndex = array_search($line, $compiledDirectives, true);
+
+        if ($directiveIndex === false) {
+            foreach ($compiledDirectives as $index => $compiledLine) {
+                if (abs($compiledLine - $line) <= 2) {
+                    $directiveIndex = $index;
+                    break;
+                }
+            }
+        }
+
+        if ($directiveIndex !== false && isset($sourceDirectives[$directiveIndex])) {
+            return [
+                'file' => $this->relativePath($source),
+                'line' => $sourceDirectives[$directiveIndex],
+            ];
+        }
+
+        return [
+            'file' => $this->relativePath($file),
+            'line' => max(1, $line),
+        ];
     }
 
     /** @param array<string, mixed> $frame */

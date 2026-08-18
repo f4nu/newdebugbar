@@ -223,25 +223,30 @@ passed
 ## Source and implementation
 
 - Source: `/Users/benjamin/.codex/generated_images/01a015df-8107-7280-a7a6-5284f291a05c/exec-6bd7cdf3-ea16-46b3-a887-4242a1f2985f.png`
-- Implementation: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-implementation-dark.png`
-- Full comparison: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-comparison-full.png`
-- Focused comparison: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-comparison-focused.png`
-- Viewport: 1280 x 720 CSS pixels for both full views. The source was scaled from the same 16:9 canvas. The focused comparison crops the Authorization content from each view.
+- Implementation: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-full-width-traceable-dark.png`
+- Full comparison: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-full-width-comparison-full.png`
+- Focused comparison: `/Users/benjamin/.codex/visualizations/2026/08/18/01a015df-8107-7280-a7a6-5284f291a05c/authorization-full-width-comparison-focused.png`
+- Source pixels: 1672 x 941, normalized to 1280 x 720. Implementation viewport and pixels: 1280 x 720 CSS pixels at a 1:1 screenshot output. The focused comparison scales matched Authorization crops to 600 px high.
+- State: dark theme, Authorization selected, All filter active, four decisions visible, and every decision showing its source callsite.
 
 ## Comparison
 
 - Fonts: The implementation keeps the product's Outfit type and uses monospace only for technical facts. Weight and hierarchy match the selected direction.
-- Spacing: The flat rows and dividers match the reference structure while using the existing inspector's tighter spacing. The sequence wraps cleanly without horizontal overflow at 390px.
+- Spacing: Actor, result, ability, and target now occupy four balanced tracks across the full content width. At 390 px the sequence falls back to its compact wrapping layout without horizontal overflow.
 - Colors: Allowed and denied states keep the same green and red meaning in light and dark themes. Rows remain transparent.
 - Assets: No image or icon assets are required for this list.
-- Copy: Actor, result, ability, target, callsite, and specific policy handler information remain available. Full type names are preserved in tooltips, including class-string targets used by create-style checks.
+- Copy: Actor, result, ability, target, and callsite remain visible. Full type names are preserved in tooltips, including class-string targets used by create-style checks.
 
 ## Findings and history
 
 - The reference's selected-row background and left border were intentionally removed per the implementation brief.
 - The target was added after the ability.
 - The shared filter-tab component was kept so Authorization matches the rest of the inspector.
-- No P0, P1, or P2 visual issues remain after desktop dark, desktop light, and 390px checks.
+- P2, resolved: the decision facts clustered at the left. A responsive grid now spreads them across the row and anchors the target at the far right.
+- P2, resolved: the list had an outer top and bottom rule. Only the separators between decisions remain.
+- P2, resolved: Blade authorization checks had no application callsite, leaving three of four real example rows untraceable. Compiled Blade frames now map back to the exact source directives at `resources/views/jobs/show.blade.php:23`, `:173`, and `:195`; the controller check remains at line 99.
+- The light and dark screenshot baselines were inspected and then passed again without update mode. The 390 px capture stays within the viewport, the keyboard filter browser test passes, and the browser console is clean.
+- No P0, P1, or P2 issues remain after the final full-view and focused comparisons.
 
 ## Final result
 
