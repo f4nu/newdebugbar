@@ -33,7 +33,13 @@ it('offers runnable SQL and runs manual SQLite explain with the default bindings
         ->call('loadDetails')
         ->call('explainQuery', 1)
         ->assertSet('queryExplains.1.driver', 'sqlite')
-        ->assertSet('queryExplainErrors', []);
+        ->assertSet('queryExplainErrors', [])
+        ->assertDispatched('newdebugbar-query-explained', function (string $name, array $params): bool {
+            return $name === 'newdebugbar-query-explained'
+                && $params['execution'] === 1
+                && $params['explain']['driver'] === 'sqlite'
+                && $params['error'] === null;
+        });
 });
 
 it('rejects unsafe incomplete and mutating explain requests before touching the database', function (array $query) {

@@ -33,7 +33,29 @@
     @if ($grouped) data-ndb-query-group-execution @endif
     @if ($expanded) open @endif
     @if ($filterable && $query['repeated']) hidden @endif
-    x-data="{ queryTab: @js($defaultTab) }"
+    x-data="{
+        queryTab: @js($defaultTab),
+        queryExplain: @js($explain),
+        queryExplainError: @js($explainError),
+        queryExplainScrollTop: null,
+    }"
+    @newdebugbar-query-explained.window="
+        if (Number($event.detail.execution) === {{ $query['execution'] }}) {
+            queryExplain = $event.detail.explain;
+            queryExplainError = $event.detail.error;
+            $nextTick(() => {
+                if (queryExplainScrollTop !== null) {
+                    $el.closest('#newdebugbar')?.querySelector('main')?.scrollTo(0, queryExplainScrollTop);
+                }
+                window.newDebugBarHighlight?.($el);
+            });
+        }
+    "
+    @newdebugbar-profile-switched.window="
+        queryExplain = null;
+        queryExplainError = null;
+        queryExplainScrollTop = null;
+    "
     @class([
         'ndb:min-w-0',
         'ndb:scroll-mt-16 ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/40' => ! $grouped,
@@ -204,17 +226,36 @@
             </div>
         @endif
 
-        @if (is_array($explain))
-            <div class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:p-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60">
+        <div
+            wire:loading
+            wire:target="explainQuery({{ $query['execution'] }})"
+            data-ndb-query-explain-loading
+            class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:px-3 ndb:py-3 ndb:text-[10px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60 ndb:dark:text-zinc-400"
+        >
+            <span class="ndb:flex ndb:items-center ndb:gap-2">
+                <span class="ndb:size-1.5 ndb:shrink-0 ndb:animate-pulse ndb:rounded-full ndb:bg-indigo-500 ndb:motion-reduce:animate-none"></span>
+                <span>Explaining query…</span>
+            </span>
+        </div>
+
+        <template x-if="queryExplain !== null">
+            <div
+                data-ndb-query-explain-result
+                class="ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50/70 ndb:p-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/60"
+            >
                 <p class="ndb:mb-2 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    <span>{{ $explain['mode'] }}</span><span>{{ $explain['driver'] }}</span>
+                    <span x-text="queryExplain.mode"></span><span x-text="queryExplain.driver"></span>
                 </p>
-                <pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json">{{ json_encode($explain['rows'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                <pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json" x-text="JSON.stringify(queryExplain.rows, null, 2)"></code></pre>
             </div>
-        @elseif (is_string($explainError))
-            <p class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20 ndb:dark:text-amber-300">
-                {{ $explainError }}
-            </p>
-        @endif
+        </template>
+
+        <template x-if="queryExplainError !== null">
+            <p
+                data-ndb-query-explain-error
+                class="ndb:border-t ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/20 ndb:dark:text-amber-300"
+                x-text="queryExplainError"
+            ></p>
+        </template>
     </div>
 </details>

@@ -6,6 +6,7 @@ use Illuminate\Contracts\View\View;
 use InvalidArgumentException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use NewDebugBar\Analysis\ProfileComparator;
 use NewDebugBar\Presentation\ProfilePresenter;
@@ -181,6 +182,7 @@ final class DebugBar extends Component
         $this->dispatch('newdebugbar-content-updated');
     }
 
+    #[Renderless]
     public function explainQuery(
         int $execution,
         ProfileStore $store,
@@ -201,7 +203,12 @@ final class DebugBar extends Component
             $this->queryExplainErrors[$execution] = $exception->getMessage();
         }
 
-        $this->dispatch('newdebugbar-content-updated');
+        $this->dispatch(
+            'newdebugbar-query-explained',
+            execution: $execution,
+            explain: $this->queryExplains[$execution] ?? null,
+            error: $this->queryExplainErrors[$execution] ?? null,
+        );
     }
 
     public function switchProfile(

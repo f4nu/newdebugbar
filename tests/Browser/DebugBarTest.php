@@ -1602,6 +1602,47 @@ it('highlights repeated SQL and switches query evidence tabs', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('shows an explained query in place without losing the open query or scroll position', function () {
+    $query = '[data-ndb-query-group-execution][open]';
+    $actions = $query.' [data-ndb-query-actions]';
+
+    visit('/profiled')
+        ->resize(1100, 620)
+        ->click('[data-ndb-toolbar="queries"]')
+        ->waitForText('Repeated pattern')
+        ->assertPresent($query.' [data-ndb-query-explain-loading]')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-query-explain-loading]")).display === "none"')
+        ->click($actions.' > summary')
+        ->assertVisible($actions.' [data-ndb-query-explain-action]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const content = document.querySelector('#newdebugbar main');
+                const query = document.querySelector('[data-ndb-query-group-execution][open]');
+
+                content.scrollTop = Math.min(120, content.scrollHeight - content.clientHeight);
+                query.__newDebugBarExplainMarker = 'preserved';
+
+                return content.scrollTop > 0;
+            })()
+            JS)
+        ->click($actions.' [data-ndb-query-explain-action]')
+        ->waitForText('EXPLAIN QUERY PLAN')
+        ->assertVisible($query.' [data-ndb-query-explain-result]')
+        ->assertAttribute($query, 'open', '')
+        ->assertVisible('[data-ndb-section-panel="queries"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Queries"')
+        ->assertScript('document.querySelector("[data-ndb-query-group-execution][open]").__newDebugBarExplainMarker === "preserved"')
+        ->assertScript(<<<'JS'
+            (() => {
+                const content = document.querySelector('#newdebugbar main');
+                const query = document.querySelector('[data-ndb-query-group-execution][open]');
+
+                return Math.abs(content.scrollTop - Alpine.$data(query).queryExplainScrollTop) <= 1;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('keeps repeated SQL on one shared syntax-highlighted surface in :dataset mode', function (string $theme) {
     $preferences = json_encode([
         'theme' => $theme,
