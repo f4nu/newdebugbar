@@ -251,6 +251,87 @@ it('moves the compact toolbar away from host dialogs at either screen edge', fun
         ->assertNoJavaScriptErrors();
 });
 
+it('opens the inspector from the active toolbar anchor', function () {
+    $page = visit('/profiled')->resize(1440, 900);
+
+    $page
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.25)
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'bottom')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const box = panel.getBoundingClientRect();
+                const styles = getComputedStyle(panel);
+
+                return Math.abs(box.bottom - window.innerHeight) <= 1
+                    && box.top > 0
+                    && styles.borderTopLeftRadius !== '0px'
+                    && styles.borderBottomLeftRadius === '0px';
+            })()
+            JS)
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->wait(0.2)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                Alpine.$data(toolbar).pinToolbar('top');
+
+                return true;
+            })()
+            JS)
+        ->wait(0.6)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertScript(<<<'JS'
+            (() => {
+                const control = document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+                const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                window.__ndbInspectorSamples = [];
+
+                control.addEventListener('click', () => {
+                    let remaining = 20;
+                    const sample = () => {
+                        if (getComputedStyle(panel).display !== 'none') {
+                            const box = panel.getBoundingClientRect();
+                            window.__ndbInspectorSamples.push({ top: box.top, bottom: box.bottom });
+                        }
+
+                        remaining -= 1;
+                        if (remaining > 0) requestAnimationFrame(sample);
+                    };
+
+                    requestAnimationFrame(sample);
+                }, { capture: true, once: true });
+
+                return panel.dataset.placement === 'top'
+                    && panel.getAttribute('x-transition:enter-start') === 'ndb-inspector-offscreen'
+                    && panel.getAttribute('x-transition:leave-end') === 'ndb-inspector-offscreen';
+            })()
+            JS)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.4)
+        ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'top')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const box = panel.getBoundingClientRect();
+                const styles = getComputedStyle(panel);
+                const samples = window.__ndbInspectorSamples ?? [];
+
+                return Math.abs(box.top) <= 1
+                    && box.bottom < window.innerHeight
+                    && styles.borderTopLeftRadius === '0px'
+                    && styles.borderBottomLeftRadius !== '0px'
+                    && samples.length >= 8
+                    && samples.some((sample) => sample.top < -20)
+                    && samples.every((sample) => sample.top <= 1)
+                    && samples.at(-1).top >= -2;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('drags the compact toolbar between animated persistent anchors', function () {
     $page = visit('/profiled')
         ->resize(1440, 900)

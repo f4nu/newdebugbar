@@ -140,6 +140,21 @@ function openNarrowVisualDebugInspector($page): void
         ->click('[data-ndb-mobile-toolbar-action="inspector"]');
 }
 
+function pinVisualDebugToolbarTop($page): void
+{
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                Alpine.$data(toolbar).pinToolbar('top');
+
+                return true;
+            })()
+            JS)
+        ->wait(0.6)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top');
+}
+
 function showVisualToolbarDrag($page): void
 {
     $page
@@ -440,16 +455,7 @@ it('matches the visual baseline for the :dataset top-pinned toolbar', function (
 
     setVisualDebugTheme($page, $theme);
     $page->resize(1440, 900);
-    $page
-        ->assertScript(<<<'JS'
-            (() => {
-                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
-                Alpine.$data(toolbar).pinToolbar('top');
-
-                return true;
-            })()
-            JS)
-        ->wait(0.6);
+    pinVisualDebugToolbarTop($page);
     stabilizeVisualDebugValues($page);
 
     $page
@@ -458,6 +464,22 @@ it('matches the visual baseline for the :dataset top-pinned toolbar', function (
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-top-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset top-pinned inspector', function (string $theme) {
+    $page = visualDebugPage('overview', $theme)
+        ->resize(1440, 900);
+
+    pinVisualDebugToolbarTop($page);
+    $page
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->wait(0.25)
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'top');
+    stabilizeVisualDebugValues($page);
+
+    $page->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "inspector-top-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset dragging toolbar', function (string $theme) {
@@ -793,6 +815,23 @@ it('matches the visual baseline for the :dataset narrow inspector', function (st
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "narrow-inspector-{$theme}");
+})->with(['light', 'dark']);
+
+it('matches the visual baseline for the :dataset top-pinned narrow inspector', function (string $theme) {
+    $page = visualDebugPage('overview', $theme)
+        ->resize(390, 844);
+
+    pinVisualDebugToolbarTop($page);
+    openNarrowVisualDebugInspector($page);
+
+    $page
+        ->wait(0.25)
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'top');
+    stabilizeVisualDebugValues($page);
+
+    $page->assertNoJavaScriptErrors();
+
+    assertVisualDebugBaseline($page, "inspector-top-narrow-{$theme}");
 })->with(['light', 'dark']);
 
 it('matches the visual baseline for the :dataset narrow section drawer', function (string $theme) {

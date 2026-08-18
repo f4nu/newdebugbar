@@ -199,6 +199,18 @@
     color: rgba(191, 219, 254, 0.7) !important;
 }
 
+#newdebugbar .ndb-inspector-panel.ndb-inspector-onscreen {
+    transform: translate3d(0, 0, 0);
+}
+
+#newdebugbar .ndb-inspector-panel.ndb-inspector-offscreen {
+    transform: translate3d(0, 100%, 0);
+}
+
+#newdebugbar .ndb-inspector-panel[data-placement="top"].ndb-inspector-offscreen {
+    transform: translate3d(0, -100%, 0);
+}
+
 #newdebugbar .ndb-favorite-star {
     color: #f59e0b !important;
 }

@@ -15,17 +15,21 @@
 
     <aside
         x-show.important="barVisible && inspectorOpen"
-        x-transition:enter="ndb:transition ndb:duration-200 ndb:ease-out"
-        x-transition:enter-start="ndb:translate-y-full"
-        x-transition:enter-end="ndb:translate-y-0"
-        x-transition:leave="ndb:transition ndb:duration-150 ndb:ease-in"
-        x-transition:leave-start="ndb:translate-y-0"
-        x-transition:leave-end="ndb:translate-y-full"
+        x-transition:enter="ndb:transition ndb:duration-200 ndb:ease-out ndb:motion-reduce:transition-none"
+        x-transition:enter-start="ndb-inspector-offscreen"
+        x-transition:enter-end="ndb-inspector-onscreen"
+        x-transition:leave="ndb:transition ndb:duration-150 ndb:ease-in ndb:motion-reduce:transition-none"
+        x-transition:leave-start="ndb-inspector-onscreen"
+        x-transition:leave-end="ndb-inspector-offscreen"
+        :data-placement="toolbarPlacement"
+        :class="toolbarPlacement === 'top'
+            ? 'ndb:top-0 ndb:rounded-b-2xl ndb:border-x ndb:border-b ndb:shadow-[0_24px_80px_-28px_rgba(24,24,27,0.5)]'
+            : 'ndb:bottom-0 ndb:rounded-t-2xl ndb:border-x ndb:border-t ndb:shadow-[0_-24px_80px_-28px_rgba(24,24,27,0.5)]'"
         role="dialog"
         aria-modal="true"
         aria-label="Request inspector"
         @keydown="keepFocusWithin($event, mobileSectionsOpen ? $refs.mobileSectionsNav : $el)"
-        class="ndb:absolute ndb:inset-x-0 ndb:bottom-0 ndb:mx-auto ndb:flex ndb:h-[min(82vh,780px)] ndb:w-full ndb:max-w-5xl ndb:max-h-[calc(100vh-12px)] ndb:flex-col ndb:overflow-hidden ndb:rounded-t-2xl ndb:border-x ndb:border-t ndb:border-white/70 ndb:bg-white/90 ndb:shadow-[0_-24px_80px_-28px_rgba(24,24,27,0.5)] ndb:backdrop-blur-2xl ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950/90"
+        class="ndb-inspector-panel ndb:absolute ndb:inset-x-0 ndb:mx-auto ndb:flex ndb:h-[min(82vh,780px)] ndb:w-full ndb:max-w-5xl ndb:max-h-[calc(100vh-12px)] ndb:flex-col ndb:overflow-hidden ndb:border-white/70 ndb:bg-white/90 ndb:backdrop-blur-2xl ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950/90"
     >
         @include('newdebugbar::livewire.inspector-header')
 
