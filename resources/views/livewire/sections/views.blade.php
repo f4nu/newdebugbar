@@ -124,7 +124,8 @@
                                                     data-ndb-view-source
                                                     class="ndb:min-w-0 ndb:flex-1 ndb:break-all ndb:text-[11px]"
                                                 >
-                                                    {{ $view['source']['file'] ?? 'Template path unavailable' }}@if (isset($view['source']['line'])):{{ $view['source']['line'] }}@endif
+                                                    {{ $view['source']['file'] ?? 'Template path unavailable' }}
+                                                    @if (isset($view['source']['line'])) :{{ $view['source']['line'] }}@endif
                                                 </code>
                                             </div>
                                             <button
