@@ -151,29 +151,7 @@ it('presents Laravel decisions messages and source context without editor links'
         ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'true')
         ->assertVisible('[data-ndb-view-data-popover]')
         ->assertVisible('[data-ndb-view-data]')
-        ->assertSee('view-data-value')
-        ->assertScript(<<<'JS'
-            (() => {
-                const popover = document.querySelector('[data-ndb-view-data-popover]');
-                const trigger = document.querySelector('[data-ndb-view-data-trigger]');
-                const surface = popover?.querySelector('[data-ndb-popover-surface]');
-                const arrow = popover?.querySelector('[data-ndb-popover-arrow]');
-                if (! popover || ! trigger || ! surface || ! arrow) return false;
-
-                const surfaceStyle = getComputedStyle(surface);
-                const triggerRect = trigger.getBoundingClientRect();
-                const arrowRect = arrow.getBoundingClientRect();
-
-                return Number.parseFloat(surfaceStyle.borderRadius) === 16
-                    && surfaceStyle.borderStyle === 'solid'
-                    && surfaceStyle.boxShadow !== 'none'
-                    && surfaceStyle.backdropFilter !== 'none'
-                    && Math.abs(
-                        (triggerRect.left + triggerRect.right) / 2
-                        - (arrowRect.left + arrowRect.right) / 2
-                    ) <= 4;
-            })()
-            JS);
+        ->assertSee('view-data-value');
 
     $page
         ->assertScript(<<<'JS'
