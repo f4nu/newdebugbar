@@ -275,8 +275,10 @@ it('lists and announces recent requests without changing the selected profile', 
 
             return $profiles->keys()->contains($firstId)
                 && $profiles->keys()->contains($nextId)
-                && collect($profiles[$firstId]['sections'])->firstWhere('key', 'request')['label'] === 'Requests';
+                && $profiles[$firstId]['path'] === '/profiled'
+                && ! array_key_exists('sections', $profiles[$firstId]);
         })
+        ->assertSet('summary.sections', fn (array $sections): bool => collect($sections)->firstWhere('key', 'request')['label'] === 'Requests')
         ->call('noticeProfile', $nextId)
         ->assertSet('profileId', $firstId)
         ->assertDispatched('newdebugbar-profile-noticed', function (string $name, array $params) use ($nextId): bool {

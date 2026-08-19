@@ -133,7 +133,7 @@ final class DebugBar extends Component
 
         $this->dispatch(
             'newdebugbar-profile-noticed',
-            summary: $this->makeSummary($presenter->present($profile), $summaries),
+            summary: $summaries->present($presenter->present($profile)),
         );
     }
 
@@ -269,7 +269,7 @@ final class DebugBar extends Component
         ProfileSummaryPresenter $summaries,
     ): array {
         return array_values(array_map(
-            fn (array $profile): array => $this->makeSummary($presenter->present($profile), $summaries),
+            fn (array $profile): array => $summaries->present($presenter->present($profile)),
             $store->recent(),
         ));
     }
