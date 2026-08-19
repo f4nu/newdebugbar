@@ -52,11 +52,14 @@ it('renders authorization decisions from actor through target with useful contex
         ->and($xpath->evaluate('string(.//*[@data-ndb-authorization-source]/@title)', $first))->toBe('App\\Models\\User')
         ->and($xpath->evaluate('string(.//*[@data-ndb-authorization-target]/@title)', $first))->toBe('App\\Models\\StudioJob, string')
         ->and($xpath->evaluate('string(.//*[@data-ndb-authorization-handler]/@title)', $first))->toBe('App\\Policies\\StudioJobPolicy@view')
+        ->and($xpath->query('.//*[@data-ndb-authorization-connector]', $first)->length)->toBe(3)
         ->and($second)->toBeInstanceOf(DOMElement::class)
         ->and($text($second, 'data-ndb-authorization-source'))->toBe('Guest')
         ->and($text($second, 'data-ndb-authorization-result'))->toBe('denied')
         ->and($text($second, 'data-ndb-authorization-ability'))->toBe('access-studio')
         ->and($text($second, 'data-ndb-authorization-callsite'))->toBe('app/Providers/AuthServiceProvider.php:31')
+        ->and($xpath->query('.//*[@data-ndb-authorization-connector]', $second)->length)->toBe(2)
         ->and($xpath->query('.//*[@data-ndb-authorization-target]', $second)->length)->toBe(0)
-        ->and($xpath->query('.//*[@data-ndb-authorization-handler]', $second)->length)->toBe(0);
+        ->and($xpath->query('.//*[@data-ndb-authorization-handler]', $second)->length)->toBe(0)
+        ->and($html)->not->toContain('→');
 });
