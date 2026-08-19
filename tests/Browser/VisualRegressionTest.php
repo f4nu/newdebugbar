@@ -436,6 +436,23 @@ it('matches the visual baseline for the :dataset narrow Models section', functio
     assertVisualDebugBaseline($page, "section-narrow-{$theme}-models");
 })->with(['light', 'dark']);
 
+it('matches the visual baseline for the :dataset narrow Authorization section', function (string $theme) {
+    $page = visualDebugPage('authorization', $theme)
+        ->resize(390, 844);
+    openNarrowVisualDebugInspector($page);
+    $page->waitForText('Runtime details');
+
+    selectVisualDebugSection($page, 'authorization', true);
+
+    $page
+        ->assertVisible('[data-ndb-section-panel="authorization"]')
+        ->assertNoJavaScriptErrors();
+
+    stabilizeVisualDebugValues($page);
+
+    assertVisualDebugBaseline($page, "section-narrow-{$theme}-authorization");
+})->with(['light', 'dark']);
+
 it('matches the visual baseline for the :dataset toolbar', function (string $theme) {
     $page = visit('/profiled-rich');
 
@@ -544,7 +561,8 @@ it('matches the visual baseline for the :dataset tablet toolbar', function (stri
     stabilizeVisualDebugValues($page);
 
     $page
-        ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
+        ->assertVisible('[data-ndb-toolbar-facts]')
+        ->assertVisible('[data-ndb-toolbar-actions]')
         ->assertNoJavaScriptErrors();
 
     assertVisualDebugBaseline($page, "toolbar-tablet-{$theme}");

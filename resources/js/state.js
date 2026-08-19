@@ -271,8 +271,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         { id: 'theme:system', label: 'Use system theme', hint: 'Theme' },
         { id: 'theme:light', label: 'Use light theme', hint: 'Theme' },
         { id: 'theme:dark', label: 'Use dark theme', hint: 'Theme' },
-        { id: 'toolbar:top', label: 'Pin toolbar to top', hint: 'Toolbar' },
-        { id: 'toolbar:bottom', label: 'Pin toolbar to bottom', hint: 'Toolbar' },
+        { id: 'toolbar:top', label: 'Pin to top', hint: 'Toolbar' },
+        { id: 'toolbar:bottom', label: 'Pin to bottom', hint: 'Toolbar' },
       ];
     },
 

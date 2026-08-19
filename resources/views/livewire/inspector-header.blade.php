@@ -1,13 +1,10 @@
 {{-- Renders responsive request facts and inspector window controls. --}}
 <header class="ndb:relative ndb:z-40 ndb:shrink-0 ndb:overflow-visible ndb:border-b ndb:border-zinc-200/80 ndb:bg-white ndb:p-1.5 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950">
-    <div
-        data-ndb-header-mobile-toolbar
-        class="ndb:flex ndb:min-w-0 ndb:items-stretch ndb:gap-1 ndb:sm:grid ndb:sm:grid-cols-[minmax(10rem,1fr)_minmax(0,24rem)_minmax(10rem,1fr)] ndb:lg:hidden"
-    >
+    <div data-ndb-header-mobile-toolbar class="ndb:flex ndb:min-w-0 ndb:items-stretch ndb:gap-1 ndb:sm:hidden">
         <x-newdebugbar::toolbar-button
             section="request"
             data-ndb-header-mobile-request
-            class="ndb:flex ndb:w-[5.5rem] ndb:min-w-0 ndb:flex-none ndb:min-[360px]:w-24 ndb:min-[420px]:w-28 ndb:sm:w-40"
+            class="ndb:flex ndb:w-[5.5rem] ndb:min-w-0 ndb:flex-none ndb:min-[360px]:w-24 ndb:min-[420px]:w-28"
             aria-label="Open request details"
         >
             <span
@@ -33,7 +30,7 @@
         <div
             data-ndb-header-mobile-control="actions"
             @click.outside="if (mobileToolbarMenu === 'header-actions') closeMobileToolbarMenu(false);"
-            class="ndb:relative ndb:flex ndb:shrink-0 ndb:sm:justify-self-end"
+            class="ndb:relative ndb:flex ndb:shrink-0"
         >
             <button
                 type="button"
@@ -102,11 +99,11 @@
         </div>
     </div>
 
-    <div data-ndb-header-toolbar class="ndb:hidden ndb:items-stretch ndb:gap-1 ndb:lg:flex ndb:lg:flex-nowrap">
+    <div data-ndb-header-toolbar class="ndb:hidden ndb:items-stretch ndb:gap-1 ndb:sm:flex ndb:sm:flex-nowrap">
         <x-newdebugbar::toolbar-button
             section="request"
             data-ndb-header-request
-            class="ndb:flex ndb:min-w-0 ndb:flex-none ndb:max-w-64"
+            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:max-w-none ndb:md:w-36 ndb:lg:w-auto ndb:lg:max-w-64"
             aria-label="Open request details"
         >
             <span
@@ -120,7 +117,7 @@
                     ><span data-ndb-header-status x-text="summary.status"></span
                     ><span
                         data-ndb-header-response-size
-                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:sm:inline ndb:dark:text-zinc-300"
+                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
                         x-show="summary.response_size"
                         x-text="summary.response_size"
                     ></span
@@ -157,7 +154,7 @@
                 <x-newdebugbar::toolbar-button
                     section="overview"
                     data-ndb-header-fact="environment"
-                    class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0"
+                    class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
                 >
                     <span
                         class="ndb:size-2 ndb:shrink-0 ndb:rounded-full"
@@ -165,7 +162,7 @@
                     ></span>
                     <span class="ndb:min-w-0"
                         ><span
-                            class="ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                            class="ndb:hidden ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:lg:block"
                             >Environment</span
                         ><span
                             data-ndb-header-environment
@@ -178,7 +175,7 @@
                 <x-newdebugbar::toolbar-button
                     section="request"
                     data-ndb-header-fact="duration"
-                    class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0"
+                    class="ndb:order-3 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
                 >
                     <x-newdebugbar::icon
                         name="clock"
@@ -186,7 +183,7 @@
                     />
                     <span
                         ><span
-                            class="ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                            class="ndb:hidden ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:lg:block"
                             >Duration</span
                         ><span
                             class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"
@@ -198,7 +195,7 @@
                 <x-newdebugbar::toolbar-button
                     section="overview"
                     data-ndb-header-fact="memory"
-                    class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0"
+                    class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
                 >
                     <x-newdebugbar::icon
                         name="memory"
@@ -206,7 +203,7 @@
                     />
                     <span
                         ><span
-                            class="ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                            class="ndb:hidden ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:lg:block"
                             >Peak</span
                         ><span
                             data-ndb-header-memory
@@ -219,7 +216,7 @@
                 <x-newdebugbar::toolbar-button
                     section="queries"
                     data-ndb-header-fact="queries"
-                    class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0"
+                    class="ndb:order-2 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
                 >
                     <x-newdebugbar::icon
                         name="database"
@@ -227,14 +224,14 @@
                     />
                     <span
                         ><span
-                            class="ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+                            class="ndb:hidden ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:lg:block"
                             >Queries</span
                         ><span
                             class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"
                             ><span data-ndb-header-query-count x-text="summary.query_count"></span
                             ><span
                                 data-ndb-header-query-duration
-                                class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:sm:inline"
+                                class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:lg:inline"
                                 x-text="summary.query_time_ms + ' ms'"
                             ></span></span
                     ></span>

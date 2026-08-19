@@ -700,9 +700,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && Math.abs(window.innerWidth - box.right) <= 1;
             })()
             JS)
-        ->click('[data-ndb-header-mobile-trigger="actions"]')
-        ->wait(0.2)
-        ->click('[data-ndb-header-mobile-action="shrink"]')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->wait(0.2)
         ->assertScript(<<<'JS'
             (() => {
@@ -1712,7 +1710,7 @@ it('uses the command palette, theme preference, and escape layers', function () 
         ->click('[data-ndb-toolbar="palette"]')
         ->assertVisible('[role="dialog"][aria-label="Command palette"]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-palette-search]")')
-        ->type('[data-ndb-palette-search]', 'pin toolbar to top')
+        ->type('[data-ndb-palette-search]', 'pin to top')
         ->keys('[data-ndb-palette-search]', 'Enter')
         ->wait(0.6)
         ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
@@ -2060,7 +2058,9 @@ it('keeps the main interactions usable on a phone viewport', function () {
 
                 return menu.querySelector('h1, h2, h3, [role="heading"]') === null
                     && !menu.textContent.includes('Debug bar')
-                    && items.length === 5
+                    && items.length === 4
+                    && menu.querySelector('[data-ndb-mobile-toolbar-action="placement"]') === null
+                    && menu.querySelector('[data-ndb-mobile-toolbar-action="inspector"]').textContent.trim() === 'Open'
                     && items.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === items[0];
             })()

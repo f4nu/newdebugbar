@@ -48,45 +48,48 @@
                 wire:key="authorization-{{ $index }}"
                 class="ndb:min-w-0 ndb:py-3"
             >
-                <div class="ndb:flex ndb:w-full ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:font-mono ndb:text-xs ndb:leading-5 ndb:sm:grid ndb:sm:gap-x-3 {{ $targets !== [] ? 'ndb:sm:grid-cols-[minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)]' : 'ndb:sm:grid-cols-[minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)]' }}">
+                <div
+                    data-ndb-authorization-chain
+                    class="ndb:grid ndb:w-full ndb:min-w-0 ndb:items-baseline ndb:gap-x-3 ndb:font-mono ndb:text-xs ndb:leading-5 {{ $targets !== [] ? 'ndb:grid-cols-[minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)]' : 'ndb:grid-cols-[minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)_minmax(1.5rem,0.5fr)_minmax(0,1fr)]' }}"
+                >
                     <code
                         data-ndb-authorization-source
                         title="{{ $userType ?? 'Unauthenticated actor' }}"
                         class="ndb:font-bold"
                     >{{ $actor }}</code>
-                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3 ndb:sm:contents">
+                    <span class="ndb:contents">
                         <span
                             data-ndb-authorization-connector
                             aria-hidden="true"
-                            class="ndb:h-px ndb:w-5 ndb:shrink-0 ndb:self-center ndb:bg-zinc-300 ndb:dark:bg-zinc-700 ndb:sm:w-full"
+                            class="ndb:h-px ndb:w-full ndb:self-center ndb:bg-zinc-300 ndb:dark:bg-zinc-700"
                         ></span>
                         <span
                             data-ndb-authorization-result
-                            class="ndb:font-semibold ndb:sm:text-center {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-600 ndb:dark:text-emerald-400' : 'ndb:text-red-600 ndb:dark:text-red-400' }}"
+                            class="ndb:font-semibold ndb:text-center {{ $item['result'] === 'allowed' ? 'ndb:text-emerald-600 ndb:dark:text-emerald-400' : 'ndb:text-red-600 ndb:dark:text-red-400' }}"
                         >{{ $item['result'] }}</span>
                     </span>
-                    <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3 ndb:sm:contents">
+                    <span class="ndb:contents">
                         <span
                             data-ndb-authorization-connector
                             aria-hidden="true"
-                            class="ndb:h-px ndb:w-5 ndb:shrink-0 ndb:self-center ndb:bg-zinc-300 ndb:dark:bg-zinc-700 ndb:sm:w-full"
+                            class="ndb:h-px ndb:w-full ndb:self-center ndb:bg-zinc-300 ndb:dark:bg-zinc-700"
                         ></span>
                         <code
                             data-ndb-authorization-ability
-                            class="ndb:min-w-0 ndb:break-words ndb:font-bold ndb:sm:text-center"
+                            class="ndb:min-w-0 ndb:break-words ndb:font-bold ndb:text-center"
                         >{{ $item['ability'] }}</code>
                     </span>
                     @if ($targets !== [])
-                        <span class="ndb:inline-flex ndb:min-w-0 ndb:items-baseline ndb:gap-3 ndb:sm:contents">
+                        <span class="ndb:contents">
                             <span
                                 data-ndb-authorization-connector
                                 aria-hidden="true"
-                                class="ndb:h-px ndb:w-5 ndb:shrink-0 ndb:self-center ndb:bg-zinc-300 ndb:dark:bg-zinc-700 ndb:sm:w-full"
+                                class="ndb:h-px ndb:w-full ndb:self-center ndb:bg-zinc-300 ndb:dark:bg-zinc-700"
                             ></span>
                             <code
                                 data-ndb-authorization-target
                                 title="{{ implode(', ', $targetTypes) }}"
-                                class="ndb:min-w-0 ndb:break-words ndb:font-bold ndb:sm:text-right"
+                                class="ndb:min-w-0 ndb:break-words ndb:font-bold ndb:text-right"
                             >{{ implode(', ', $targets) }}</code>
                         </span>
                     @endif

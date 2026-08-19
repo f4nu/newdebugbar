@@ -1,6 +1,6 @@
 <?php
 
-it('makes mobile metrics direct actions and anchors the window menu with a clean caret', function () {
+it('makes mobile metrics direct actions and preserves drag pinning', function () {
     $page = visit('/profiled')
         ->resize(390, 844)
         ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
@@ -75,13 +75,29 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
                     && Array.from(items.children).every((item) => parseFloat(getComputedStyle(item).borderTopWidth) === 0);
             })()
             JS)
-        ->assertSeeIn('[data-ndb-mobile-toolbar-action="placement"]', 'Pin to top')
-        ->click('[data-ndb-mobile-toolbar-action="placement"]')
+        ->keys('[data-ndb-mobile-toolbar-action="palette"]', 'Escape')
+        ->assertScript(<<<'JS'
+            (() => {
+                const target = document.createElement('div');
+                target.dataset.testid = 'mobile-toolbar-top-drop-target';
+                Object.assign(target.style, {
+                    position: 'fixed',
+                    top: '0',
+                    left: '50%',
+                    width: '48px',
+                    height: '48px',
+                    zIndex: '1',
+                });
+                document.body.append(target);
+
+                return true;
+            })()
+            JS)
+        ->drag('[data-ndb-toolbar-shell]', '[data-testid="mobile-toolbar-top-drop-target"]')
         ->wait(0.6)
         ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13')
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
-        ->assertSeeIn('[data-ndb-mobile-toolbar-action="placement"]', 'Pin to bottom')
         ->assertScript(<<<'JS'
             (() => {
                 const trigger = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
@@ -100,10 +116,10 @@ it('makes mobile metrics direct actions and anchors the window menu with a clean
         ->assertNoJavaScriptErrors();
 });
 
-it('stays compact and unclipped from narrow phones through tablets', function () {
+it('stays compact below sm and returns to the full toolbar at sm', function () {
     $page = visit('/profiled-reported-exception');
 
-    foreach ([320, 360, 430, 768, 1023] as $width) {
+    foreach ([320, 360, 430, 639] as $width) {
         $page
             ->resize($width, 844)
             ->assertVisible('[data-ndb-mobile-request-metrics="toolbar"]')
@@ -157,43 +173,38 @@ it('stays compact and unclipped from narrow phones through tablets', function ()
                     && box.right <= window.innerWidth - 12;
             })()
             JS)
-        ->keys('[data-ndb-mobile-toolbar-action="palette"]', 'Escape')
-        ->resize(768, 844)
-        ->assertScript(<<<'JS'
-            (() => {
-                const metrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
-                const box = metrics.getBoundingClientRect();
+        ->keys('[data-ndb-mobile-toolbar-action="palette"]', 'Escape');
 
-                return Math.abs((window.innerWidth / 2) - (box.left + box.width / 2)) <= 1;
-            })()
-            JS)
-        ->resize(1024, 844)
-        ->assertScript(<<<'JS'
-            (() => {
-                const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
-                const mobileMetrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
-                const mobileActions = document.querySelector('[data-ndb-mobile-toolbar-control="actions"]');
-                const desktopFacts = document.querySelector('[data-ndb-toolbar-facts]');
-                const desktopActions = document.querySelector('[data-ndb-toolbar-actions]');
+    foreach ([640, 768, 1023, 1024] as $width) {
+        $page
+            ->resize($width, 844)
+            ->assertScript(<<<'JS'
+                (() => {
+                    const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
+                    const mobileMetrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
+                    const mobileActions = document.querySelector('[data-ndb-mobile-toolbar-control="actions"]');
+                    const desktopFacts = document.querySelector('[data-ndb-toolbar-facts]');
+                    const desktopActions = document.querySelector('[data-ndb-toolbar-actions]');
 
-                return toolbar.scrollWidth <= toolbar.clientWidth + 1
-                    && getComputedStyle(mobileMetrics).display === 'none'
-                    && getComputedStyle(mobileActions).display === 'none'
-                    && getComputedStyle(desktopFacts).display !== 'none'
-                    && getComputedStyle(desktopActions).display !== 'none';
-            })()
-            JS)
-        ->assertNoJavaScriptErrors();
+                    return toolbar.scrollWidth <= toolbar.clientWidth + 1
+                        && getComputedStyle(mobileMetrics).display === 'none'
+                        && getComputedStyle(mobileActions).display === 'none'
+                        && getComputedStyle(desktopFacts).display !== 'none'
+                        && getComputedStyle(desktopActions).display !== 'none';
+                })()
+                JS)
+            ->assertNoJavaScriptErrors();
+    }
 });
 
-it('gives the expanded header the same direct metrics and clean window menu through tablet sizes', function () {
+it('uses the compact inspector header only below sm', function () {
     $page = visit('/profiled-reported-exception')
         ->resize(390, 844)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->click('[data-ndb-mobile-toolbar-action="inspector"]')
         ->wait(0.2);
 
-    foreach ([320, 360, 430, 768, 1023] as $width) {
+    foreach ([320, 360, 430, 639] as $width) {
         $page
             ->resize($width, 844)
             ->assertVisible('[data-ndb-header-mobile-toolbar]')
@@ -275,16 +286,7 @@ it('gives the expanded header the same direct metrics and clean window menu thro
         ->assertVisible('#newdebugbar-section-navigation')
         ->keys('#newdebugbar-section-navigation [data-ndb-select-section][aria-current="page"]', 'Escape')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-header-mobile-trigger=\\"actions\\"]")')
-        ->resize(768, 844)
-        ->assertScript(<<<'JS'
-            (() => {
-                const metrics = document.querySelector('[data-ndb-mobile-request-metrics="header"]');
-                const box = metrics.getBoundingClientRect();
-
-                return Math.abs((window.innerWidth / 2) - (box.left + box.width / 2)) <= 1;
-            })()
-            JS)
-        ->resize(1024, 844)
+        ->resize(640, 844)
         ->assertScript(<<<'JS'
             getComputedStyle(document.querySelector('[data-ndb-header-mobile-toolbar]')).display === 'none'
                 && getComputedStyle(document.querySelector('[data-ndb-header-toolbar]')).display !== 'none'
