@@ -13,7 +13,7 @@ it('shows relative exception frames and highlighted source context', function ()
         ->assertSee('Application frames')
         ->assertSee('Vendor frames')
         ->assertSee('tests/Support/DefinesTestApplication.php')
-        ->assertDontSee('/Users/benjamin/Sites/new-debug-bar/tests/Support/DefinesTestApplication.php')
+        ->assertDontSee(base_path().'/tests/Support/DefinesTestApplication.php')
         ->assertPresent('[data-ndb-copy-exception-callsite="0"]')
         ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=php][data-highlighted]").length > 0')
         ->assertNoJavaScriptErrors();
