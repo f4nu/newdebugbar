@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Mcp\Facades\Mcp;
 use Laravel\Mcp\ResponseFactory;
 use NewDebugBar\Mcp\NewDebugBarServer;
@@ -12,27 +11,7 @@ use NewDebugBar\Mcp\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Tools\ListDebugProfiles;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
-
-function captureStructuredContent($response): array
-{
-    $content = [];
-
-    if (method_exists($response, 'assertStructuredContent')) {
-        $response->assertStructuredContent(function (AssertableJson $json) use (&$content): void {
-            $content = $json->toArray();
-            $json->etc();
-        });
-
-        return $content;
-    }
-
-    $property = (new ReflectionClass($response))->getProperty('response');
-    $payload = $property->getValue($response)->toArray();
-    $content = $payload['result']['structuredContent']
-        ?? json_decode($payload['result']['content'][0]['text'], true, flags: JSON_THROW_ON_ERROR);
-
-    return $content;
-}
+use NewDebugBar\Tests\Support\McpResponse;
 
 beforeEach(function () {
     if (! class_exists(ResponseFactory::class)) {
@@ -73,12 +52,12 @@ it('correlates the exact response profile while unrelated profiles exist', funct
     $this->get('/profiled-next', ['Accept' => 'text/html'])->assertOk();
     $profileCount = count(File::files(config('newdebugbar.storage.path')));
 
-    $queries = captureStructuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
+    $queries = McpResponse::structuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
         'profile_id' => $first,
         'filter' => 'repeated',
         'limit' => 1,
     ])->assertOk());
-    $findings = captureStructuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
+    $findings = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $first,
     ])->assertOk());
 
@@ -98,8 +77,8 @@ it('lists and filters bounded profile summaries', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
     $this->get('/failed-html', ['Accept' => 'text/html'])->assertUnprocessable();
 
-    $all = captureStructuredContent(NewDebugBarServer::tool(ListDebugProfiles::class, ['limit' => 1])->assertOk());
-    $failed = captureStructuredContent(NewDebugBarServer::tool(ListDebugProfiles::class, [
+    $all = McpResponse::structuredContent(NewDebugBarServer::tool(ListDebugProfiles::class, ['limit' => 1])->assertOk());
+    $failed = McpResponse::structuredContent(NewDebugBarServer::tool(ListDebugProfiles::class, [
         'method' => 'get',
         'path' => 'failed',
         'status' => 422,
@@ -123,7 +102,7 @@ it('exposes every recorded context section through the bounded section tool', fu
     $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
     foreach (['authorization', 'validation', 'messages'] as $section) {
-        $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
             'profile_id' => $profileId,
             'section' => $section,
         ])->assertOk());
@@ -148,7 +127,7 @@ it('keeps captured mail content out of MCP responses', function () {
             'private-recipient@example.test',
             'private-copy@example.test',
         ]);
-    $content = captureStructuredContent($mail);
+    $content = McpResponse::structuredContent($mail);
 
     expect($content['data']['payload']['items'][0]['preview'])->toMatchArray([
         'available' => true,
@@ -168,12 +147,12 @@ it('masks full query bindings and log labels again at the MCP boundary', functio
     expect(json_encode(app(ProfileStore::class)->get($profileId)['sections']['queries']))
         ->toContain('private-alpha', 'private-beta', 'private-gamma');
 
-    $queries = captureStructuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
+    $queries = McpResponse::structuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
         'profile_id' => $profileId,
         'filter' => 'repeated',
     ])->assertOk()
         ->assertDontSee(['private-alpha', 'private-beta', 'private-gamma']));
-    $timeline = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $timeline = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'timeline',
     ])->assertOk()
@@ -196,7 +175,7 @@ it('masks captured view values at the MCP boundary', function () {
     expect(json_encode(app(ProfileStore::class)->get($profileId)['sections']['views']))
         ->toContain('view-data-value');
 
-    $views = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $views = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'views',
     ])->assertOk()
@@ -222,7 +201,7 @@ it('paginates one section and hides private request values', function () {
         'limit' => 1,
     ])->assertOk()
         ->assertDontSee(['query-secret', 'patient-secret', 'token-secret', 'authorization']);
-    $content = captureStructuredContent($request);
+    $content = McpResponse::structuredContent($request);
 
     expect($content['data']['payload'])
         ->not->toHaveKeys(['input', 'query', 'headers', 'response_headers', 'url'])
@@ -245,7 +224,7 @@ it('exposes relative exception evidence without messages or source code', functi
     $response = $this->get('/profiled-exception', ['Accept' => 'text/html'])
         ->assertInternalServerError();
 
-    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $response->headers->get('X-NewDebugBar-Profile'),
         'section' => 'exceptions',
     ])->assertOk());
@@ -262,7 +241,7 @@ it('exposes relative exception evidence without messages or source code', functi
 it('returns stable not found results and validation errors', function () {
     $missing = (string) Str::uuid();
     $wrongVersion = '550e8400-e29b-11d4-a716-446655440000';
-    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
+    $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $missing,
     ])->assertOk());
 
@@ -299,13 +278,13 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
     $corruptId = (string) Str::uuid();
     File::put(config('newdebugbar.storage.path').'/'.$corruptId.'.json', '{broken');
 
-    $events = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $events = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'events',
         'limit' => 2,
     ])->assertOk());
-    $profiles = captureStructuredContent(NewDebugBarServer::tool(ListDebugProfiles::class)->assertOk());
-    $models = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $profiles = McpResponse::structuredContent(NewDebugBarServer::tool(ListDebugProfiles::class)->assertOk());
+    $models = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'models',
         'limit' => 2,
@@ -340,7 +319,7 @@ it('advances past an item that cannot fit within the MCP byte limit', function (
         ],
     ]);
 
-    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'events',
         'limit' => 1,
@@ -373,7 +352,7 @@ it('falls back to bounded identity metadata when section metadata is oversized',
         ],
     ]);
 
-    $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+    $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'request',
     ])->assertOk());
@@ -416,7 +395,7 @@ it('bounds deeply nested MCP values and treats malformed profiles as missing', f
         'id' => $malformedId,
         'sections' => ['queries' => ['payload' => ['items' => ['not-an-item']]]],
     ]));
-    $missing = captureStructuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
+    $missing = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $malformedId,
     ])->assertOk());
 

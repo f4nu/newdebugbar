@@ -5,8 +5,7 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Testing\ProfileAssertions;
 use PHPUnit\Framework\AssertionFailedError;
 
-function assertionProfile(array $queries = [], int $status = 200): array
-{
+$assertionProfile = function (array $queries = [], int $status = 200): array {
     return [
         'id' => (string) Str::uuid(),
         'metrics' => ['duration_ms' => 20, 'peak_memory_mb' => 8],
@@ -16,10 +15,10 @@ function assertionProfile(array $queries = [], int $status = 200): array
             'exceptions' => ['summary' => ['count' => 0], 'payload' => ['items' => []]],
         ],
     ];
-}
+};
 
-it('asserts profile budgets through the production analyzers', function () {
-    $profile = assertionProfile([
+it('asserts profile budgets through the production analyzers', function () use ($assertionProfile) {
+    $profile = $assertionProfile([
         ['sql' => 'select 1', 'duration_ms' => 2],
         ['sql' => 'select 2', 'duration_ms' => 3],
     ]);
@@ -39,20 +38,20 @@ it('fails when shared findings or budgets exceed expectations', function (Closur
     expect(fn () => $assertion())->toThrow(AssertionFailedError::class, $message);
 })->with([
     'repeated queries' => [
-        fn () => ProfileAssertions::for(assertionProfile([
+        fn () => ProfileAssertions::for($assertionProfile([
             ['sql' => 'select ?', 'bindings' => [1], 'duration_ms' => 1],
             ['sql' => 'select ?', 'bindings' => [2], 'duration_ms' => 1],
         ]))->assertNoRepeatedQueries(),
         'repeated query patterns',
     ],
     'query count' => [
-        fn () => ProfileAssertions::for(assertionProfile([
+        fn () => ProfileAssertions::for($assertionProfile([
             ['sql' => 'select 1', 'duration_ms' => 1],
         ]))->assertQueryCountAtMost(0),
         'query count exceeded',
     ],
     'errors' => [
-        fn () => ProfileAssertions::for(assertionProfile(status: 500))->assertNoErrors(),
+        fn () => ProfileAssertions::for($assertionProfile(status: 500))->assertNoErrors(),
         'error response or exception',
     ],
 ]);

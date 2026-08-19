@@ -11,26 +11,24 @@ beforeEach(function () {
 });
 
 /** @return array<string, mixed> */
-function hostCounterSnapshot(): array
-{
+$hostCounterSnapshot = function (): array {
     $html = (string) app('livewire')->mount('host-counter');
 
     return Utils::extractAttributeDataFromHtml($html, 'wire:snapshot');
-}
+};
 
 /** @param array<string, mixed> $snapshot @return array<string, mixed> */
-function hostCounterMessage(array $snapshot): array
-{
+$hostCounterMessage = function (array $snapshot): array {
     return [
         'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
         'updates' => [],
         'calls' => [['method' => 'increment', 'params' => []]],
     ];
-}
+};
 
-it('profiles host Livewire requests without storing framework snapshots or a dedicated section', function () {
+it('profiles host Livewire requests without storing framework snapshots or a dedicated section', function () use ($hostCounterMessage, $hostCounterSnapshot) {
     $response = $this->postJson(app('livewire')->getUpdateUri(), [
-        'components' => [hostCounterMessage(hostCounterSnapshot())],
+        'components' => [$hostCounterMessage($hostCounterSnapshot())],
     ], ['X-Livewire' => '1']);
 
     $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
@@ -45,8 +43,8 @@ it('profiles host Livewire requests without storing framework snapshots or a ded
         ->and(json_encode($profile))->not->toContain('wire:snapshot', 'checksum');
 });
 
-it('preserves host Livewire response bytes', function () {
-    $payload = ['components' => [hostCounterMessage(hostCounterSnapshot())]];
+it('preserves host Livewire response bytes', function () use ($hostCounterMessage, $hostCounterSnapshot) {
+    $payload = ['components' => [$hostCounterMessage($hostCounterSnapshot())]];
     $profiled = $this->postJson(app('livewire')->getUpdateUri(), $payload, ['X-Livewire' => '1']);
 
     config(['newdebugbar.enabled' => false]);

@@ -2,16 +2,15 @@
 
 use NewDebugBar\Support\ExceptionNormalizer;
 
-function normalizedTestException(): Throwable
-{
+$normalizedTestException = function (): Throwable {
     try {
         throw new RuntimeException('A bounded failure');
     } catch (Throwable $exception) {
         return $exception;
     }
-}
+};
 
-it('builds bounded project relative exception frames and source context', function () {
+it('builds bounded project relative exception frames and source context', function () use ($normalizedTestException) {
     $root = dirname(__DIR__, 2);
     $normalizer = new ExceptionNormalizer(
         projectPath: $root,
@@ -21,7 +20,7 @@ it('builds bounded project relative exception frames and source context', functi
         sourceContextLines: 5,
     );
 
-    $exception = normalizedTestException();
+    $exception = $normalizedTestException();
     $normalized = $normalizer->normalize($exception);
 
     expect($normalized)

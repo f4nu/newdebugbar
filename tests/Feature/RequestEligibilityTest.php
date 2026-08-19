@@ -3,8 +3,7 @@
 use Illuminate\Http\Request;
 use NewDebugBar\Support\RequestEligibility;
 
-function livewireEligibilityMessage(string $name): array
-{
+$livewireEligibilityMessage = function (string $name): array {
     return [
         'snapshot' => json_encode([
             'data' => [],
@@ -14,7 +13,7 @@ function livewireEligibilityMessage(string $name): array
         'updates' => [],
         'calls' => [],
     ];
-}
+};
 
 it('profiles application requests and excludes package owned traffic', function (Request $request, bool $allowed) {
     expect(app(RequestEligibility::class)->allows($request))->toBe($allowed);
@@ -24,21 +23,21 @@ it('profiles application requests and excludes package owned traffic', function 
     'host Livewire update' => [fn () => Request::create(
         '/livewire/update',
         'POST',
-        ['components' => [livewireEligibilityMessage('appointments')]],
+        ['components' => [$livewireEligibilityMessage('appointments')]],
         server: ['HTTP_X_LIVEWIRE' => 'true'],
     ), true],
     'package toolbar update' => [fn () => Request::create(
         '/livewire/update',
         'POST',
-        ['components' => [livewireEligibilityMessage('newdebugbar.toolbar')]],
+        ['components' => [$livewireEligibilityMessage('newdebugbar.toolbar')]],
         server: ['HTTP_X_LIVEWIRE' => 'true'],
     ), false],
     'mixed host and toolbar update' => [fn () => Request::create(
         '/livewire/update',
         'POST',
         ['components' => [
-            livewireEligibilityMessage('appointments'),
-            livewireEligibilityMessage('newdebugbar.toolbar'),
+            $livewireEligibilityMessage('appointments'),
+            $livewireEligibilityMessage('newdebugbar.toolbar'),
         ]],
         server: ['HTTP_X_LIVEWIRE' => 'true'],
     ), true],
@@ -46,7 +45,7 @@ it('profiles application requests and excludes package owned traffic', function 
         '/livewire/update',
         'POST',
         ['components' => [
-            livewireEligibilityMessage('appointments'),
+            $livewireEligibilityMessage('appointments'),
             ['snapshot' => 'not-json'],
         ]],
         server: ['HTTP_X_LIVEWIRE' => 'true'],

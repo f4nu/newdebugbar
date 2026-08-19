@@ -3,8 +3,7 @@
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Support\Redactor;
 
-function summaryProfile(string $requestType, array $request = [], array $sections = []): array
-{
+$summaryProfile = function (string $requestType, array $request = [], array $sections = []): array {
     return [
         'id' => '550e8400-e29b-41d4-a716-446655440000',
         'environment' => 'testing',
@@ -26,10 +25,10 @@ function summaryProfile(string $requestType, array $request = [], array $section
             ...$sections,
         ],
     ];
-}
+};
 
-it('summarizes status families and response sizes for the request header', function (int $status, string $meaning) {
-    $profile = summaryProfile('full_page', [
+it('summarizes status families and response sizes for the request header', function (int $status, string $meaning) use ($summaryProfile) {
+    $profile = $summaryProfile('full_page', [
         'response_size_bytes' => 2_621_440,
     ]);
     $profile['sections']['request']['summary']['status'] = $status;
@@ -46,8 +45,8 @@ it('summarizes status families and response sizes for the request header', funct
     'server error' => [503, 'Server error'],
 ]);
 
-it('summarizes redirect destinations', function () {
-    $summary = (new ProfileSummaryPresenter(new Redactor))->present(summaryProfile('redirect', [
+it('summarizes redirect destinations', function () use ($summaryProfile) {
+    $summary = (new ProfileSummaryPresenter(new Redactor))->present($summaryProfile('redirect', [
         'response_headers' => ['location' => ['/work-orders']],
     ]));
 
