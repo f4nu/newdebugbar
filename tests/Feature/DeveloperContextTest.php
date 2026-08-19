@@ -11,9 +11,9 @@ use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\RequestContext;
-use NewDebugBar\Tests\ProfiledApplicationEvent;
-use NewDebugBar\Tests\ProfiledApplicationListener;
-use NewDebugBar\Tests\ProfiledModel;
+use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationEvent;
+use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
+use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 
 it('captures Laravel decisions sources transactions and redacted messages', function () {
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
@@ -43,7 +43,7 @@ it('captures Laravel decisions sources transactions and redacted messages', func
             'version_count' => 2,
         ]])
         ->render_order->toBe(1)
-        ->source->file->toBe('tests/views/context.blade.php')
+        ->source->file->toBe('tests/Fixtures/views/context.blade.php')
         ->and(json_encode($profile))->not->toContain('private-developer-token');
 
     $event = collect($profile['sections']['events']['payload']['items'])
@@ -52,7 +52,7 @@ it('captures Laravel decisions sources transactions and redacted messages', func
     expect($event)->not->toBeNull()
         ->and($event['broadcast'])->toBeFalse()
         ->and($event['listeners'][0]['name'])->toBe(ProfiledApplicationListener::class.'@handle')
-        ->and($event['listeners'][0]['source']['file'])->toBe('tests/TestCase.php');
+        ->and($event['listeners'][0]['source']['file'])->toBe('tests/Fixtures/Events/ProfiledApplicationListener.php');
 });
 
 it('captures validation field and rule names with the rendered redirect status', function () {

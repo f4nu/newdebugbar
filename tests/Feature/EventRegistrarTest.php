@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
-use NewDebugBar\Tests\ProfiledModel;
+use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 
 it('preserves class-string authorization targets', function () {
     Route::middleware(ProfileRequest::class)->get('/profiled-class-authorization', function () {
@@ -44,12 +44,12 @@ it('traces every Blade authorization decision to its source directive', function
     expect($items)->toHaveCount(2)
         ->and($items[0]['ability'])->toBe('inspect-profile')
         ->and($items[0]['callsite'])->toMatchArray([
-            'file' => 'tests/views/authorization-context.blade.php',
+            'file' => 'tests/Fixtures/views/authorization-context.blade.php',
             'line' => 1,
         ])
         ->and($items[1]['ability'])->toBe('delete-profile')
         ->and($items[1]['callsite'])->toMatchArray([
-            'file' => 'tests/views/authorization-context.blade.php',
+            'file' => 'tests/Fixtures/views/authorization-context.blade.php',
             'line' => 5,
         ]);
 });

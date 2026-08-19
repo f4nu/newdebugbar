@@ -1,6 +1,6 @@
 <?php
 
-use NewDebugBar\Tests\ProfiledApplicationListener;
+use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 
 it('filters the timeline without inventing spans for point events', function () {
     $page = visit('/profiled')
@@ -357,7 +357,7 @@ it('shows log call sites', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="logs"]')
-        ->assertSee('tests/TestCase.php')
+        ->assertSee('tests/Support/DefinesTestApplication.php')
         ->click('[data-ndb-log-item] > summary')
         ->assertPresent('[data-ndb-copy-log-callsite="0"]')
         ->assertNoJavaScriptErrors();
@@ -459,7 +459,7 @@ it('presents Laravel decisions messages and source context without editor links'
     $page
         ->click('[data-ndb-select-section="views"]')
         ->click('[data-ndb-view-group] > summary')
-        ->assertSee('tests/views/context.blade.php')
+        ->assertSee('tests/Fixtures/views/context.blade.php')
         ->assertScript('!document.querySelector("[data-ndb-view-source]").textContent.replace(/\\s+/g, " ").includes(" :")')
         ->assertPresent('[data-ndb-view-data]')
         ->assertMissing('[data-ndb-view-data-count]')
@@ -605,8 +605,8 @@ it('shows relative exception frames and highlighted source context', function ()
     $page
         ->assertSee('Application frames')
         ->assertSee('Vendor frames')
-        ->assertSee('tests/TestCase.php')
-        ->assertDontSee('/Users/benjamin/Sites/new-debug-bar/tests/TestCase.php')
+        ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertDontSee('/Users/benjamin/Sites/new-debug-bar/tests/Support/DefinesTestApplication.php')
         ->assertPresent('[data-ndb-copy-exception-callsite="0"]')
         ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=php][data-highlighted]").length > 0')
         ->assertNoJavaScriptErrors();

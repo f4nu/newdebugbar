@@ -23,12 +23,12 @@ use NewDebugBar\Support\AssetUrl;
 use NewDebugBar\Support\BarInjector;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestEligibility;
-use NewDebugBar\Tests\ProfiledModel;
+use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 it('preserves Laravel original response metadata while injecting HTML', function () {
-    $view = view()->file(__DIR__.'/../views/original-response.blade.php', [
+    $view = view()->file(__DIR__.'/../Fixtures/views/original-response.blade.php', [
         'label' => 'Original response',
     ]);
     $response = response($view);
@@ -105,7 +105,7 @@ it('captures a local web request and its Laravel activity', function () {
         ->and($profile['sections']['request']['payload'])->not->toHaveKey('early_bootstrap_measured');
 
     expect($profile['sections']['logs']['payload']['items'][0]['callsite'])
-        ->toMatchArray(['file' => 'tests/TestCase.php'])
+        ->toMatchArray(['file' => 'tests/Support/DefinesTestApplication.php'])
         ->and($profile['sections']['logs']['payload']['items'][0]['stack'])->not->toBeEmpty();
 
     foreach ($profile['sections'] as $section) {
@@ -442,7 +442,7 @@ it('preserves a profile when the application throws', function () {
     expect($profile['sections']['request']['summary']['status'])->toBe(500)
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(1)
         ->and($profile['sections']['exceptions']['payload']['items'][0]['class'])->toBe(RuntimeException::class)
-        ->and($profile['sections']['exceptions']['payload']['items'][0]['file'])->toBe('tests/TestCase.php')
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['file'])->toBe('tests/Support/DefinesTestApplication.php')
         ->and($profile['sections']['exceptions']['payload']['items'][0])->not->toHaveKey('trace')
         ->and($profile['sections']['exceptions']['payload']['items'][0]['frames']['application'])->not->toBeEmpty()
         ->and($profile['sections']['exceptions']['payload']['items'][0]['source']['lines'])->not->toBeEmpty()

@@ -253,7 +253,7 @@ it('exposes relative exception evidence without messages or source code', functi
 
     expect($item)
         ->message->toBe('[message hidden]')
-        ->file->toBe('tests/TestCase.php')
+        ->file->toBe('tests/Support/DefinesTestApplication.php')
         ->not->toHaveKeys(['source', 'frames'])
         ->and($item['application_frames'])->not->toBeEmpty()
         ->and(json_encode($content))->not->toContain(base_path().'/');
