@@ -32,17 +32,19 @@ const requestFacts = (runtime, input, init = {}) => {
     return {
       eligible: url.origin === runtime.location.origin
         && !url.pathname.startsWith('/__newdebugbar/'),
-      foreground: livewireNavigate !== null || (inertia !== null && inertiaPartial === null),
+      foreground: inertia !== null && inertiaPartial === null,
+      livewireNavigate: livewireNavigate !== null,
       url,
     };
   } catch {
-    return { eligible: false, foreground: false, url: null };
+    return { eligible: false, foreground: false, livewireNavigate: false, url: null };
   }
 };
 
 const notify = (runtime, response, transport, facts) => {
   try {
     if (!facts.eligible) return;
+    if (facts.livewireNavigate) return;
 
     const responseUrl = response?.url ? new URL(response.url, runtime.location.href) : facts.url;
     if (!responseUrl || responseUrl.origin !== runtime.location.origin) return;
@@ -60,6 +62,17 @@ const notify = (runtime, response, transport, facts) => {
   } catch {
     // Request discovery must never change host request behavior.
   }
+};
+
+const notifyAfterHostUpdate = (runtime, response, transport, facts) => {
+  const notifyProfile = () => notify(runtime, response, transport, facts);
+
+  if (typeof runtime.setTimeout === 'function') {
+    runtime.setTimeout(notifyProfile, 0);
+    return;
+  }
+
+  notifyProfile();
 };
 
 export function installProfileDiscoveryBridge(runtime = window) {
@@ -98,7 +111,7 @@ export function installRequestDiscovery(runtime = window) {
       const facts = requestFacts(runtime, input, init);
 
       return originalFetch.apply(this, arguments).then((response) => {
-        notify(runtime, response, 'fetch', facts);
+        notifyAfterHostUpdate(runtime, response, 'fetch', facts);
         return response;
       });
     };
@@ -129,8 +142,9 @@ export function installRequestDiscovery(runtime = window) {
 
   prototype.send = function newDebugBarSend() {
     const facts = requestFacts(runtime, this[XHR_URL]);
-    facts.foreground = this[XHR_LIVEWIRE_NAVIGATE] || (this[XHR_INERTIA] && !this[XHR_INERTIA_PARTIAL]);
-    this.addEventListener?.('loadend', () => notify(runtime, {
+    facts.livewireNavigate = this[XHR_LIVEWIRE_NAVIGATE];
+    facts.foreground = this[XHR_INERTIA] && !this[XHR_INERTIA_PARTIAL];
+    this.addEventListener?.('loadend', () => notifyAfterHostUpdate(runtime, {
       url: this.responseURL,
       headers: { get: (name) => this.getResponseHeader?.(name) },
     }, 'xhr', facts), { once: true });

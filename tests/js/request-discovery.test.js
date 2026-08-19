@@ -148,7 +148,7 @@ test('records partial Inertia reloads passively and full visits as foreground', 
   ]);
 });
 
-test('records Livewire updates passively and treats navigation as foreground', async () => {
+test('records Livewire updates and leaves full navigation to the fresh page toolbar', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
@@ -166,10 +166,26 @@ test('records Livewire updates passively and treats navigation as foreground', a
 
   assert.deepEqual(browser.events.map((event) => event.detail), [
     { profileId, transport: 'fetch', foreground: false },
-    { profileId, transport: 'fetch', foreground: true },
     { profileId, transport: 'fetch', foreground: false },
     { profileId, transport: 'xhr', foreground: false },
-    { profileId, transport: 'xhr', foreground: true },
+  ]);
+});
+
+test('waits for host response handling before announcing a profile', async () => {
+  const browser = runtime();
+  const scheduled = [];
+  browser.setTimeout = (callback) => scheduled.push(callback);
+  installRequestDiscovery(browser);
+
+  await browser.fetch('/api/search');
+
+  assert.deepEqual(browser.events, []);
+  assert.equal(scheduled.length, 1);
+
+  scheduled.shift()();
+
+  assert.deepEqual(browser.events.map((event) => event.detail), [
+    { profileId, transport: 'fetch', foreground: false },
   ]);
 });
 
