@@ -38,11 +38,6 @@ final class ProfileManager
     /** @var array<string, mixed> */
     private array $request = [];
 
-    /** @var array<string, float> */
-    private array $lifecycleMarks = [];
-
-    private int $responsePreparationIndex = 0;
-
     /** @param iterable<Collector> $collectors */
     public function __construct(
         iterable $collectors,
@@ -142,7 +137,6 @@ final class ProfileManager
                 'authenticated' => (bool) ($authentication['authenticated'] ?? $this->isAuthenticated($request)),
                 'authentication' => $authentication,
                 'session' => $session,
-                'timing_scope' => 'global_middleware_entry',
                 'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
             ];
 
@@ -236,46 +230,6 @@ final class ProfileManager
         }
     }
 
-    public function lifecycle(string $event): void
-    {
-        if (! $this->collecting) {
-            return;
-        }
-
-        $now = $this->elapsedMilliseconds();
-
-        if ($event === 'routing') {
-            $this->lifecycleMarks['routing'] = $now;
-
-            return;
-        }
-
-        if ($event === 'route_matched') {
-            $this->finishLifecycleSpan('routing', 'Route matching', $now);
-            $this->lifecycleMarks['route_work'] = $now;
-
-            return;
-        }
-
-        if ($event === 'preparing_response') {
-            $this->finishLifecycleSpan('route_work', 'Route middleware, binding, controller and rendering', $now);
-            $this->responsePreparationIndex++;
-            $this->lifecycleMarks['response'] = $now;
-
-            return;
-        }
-
-        if ($event === 'response_prepared') {
-            $name = match ($this->responsePreparationIndex) {
-                1 => 'Route response preparation',
-                2 => 'Final response preparation',
-                default => 'Response preparation '.$this->responsePreparationIndex,
-            };
-
-            $this->finishLifecycleSpan('response', $name, $now);
-        }
-    }
-
     public function excludeRedisCacheOperation(string $operation): void
     {
         $collector = $this->collectors['redis'] ?? null;
@@ -319,8 +273,6 @@ final class ProfileManager
         $this->profileId = (string) Str::uuid();
         $this->startedAt = hrtime(true);
         $this->request = [];
-        $this->lifecycleMarks = [];
-        $this->responsePreparationIndex = 0;
         $this->collecting = true;
     }
 
@@ -445,21 +397,6 @@ final class ProfileManager
     private function elapsedMilliseconds(): float
     {
         return round(($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000, 3);
-    }
-
-    private function finishLifecycleSpan(string $key, string $name, float $now): void
-    {
-        $start = $this->lifecycleMarks[$key] ?? null;
-
-        if ($start === null) {
-            return;
-        }
-
-        unset($this->lifecycleMarks[$key]);
-        $this->record('lifecycle', [
-            'name' => $name,
-            'duration_ms' => round(max(0, $now - $start), 2),
-        ]);
     }
 
     private function requestType(Request $request, ?Response $response): string

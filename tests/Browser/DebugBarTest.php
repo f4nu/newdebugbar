@@ -619,7 +619,7 @@ it('uses one non-sticky title and description hierarchy for every section', func
             })()
             JS);
 
-    foreach (['authorization', 'lifecycle', 'views'] as $section) {
+    foreach (['authorization', 'views'] as $section) {
         $page
             ->click("[data-ndb-select-section=\"{$section}\"]")
             ->assertScript(<<<JS
@@ -1007,7 +1007,6 @@ it('filters the timeline without inventing spans for point events', function () 
 
                 return JSON.stringify(values.slice(0, 3)) === JSON.stringify(['key', 'all', 'request'])
                     && new Set(values).size === values.length
-                    && values.includes('lifecycle')
                     && values.includes('queries')
                     && values.includes('events');
             })()
@@ -1383,7 +1382,7 @@ it('sorts views from the column headers with clear direction feedback', function
         ->assertNoJavaScriptErrors();
 });
 
-it('presents Laravel decisions lifecycle messages and source context without editor links', function () {
+it('presents Laravel decisions messages and source context without editor links', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
@@ -1419,10 +1418,6 @@ it('presents Laravel decisions lifecycle messages and source context without edi
         ->assertSee('inspect-profile');
 
     $page
-        ->click('[data-ndb-select-section="lifecycle"]')
-        ->assertSee('Route matching')
-        ->assertSee('Route response preparation')
-        ->assertSee('Final response preparation')
         ->click('[data-ndb-select-section="messages"]')
         ->assertSee('Checkout checkpoint');
 

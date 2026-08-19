@@ -120,7 +120,6 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new ItemCollector($redactor, $maxItems, 'events', 'Events'),
                 new ItemCollector($redactor, $maxItems, 'authorization', 'Authorization'),
                 new ValidationCollector($redactor, $maxItems),
-                new ItemCollector($redactor, $maxItems, 'lifecycle', 'Lifecycle'),
                 new ItemCollector($redactor, $maxItems, 'messages', 'Messages'),
                 new LogCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),

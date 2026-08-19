@@ -18,14 +18,7 @@ it('loads full profile details only after the inspector asks', function () {
         ->assertSet('detailsLoaded', true)
         ->assertDispatched('newdebugbar-content-updated')
         ->assertSee('Profiled request completed')
-        ->assertSeeHtml('data-ndb-section-description')
-        ->assertDontSeeHtml('data-ndb-lifecycle-scope');
-
-    $component->assertSet('summary.sections', function (array $sections): bool {
-        $lifecycle = collect($sections)->firstWhere('key', 'lifecycle');
-
-        return str_contains($lifecycle['description'], 'early Laravel bootstrap is not measured');
-    });
+        ->assertSeeHtml('data-ndb-section-description');
 });
 
 it('locks server-owned profile state', function () {

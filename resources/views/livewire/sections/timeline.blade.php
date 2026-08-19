@@ -2,7 +2,7 @@
 @php($timelineItems = $section['payload']['items'])
 @php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
 @php($timelineSourceSections = array_values(array_filter($timelineSections, fn ($timelineSection) => $timelineSection !== 'request')))
-@php($timelineKeySections = ['request', 'lifecycle', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'queue'])
+@php($timelineKeySections = ['request', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'queue'])
 @php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
 @php($timelineTicks = [0, 25, 50, 75, 100])
 <div data-ndb-timeline-results-header class="ndb:space-y-3">

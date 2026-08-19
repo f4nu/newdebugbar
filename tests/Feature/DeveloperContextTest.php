@@ -15,7 +15,7 @@ use NewDebugBar\Tests\ProfiledApplicationEvent;
 use NewDebugBar\Tests\ProfiledApplicationListener;
 use NewDebugBar\Tests\ProfiledModel;
 
-it('captures Laravel decisions lifecycle sources transactions and redacted messages', function () {
+it('captures Laravel decisions sources transactions and redacted messages', function () {
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
     $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $profile = app(ProfilePresenter::class)->present($stored);
@@ -44,15 +44,6 @@ it('captures Laravel decisions lifecycle sources transactions and redacted messa
         ]])
         ->render_order->toBe(1)
         ->source->file->toBe('tests/views/context.blade.php')
-        ->and($profile['sections']['lifecycle']['summary']['count'])->toBeGreaterThanOrEqual(2)
-        ->and(array_column($profile['sections']['timeline']['payload']['items'], 'label'))
-        ->toContain(
-            'Route matching',
-            'Route middleware, binding, controller and rendering',
-            'Route response preparation',
-            'Final response preparation',
-        )
-        ->not->toContain('Response preparation')
         ->and(json_encode($profile))->not->toContain('private-developer-token');
 
     $event = collect($profile['sections']['events']['payload']['items'])

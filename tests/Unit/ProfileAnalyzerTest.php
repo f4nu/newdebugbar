@@ -42,6 +42,11 @@ it('produces stable bounded findings with supporting evidence', function () {
         'query.n_plus_one',
         'cache.high_miss_rate',
         'collector.truncated',
+    ])->and($findings[1])->toMatchArray([
+        'action' => [
+            'label' => 'Review request timing',
+            'section' => 'timeline',
+        ],
     ])->and($findings[3])->toMatchArray([
         'severity' => 'warning',
         'section' => 'queries',

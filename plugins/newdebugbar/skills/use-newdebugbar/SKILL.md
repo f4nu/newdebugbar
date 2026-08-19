@@ -40,7 +40,7 @@ Use the package's local MCP tools directly to read exact, saved Laravel request 
 
 - Treat a finding as a lead, not a verdict. Repeated chunk or pagination queries can look like an N+1 problem.
 - Read pagination and truncation fields. A collector limit does not mean application data is missing.
-- Compare query time with total request time. If queries are a small share, inspect lifecycle, models, events, and views before blaming the database.
+- Compare query time with total request time. If queries are a small share, inspect the timeline, models, events, and views before blaming the database.
 - Check the request outcome before calling a denied permission a failure. A denied check on a successful `200` page may only hide an optional control.
 
 ## Explain the result

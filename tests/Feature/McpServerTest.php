@@ -122,7 +122,7 @@ it('exposes every recorded context section through the bounded section tool', fu
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
     $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
-    foreach (['authorization', 'validation', 'lifecycle', 'messages'] as $section) {
+    foreach (['authorization', 'validation', 'messages'] as $section) {
         $content = captureStructuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
             'profile_id' => $profileId,
             'section' => $section,

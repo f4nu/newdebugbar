@@ -152,8 +152,8 @@ final class ProfileAnalyzer
                 ['duration_ms' => $requestDuration, 'threshold_ms' => $this->slowRequestMs],
                 [
                     'why' => sprintf('This is above the configured %s ms threshold.', $this->number($this->slowRequestMs)),
-                    'next' => 'Inspect Lifecycle and Timeline to find the slowest application work.',
-                    'action' => ['label' => 'Review request timing', 'section' => 'lifecycle'],
+                    'next' => 'Inspect Timeline to find where the request spent time.',
+                    'action' => ['label' => 'Review request timing', 'section' => 'timeline'],
                 ],
             );
         }

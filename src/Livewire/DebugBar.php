@@ -24,7 +24,6 @@ final class DebugBar extends Component
         'events' => 'See which events Laravel dispatched, where they came from, and how they were handled.',
         'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',
         'http_client' => 'Review outbound HTTP requests, responses, timing, and their source.',
-        'lifecycle' => 'See how long Laravel spent in each measured request lifecycle stage.',
         'logs' => 'Review log messages, their context, and the application code that wrote them.',
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
         'messages' => 'Review developer messages, their context, and when they were recorded.',
@@ -185,7 +184,7 @@ final class DebugBar extends Component
             $sectionLinks[] = [
                 'key' => $key,
                 'label' => $section['label'] ?? ucfirst($key),
-                'description' => $this->sectionDescription((string) $key, (string) ($section['label'] ?? ucfirst($key)), $profile),
+                'description' => $this->sectionDescription((string) $key, (string) ($section['label'] ?? ucfirst($key))),
                 'count' => $count,
                 'active' => $count === null || (int) $count > 0 || $attention,
                 'attention' => $attention,
@@ -208,16 +207,8 @@ final class DebugBar extends Component
         ];
     }
 
-    /** @param array<string, mixed> $profile */
-    private function sectionDescription(string $key, string $label, array $profile): string
+    private function sectionDescription(string $key, string $label): string
     {
-        if (
-            $key === 'lifecycle'
-            && ($profile['sections']['request']['payload']['timing_scope'] ?? null) === 'global_middleware_entry'
-        ) {
-            return self::SECTION_DESCRIPTIONS['lifecycle'].' Timing starts at the debug middleware, so early Laravel bootstrap is not measured.';
-        }
-
         return self::SECTION_DESCRIPTIONS[$key]
             ?? 'Review the collected '.strtolower($label).' details for this request.';
     }

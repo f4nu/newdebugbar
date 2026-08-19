@@ -98,11 +98,6 @@ final class EventRegistrar
 
     public function register(): void
     {
-        $this->listen(Routing::class, fn () => $this->manager()->lifecycle('routing'));
-        $this->listen(RouteMatched::class, fn () => $this->manager()->lifecycle('route_matched'));
-        $this->listen(PreparingResponse::class, fn () => $this->manager()->lifecycle('preparing_response'));
-        $this->listen(ResponsePrepared::class, fn () => $this->manager()->lifecycle('response_prepared'));
-
         $this->listen(GateEvaluated::class, function (GateEvaluated $event): void {
             $location = $this->callSites->capture();
             $this->manager()->record('authorization', [

@@ -28,7 +28,6 @@ final class McpProfilePresenter
         'events',
         'authorization',
         'validation',
-        'lifecycle',
         'messages',
         'logs',
         'exceptions',

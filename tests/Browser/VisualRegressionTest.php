@@ -78,7 +78,7 @@ function visualDebugPage(string $section, string $theme)
         return $page;
     }
 
-    if (in_array($section, ['authorization', 'lifecycle', 'messages', 'views'], true)) {
+    if (in_array($section, ['authorization', 'messages', 'views'], true)) {
         $page = visit('/profiled-context');
         setVisualDebugTheme($page, $theme);
 
@@ -345,7 +345,6 @@ $visualSections = [
     'exceptions',
     'authorization',
     'validation',
-    'lifecycle',
     'messages',
 ];
 $visualSectionCases = [];
