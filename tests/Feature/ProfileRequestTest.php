@@ -125,7 +125,7 @@ it('captures a local web request and its Laravel activity', function () {
     }
 });
 
-it('presents model activity as useful record loads and boot lifecycle evidence', function () {
+it('presents model activity as useful record loads', function () {
     $response = $this->get('/profiled-models', ['Accept' => 'text/html'])->assertOk();
     $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $models = app(ProfilePresenter::class)->present($stored)['sections']['models'];
@@ -135,8 +135,6 @@ it('presents model activity as useful record loads and boot lifecycle evidence',
         ->distinct_record_count->toBe(24)
         ->repeated_load_count->toBe(20)
         ->model_change_count->toBe(0)
-        ->boot_event_count->toBe(10)
-        ->boot_model_classes->toBe(5)
         ->and(array_map(
             fn (array $group): array => [class_basename($group['model']), $group['load_count'], $group['record_count'], $group['repeated_load_count']],
             $models['payload']['model_groups'],

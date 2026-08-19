@@ -145,15 +145,6 @@ abstract class TestCase extends Orchestra
                 User::class => [1, 2, 1, 2, 1],
             ];
 
-            foreach (array_keys($retrievals) as $modelClass) {
-                $model = new $modelClass;
-                $model->setConnection('testing');
-
-                foreach (['booting', 'booted'] as $event) {
-                    Event::dispatch("eloquent.{$event}: {$modelClass}", [$model]);
-                }
-            }
-
             foreach ($retrievals as $modelClass => $keys) {
                 foreach ($keys as $key) {
                     $model = new $modelClass;

@@ -253,7 +253,6 @@ final class McpProfilePresenter
                 $payload['items'],
                 $payload['groups'],
                 $payload['model_groups'],
-                $payload['boot_items'],
                 $payload['repeated_groups'],
                 $payload['repeated_misses'],
             );

@@ -207,23 +207,4 @@
     @else
         <x-newdebugbar::empty-state label="No model loads or changes were captured." />
     @endif
-
-    @if (($section['payload']['boot_items'] ?? []) !== [])
-        <details
-            data-ndb-model-boot
-            class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"
-        >
-            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
-                <span class="ndb:min-w-0 ndb:flex-1">
-                    <span class="ndb:block ndb:text-xs ndb:font-bold">Model boot lifecycle</span>
-                    <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-zinc-400">{{ $section['summary']['boot_event_count'] }} events across {{ $section['summary']['boot_model_classes'] }} {{ $section['summary']['boot_model_classes'] === 1 ? 'class' : 'classes' }}</span>
-                </span>
-                <x-newdebugbar::icon
-                    name="chevron-down"
-                    class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
-                />
-            </summary>
-            <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($section['payload']['boot_items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
-        </details>
-    @endif
 </div>

@@ -80,13 +80,12 @@ it('sorts model groups by count then by model name', function () {
 it('summarizes model loads by record and counts only extra identified retrievals as repeated', function () {
     $profile = (new SectionAnalyzer)->analyze([
         'sections' => [
-            'models' => ['summary' => ['count' => 6], 'payload' => ['items' => [
+            'models' => ['summary' => ['count' => 5], 'payload' => ['items' => [
                 ['model' => 'App\\Models\\User', 'event' => 'retrieved', 'key' => 2, 'connection' => 'testing', 'table' => 'users', 'at_ms' => 7.25],
                 ['model' => 'App\\Models\\User', 'event' => 'retrieved', 'key' => 1, 'connection' => 'testing', 'table' => 'users', 'at_ms' => 2.5],
                 ['model' => 'App\\Models\\User', 'event' => 'retrieved', 'key' => 1, 'connection' => 'testing', 'table' => 'users', 'at_ms' => 5.75],
                 ['model' => 'App\\Models\\User', 'event' => 'retrieved', 'key' => 1, 'connection' => 'testing', 'table' => 'users', 'at_ms' => 8.5],
                 ['model' => 'App\\Models\\User', 'event' => 'retrieved', 'key' => null, 'connection' => 'testing', 'table' => 'users', 'at_ms' => 9],
-                ['model' => 'App\\Models\\User', 'event' => 'booted', 'key' => null, 'connection' => 'testing', 'table' => 'users', 'at_ms' => 1],
             ]]],
         ],
     ]);
@@ -96,8 +95,6 @@ it('summarizes model loads by record and counts only extra identified retrievals
         ->distinct_record_count->toBe(2)
         ->unidentified_load_count->toBe(1)
         ->repeated_load_count->toBe(2)
-        ->boot_event_count->toBe(1)
-        ->boot_model_classes->toBe(1)
         ->and($profile['sections']['models']['payload']['model_groups'][0])
         ->model->toBe('App\\Models\\User')
         ->connection->toBe('testing')
@@ -110,8 +107,7 @@ it('summarizes model loads by record and counts only extra identified retrievals
         ->key->toBe(1)
         ->loads->toBe(3)
         ->first_seen_ms->toBe(2.5)
-        ->last_seen_ms->toBe(8.5)
-        ->and($profile['sections']['models']['payload']['boot_items'])->toHaveCount(1);
+        ->last_seen_ms->toBe(8.5);
 });
 
 it('ranks changed models before repeated retrievals and keeps write events distinct', function () {

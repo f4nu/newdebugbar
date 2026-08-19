@@ -1113,7 +1113,14 @@ it('presents useful model evidence with progressive controls', function () {
                 return Math.abs(headingBounds.right - valueBounds.right) < 1;
             })
             JS)
-        ->assertSee('Model boot lifecycle')
+        ->assertScript(<<<'JS'
+            (() => {
+                const summary = document.querySelector('[data-ndb-model-group]:first-of-type > summary');
+                summary.focus();
+
+                return document.activeElement === summary;
+            })()
+            JS)
         ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
         ->assertSee('studio_jobs')

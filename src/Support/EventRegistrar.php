@@ -349,13 +349,14 @@ final class EventRegistrar
 
         $this->listen('eloquent.*', function (string $name, array $payload): void {
             $model = $payload[0] ?? null;
+            $event = str($name)->between('eloquent.', ':')->toString();
 
-            if (! $model instanceof Model) {
+            if (! $model instanceof Model || in_array($event, ['booting', 'booted'], true)) {
                 return;
             }
 
             $this->manager()->record('models', [
-                'event' => str($name)->between('eloquent.', ':')->toString(),
+                'event' => $event,
                 'model' => $model::class,
                 'connection' => $model->getConnectionName(),
                 'table' => $model->getTable(),

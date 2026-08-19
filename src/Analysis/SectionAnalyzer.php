@@ -22,7 +22,6 @@ final class SectionAnalyzer
         $groups = [];
         $events = [];
         $modelGroups = [];
-        $bootItems = [];
         $changeEvents = ['created', 'updated', 'deleted', 'restored', 'forceDeleted', 'trashed'];
 
         foreach ($items as $item) {
@@ -37,12 +36,6 @@ final class SectionAnalyzer
             $groups[$key]['items'][] = $item;
             $event = (string) ($item['event'] ?? 'unknown');
             $events[$event] = ($events[$event] ?? 0) + 1;
-
-            if (in_array($event, ['booting', 'booted'], true)) {
-                $bootItems[] = $item;
-
-                continue;
-            }
 
             $model = (string) ($item['model'] ?? 'Unknown');
             $modelGroups[$model] ??= [
@@ -140,11 +133,8 @@ final class SectionAnalyzer
                 },
                 [],
             );
-            $profile['sections']['models']['summary']['boot_event_count'] = count($bootItems);
-            $profile['sections']['models']['summary']['boot_model_classes'] = count(array_unique(array_column($bootItems, 'model')));
             $profile['sections']['models']['payload']['groups'] = $groups;
             $profile['sections']['models']['payload']['model_groups'] = $modelGroups;
-            $profile['sections']['models']['payload']['boot_items'] = $bootItems;
         }
 
         return $profile;
