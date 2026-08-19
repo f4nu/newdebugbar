@@ -1103,12 +1103,15 @@ it('keeps the bar working after host Livewire updates without a dedicated sectio
             JS)
         ->wait(0.3)
         ->assertScript(<<<'JS'
-            /^\/livewire-[0-9a-f]{8}\/update$/i.test(
-                Alpine.$data(document.getElementById('newdebugbar')).summary.path,
-            )
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
+
+                return /^\/livewire-[0-9a-f]{8}\/update$/i.test(state.summary.path)
+                    && state.inspectorOpen === true
+                    && state.selected === 'request';
+            })()
             JS)
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
+        ->assertVisible('[data-ndb-section-panel="request"]')
         ->assertMissing('[data-ndb-select-section="livewire"]')
         ->assertMissing('[data-ndb-section-panel="livewire"]')
         ->assertNoJavaScriptErrors();
