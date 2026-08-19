@@ -77,7 +77,7 @@
       aria-haspopup="listbox"
       :aria-label="requestPickerButtonLabel"
       :title="requestPickerButtonLabel"
-      class="ndb:relative ndb:flex ndb:w-12 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-r-xl ndb:text-zinc-400 ndb:transition-colors ndb:hover:bg-zinc-100 ndb:hover:text-zinc-700 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:cursor-default ndb:disabled:text-zinc-300 ndb:disabled:hover:bg-transparent ndb:sm:w-11 ndb:dark:hover:bg-white/10 ndb:dark:hover:text-zinc-200 ndb:dark:disabled:text-zinc-700 ndb:dark:disabled:hover:bg-transparent"
+      class="ndb:relative ndb:flex ndb:w-11 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-r-xl ndb:text-zinc-400 ndb:transition-colors ndb:hover:bg-zinc-100 ndb:hover:text-zinc-700 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:cursor-default ndb:disabled:text-zinc-300 ndb:disabled:hover:bg-transparent ndb:sm:w-10 ndb:dark:hover:bg-white/10 ndb:dark:hover:text-zinc-200 ndb:dark:disabled:text-zinc-700 ndb:dark:disabled:hover:bg-transparent"
     >
       <x-newdebugbar::icon
         name="chevron-down"
