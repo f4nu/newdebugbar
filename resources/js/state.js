@@ -144,9 +144,9 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     mobileToolbarReturnFocus: null,
     requestPickerScope: null,
     requestPickerReturnFocus: null,
+    requestPickerArrowLeft: 0,
     recentProfiles: requests.slice(0, requestLimit),
     profileLimit: requestLimit,
-    newRequestCount: 0,
     pendingProfileIds: [],
     requestSelectionPending: null,
     detailsRequested: false,
@@ -340,7 +340,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     get requestBadgeCount() {
-      return this.newRequestCount > 9 ? '9+' : String(this.newRequestCount);
+      return this.laterRequestCount > 9 ? '9+' : String(this.laterRequestCount);
+    },
+
+    get laterRequestCount() {
+      return Math.max(0, this.recentProfiles.length - 1);
     },
 
     get hasOtherRequests() {
@@ -349,9 +353,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
     get requestPickerButtonLabel() {
       if (!this.hasOtherRequests) return 'No later requests yet';
-      if (this.newRequestCount === 0) return 'Choose request';
 
-      return `Choose request, ${this.newRequestCount} new ${this.newRequestCount === 1 ? 'request' : 'requests'}`;
+      return `Choose request, ${this.laterRequestCount} later ${this.laterRequestCount === 1 ? 'request' : 'requests'}`;
     },
 
     isFavorite(key) {
@@ -456,6 +459,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     syncToolbarPlacement() {
+      if (this.requestPickerScope !== null) this.syncRequestPickerArrow();
       if (this.toolbarDragging || this.toolbarRebasing || this.toolbarSnapping) return;
 
       const placement = browser.toolbarPlacement?.(this.$root, this.toolbarPreferredPlacement);
@@ -801,10 +805,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     receiveProfile(summary) {
       if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
 
-      const isNew = !this.recentProfiles.some((profile) => profile.id === summary.id);
       this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== summary.id);
       this.rememberProfile(summary);
-      if (isNew && summary.id !== this.summary.id && this.requestPickerScope === null) this.newRequestCount++;
     },
 
     requestTitle(profile) {
@@ -821,6 +823,17 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         redirect: 'Redirect',
         stream: 'Stream',
       })[type] ?? 'Request';
+    },
+
+    requestStatusClass(status) {
+      const code = Number(status);
+
+      if (code >= 500) return 'ndb:text-red-600 ndb:dark:text-red-300';
+      if (code >= 400) return 'ndb:text-amber-600 ndb:dark:text-amber-300';
+      if (code >= 300) return 'ndb:text-sky-600 ndb:dark:text-sky-300';
+      if (code >= 200) return 'ndb:text-emerald-600 ndb:dark:text-emerald-300';
+
+      return 'ndb:text-zinc-500 ndb:dark:text-zinc-400';
     },
 
     relativeRequestTime(profile) {
@@ -1237,9 +1250,9 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
-      this.requestPickerScope = scope;
       this.requestPickerReturnFocus = returnFocus ?? browser.activeElement?.();
-      this.newRequestCount = 0;
+      this.syncRequestPickerArrow(scope, this.requestPickerReturnFocus);
+      this.requestPickerScope = scope;
 
       this.$nextTick?.(() => {
         const focus = () => {
@@ -1252,6 +1265,24 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         };
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
+    },
+
+    syncRequestPickerArrow(scope = this.requestPickerScope, trigger = this.requestPickerReturnFocus) {
+      if (!['toolbar', 'header-mobile', 'header'].includes(scope)) return;
+
+      const switcher = trigger?.closest?.('[data-ndb-request-switcher]')
+        ?? this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
+      const pickerTrigger = switcher?.querySelector?.(`[data-ndb-request-picker-trigger="${scope}"]`)
+        ?? trigger;
+      const switcherBox = switcher?.getBoundingClientRect?.();
+      const triggerBox = pickerTrigger?.getBoundingClientRect?.();
+
+      if (!switcherBox || !triggerBox) return;
+
+      this.requestPickerArrowLeft = Math.max(
+        0,
+        Math.round(triggerBox.left - switcherBox.left + (triggerBox.width - 16) / 2),
+      );
     },
 
     closeRequestPicker(restoreFocus = true) {

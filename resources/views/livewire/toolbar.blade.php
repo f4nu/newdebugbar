@@ -26,7 +26,7 @@
 >
     <x-newdebugbar::request-switcher
         scope="toolbar"
-        class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-40 ndb:min-[420px]:w-44 ndb:sm:w-48 ndb:md:w-56 ndb:lg:w-auto ndb:lg:max-w-80"
+        class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-36 ndb:min-[420px]:w-40 ndb:sm:w-[9.5rem] ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[19rem]"
     />
 
     <x-newdebugbar::mobile-request-metrics
@@ -42,7 +42,7 @@
         <x-newdebugbar::toolbar-button
             section="overview"
             data-ndb-toolbar="environment"
-            class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
+            class="ndb:order-1 ndb:hidden ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:md:flex ndb:lg:px-2.5"
         >
             <span
                 class="ndb:size-2 ndb:shrink-0 ndb:rounded-full"

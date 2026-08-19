@@ -67,7 +67,7 @@
 )
 
 @if ($isHttpRequest)
-    <div data-ndb-request-trace>
+    <div data-ndb-request-trace class="ndb:-mt-2">
         <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:px-4 ndb:py-3 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
             <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
                 <span class="ndb:shrink-0 ndb:rounded-md ndb:bg-emerald-50 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-emerald-700 ndb:ring-1 ndb:ring-inset ndb:ring-emerald-200 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300 ndb:dark:ring-emerald-900">

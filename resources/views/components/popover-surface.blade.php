@@ -4,6 +4,7 @@
     'surfaceClass' => 'ndb:p-1.5',
     'arrowClass' => 'ndb:right-[14px]',
     'mobileMenu' => null,
+    'align' => 'right',
 ])
 
 @php
@@ -19,6 +20,12 @@
         'below' => 'ndb:-top-[7px] ndb:rotate-180',
         'above' => 'ndb:-bottom-[7px]',
     };
+
+    $alignmentClass = match ($align) {
+        'left' => 'ndb:left-0',
+        'right' => 'ndb:right-0',
+        default => throw new InvalidArgumentException("Unsupported popover alignment [{$align}]."),
+    };
 @endphp
 
 <div
@@ -27,7 +34,7 @@
             ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
             : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom'"
     @endif
-    {{ $attributes->class("ndb:absolute ndb:right-0 ndb:z-50 {$widthClass} {$directionClass}") }}
+    {{ $attributes->class("ndb:absolute ndb:z-50 {$alignmentClass} {$widthClass} {$directionClass}") }}
 >
     <span
         aria-hidden="true"

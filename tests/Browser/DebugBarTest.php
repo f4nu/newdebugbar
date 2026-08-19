@@ -863,6 +863,22 @@ it('collects background requests in the split button without changing the host p
         ->assertScript('document.querySelector(\'[data-ndb-request-picker-trigger="toolbar"]\').disabled === true')
         ->assertScript(<<<'JS'
             (() => {
+                const control = document.querySelector('[data-ndb-request-switcher="toolbar"] [data-ndb-request-control]');
+                const primary = document.querySelector('[data-ndb-toolbar="request"]');
+                const picker = document.querySelector('[data-ndb-request-picker-trigger="toolbar"]');
+                const controlStyle = getComputedStyle(control);
+                const primaryStyle = getComputedStyle(primary);
+                const pickerStyle = getComputedStyle(picker);
+
+                return Number.parseFloat(controlStyle.borderTopWidth) === 1
+                    && Number.parseFloat(primaryStyle.paddingLeft) === 10
+                    && Number.parseFloat(primaryStyle.paddingRight) === 16
+                    && Number.parseFloat(pickerStyle.borderLeftWidth) === 1;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors()
+        ->assertScript(<<<'JS'
+            (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 window.__newDebugBarActiveProfile = state.summary.id;
                 window.__newDebugBarFetchSentinel = true;
@@ -876,6 +892,7 @@ it('collects background requests in the split button without changing the host p
             })()
             JS)
         ->wait(0.3)
+        ->assertNoJavaScriptErrors()
         ->assertScript(<<<'JS'
             (() => {
                 fetch('/api/plain-json?sequence=second');
@@ -884,6 +901,7 @@ it('collects background requests in the split button without changing the host p
             })()
             JS)
         ->wait(0.3)
+        ->assertNoJavaScriptErrors()
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
@@ -892,36 +910,73 @@ it('collects background requests in the split button without changing the host p
                 return window.__newDebugBarFetchSentinel === true
                     && state.summary.id === window.__newDebugBarActiveProfile
                     && discoveries.length === 2
-                    && state.newRequestCount === 2
+                    && state.laterRequestCount === 2
                     && document.querySelector('[data-ndb-request-picker-trigger="toolbar"]').disabled === false
                     && location.pathname === '/profiled'
                     && document.querySelectorAll('#newdebugbar').length === 1;
             })()
             JS)
+        ->assertNoJavaScriptErrors()
         ->assertVisible('[data-testid="host-page"]')
         ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '2')
         ->click('[data-ndb-request-picker-trigger="toolbar"]')
         ->assertVisible('#newdebugbar-request-list-toolbar')
+        ->assertVisible('[data-ndb-request-popover="toolbar"] [data-ndb-popover-surface]')
+        ->assertVisible('[data-ndb-request-popover="toolbar"] [data-ndb-popover-arrow]')
+        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '2')
+        ->assertScript('document.querySelector(\'[data-ndb-request-popover="toolbar"] [data-ndb-request-popover-heading]\').textContent.trim() === \'Requests\'')
         ->assertAttribute('[data-ndb-request-picker-trigger="toolbar"]', 'aria-expanded', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const trigger = document.querySelector('[data-ndb-request-picker-trigger="toolbar"]');
+                const arrow = document.querySelector('[data-ndb-request-popover="toolbar"] [data-ndb-popover-arrow]');
+                const triggerBox = trigger?.getBoundingClientRect();
+                const arrowBox = arrow?.getBoundingClientRect();
+
+                if (! triggerBox || ! arrowBox) return false;
+
+                return Math.abs(
+                    (triggerBox.left + triggerBox.width / 2)
+                    - (arrowBox.left + arrowBox.width / 2),
+                ) <= 1;
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const options = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'));
 
-                return state.newRequestCount === 0
+                const statuses = options.map((option) => option.querySelector('[data-ndb-request-status]'));
+                const indicators = options.map((option) => option.querySelector('[data-ndb-request-current]'));
+
+                return state.laterRequestCount === 2
                     && options.length >= 3
                     && options.filter((option) => option.textContent.includes('/api/plain-json')).length >= 2
-                    && document.activeElement.matches('[data-ndb-request-option]');
+                    && document.activeElement.matches('[data-ndb-request-option]')
+                    && statuses.every((status, index) => {
+                        const rowBox = options[index].getBoundingClientRect();
+                        const statusBox = status.getBoundingClientRect();
+
+                        return Math.abs(
+                            (rowBox.top + rowBox.height / 2)
+                            - (statusBox.top + statusBox.height / 2),
+                        ) <= 1;
+                    })
+                    && new Set(statuses.map((status) => Math.round(status.getBoundingClientRect().left))).size === 1
+                    && indicators.every((indicator) => Math.abs(indicator.getBoundingClientRect().width - 16) <= 0.5);
             })()
             JS)
-        ->script(<<<'JS'
+        ->assertNoJavaScriptErrors()
+        ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const option = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'))
                     .find((candidate) => candidate.dataset.profileId !== state.summary.id && candidate.textContent.includes('/api/plain-json'));
 
                 option.click();
-            })();
+
+                return true;
+            })()
             JS)
         ->wait(0.3)
         ->assertScript(<<<'JS'
@@ -933,6 +988,7 @@ it('collects background requests in the split button without changing the host p
                     && window.__newDebugBarFetchSentinel === true;
             })()
             JS)
+        ->assertNoJavaScriptErrors()
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
         ->assertVisible('[data-ndb-request-picker-trigger="header"]')
@@ -1305,6 +1361,14 @@ it('shows an aligned request trace and switches request detail groups', function
         ->wait(0.2)
         ->click('[data-ndb-select-section="request"]')
         ->assertVisible('[data-ndb-request-trace]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const description = document.querySelector('[data-ndb-section-description]').getBoundingClientRect();
+                const trace = document.querySelector('[data-ndb-request-trace]').getBoundingClientRect();
+
+                return trace.top - description.bottom <= 16.5;
+            })()
+            JS)
         ->assertScript('document.querySelector("[data-ndb-request-status]").textContent.trim() === "200"')
         ->assertScript('/^Completed in \\d+(?:\\.\\d+)? ms$/.test(document.querySelector("[data-ndb-request-completion]").textContent.replace(/\\s+/g, " ").trim())')
         ->assertScript('!["Success", "Failed", "Completed successfully", "Completed with an error"].some((meaning) => document.querySelector("[data-ndb-request-trace]").textContent.includes(meaning))')
@@ -1463,6 +1527,7 @@ it('presents Laravel decisions messages and source context without editor links'
         ->click('[data-ndb-select-section="views"]')
         ->click('[data-ndb-view-group] > summary')
         ->assertSee('tests/views/context.blade.php')
+        ->assertScript('!document.querySelector("[data-ndb-view-source]").textContent.replace(/\\s+/g, " ").includes(" :")')
         ->assertPresent('[data-ndb-view-data]')
         ->assertMissing('[data-ndb-view-data-count]')
         ->assertScript(<<<'JS'

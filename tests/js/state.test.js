@@ -482,10 +482,10 @@ test('foreground profiles replace the current profile', async () => {
   await Promise.resolve();
 
   assert.equal(switched, visitProfileId);
-  assert.equal(state.newRequestCount, 0);
+  assert.equal(state.laterRequestCount, 0);
 });
 
-test('background profiles are announced once and counted until the picker opens', async () => {
+test('background profiles are announced once and stay counted after the picker opens', async () => {
   const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
   const ajaxProfileId = '550e8400-e29b-41d4-a716-446655440000';
   const calls = [];
@@ -505,21 +505,22 @@ test('background profiles are announced once and counted until the picker opens'
 
   assert.deepEqual(calls, [['notice', ajaxProfileId]]);
   assert.deepEqual(state.pendingProfileIds, [ajaxProfileId]);
-  assert.equal(state.newRequestCount, 0);
+  assert.equal(state.laterRequestCount, 0);
 
   state.receiveProfile({ id: ajaxProfileId, method: 'GET', path: '/metrics' });
   assert.deepEqual(state.pendingProfileIds, []);
   assert.equal(state.recentProfiles[0].id, ajaxProfileId);
   assert.equal(state.hasOtherRequests, true);
-  assert.equal(state.newRequestCount, 1);
+  assert.equal(state.laterRequestCount, 1);
   assert.equal(state.requestBadgeCount, '1');
-  assert.equal(state.requestPickerButtonLabel, 'Choose request, 1 new request');
+  assert.equal(state.requestPickerButtonLabel, 'Choose request, 1 later request');
 
   state.openRequestPicker('toolbar');
 
   assert.equal(state.requestPickerScope, 'toolbar');
-  assert.equal(state.newRequestCount, 0);
-  assert.equal(state.requestPickerButtonLabel, 'Choose request');
+  assert.equal(state.laterRequestCount, 1);
+  assert.equal(state.requestBadgeCount, '1');
+  assert.equal(state.requestPickerButtonLabel, 'Choose request, 1 later request');
   assert.deepEqual(calls, [['notice', ajaxProfileId]]);
 });
 
@@ -554,6 +555,16 @@ test('request summaries format useful labels and update existing recent entries'
       .map((type) => state.requestTypeLabel(type)),
     ['Ajax', 'CLI', 'Download', 'Page', 'JSON', 'Redirect', 'Stream', 'Request'],
   );
+  assert.deepEqual(
+    [200, 302, 422, 500, null].map((status) => state.requestStatusClass(status)),
+    [
+      'ndb:text-emerald-600 ndb:dark:text-emerald-300',
+      'ndb:text-sky-600 ndb:dark:text-sky-300',
+      'ndb:text-amber-600 ndb:dark:text-amber-300',
+      'ndb:text-red-600 ndb:dark:text-red-300',
+      'ndb:text-zinc-500 ndb:dark:text-zinc-400',
+    ],
+  );
 
   Date.now = () => Date.parse('2026-08-19T12:00:00Z');
   assert.equal(state.relativeRequestTime({ recorded_time: 'Earlier' }), 'Earlier');
@@ -580,8 +591,16 @@ test('the request picker manages focus, keyboard movement, and profile selection
   });
   const firstOption = option(other.id);
   const currentOption = option(current.id);
-  const switcher = { querySelectorAll: () => [firstOption, currentOption] };
-  const trigger = { closest: () => switcher, focus: () => triggerFocuses++ };
+  const switcher = {
+    getBoundingClientRect: () => ({ left: 20 }),
+    querySelectorAll: () => [firstOption, currentOption],
+  };
+  const trigger = {
+    closest: () => switcher,
+    focus: () => triggerFocuses++,
+    getBoundingClientRect: () => ({ left: 160, width: 40 }),
+  };
+  switcher.querySelector = () => trigger;
   const listbox = { querySelectorAll: () => [firstOption, currentOption] };
   const state = createNewDebugBar(current, browser, [other]);
   browser.activeElement = () => active;
@@ -598,6 +617,7 @@ test('the request picker manages focus, keyboard movement, and profile selection
 
   state.toggleRequestPicker('toolbar', trigger);
   assert.equal(state.requestPickerScope, 'toolbar');
+  assert.equal(state.requestPickerArrowLeft, 152);
   assert.equal(active, currentOption);
 
   state.moveRequestPicker(-1, listbox);
@@ -647,13 +667,13 @@ test('request discovery and selection failures clear their pending state', async
   await Promise.resolve();
   await Promise.resolve();
   assert.deepEqual(state.pendingProfileIds, []);
-  assert.equal(state.newRequestCount, 0);
+  assert.equal(state.laterRequestCount, 0);
 
   state.$wire = {};
   state.noticeProfile(otherId);
   state.noticeProfile('invalid');
   state.noticeProfile(current.id);
-  assert.equal(state.newRequestCount, 0);
+  assert.equal(state.laterRequestCount, 0);
 
   state.$wire = { switchProfile: async () => { throw new Error('expired'); } };
   state.selectRequest(otherId);

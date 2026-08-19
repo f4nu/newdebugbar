@@ -32,7 +32,7 @@ final class DebugBar extends Component
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
         'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',
         'redis' => 'Inspect direct Redis commands, their keys, connections, and timing.',
-        'request' => 'Inspect the selected request and switch between recently captured requests.',
+        'request' => 'Inspect the selected request and switch between later requests captured on this page.',
         'timeline' => 'Follow important work in the order it happened across the request.',
         'validation' => 'Review validation failures, affected fields, rules, and messages.',
         'views' => 'See which Blade templates rendered and the data each received. Use this to spot missing variables, unexpected partials, and repeated renders.',

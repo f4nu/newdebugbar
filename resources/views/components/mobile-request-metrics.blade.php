@@ -52,8 +52,8 @@
             <span
                 data-ndb-mobile-toolbar-metric-label="{{ $metric['key'] }}"
                 class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:leading-[14px] ndb:uppercase ndb:tracking-normal ndb:text-zinc-400"
-                ><span class="ndb:min-[360px]:hidden">{{ $metric['shortLabel'] }}</span
-                ><span class="ndb:hidden ndb:min-[360px]:inline">{{ $metric['label'] }}</span></span>
+                ><span class="ndb:min-[420px]:hidden">{{ $metric['shortLabel'] }}</span
+                ><span class="ndb:hidden ndb:min-[420px]:inline">{{ $metric['label'] }}</span></span>
         </button>
     @endforeach
 </div>
