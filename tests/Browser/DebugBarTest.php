@@ -858,8 +858,9 @@ it('keeps package asset updates inside Livewire navigation', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('ignores background fetch profiles without switching reloading or flashing the host', function () {
+it('collects background requests in the split button without changing the host page', function () {
     $page = visit('/profiled')
+        ->assertScript('document.querySelector(\'[data-ndb-request-picker-trigger="toolbar"]\').disabled === true')
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
@@ -890,16 +891,53 @@ it('ignores background fetch profiles without switching reloading or flashing th
 
                 return window.__newDebugBarFetchSentinel === true
                     && state.summary.id === window.__newDebugBarActiveProfile
-                    && discoveries.length === 0
+                    && discoveries.length === 2
+                    && state.newRequestCount === 2
+                    && document.querySelector('[data-ndb-request-picker-trigger="toolbar"]').disabled === false
                     && location.pathname === '/profiled'
                     && document.querySelectorAll('#newdebugbar').length === 1;
             })()
             JS)
         ->assertVisible('[data-testid="host-page"]')
+        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '2')
+        ->click('[data-ndb-request-picker-trigger="toolbar"]')
+        ->assertVisible('#newdebugbar-request-list-toolbar')
+        ->assertAttribute('[data-ndb-request-picker-trigger="toolbar"]', 'aria-expanded', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
+                const options = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'));
+
+                return state.newRequestCount === 0
+                    && options.length >= 3
+                    && options.filter((option) => option.textContent.includes('/api/plain-json')).length >= 2
+                    && document.activeElement.matches('[data-ndb-request-option]');
+            })()
+            JS)
+        ->script(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
+                const option = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'))
+                    .find((candidate) => candidate.dataset.profileId !== state.summary.id && candidate.textContent.includes('/api/plain-json'));
+
+                option.click();
+            })();
+            JS)
+        ->wait(0.3)
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
+
+                return state.summary.path === '/api/plain-json'
+                    && location.pathname === '/profiled'
+                    && window.__newDebugBarFetchSentinel === true;
+            })()
+            JS)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->wait(0.2)
-        ->assertMissing('[data-ndb-select-section="history"]')
-        ->assertMissing('[data-ndb-section-panel="history"]')
+        ->assertVisible('[data-ndb-request-picker-trigger="header"]')
+        ->click('[data-ndb-request-picker-trigger="header"]')
+        ->assertVisible('#newdebugbar-request-list-header')
         ->assertNoJavaScriptErrors();
 });
 

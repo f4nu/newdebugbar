@@ -260,7 +260,7 @@ it('switches to an exact foreground application profile', function () {
         ->assertDispatched('newdebugbar-profile-switched');
 });
 
-it('lists and announces recent requests without changing the selected profile', function () {
+it('announces later requests without changing the selected profile', function () {
     $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
         ->assertOk()
         ->headers->get('X-NewDebugBar-Profile');
@@ -270,14 +270,10 @@ it('lists and announces recent requests without changing the selected profile', 
 
     Livewire::test(DebugBar::class, ['profileId' => $firstId])
         ->assertSet('profileLimit', 20)
-        ->assertSet('recentProfiles', function (array $profiles) use ($firstId, $nextId): bool {
-            $profiles = collect($profiles)->keyBy('id');
-
-            return $profiles->keys()->contains($firstId)
-                && $profiles->keys()->contains($nextId)
-                && $profiles[$firstId]['path'] === '/profiled'
-                && ! array_key_exists('sections', $profiles[$firstId]);
-        })
+        ->assertSeeHtml('data-ndb-request-picker-trigger="toolbar"')
+        ->assertSeeHtml('data-ndb-request-picker-trigger="header-mobile"')
+        ->assertSeeHtml('data-ndb-request-picker-trigger="header"')
+        ->assertSeeHtml('aria-haspopup="listbox"')
         ->assertSet('summary.sections', fn (array $sections): bool => collect($sections)->firstWhere('key', 'request')['label'] === 'Requests')
         ->call('noticeProfile', $nextId)
         ->assertSet('profileId', $firstId)
@@ -285,12 +281,6 @@ it('lists and announces recent requests without changing the selected profile', 
             return $name === 'newdebugbar-profile-noticed'
                 && $params['summary']['id'] === $nextId
                 && $params['summary']['path'] === '/profiled-next';
-        })
-        ->call('refreshRecentProfiles')
-        ->assertDispatched('newdebugbar-profiles-refreshed', function (string $name, array $params) use ($firstId, $nextId): bool {
-            return $name === 'newdebugbar-profiles-refreshed'
-                && collect($params['profiles'])->pluck('id')->contains($firstId)
-                && collect($params['profiles'])->pluck('id')->contains($nextId);
         });
 });
 

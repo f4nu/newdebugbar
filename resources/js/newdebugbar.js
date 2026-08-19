@@ -33,7 +33,7 @@ window.newDebugBarHighlight = (root = document) => {
   });
 };
 
-window.newDebugBar = (summary) => createNewDebugBar(summary);
+window.newDebugBar = (summary, profileLimit) => createNewDebugBar(summary, null, [], profileLimit);
 
 installProfileDiscoveryBridge();
 installRequestDiscovery();

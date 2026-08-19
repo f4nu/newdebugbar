@@ -440,7 +440,7 @@ test('query findings reveal and scroll to grouped slow evidence', () => {
   assert.deepEqual(scrollOptions, { block: 'start' });
 });
 
-test('a new application profile resets stale section state and reloads open details', async () => {
+test('a new application profile keeps a matching section and resets stale section state', async () => {
   const state = createNewDebugBar(summary, runtime());
   let detailsLoaded = 0;
   state.$wire = { loadDetails: async () => detailsLoaded++ };
@@ -457,7 +457,7 @@ test('a new application profile resets stale section state and reloads open deta
   await Promise.resolve();
 
   assert.equal(state.summary.path, '/api/jobs');
-  assert.equal(state.selected, 'overview');
+  assert.equal(state.selected, 'logs');
   assert.equal(state.detailsRequested, true);
   assert.equal(state.viewSort, 'name');
   assert.equal(state.viewSortDirection, 'asc');
@@ -467,7 +467,7 @@ test('a new application profile resets stale section state and reloads open deta
 
   state.inspectorOpen = false;
   state.selected = 'missing';
-  state.switchProfile(summary);
+  state.switchProfile({ ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' });
   assert.equal(state.selected, 'overview');
 });
 
@@ -478,10 +478,193 @@ test('foreground profiles replace the current profile', async () => {
   let switched = null;
   state.$wire = { switchProfile: async (id) => { switched = id; } };
 
-  state.noticeProfile(visitProfileId);
+  state.noticeProfile(visitProfileId, true);
   await Promise.resolve();
 
   assert.equal(switched, visitProfileId);
+  assert.equal(state.newRequestCount, 0);
+});
+
+test('background profiles are announced once and counted until the picker opens', async () => {
+  const activeProfileId = '6ba7b810-9dad-41d1-80b4-00c04fd430c8';
+  const ajaxProfileId = '550e8400-e29b-41d4-a716-446655440000';
+  const calls = [];
+  const state = createNewDebugBar({ ...summary, id: activeProfileId, path: '/dashboard' }, runtime());
+  state.$wire = { noticeProfile: async (id) => calls.push(['notice', id]) };
+  state.$nextTick = (callback) => callback();
+  state.$root = { querySelector: () => ({ querySelectorAll: () => [] }) };
+
+  assert.equal(state.hasOtherRequests, false);
+  assert.equal(state.requestPickerButtonLabel, 'No later requests yet');
+  state.openRequestPicker('toolbar');
+  assert.equal(state.requestPickerScope, null);
+
+  state.noticeProfile(ajaxProfileId);
+  state.noticeProfile(ajaxProfileId);
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [['notice', ajaxProfileId]]);
+  assert.deepEqual(state.pendingProfileIds, [ajaxProfileId]);
+  assert.equal(state.newRequestCount, 0);
+
+  state.receiveProfile({ id: ajaxProfileId, method: 'GET', path: '/metrics' });
+  assert.deepEqual(state.pendingProfileIds, []);
+  assert.equal(state.recentProfiles[0].id, ajaxProfileId);
+  assert.equal(state.hasOtherRequests, true);
+  assert.equal(state.newRequestCount, 1);
+  assert.equal(state.requestBadgeCount, '1');
+  assert.equal(state.requestPickerButtonLabel, 'Choose request, 1 new request');
+
+  state.openRequestPicker('toolbar');
+
+  assert.equal(state.requestPickerScope, 'toolbar');
+  assert.equal(state.newRequestCount, 0);
+  assert.equal(state.requestPickerButtonLabel, 'Choose request');
+  assert.deepEqual(calls, [['notice', ajaxProfileId]]);
+});
+
+test('recent requests stay deduplicated, bounded, and include the selected request', () => {
+  const current = { ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8', path: '/current' };
+  const first = { id: '550e8400-e29b-41d4-a716-446655440000', path: '/first' };
+  const second = { id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', path: '/second' };
+  const state = createNewDebugBar(current, runtime(), [first, current, second], 2);
+
+  assert.deepEqual(state.recentProfiles.map((profile) => profile.id), [current.id, first.id]);
+
+  state.rememberProfile(second);
+
+  assert.deepEqual(state.recentProfiles.map((profile) => profile.id), [second.id, current.id]);
+});
+
+test('request summaries format useful labels and update existing recent entries', () => {
+  const current = { ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8', path: '/current' };
+  const other = { id: '550e8400-e29b-41d4-a716-446655440000', path: '/other' };
+  const state = createNewDebugBar(current, runtime(), [other], 3);
+  const originalNow = Date.now;
+
+  state.rememberProfile({ ...current, method: 'POST', path: '/updated' });
+  state.receiveProfile({ id: 'not-a-profile' });
+
+  assert.equal(state.recentProfiles.find((profile) => profile.id === current.id).path, '/updated');
+  assert.equal(state.requestTitle({ activity: 'Search patients', path: '/patients' }), 'Search patients');
+  assert.equal(state.requestTitle({ path: '/patients' }), '/patients');
+  assert.equal(state.requestTitle({}), 'Request');
+  assert.deepEqual(
+    ['ajax', 'cli', 'download', 'full_page', 'json', 'redirect', 'stream', 'unknown']
+      .map((type) => state.requestTypeLabel(type)),
+    ['Ajax', 'CLI', 'Download', 'Page', 'JSON', 'Redirect', 'Stream', 'Request'],
+  );
+
+  Date.now = () => Date.parse('2026-08-19T12:00:00Z');
+  assert.equal(state.relativeRequestTime({ recorded_time: 'Earlier' }), 'Earlier');
+  assert.equal(state.relativeRequestTime({ recorded_at: '2026-08-19T11:59:58Z' }), 'now');
+  assert.equal(state.relativeRequestTime({ recorded_at: '2026-08-19T11:59:45Z' }), '15s ago');
+  assert.equal(state.relativeRequestTime({ recorded_at: '2026-08-19T11:42:00Z' }), '18m ago');
+  assert.equal(
+    state.relativeRequestTime({ recorded_at: '2026-08-19T09:00:00Z', recorded_time: '09:00' }),
+    '09:00',
+  );
+  Date.now = originalNow;
+});
+
+test('the request picker manages focus, keyboard movement, and profile selection', async () => {
+  const current = { ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8', path: '/current' };
+  const other = { ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/other' };
+  const browser = runtime();
+  let active = null;
+  let triggerFocuses = 0;
+  const switches = [];
+  const option = (profileId) => ({
+    dataset: { profileId },
+    focus() { active = this; },
+  });
+  const firstOption = option(other.id);
+  const currentOption = option(current.id);
+  const switcher = { querySelectorAll: () => [firstOption, currentOption] };
+  const trigger = { closest: () => switcher, focus: () => triggerFocuses++ };
+  const listbox = { querySelectorAll: () => [firstOption, currentOption] };
+  const state = createNewDebugBar(current, browser, [other]);
+  browser.activeElement = () => active;
+  state.$nextTick = (callback) => callback();
+  state.$root = { querySelector: () => switcher };
+  state.$wire = {
+    loadDetails: async () => {},
+    switchProfile: async (id) => switches.push(id),
+  };
+
+  state.openRequestPicker('unknown', trigger);
+  state.openRequestPicker('header', trigger);
+  assert.equal(state.requestPickerScope, null);
+
+  state.toggleRequestPicker('toolbar', trigger);
+  assert.equal(state.requestPickerScope, 'toolbar');
+  assert.equal(active, currentOption);
+
+  state.moveRequestPicker(-1, listbox);
+  assert.equal(active, firstOption);
+  state.moveRequestPicker(-1, listbox);
+  assert.equal(active, currentOption);
+  active = null;
+  state.moveRequestPicker(1, listbox);
+  assert.equal(active, firstOption);
+  state.focusRequestPickerEdge('end', listbox);
+  assert.equal(active, currentOption);
+  state.focusRequestPickerEdge('start', listbox);
+  assert.equal(active, firstOption);
+  state.moveRequestPicker(1, { querySelectorAll: () => [] });
+  state.focusRequestPickerEdge('start', { querySelectorAll: () => [] });
+
+  state.toggleRequestPicker('toolbar', trigger);
+  assert.equal(state.requestPickerScope, null);
+  assert.equal(triggerFocuses, 1);
+
+  state.inspectorOpen = true;
+  state.openRequestPicker('toolbar', trigger);
+  assert.equal(state.requestPickerScope, null);
+  state.openRequestPicker('header', trigger);
+  assert.equal(state.requestPickerScope, 'header');
+  state.selectRequest(current.id);
+  assert.deepEqual(switches, []);
+
+  state.openRequestPicker('header', trigger);
+  state.selectRequest(other.id);
+  await Promise.resolve();
+  assert.deepEqual(switches, [other.id]);
+  assert.equal(state.requestSelectionPending, other.id);
+
+  state.switchProfile(other);
+  assert.equal(state.requestSelectionPending, null);
+  state.closeRequestPicker(false);
+});
+
+test('request discovery and selection failures clear their pending state', async () => {
+  const current = { ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' };
+  const otherId = '550e8400-e29b-41d4-a716-446655440000';
+  const state = createNewDebugBar(current, runtime());
+
+  state.$wire = { noticeProfile: async () => { throw new Error('unavailable'); } };
+  state.noticeProfile(otherId);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.deepEqual(state.pendingProfileIds, []);
+  assert.equal(state.newRequestCount, 0);
+
+  state.$wire = {};
+  state.noticeProfile(otherId);
+  state.noticeProfile('invalid');
+  state.noticeProfile(current.id);
+  assert.equal(state.newRequestCount, 0);
+
+  state.$wire = { switchProfile: async () => { throw new Error('expired'); } };
+  state.selectRequest(otherId);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(state.requestSelectionPending, null);
+
+  state.requestSelectionPending = otherId;
+  state.selectRequest(otherId);
+  state.selectRequest('invalid');
+  assert.equal(state.requestSelectionPending, otherId);
 });
 
 test('stale detail responses cannot resync panels for a newer profile', async () => {

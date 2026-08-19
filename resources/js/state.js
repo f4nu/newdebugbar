@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'newdebugbar.preferences.v1';
+const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const defaultRuntime = () => ({
   storage: {
@@ -123,8 +124,15 @@ const defaultRuntime = () => ({
   },
 });
 
-export function createNewDebugBar(summary = {}, runtime = null) {
+export function createNewDebugBar(summary = {}, runtime = null, recentProfiles = [], profileLimit = 20) {
   const browser = runtime ?? defaultRuntime();
+  const requestLimit = Number.isInteger(profileLimit) && profileLimit > 0 ? profileLimit : 20;
+  const requests = [];
+
+  [summary, ...(Array.isArray(recentProfiles) ? recentProfiles : [])].forEach((profile) => {
+    if (!PROFILE_PATTERN.test(profile?.id ?? '') || requests.some((request) => request.id === profile.id)) return;
+    requests.push(profile);
+  });
 
   return {
     barVisible: true,
@@ -134,6 +142,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     mobileSectionsReturnFocus: null,
     mobileToolbarMenu: null,
     mobileToolbarReturnFocus: null,
+    requestPickerScope: null,
+    requestPickerReturnFocus: null,
+    recentProfiles: requests.slice(0, requestLimit),
+    profileLimit: requestLimit,
+    newRequestCount: 0,
+    pendingProfileIds: [],
+    requestSelectionPending: null,
     detailsRequested: false,
     detailsError: false,
     detailRequestVersion: 0,
@@ -214,6 +229,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.colorSchemeListener = null;
       this.stopToolbarPlacementWatch?.();
       this.stopToolbarPlacementWatch = null;
+      this.requestPickerScope = null;
+      this.requestPickerReturnFocus = null;
       this.toolbarSnapVersion += 1;
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       browser.cancelSchedule?.(this.toolbarClickTimer);
@@ -322,6 +339,21 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         ?? { key: 'overview', label: 'Overview', description: '', count: null };
     },
 
+    get requestBadgeCount() {
+      return this.newRequestCount > 9 ? '9+' : String(this.newRequestCount);
+    },
+
+    get hasOtherRequests() {
+      return this.recentProfiles.some((profile) => profile.id !== this.summary.id);
+    },
+
+    get requestPickerButtonLabel() {
+      if (!this.hasOtherRequests) return 'No later requests yet';
+      if (this.newRequestCount === 0) return 'Choose request';
+
+      return `Choose request, ${this.newRequestCount} new ${this.newRequestCount === 1 ? 'request' : 'requests'}`;
+    },
+
     isFavorite(key) {
       return this.favorites.includes(key);
     },
@@ -374,6 +406,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     openMobileSections(returnFocus = null) {
       if (this.mobileSectionsOpen) return;
 
+      this.closeRequestPicker(false);
       this.mobileSectionsReturnFocus = returnFocus ?? browser.activeElement?.();
       this.mobileSectionsOpen = true;
       this.$nextTick?.(() => {
@@ -441,7 +474,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     startToolbarDrag(event) {
       if (!this.barVisible || this.inspectorOpen || this.toolbarDragPointerId !== null) return;
       if (event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
-      if (event.target?.closest?.('[role="menu"], [role="dialog"], input, select, textarea')) return;
+      if (event.target?.closest?.('[role="menu"], [role="listbox"], [role="dialog"], input, select, textarea')) return;
 
       const toolbar = event.currentTarget;
       const box = toolbar?.getBoundingClientRect?.();
@@ -475,6 +508,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       if (!this.toolbarDragging) {
         this.toolbarDragging = true;
+        this.closeRequestPicker(false);
         this.mobileToolbarMenu = null;
         this.mobileToolbarReturnFocus = null;
         this.$root
@@ -655,6 +689,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.closeRequestPicker(false);
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.selectSection(section);
@@ -714,6 +749,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.mobileSectionsReturnFocus = null;
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.closeRequestPicker(false);
       this.syncHostLock();
       this.$nextTick?.(() => {
         const focus = () => returnFocus?.focus?.();
@@ -732,6 +768,8 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.mobileSectionsReturnFocus = null;
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.requestPickerScope = null;
+      this.requestPickerReturnFocus = null;
       this.paletteOpen = false;
       this.paletteSearch = '';
       this.paletteIndex = 0;
@@ -744,12 +782,75 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       });
     },
 
+    rememberProfile(summary) {
+      if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
+
+      const existing = this.recentProfiles.findIndex((profile) => profile.id === summary.id);
+
+      if (existing === -1) {
+        this.recentProfiles = [summary, ...this.recentProfiles].slice(0, this.profileLimit);
+
+        return;
+      }
+
+      this.recentProfiles = this.recentProfiles.map((profile, index) => (
+        index === existing ? { ...profile, ...summary } : profile
+      ));
+    },
+
+    receiveProfile(summary) {
+      if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
+
+      const isNew = !this.recentProfiles.some((profile) => profile.id === summary.id);
+      this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== summary.id);
+      this.rememberProfile(summary);
+      if (isNew && summary.id !== this.summary.id && this.requestPickerScope === null) this.newRequestCount++;
+    },
+
+    requestTitle(profile) {
+      return profile?.activity || profile?.path || 'Request';
+    },
+
+    requestTypeLabel(type) {
+      return ({
+        ajax: 'Ajax',
+        cli: 'CLI',
+        download: 'Download',
+        full_page: 'Page',
+        json: 'JSON',
+        redirect: 'Redirect',
+        stream: 'Stream',
+      })[type] ?? 'Request';
+    },
+
+    relativeRequestTime(profile) {
+      const recordedAt = Date.parse(profile?.recorded_at ?? '');
+      if (!Number.isFinite(recordedAt)) return profile?.recorded_time ?? '';
+
+      const seconds = Math.max(0, Math.floor((Date.now() - recordedAt) / 1000));
+      if (seconds < 5) return 'now';
+      if (seconds < 60) return `${seconds}s ago`;
+
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+
+      return profile?.recorded_time ?? '';
+    },
+
     switchProfile(summary) {
+      if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
+
+      const selected = (summary.sections ?? []).some((section) => section.key === this.selected)
+        ? this.selected
+        : 'overview';
       this.detailRequestVersion++;
       this.summary = summary ?? {};
+      this.requestSelectionPending = null;
+      this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== summary.id);
+      this.rememberProfile(summary);
       this.detailsRequested = false;
       this.detailsError = false;
-      this.selected = 'overview';
+      this.selected = selected;
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
@@ -759,17 +860,28 @@ export function createNewDebugBar(summary = {}, runtime = null) {
       this.eventSource = 'application';
       this.eventSearch = '';
       if (this.inspectorOpen) {
-        this.openInspector('overview');
+        this.openInspector(selected);
       } else {
         this.$nextTick?.(() => this.syncSectionPanels());
       }
     },
 
-    noticeProfile(profileId) {
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(profileId ?? '')) return;
-      if (profileId === this.summary.id) return;
+    noticeProfile(profileId, foreground = false) {
+      if (!PROFILE_PATTERN.test(profileId ?? '')) return;
+      if (profileId === this.summary.id
+        || this.recentProfiles.some((profile) => profile.id === profileId)
+        || this.pendingProfileIds.includes(profileId)) return;
 
-      Promise.resolve(this.$wire?.switchProfile(profileId)).catch(() => {});
+      const method = foreground ? 'switchProfile' : 'noticeProfile';
+      const action = this.$wire?.[method];
+
+      if (typeof action !== 'function') return;
+
+      this.pendingProfileIds = [...this.pendingProfileIds, profileId];
+
+      Promise.resolve(action.call(this.$wire, profileId)).catch(() => {
+        this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== profileId);
+      });
     },
 
     copyText(value) {
@@ -1103,6 +1215,92 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         : this.theme;
     },
 
+    toggleRequestPicker(scope, returnFocus = null) {
+      if (this.requestPickerScope === scope) {
+        this.closeRequestPicker();
+
+        return;
+      }
+
+      this.openRequestPicker(scope, returnFocus);
+    },
+
+    openRequestPicker(scope, returnFocus = null) {
+      const compactPicker = scope === 'toolbar';
+      const inspectorPicker = ['header-mobile', 'header'].includes(scope);
+
+      if (!this.barVisible
+        || !this.hasOtherRequests
+        || (!compactPicker && !inspectorPicker)
+        || (compactPicker && this.inspectorOpen)
+        || (inspectorPicker && !this.inspectorOpen)) return;
+
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
+      this.requestPickerScope = scope;
+      this.requestPickerReturnFocus = returnFocus ?? browser.activeElement?.();
+      this.newRequestCount = 0;
+
+      this.$nextTick?.(() => {
+        const focus = () => {
+          const switcher = this.requestPickerReturnFocus?.closest?.('[data-ndb-request-switcher]')
+            ?? this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
+          const options = [...(switcher?.querySelectorAll?.('[data-ndb-request-option]') ?? [])];
+          const selected = options.find((option) => option.dataset.profileId === this.summary.id);
+
+          (selected ?? options[0])?.focus?.();
+        };
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    closeRequestPicker(restoreFocus = true) {
+      if (this.requestPickerScope === null) return;
+
+      const returnFocus = this.requestPickerReturnFocus;
+      this.requestPickerScope = null;
+      this.requestPickerReturnFocus = null;
+
+      if (restoreFocus) this.$nextTick?.(() => {
+        const focus = () => returnFocus?.focus?.();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    moveRequestPicker(direction, listbox) {
+      const options = [...(listbox?.querySelectorAll?.('[data-ndb-request-option]') ?? [])];
+      if (options.length === 0) return;
+
+      const active = options.indexOf(browser.activeElement?.());
+      const selected = options.findIndex((option) => option.dataset.profileId === this.summary.id);
+      const current = active >= 0 ? active : Math.max(0, selected);
+      const next = (current + direction + options.length) % options.length;
+
+      options[next]?.focus?.();
+    },
+
+    focusRequestPickerEdge(edge, listbox) {
+      const options = [...(listbox?.querySelectorAll?.('[data-ndb-request-option]') ?? [])];
+      if (options.length === 0) return;
+
+      options[edge === 'end' ? options.length - 1 : 0]?.focus?.();
+    },
+
+    selectRequest(profileId) {
+      if (!PROFILE_PATTERN.test(profileId ?? '')) return;
+
+      this.closeRequestPicker();
+      if (profileId === this.summary.id || this.requestSelectionPending === profileId) return;
+
+      const action = this.$wire?.switchProfile;
+      if (typeof action !== 'function') return;
+
+      this.requestSelectionPending = profileId;
+      Promise.resolve(action.call(this.$wire, profileId)).catch(() => {
+        if (this.requestSelectionPending === profileId) this.requestSelectionPending = null;
+      });
+    },
+
     togglePalette() {
       this.paletteOpen ? this.closePalette() : this.openPalette();
     },
@@ -1127,6 +1325,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
         || (inspectorMenu && !this.inspectorOpen)) return;
 
       this.mobileToolbarMenu = menu;
+      this.closeRequestPicker(false);
       this.mobileToolbarReturnFocus = returnFocus ?? browser.activeElement?.();
       this.$nextTick?.(() => {
         const focus = () => this.$root
@@ -1158,9 +1357,13 @@ export function createNewDebugBar(summary = {}, runtime = null) {
     openPalette() {
       if (!this.barVisible) return;
 
-      this.paletteReturnFocus = this.mobileToolbarMenu
-        ? this.mobileToolbarReturnFocus
-        : (this.mobileSectionsOpen ? this.mobileSectionsReturnFocus : browser.activeElement?.());
+      this.paletteReturnFocus = this.requestPickerScope
+        ? this.requestPickerReturnFocus
+        : (this.mobileToolbarMenu
+          ? this.mobileToolbarReturnFocus
+          : (this.mobileSectionsOpen ? this.mobileSectionsReturnFocus : browser.activeElement?.()));
+      this.requestPickerScope = null;
+      this.requestPickerReturnFocus = null;
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
       this.mobileSectionsOpen = false;
@@ -1242,6 +1445,7 @@ export function createNewDebugBar(summary = {}, runtime = null) {
 
       if (event.key === 'Escape') {
         if (this.paletteOpen) this.closePalette();
+        else if (this.requestPickerScope) this.closeRequestPicker();
         else if (this.mobileToolbarMenu) this.closeMobileToolbarMenu();
         else if (this.mobileSectionsOpen) this.closeMobileSections();
         else if (this.inspectorOpen) this.closeInspector();

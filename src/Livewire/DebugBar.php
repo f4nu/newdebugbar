@@ -137,18 +137,6 @@ final class DebugBar extends Component
         );
     }
 
-    #[Renderless]
-    public function refreshRecentProfiles(
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): void {
-        $this->dispatch(
-            'newdebugbar-profiles-refreshed',
-            profiles: $this->recentProfileSummaries($store, $presenter, $summaries),
-        );
-    }
-
     private function activateProfile(
         string $profileId,
         ProfileStore $store,
@@ -176,17 +164,6 @@ final class DebugBar extends Component
         }
 
         return app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($this->profileId) ?? []);
-    }
-
-    /** @return list<array<string, mixed>> */
-    #[Computed]
-    public function recentProfiles(): array
-    {
-        return $this->recentProfileSummaries(
-            app(ProfileStore::class),
-            app(ProfilePresenter::class),
-            app(ProfileSummaryPresenter::class),
-        );
     }
 
     public function render(): View
@@ -258,20 +235,6 @@ final class DebugBar extends Component
     {
         return self::SECTION_DESCRIPTIONS[$key]
             ?? 'Review the collected '.strtolower($label).' details for this request.';
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function recentProfileSummaries(
-        ProfileStore $store,
-        ProfilePresenter $presenter,
-        ProfileSummaryPresenter $summaries,
-    ): array {
-        return array_values(array_map(
-            fn (array $profile): array => $summaries->present($presenter->present($profile)),
-            $store->recent(),
-        ));
     }
 
     private function validProfileId(string $profileId): bool

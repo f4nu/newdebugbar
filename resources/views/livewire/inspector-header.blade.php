@@ -1,29 +1,11 @@
 {{-- Renders responsive request facts and inspector window controls. --}}
 <header class="ndb:relative ndb:z-40 ndb:shrink-0 ndb:overflow-visible ndb:border-b ndb:border-zinc-200/80 ndb:bg-white ndb:p-1.5 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950">
     <div data-ndb-header-mobile-toolbar class="ndb:flex ndb:min-w-0 ndb:items-stretch ndb:gap-1 ndb:sm:hidden">
-        <x-newdebugbar::toolbar-button
-            section="request"
-            data-ndb-header-mobile-request
-            class="ndb:flex ndb:w-[5.5rem] ndb:min-w-0 ndb:flex-none ndb:min-[360px]:w-24 ndb:min-[420px]:w-28"
-            aria-label="Open request details"
-        >
-            <span
-                class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
-                x-text="summary.method"
-            ></span>
-            <span class="ndb:min-w-0">
-                <span
-                    data-ndb-header-mobile-request-path
-                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
-                    :title="summary.path"
-                    x-text="summary.path"
-                ></span>
-                <span
-                    class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-                    ><span data-ndb-header-mobile-status x-text="summary.status"></span
-                ></span>
-            </span>
-        </x-newdebugbar::toolbar-button>
+        <x-newdebugbar::request-switcher
+            scope="header-mobile"
+            direction="below"
+            class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-40 ndb:min-[420px]:w-44"
+        />
 
         <x-newdebugbar::mobile-request-metrics scope="header" data-ndb-header-mobile-control="metrics" />
 
@@ -100,30 +82,11 @@
     </div>
 
     <div data-ndb-header-toolbar class="ndb:hidden ndb:items-stretch ndb:gap-1 ndb:sm:flex ndb:sm:flex-nowrap">
-        <x-newdebugbar::toolbar-button
-            section="request"
-            data-ndb-header-request
-            class="ndb:flex ndb:w-28 ndb:min-w-0 ndb:flex-none ndb:max-w-none ndb:md:w-36 ndb:lg:w-auto ndb:lg:max-w-64"
-            aria-label="Open request details"
-        >
-            <span
-                class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
-                x-text="summary.method"
-            ></span>
-            <span class="ndb:min-w-0">
-                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold" x-text="summary.path"></span>
-                <span
-                    class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-                    ><span data-ndb-header-status x-text="summary.status"></span
-                    ><span
-                        data-ndb-header-response-size
-                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
-                        x-show="summary.response_size"
-                        x-text="summary.response_size"
-                    ></span
-                ></span>
-            </span>
-        </x-newdebugbar::toolbar-button>
+        <x-newdebugbar::request-switcher
+            scope="header"
+            direction="below"
+            class="ndb:w-48 ndb:flex-none ndb:md:w-56 ndb:lg:w-auto ndb:lg:max-w-80"
+        />
 
         <div
             data-ndb-header-mobile-row

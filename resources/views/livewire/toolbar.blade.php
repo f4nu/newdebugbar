@@ -24,35 +24,10 @@
     @transitionend.self="if ($event.propertyName === 'transform') finishToolbarSnap();"
     class="ndb-toolbar-draggable ndb:pointer-events-auto ndb:fixed ndb:left-1/2 ndb:flex ndb:w-[calc(100vw-24px)] ndb:max-w-[calc(100vw-24px)] ndb:-translate-x-1/2 ndb:items-stretch ndb:gap-1 ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:shadow-[0_18px_60px_-18px_rgba(24,24,27,0.4)] ndb:backdrop-blur-xl ndb:backdrop-brightness-110 ndb:backdrop-saturate-125 ndb:sm:max-w-5xl ndb:sm:pr-3 ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90 ndb:dark:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.8)] ndb:dark:backdrop-brightness-75 ndb:dark:backdrop-saturate-100"
 >
-    <x-newdebugbar::toolbar-button
-        section="request"
-        data-ndb-toolbar="request"
-        class="ndb:flex ndb:w-[5.5rem] ndb:min-w-0 ndb:flex-none ndb:min-[360px]:w-24 ndb:min-[420px]:w-28 ndb:sm:max-w-none ndb:md:w-36 ndb:lg:w-auto ndb:lg:max-w-64"
-        aria-label="Open request details"
-    >
-        <span
-            class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
-            x-text="summary.method"
-        ></span>
-        <span class="ndb:min-w-0">
-            <span
-                data-ndb-toolbar-request-path
-                class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
-                :title="summary.path"
-                x-text="summary.path"
-            ></span>
-            <span
-                class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-                ><span data-ndb-toolbar-status x-text="summary.status"></span
-                ><span
-                    data-ndb-toolbar-response-size
-                    class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
-                    x-show="summary.response_size"
-                    x-text="summary.response_size"
-                ></span
-            ></span>
-        </span>
-    </x-newdebugbar::toolbar-button>
+    <x-newdebugbar::request-switcher
+        scope="toolbar"
+        class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-40 ndb:min-[420px]:w-44 ndb:sm:w-48 ndb:md:w-56 ndb:lg:w-auto ndb:lg:max-w-80"
+    />
 
     <x-newdebugbar::mobile-request-metrics
         scope="toolbar"
