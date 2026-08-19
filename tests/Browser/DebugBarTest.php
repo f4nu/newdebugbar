@@ -1003,6 +1003,31 @@ it('collects background requests in the split button without changing the host p
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
+                state.setTheme('light');
+
+                return document.getElementById('newdebugbar').dataset.theme === 'light';
+            })()
+            JS)
+        ->hover('#newdebugbar-request-list-toolbar [data-ndb-request-group="later"] [data-ndb-request-option]:first-of-type')
+        ->assertScript(<<<'JS'
+            (() => {
+                const option = document.querySelector(
+                    '#newdebugbar-request-list-toolbar [data-ndb-request-group="later"] [data-ndb-request-option]:first-of-type:hover',
+                );
+                const background = getComputedStyle(option).backgroundColor;
+                const alpha = Number(
+                    background.match(/\/\s*([\d.]+)\s*\)$/)?.[1]
+                        ?? background.match(/,\s*([\d.]+)\s*\)$/)?.[1]
+                        ?? 1
+                );
+
+                return alpha > 0 && alpha < 1;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors()
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const option = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'))
                     .find((candidate) => candidate.dataset.profileId !== state.summary.id && candidate.textContent.includes('/api/plain-json'));
 

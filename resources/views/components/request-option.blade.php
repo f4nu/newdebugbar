@@ -12,7 +12,7 @@
     ? 'ndb:bg-indigo-100/60 ndb:text-indigo-950 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-100'
     : requestSelectionPending === request.id
       ? 'ndb:opacity-60'
-      : 'ndb:hover:bg-zinc-100 ndb:dark:hover:bg-white/10'"
+      : 'ndb:hover:bg-zinc-100/70 ndb:dark:hover:bg-white/10'"
 >
   <span
     data-ndb-request-method
