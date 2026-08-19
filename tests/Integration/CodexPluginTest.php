@@ -1,13 +1,10 @@
 <?php
 
-function newDebugBarPluginPath(string $path): string
-{
-    return dirname(__DIR__, 2).'/plugins/newdebugbar/'.$path;
-}
+$pluginPath = fn (string $path): string => dirname(__DIR__, 2).'/plugins/newdebugbar/'.$path;
 
-test('the Codex plugin starts the MCP server from the open Laravel app', function () {
+test('the Codex plugin starts the MCP server from the open Laravel app', function () use ($pluginPath) {
     $config = json_decode(
-        file_get_contents(newDebugBarPluginPath('.mcp.json')),
+        file_get_contents($pluginPath('.mcp.json')),
         true,
         flags: JSON_THROW_ON_ERROR,
     );
@@ -57,9 +54,9 @@ test('the Codex plugin starts the MCP server from the open Laravel app', functio
     }
 });
 
-test('the repository exposes the plugin without adding it to Composer archives', function () {
+test('the repository exposes the plugin without adding it to Composer archives', function () use ($pluginPath) {
     $manifest = json_decode(
-        file_get_contents(newDebugBarPluginPath('.codex-plugin/plugin.json')),
+        file_get_contents($pluginPath('.codex-plugin/plugin.json')),
         true,
         flags: JSON_THROW_ON_ERROR,
     );

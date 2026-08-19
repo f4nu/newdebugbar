@@ -1,14 +1,16 @@
 <?php
 
+use NewDebugBar\Tests\Support\ProjectFiles;
+
 it('keeps every Blade view focused', function () {
     $oversizedViews = [];
     $views = dirname(__DIR__, 2).'/resources/views';
 
-    foreach (bladeFilesIn($views) as $file) {
+    foreach (ProjectFiles::bladeFilesIn($views) as $file) {
         $lines = substr_count(file_get_contents($file->getPathname()), "\n") + 1;
 
         if ($lines > 500) {
-            $oversizedViews[] = relativePath($file, $views).': '.$lines.' lines';
+            $oversizedViews[] = ProjectFiles::relativePath($file, $views).': '.$lines.' lines';
         }
     }
 
@@ -19,22 +21,22 @@ it('keeps package interface text at a readable minimum size', function () {
     $undersizedText = [];
     $packageResources = dirname(__DIR__, 2).'/resources';
 
-    foreach (bladeFilesIn($packageResources.'/views') as $file) {
+    foreach (ProjectFiles::bladeFilesIn($packageResources.'/views') as $file) {
         preg_match_all('/text-\\[(?<size>\\d+(?:\\.\\d+)?)px\\]/', file_get_contents($file->getPathname()), $matches);
 
         foreach ($matches['size'] as $size) {
             if ((float) $size < 11) {
-                $undersizedText[] = relativePath($file, $packageResources.'/views').': '.$size.'px';
+                $undersizedText[] = ProjectFiles::relativePath($file, $packageResources.'/views').': '.$size.'px';
             }
         }
     }
 
-    foreach (filesIn($packageResources.'/css') as $file) {
+    foreach (ProjectFiles::filesIn($packageResources.'/css') as $file) {
         preg_match_all('/font-size:\\s*(?<size>\\d+(?:\\.\\d+)?)px/', file_get_contents($file->getPathname()), $matches);
 
         foreach ($matches['size'] as $size) {
             if ((float) $size < 11) {
-                $undersizedText[] = relativePath($file, $packageResources.'/css').': '.$size.'px';
+                $undersizedText[] = ProjectFiles::relativePath($file, $packageResources.'/css').': '.$size.'px';
             }
         }
     }
@@ -79,26 +81,3 @@ it('respects reduced motion for toolbar drag animations', function () {
         ->toContain('.ndb-toolbar-draggable')
         ->toMatch('/@media \(prefers-reduced-motion: reduce\)[\s\S]*#newdebugbar \*[\s\S]*transition-duration: 0\.001ms !important;/');
 });
-
-/** @return iterable<SplFileInfo> */
-function bladeFilesIn(string $directory): iterable
-{
-    foreach (filesIn($directory) as $file) {
-        if (str_ends_with($file->getFilename(), '.blade.php')) {
-            yield $file;
-        }
-    }
-}
-
-/** @return RecursiveIteratorIterator<RecursiveDirectoryIterator> */
-function filesIn(string $directory): RecursiveIteratorIterator
-{
-    return new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
-    );
-}
-
-function relativePath(SplFileInfo $file, string $directory): string
-{
-    return ltrim(str_replace($directory, '', $file->getPathname()), DIRECTORY_SEPARATOR);
-}
