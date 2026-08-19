@@ -50,23 +50,23 @@ function runtime() {
 
 test('profile discovery always reaches the current toolbar after a morph', () => {
   const browser = runtime();
-  const first = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
-  const second = { discoveries: [], noticeProfile(id) { this.discoveries.push(id); } };
+  const first = { discoveries: [], noticeProfile(id, foreground) { this.discoveries.push([id, foreground]); } };
+  const second = { discoveries: [], noticeProfile(id, foreground) { this.discoveries.push([id, foreground]); } };
   let state = first;
   browser.document = { getElementById: () => ({}) };
   browser.Alpine = { $data: () => state };
   installProfileDiscoveryBridge(browser);
 
   browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
-    detail: { profileId },
+    detail: { profileId, foreground: false },
   }));
   state = second;
   browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
-    detail: { profileId: '660e8400-e29b-41d4-a716-446655440000' },
+    detail: { profileId: '660e8400-e29b-41d4-a716-446655440000', foreground: true },
   }));
 
-  assert.deepEqual(first.discoveries, [profileId]);
-  assert.deepEqual(second.discoveries, ['660e8400-e29b-41d4-a716-446655440000']);
+  assert.deepEqual(first.discoveries, [[profileId, false]]);
+  assert.deepEqual(second.discoveries, [['660e8400-e29b-41d4-a716-446655440000', true]]);
 });
 
 test('profile discovery safely falls back to Livewire while the toolbar initializes', () => {
@@ -74,19 +74,28 @@ test('profile discovery safely falls back to Livewire while the toolbar initiali
   const discoveries = [];
   browser.document = { getElementById: () => null };
   browser.Livewire = {
-    getByName: () => [{ switchProfile: (id) => discoveries.push(id) }],
+    getByName: () => [{
+      noticeProfile: (id) => discoveries.push(['notice', id]),
+      switchProfile: (id) => discoveries.push(['switch', id]),
+    }],
   };
   installProfileDiscoveryBridge(browser);
   installProfileDiscoveryBridge(browser);
 
   browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
-    detail: { profileId },
+    detail: { profileId, foreground: false },
+  }));
+  browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
+    detail: { profileId: '660e8400-e29b-41d4-a716-446655440000', foreground: true },
   }));
   browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
     detail: { profileId: 'not-a-profile-id' },
   }));
 
-  assert.deepEqual(discoveries, [profileId]);
+  assert.deepEqual(discoveries, [
+    ['notice', profileId],
+    ['switch', '660e8400-e29b-41d4-a716-446655440000'],
+  ]);
 
   browser.Livewire.getByName = () => { throw new Error('toolbar unavailable'); };
   assert.doesNotThrow(() => browser.dispatchEvent(new browser.CustomEvent('newdebugbar-profile-discovered', {
@@ -94,7 +103,7 @@ test('profile discovery safely falls back to Livewire while the toolbar initiali
   })));
 });
 
-test('ignores background fetch and xhr profiles without replacing responses', async () => {
+test('discovers background fetch and xhr profiles without replacing responses', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
@@ -104,10 +113,13 @@ test('ignores background fetch and xhr profiles without replacing responses', as
   xhr.send();
 
   assert.equal(response.input, '/api/search');
-  assert.deepEqual(browser.events, []);
+  assert.deepEqual(browser.events.map((event) => event.detail), [
+    { profileId, transport: 'fetch', foreground: false },
+    { profileId, transport: 'xhr', foreground: false },
+  ]);
 });
 
-test('discovers full Inertia visits and ignores partial reloads', async () => {
+test('records partial Inertia reloads passively and full visits as foreground', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
@@ -129,12 +141,14 @@ test('discovers full Inertia visits and ignores partial reloads', async () => {
   visit.send();
 
   assert.deepEqual(browser.events.map((event) => event.detail), [
-    { profileId, transport: 'fetch' },
-    { profileId, transport: 'xhr' },
+    { profileId, transport: 'fetch', foreground: true },
+    { profileId, transport: 'fetch', foreground: false },
+    { profileId, transport: 'xhr', foreground: false },
+    { profileId, transport: 'xhr', foreground: true },
   ]);
 });
 
-test('discovers host Livewire updates without interfering with navigation', async () => {
+test('records Livewire updates passively and treats navigation as foreground', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
@@ -145,22 +159,40 @@ test('discovers host Livewire updates without interfering with navigation', asyn
   xhr.open('POST', '/custom-livewire');
   xhr.setRequestHeader('X-Livewire', 'true');
   xhr.send();
+  const navigation = new browser.XMLHttpRequest();
+  navigation.open('GET', '/work-orders');
+  navigation.setRequestHeader('X-Livewire-Navigate', 'true');
+  navigation.send();
 
   assert.deepEqual(browser.events.map((event) => event.detail), [
-    { profileId, transport: 'fetch' },
-    { profileId, transport: 'fetch' },
-    { profileId, transport: 'xhr' },
+    { profileId, transport: 'fetch', foreground: false },
+    { profileId, transport: 'fetch', foreground: true },
+    { profileId, transport: 'fetch', foreground: false },
+    { profileId, transport: 'xhr', foreground: false },
+    { profileId, transport: 'xhr', foreground: true },
   ]);
 });
 
-test('ignores external package and unmarked background requests', async () => {
+test('ignores external and package requests', async () => {
   const browser = runtime();
   installRequestDiscovery(browser);
 
   await browser.fetch('https://example.test/api');
   await browser.fetch('/__newdebugbar/assets/newdebugbar.js');
-  await browser.fetch('/livewire/update');
   installRequestDiscovery(browser);
+
+  assert.deepEqual(browser.events, []);
+});
+
+test('ignores same-origin responses without a profile header', async () => {
+  const browser = runtime();
+  browser.fetch = async () => ({
+    url: 'https://viteclinic.test/api/search',
+    headers: { get: () => null },
+  });
+  installRequestDiscovery(browser);
+
+  await browser.fetch('/api/search');
 
   assert.deepEqual(browser.events, []);
 });
