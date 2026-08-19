@@ -3,7 +3,6 @@
 it('filters authorization decisions with the keyboard', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
         ->click('[data-ndb-select-section="authorization"]');
 
     $page
@@ -37,7 +36,6 @@ it('filters authorization decisions with the keyboard', function () {
 it('uses the full width for authorization traces at every breakpoint', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
         ->click('[data-ndb-select-section="authorization"]');
 
     foreach ([320, 390, 639, 640, 1024] as $width) {

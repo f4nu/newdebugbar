@@ -42,7 +42,7 @@
         ],
         "test:browser": [
             "npm run build",
-            "pest --testsuite=Browser"
+            "pest --testsuite=Browser --parallel --processes=4"
         ],
         "test:php": "pest --testsuite=Package"
     },

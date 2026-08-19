@@ -48,8 +48,11 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
+        $workerToken = getenv('UNIQUE_TEST_TOKEN');
+        $profileDirectory = 'testing-newdebugbar'.($workerToken === false ? '' : '-'.$workerToken);
+
         $app['config']->set('newdebugbar.environments', ['testing']);
-        $app['config']->set('newdebugbar.storage.path', storage_path('framework/testing-newdebugbar'));
+        $app['config']->set('newdebugbar.storage.path', storage_path('framework/'.$profileDirectory));
         $app['config']->set('newdebugbar.collection.application_path', dirname(__DIR__));
         $app['config']->set('cache.default', 'array');
         $app['config']->set('database.default', 'testing');

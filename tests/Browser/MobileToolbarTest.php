@@ -29,7 +29,6 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
             })()
             JS)
         ->click('[data-ndb-mobile-toolbar-metric-scope="toolbar"][data-ndb-mobile-toolbar-metric="queries"]')
-        ->wait(0.2)
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
         ->assertVisible('[data-ndb-section-panel="queries"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Queries"')
@@ -41,7 +40,6 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Overview"')
         ->click('[data-ndb-header-mobile-trigger="actions"]')
         ->click('[data-ndb-header-mobile-action="shrink"]')
-        ->wait(0.2)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-action="theme"]')
@@ -94,7 +92,6 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
             })()
             JS)
         ->drag('[data-ndb-toolbar-shell]', '[data-testid="mobile-toolbar-top-drop-target"]')
-        ->wait(0.6)
         ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13')
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
@@ -201,8 +198,7 @@ it('uses the compact inspector header only below sm', function () {
     $page = visit('/profiled-reported-exception')
         ->resize(390, 844)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
-        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
-        ->wait(0.2);
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]');
 
     foreach ([320, 360, 430, 639] as $width) {
         $page
