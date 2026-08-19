@@ -93,5 +93,5 @@ jobs:
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: npm ci
       - run: composer lint:check
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --only-shell chromium
       - run: composer test:browser
