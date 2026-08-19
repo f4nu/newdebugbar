@@ -85,7 +85,7 @@
         <x-newdebugbar::request-switcher
             scope="header"
             direction="below"
-            class="ndb:w-[9.5rem] ndb:flex-none ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[19rem]"
+            class="ndb:w-[9.5rem] ndb:flex-none ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[18.5rem]"
         />
 
         <div

@@ -46,7 +46,7 @@
         class="ndb:pointer-events-none ndb:absolute ndb:z-20 ndb:h-2 ndb:w-4 {{ $arrowClass }} {{ $arrowDirectionClass }}"
     >
         <svg viewBox="0 0 16 8" class="ndb:block ndb:h-full ndb:w-full ndb:overflow-visible">
-            <path d="M0 0H16L8 8Z" class="ndb:fill-white/95 ndb:dark:fill-zinc-900/95" />
+            <path d="M0 0H16L8 8Z" class="ndb:fill-white/90 ndb:dark:fill-zinc-900/90" />
             <path
                 d="M0.75 0.5L8 7.75L15.25 0.5"
                 fill="none"
@@ -61,7 +61,7 @@
     <div
         data-ndb-popover-surface
         @if ($mobileMenu !== null) data-ndb-mobile-toolbar-popover-surface @endif
-        class="ndb:relative ndb:z-10 ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200/80 ndb:bg-white/95 ndb:shadow-[0_18px_50px_-16px_rgba(24,24,27,0.45)] ndb:backdrop-blur-xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/95 ndb:dark:shadow-[0_18px_50px_-16px_rgba(0,0,0,0.85)] {{ $surfaceClass }}"
+        class="ndb:relative ndb:z-10 ndb:overflow-hidden ndb:rounded-2xl ndb:border ndb:border-zinc-200/80 ndb:bg-white/90 ndb:shadow-[0_18px_50px_-16px_rgba(24,24,27,0.45)] ndb:backdrop-blur-xl ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-900/90 ndb:dark:shadow-[0_18px_50px_-16px_rgba(0,0,0,0.85)] {{ $surfaceClass }}"
     >
         {{ $slot }}
     </div>

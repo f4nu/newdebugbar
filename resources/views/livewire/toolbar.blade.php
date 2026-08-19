@@ -26,7 +26,7 @@
 >
     <x-newdebugbar::request-switcher
         scope="toolbar"
-        class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-36 ndb:min-[420px]:w-40 ndb:sm:w-[9.5rem] ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[19rem]"
+        class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-36 ndb:min-[420px]:w-40 ndb:sm:w-[9.5rem] ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[18.5rem]"
     />
 
     <x-newdebugbar::mobile-request-metrics

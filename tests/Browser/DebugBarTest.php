@@ -643,7 +643,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
-                const request = document.querySelector('[data-ndb-toolbar="request"]');
+                const request = document.querySelector('[data-ndb-request-switcher="toolbar"]');
                 const facts = document.querySelector('[data-ndb-toolbar-facts]');
                 const actions = document.querySelector('[data-ndb-toolbar-actions]');
                 const box = toolbar.getBoundingClientRect();
@@ -657,7 +657,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
                     && Math.abs(window.innerWidth - box.right - box.left) <= 1
                     && requestStyles.flexGrow === '0'
-                    && request.getBoundingClientRect().width <= 256
+                    && request.getBoundingClientRect().width <= 296
                     && factsStyles.flexGrow === '0'
                     && facts.getBoundingClientRect().left - request.getBoundingClientRect().right >= 32
                     && facts.getBoundingClientRect().right <= actions.getBoundingClientRect().left
@@ -670,7 +670,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
-                const request = document.querySelector('[data-ndb-header-request]');
+                const request = document.querySelector('[data-ndb-request-switcher="header"]');
                 const facts = document.querySelector('[data-ndb-header-facts]');
                 const actions = document.querySelector('[data-ndb-inspector-actions]');
                 const factOrder = Array.from(document.querySelectorAll('[data-ndb-header-fact]'))
@@ -682,7 +682,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
                     && Math.abs(window.innerWidth - box.right - box.left) <= 1
                     && getComputedStyle(request).flexGrow === '0'
-                    && request.getBoundingClientRect().width <= 256
+                    && request.getBoundingClientRect().width <= 296
                     && facts.getBoundingClientRect().left - request.getBoundingClientRect().right >= 32
                     && facts.getBoundingClientRect().right <= actions.getBoundingClientRect().left
                     && actions.getBoundingClientRect().left - facts.getBoundingClientRect().right <= 8
@@ -895,7 +895,16 @@ it('collects background requests in the split button without changing the host p
         ->assertNoJavaScriptErrors()
         ->assertScript(<<<'JS'
             (() => {
-                fetch('/api/plain-json?sequence=second');
+                fetch('/api/plain-json?sequence=third', { method: 'POST' });
+
+                return true;
+            })()
+            JS)
+        ->wait(0.3)
+        ->assertNoJavaScriptErrors()
+        ->assertScript(<<<'JS'
+            (() => {
+                fetch('/api/plain-json?sequence=second', { method: 'PATCH' });
 
                 return true;
             })()
@@ -909,8 +918,8 @@ it('collects background requests in the split button without changing the host p
 
                 return window.__newDebugBarFetchSentinel === true
                     && state.summary.id === window.__newDebugBarActiveProfile
-                    && discoveries.length === 2
-                    && state.laterRequestCount === 2
+                    && discoveries.length === 3
+                    && state.laterRequestCount === 3
                     && document.querySelector('[data-ndb-request-picker-trigger="toolbar"]').disabled === false
                     && location.pathname === '/profiled'
                     && document.querySelectorAll('#newdebugbar').length === 1;
@@ -918,12 +927,20 @@ it('collects background requests in the split button without changing the host p
             JS)
         ->assertNoJavaScriptErrors()
         ->assertVisible('[data-testid="host-page"]')
-        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '2')
+        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '3')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
+                state.setTheme('dark');
+
+                return document.getElementById('newdebugbar').dataset.theme === 'dark';
+            })()
+            JS)
         ->click('[data-ndb-request-picker-trigger="toolbar"]')
         ->assertVisible('#newdebugbar-request-list-toolbar')
         ->assertVisible('[data-ndb-request-popover="toolbar"] [data-ndb-popover-surface]')
         ->assertVisible('[data-ndb-request-popover="toolbar"] [data-ndb-popover-arrow]')
-        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '2')
+        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '3')
         ->assertScript('document.querySelector(\'[data-ndb-request-popover="toolbar"] [data-ndb-request-popover-heading]\').textContent.trim() === \'Requests\'')
         ->assertAttribute('[data-ndb-request-picker-trigger="toolbar"]', 'aria-expanded', 'true')
         ->assertScript(<<<'JS'
@@ -945,14 +962,30 @@ it('collects background requests in the split button without changing the host p
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const options = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'));
+                const groups = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-group]'));
 
+                const methods = options.map((option) => option.querySelector('[data-ndb-request-method]'));
                 const statuses = options.map((option) => option.querySelector('[data-ndb-request-status]'));
                 const indicators = options.map((option) => option.querySelector('[data-ndb-request-current]'));
+                const badge = document.querySelector('[data-ndb-request-badge="toolbar"]');
+                const activeMethod = document.querySelector('[data-ndb-toolbar="request"] > span:first-child');
 
-                return state.laterRequestCount === 2
-                    && options.length >= 3
-                    && options.filter((option) => option.textContent.includes('/api/plain-json')).length >= 2
+                return state.laterRequestCount === 3
+                    && options.length >= 4
+                    && groups.map((group) => group.dataset.ndbRequestGroup).join(',') === 'current,later'
+                    && groups[0].querySelector('[data-ndb-request-option]').dataset.profileId === window.__newDebugBarActiveProfile
+                    && groups[1].querySelectorAll('[data-ndb-request-option]').length === 3
+                    && Number.parseFloat(getComputedStyle(groups[1]).borderTopWidth) === 0
+                    && options.filter((option) => option.textContent.includes('/api/plain-json')).length >= 3
+                    && methods.some((method) => method.textContent.trim() === 'POST')
+                    && methods.some((method) => method.textContent.trim() === 'PATCH')
                     && document.activeElement.matches('[data-ndb-request-option]')
+                    && getComputedStyle(badge).color === 'rgb(255, 255, 255)'
+                    && getComputedStyle(badge).boxShadow === 'none'
+                    && getComputedStyle(activeMethod).color === 'rgb(255, 255, 255)'
+                    && methods.every((method) => getComputedStyle(method).color === 'rgb(255, 255, 255)')
+                    && methods.every((method) => method.getBoundingClientRect().width >= 48)
+                    && new Set(methods.map((method) => Math.round(method.getBoundingClientRect().width))).size === 1
                     && statuses.every((status, index) => {
                         const rowBox = options[index].getBoundingClientRect();
                         const statusBox = status.getBoundingClientRect();
@@ -994,15 +1027,54 @@ it('collects background requests in the split button without changing the host p
         ->assertVisible('[data-ndb-request-picker-trigger="header"]')
         ->click('[data-ndb-request-picker-trigger="header"]')
         ->assertVisible('#newdebugbar-request-list-header')
+        ->assertScript(<<<'JS'
+            (() => {
+                const current = document.querySelector(
+                    '#newdebugbar-request-list-header [data-ndb-request-group="current"] [data-ndb-request-option]',
+                );
+                const selectedLater = document.querySelector(
+                    '#newdebugbar-request-list-header [data-ndb-request-group="later"] [data-ndb-request-option][aria-selected="true"]',
+                );
+
+                return current?.dataset.profileId === window.__newDebugBarActiveProfile
+                    && selectedLater !== null;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 
 it('keeps the bar working after host Livewire updates without a dedicated section', function () {
-    visit('/profiled-livewire')
+    $page = visit('/profiled-livewire')
         ->assertSeeIn('[data-testid="host-counter-value"]', '0')
         ->click('[data-testid="host-counter"] button')
         ->wait(0.5)
         ->assertSeeIn('[data-testid="host-counter-value"]', '1')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
+
+                return state.summary.path === '/profiled-livewire'
+                    && state.laterRequestCount === 1
+                    && state.recentProfiles.some((profile) =>
+                        /^\/livewire-[0-9a-f]{8}\/update$/i.test(profile.path)
+                    );
+            })()
+            JS)
+        ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '1')
+        ->click('[data-ndb-request-picker-trigger="toolbar"]')
+        ->assertVisible('#newdebugbar-request-list-toolbar')
+        ->assertScript(<<<'JS'
+            (() => {
+                const option = Array.from(document.querySelectorAll(
+                    '#newdebugbar-request-list-toolbar [data-ndb-request-option]',
+                )).find((candidate) => /\/livewire-[0-9a-f]{8}\/update/i.test(candidate.textContent));
+
+                option?.click();
+
+                return option !== undefined;
+            })()
+            JS)
+        ->wait(0.3)
         ->assertScript(<<<'JS'
             /^\/livewire-[0-9a-f]{8}\/update$/i.test(
                 Alpine.$data(document.getElementById('newdebugbar')).summary.path,

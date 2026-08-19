@@ -246,7 +246,7 @@ abstract class TestCase extends Orchestra
 
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 
-        $router->get('/api/plain-json', fn () => response()->json(['source' => 'api']));
+        $router->match(['get', 'post', 'patch'], '/api/plain-json', fn () => response()->json(['source' => 'api']));
 
         $router->get('/ajax-fragment', fn () => response('<div data-fragment>Search result</div>', 200, [
             'Content-Type' => 'text/html; charset=UTF-8',

@@ -146,6 +146,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     requestPickerReturnFocus: null,
     requestPickerArrowLeft: 0,
     recentProfiles: requests.slice(0, requestLimit),
+    currentRequestId: summary.id ?? null,
     profileLimit: requestLimit,
     pendingProfileIds: [],
     requestSelectionPending: null,
@@ -343,12 +344,21 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       return this.laterRequestCount > 9 ? '9+' : String(this.laterRequestCount);
     },
 
+    get currentRequestProfile() {
+      return this.recentProfiles.find((profile) => profile.id === this.currentRequestId)
+        ?? this.summary;
+    },
+
+    get laterRequestProfiles() {
+      return this.recentProfiles.filter((profile) => profile.id !== this.currentRequestId);
+    },
+
     get laterRequestCount() {
-      return Math.max(0, this.recentProfiles.length - 1);
+      return this.laterRequestProfiles.length;
     },
 
     get hasOtherRequests() {
-      return this.recentProfiles.some((profile) => profile.id !== this.summary.id);
+      return this.laterRequestCount > 0;
     },
 
     get requestPickerButtonLabel() {
@@ -792,7 +802,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const existing = this.recentProfiles.findIndex((profile) => profile.id === summary.id);
 
       if (existing === -1) {
-        this.recentProfiles = [summary, ...this.recentProfiles].slice(0, this.profileLimit);
+        const current = this.recentProfiles.find((profile) => profile.id === this.currentRequestId);
+        const later = [summary, ...this.recentProfiles.filter((profile) => profile.id !== this.currentRequestId)]
+          .slice(0, Math.max(0, this.profileLimit - (current ? 1 : 0)));
+        this.recentProfiles = current ? [...later, current] : later;
 
         return;
       }
@@ -853,6 +866,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     switchProfile(summary) {
       if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
 
+      const selectedFromPicker = this.requestSelectionPending === summary.id;
       const selected = (summary.sections ?? []).some((section) => section.key === this.selected)
         ? this.selected
         : 'overview';
@@ -860,7 +874,12 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.summary = summary ?? {};
       this.requestSelectionPending = null;
       this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== summary.id);
-      this.rememberProfile(summary);
+      if (selectedFromPicker) {
+        this.rememberProfile(summary);
+      } else {
+        this.currentRequestId = summary.id;
+        this.recentProfiles = [summary];
+      }
       this.detailsRequested = false;
       this.detailsError = false;
       this.selected = selected;

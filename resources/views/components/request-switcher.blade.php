@@ -29,7 +29,7 @@
       class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-2 ndb:rounded-l-xl ndb:py-1.5 ndb:pl-2.5 ndb:pr-4 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
     >
       <span
-        class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
+        class="ndb:flex ndb:w-12 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/60 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-white/10 ndb:dark:text-white"
         x-text="summary.method"
       ></span>
       <span class="ndb:min-w-0">
@@ -84,7 +84,7 @@
         x-text="requestBadgeCount"
         data-ndb-request-badge="{{ $scope }}"
         aria-hidden="true"
-        class="ndb:absolute ndb:-top-1.5 ndb:-right-1.5 ndb:flex ndb:h-4 ndb:min-w-4 ndb:items-center ndb:justify-center ndb:rounded-full ndb:bg-indigo-600 ndb:px-1 ndb:text-[11px] ndb:font-bold ndb:leading-none ndb:text-white ndb:tabular-nums ndb:dark:bg-indigo-400 ndb:dark:text-zinc-950"
+        class="ndb:absolute ndb:-top-1.5 ndb:-right-1.5 ndb:flex ndb:h-4 ndb:min-w-4 ndb:items-center ndb:justify-center ndb:rounded-full ndb:bg-indigo-600 ndb:px-1 ndb:text-[11px] ndb:font-bold ndb:leading-none ndb:text-white ndb:tabular-nums ndb:dark:bg-indigo-600 ndb:dark:text-white"
       ></span>
     </button>
   </div>
@@ -125,76 +125,40 @@
       "
       class="ndb-scrollbar ndb:max-h-[min(24rem,60vh)] ndb:overflow-y-auto ndb:p-1.5"
     >
-      <template
-        x-for="request in recentProfiles"
-        :key="@js($scope) + '-' + request.id"
+      <div
+        role="group"
+        aria-labelledby="newdebugbar-current-request-{{ $scope }}"
+        data-ndb-request-group="current"
       >
-        <button
-          type="button"
-          role="option"
-          data-ndb-request-option
-          :data-profile-id="request.id"
-          :aria-selected="request.id === summary.id"
-          :aria-busy="requestSelectionPending === request.id"
-          @click="selectRequest(request.id)"
-          class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:gap-2.5 ndb:rounded-xl ndb:px-2.5 ndb:py-2 ndb:text-left ndb:transition-colors ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
-          :class="request.id === summary.id
-            ? 'ndb:bg-indigo-50 ndb:text-indigo-950 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-100'
-            : requestSelectionPending === request.id
-              ? 'ndb:opacity-60'
-              : 'ndb:hover:bg-zinc-100 ndb:dark:hover:bg-white/10'"
+        <p
+          id="newdebugbar-current-request-{{ $scope }}"
+          class="ndb:px-2.5 ndb:pt-1 ndb:pb-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+        >Current request</p>
+        <template
+          x-for="request in currentRequestProfile ? [currentRequestProfile] : []"
+          :key="@js($scope) + '-current-' + request.id"
         >
-          <span
-            class="ndb:shrink-0 ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300"
-            x-text="request.method"
-          ></span>
-          <span class="ndb:min-w-0 ndb:flex-1">
-            <span
-              class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
-              :title="requestTitle(request)"
-              x-text="requestTitle(request)"
-            ></span>
-            <span
-              class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-            >
-              <span x-text="requestTypeLabel(request.request_type)"></span>
-              <span
-                class="ndb:tabular-nums"
-                x-text="request.duration_ms + ' ms'"
-              ></span>
-              <span
-                class="ndb:tabular-nums"
-                x-text="
-                  request.query_count +
-                  (request.query_count === 1 ? ' query' : ' queries')
-                "
-              ></span>
-              <time
-                :datetime="request.recorded_at"
-                x-text="relativeRequestTime(request)"
-              ></time>
-            </span>
-          </span>
-          <span
-            data-ndb-request-status
-            class="ndb:w-8 ndb:shrink-0 ndb:self-center ndb:text-center ndb:text-[11px] ndb:font-bold ndb:tabular-nums"
-            :class="requestStatusClass(request.status)"
-            x-text="request.status"
-          ></span>
-          <span
-            data-ndb-request-current
-            aria-hidden="true"
-            class="ndb:flex ndb:size-4 ndb:shrink-0 ndb:self-center ndb:items-center ndb:justify-center ndb:text-indigo-600 ndb:transition-opacity ndb:dark:text-indigo-300"
-            :class="request.id === summary.id ? 'ndb:opacity-100' : 'ndb:opacity-0'"
-            ><x-newdebugbar::icon name="check" class="ndb:size-3.5"
-          /></span>
-        </button>
-      </template>
+          <x-newdebugbar::request-option />
+        </template>
+      </div>
 
-      <p
-        x-show.important="recentProfiles.length === 0"
-        class="ndb:px-3 ndb:py-6 ndb:text-center ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400"
-      >No recent requests.</p>
+      <div
+        role="group"
+        aria-labelledby="newdebugbar-later-requests-{{ $scope }}"
+        data-ndb-request-group="later"
+        class="ndb:mt-1 ndb:pt-1"
+      >
+        <p
+          id="newdebugbar-later-requests-{{ $scope }}"
+          class="ndb:px-2.5 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
+        >Later requests</p>
+        <template
+          x-for="request in laterRequestProfiles"
+          :key="@js($scope) + '-later-' + request.id"
+        >
+          <x-newdebugbar::request-option />
+        </template>
+      </div>
     </div>
   </x-newdebugbar::popover-surface>
 </div>

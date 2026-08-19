@@ -510,6 +510,8 @@ test('background profiles are announced once and stay counted after the picker o
   state.receiveProfile({ id: ajaxProfileId, method: 'GET', path: '/metrics' });
   assert.deepEqual(state.pendingProfileIds, []);
   assert.equal(state.recentProfiles[0].id, ajaxProfileId);
+  assert.equal(state.currentRequestProfile.id, activeProfileId);
+  assert.deepEqual(state.laterRequestProfiles.map((profile) => profile.id), [ajaxProfileId]);
   assert.equal(state.hasOtherRequests, true);
   assert.equal(state.laterRequestCount, 1);
   assert.equal(state.requestBadgeCount, '1');
@@ -589,11 +591,11 @@ test('the request picker manages focus, keyboard movement, and profile selection
     dataset: { profileId },
     focus() { active = this; },
   });
-  const firstOption = option(other.id);
   const currentOption = option(current.id);
+  const laterOption = option(other.id);
   const switcher = {
     getBoundingClientRect: () => ({ left: 20 }),
-    querySelectorAll: () => [firstOption, currentOption],
+    querySelectorAll: () => [currentOption, laterOption],
   };
   const trigger = {
     closest: () => switcher,
@@ -601,7 +603,7 @@ test('the request picker manages focus, keyboard movement, and profile selection
     getBoundingClientRect: () => ({ left: 160, width: 40 }),
   };
   switcher.querySelector = () => trigger;
-  const listbox = { querySelectorAll: () => [firstOption, currentOption] };
+  const listbox = { querySelectorAll: () => [currentOption, laterOption] };
   const state = createNewDebugBar(current, browser, [other]);
   browser.activeElement = () => active;
   state.$nextTick = (callback) => callback();
@@ -621,16 +623,16 @@ test('the request picker manages focus, keyboard movement, and profile selection
   assert.equal(active, currentOption);
 
   state.moveRequestPicker(-1, listbox);
-  assert.equal(active, firstOption);
+  assert.equal(active, laterOption);
   state.moveRequestPicker(-1, listbox);
   assert.equal(active, currentOption);
   active = null;
   state.moveRequestPicker(1, listbox);
-  assert.equal(active, firstOption);
+  assert.equal(active, laterOption);
   state.focusRequestPickerEdge('end', listbox);
-  assert.equal(active, currentOption);
+  assert.equal(active, laterOption);
   state.focusRequestPickerEdge('start', listbox);
-  assert.equal(active, firstOption);
+  assert.equal(active, currentOption);
   state.moveRequestPicker(1, { querySelectorAll: () => [] });
   state.focusRequestPickerEdge('start', { querySelectorAll: () => [] });
 
@@ -654,6 +656,8 @@ test('the request picker manages focus, keyboard movement, and profile selection
 
   state.switchProfile(other);
   assert.equal(state.requestSelectionPending, null);
+  assert.equal(state.currentRequestProfile.id, current.id);
+  assert.deepEqual(state.laterRequestProfiles.map((profile) => profile.id), [other.id]);
   state.closeRequestPicker(false);
 });
 
