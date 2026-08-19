@@ -1,0 +1,255 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { createNewDebugBar } from '../../resources/js/state.js';
+import { runtime, summary } from './state-test-support.js';
+
+test('query controls filter search and sort captured evidence', () => {
+  const state = createNewDebugBar({ ...summary, query_count: 4 }, runtime());
+  const appended = [];
+  const groupAppended = [];
+  const item = (execution, duration, type, slow, search, repeated = false) => ({
+    dataset: {
+      execution: String(execution),
+      duration: String(duration),
+      type,
+      slow: String(slow),
+      search,
+      queryKind: 'item',
+      repeated: String(repeated),
+      resultCount: '1',
+    },
+    hidden: false,
+  });
+  const first = item(1, 4, 'read', false, 'select users 1', true);
+  const second = item(2, 6, 'read', false, 'select users 2', true);
+  const third = item(3, 20, 'write', true, 'update clinics 42');
+  const fourth = item(4, 10, 'read', false, 'select clinics 42');
+  const groupedFirst = item(1, 4, 'read', false, 'select users 1');
+  const groupedSecond = item(2, 6, 'read', false, 'select users 2');
+  const group = {
+    dataset: {
+      execution: '1',
+      duration: '10',
+      type: 'read',
+      slow: 'false',
+      search: 'select repeated users',
+      queryKind: 'group',
+      resultCount: '2',
+    },
+    hidden: false,
+    querySelector: () => ({
+      children: [groupedFirst, groupedSecond],
+      appendChild: (child) => groupAppended.push(child),
+    }),
+  };
+  state.$refs = {
+    queryResults: {
+      children: [first, second, third, fourth, group],
+      appendChild: (child) => appended.push(child),
+    },
+  };
+
+  state.setQueryFilter('read');
+  assert.equal(first.hidden, true);
+  assert.equal(second.hidden, true);
+  assert.equal(third.hidden, true);
+  assert.equal(fourth.hidden, false);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 3);
+
+  state.setQueryFilter('attention');
+  assert.equal(first.hidden, true);
+  assert.equal(third.hidden, false);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 3);
+
+  state.setQueryFilter('write');
+  assert.equal(third.hidden, false);
+  assert.equal(fourth.hidden, true);
+  assert.equal(group.hidden, true);
+
+  state.setQueryFilter('read');
+  state.querySearch = 'users';
+  state.applyQueryView();
+  assert.equal(first.hidden, true);
+  assert.equal(fourth.hidden, true);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 2);
+
+  state.querySearch = '';
+  state.setQueryFilter('all');
+  assert.equal(first.hidden, true);
+  assert.equal(group.hidden, false);
+  assert.equal(state.visibleQueryCount, 4);
+
+  appended.length = 0;
+  groupAppended.length = 0;
+  state.setQuerySort('duration');
+  assert.deepEqual(appended, [third, group, fourth, second, first]);
+  assert.deepEqual(groupAppended, [groupedSecond, groupedFirst]);
+
+  state.setQueryFilter('invalid');
+  state.setQuerySort('invalid');
+  assert.equal(state.queryFilter, 'all');
+  assert.equal(state.querySort, 'duration');
+});
+
+test('authorization controls filter decisions and overview navigation opens denied results', () => {
+  const browser = runtime();
+  const state = createNewDebugBar({
+    sections: [
+      { key: 'overview', label: 'Overview' },
+      { key: 'authorization', label: 'Authorization' },
+    ],
+  }, browser);
+  let headingFocused = 0;
+  const allowed = { dataset: { result: 'allowed' }, hidden: false };
+  const denied = { dataset: { result: 'denied' }, hidden: false };
+  state.$root = { querySelectorAll: () => [] };
+  state.$refs = {
+    authorizationItems: { children: [allowed, denied] },
+    sectionHeading: { focus: () => headingFocused++ },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.setAuthorizationFilter('allowed');
+  assert.equal(allowed.hidden, false);
+  assert.equal(denied.hidden, true);
+  assert.equal(state.visibleAuthorizationCount, 1);
+
+  state.navigateToSection('authorization', 'denied');
+  assert.equal(state.selected, 'authorization');
+  assert.equal(state.authorizationFilter, 'denied');
+  assert.equal(allowed.hidden, true);
+  assert.equal(denied.hidden, false);
+  assert.equal(headingFocused, 1);
+
+  state.setAuthorizationFilter('invalid');
+  assert.equal(state.authorizationFilter, 'denied');
+});
+
+test('view headers sort names and render counts in both directions', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const first = { dataset: { order: '0', count: '1', name: 'zeta' } };
+  const second = { dataset: { order: '1', count: '3', name: 'alpha' } };
+  const third = { dataset: { order: '2', count: '3', name: 'beta' } };
+  const children = [first, second, third];
+  state.$refs = {
+    viewGroups: {
+      children,
+      appendChild(group) {
+        children.splice(children.indexOf(group), 1);
+        children.push(group);
+      },
+    },
+  };
+
+  state.applyViewSort();
+  assert.deepEqual(children, [second, third, first]);
+
+  state.toggleViewSort('name');
+  assert.equal(state.viewSortDirection, 'desc');
+  assert.deepEqual(children, [first, third, second]);
+
+  state.toggleViewSort('count');
+  assert.equal(state.viewSort, 'count');
+  assert.equal(state.viewSortDirection, 'desc');
+  assert.deepEqual(children, [second, third, first]);
+
+  state.toggleViewSort('count');
+  assert.equal(state.viewSortDirection, 'asc');
+  assert.deepEqual(children, [first, second, third]);
+
+  state.toggleViewSort('invalid');
+  assert.equal(state.viewSort, 'count');
+  assert.equal(state.viewSortDirection, 'asc');
+});
+
+test('timeline controls filter sections and search labels', () => {
+  const state = createNewDebugBar({
+    ...summary,
+    sections: [...summary.sections, { key: 'timeline', label: 'Timeline' }, { key: 'events', label: 'Events' }],
+  }, runtime());
+  const item = (section, search, key = false) => ({ dataset: { section, search, key: String(key) }, hidden: false });
+  const query = item('queries', 'select users', true);
+  const event = item('events', 'clinic ready');
+  state.$refs = { timelineList: { children: [query, event] } };
+
+  state.applyTimelineFilters();
+  assert.equal(state.timelineFilter, 'key');
+  assert.equal(query.hidden, false);
+  assert.equal(event.hidden, true);
+
+  state.setTimelineFilter('queries');
+  assert.equal(query.hidden, false);
+  assert.equal(event.hidden, true);
+  assert.equal(state.visibleTimelineCount, 1);
+
+  state.timelineSearch = 'MISSING';
+  state.applyTimelineFilters();
+  assert.equal(query.hidden, true);
+  assert.equal(state.visibleTimelineCount, 0);
+
+  state.setTimelineFilter('unknown');
+  assert.equal(state.timelineFilter, 'queries');
+
+  state.$refs = {};
+  state.applyTimelineFilters();
+  assert.equal(state.visibleTimelineCount, 0);
+});
+
+test('event controls separate framework noise from application events', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const item = (source, search) => ({ dataset: { source, search }, hidden: false });
+  const framework = item('framework', 'illuminate auth login');
+  const application = item('application', 'clinic ready');
+  state.$refs = { eventList: { children: [framework, application] } };
+
+  state.applyEventFilters();
+  assert.equal(state.eventSource, 'application');
+  assert.equal(framework.hidden, true);
+  assert.equal(application.hidden, false);
+  assert.equal(state.visibleEventCount, 1);
+
+  state.eventSearch = 'READY';
+  state.applyEventFilters();
+  assert.equal(application.hidden, false);
+
+  state.setEventSource('framework');
+  assert.equal(state.eventSource, 'framework');
+  assert.equal(framework.hidden, true);
+  assert.equal(application.hidden, true);
+
+  state.setEventSource('invalid');
+  assert.equal(state.eventSource, 'framework');
+
+  state.$refs = {};
+  state.applyEventFilters();
+  assert.equal(state.visibleEventCount, 0);
+});
+
+test('log controls filter available levels and messages', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const item = (level, search) => ({ dataset: { level, search }, hidden: false });
+  const info = item('info', 'request ready');
+  const error = item('error', 'database unavailable');
+  state.$refs = { logList: { children: [info, error] } };
+
+  state.setLogLevel('error');
+  assert.equal(info.hidden, true);
+  assert.equal(error.hidden, false);
+  assert.equal(state.visibleLogCount, 1);
+
+  state.logSearch = 'UNAVAILABLE';
+  state.applyLogFilters();
+  assert.equal(error.hidden, false);
+
+  state.setLogLevel('debug');
+  assert.equal(state.logLevel, 'error');
+
+  state.$refs = {};
+  state.setLogLevel('all');
+  assert.equal(state.visibleLogCount, 0);
+});
+
