@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Facades\Mcp;
-use Laravel\Mcp\ResponseFactory;
 use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Mcp\Tools\GetDebugFindings;
 use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
@@ -12,12 +11,6 @@ use NewDebugBar\Mcp\Tools\ListDebugProfiles;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Support\McpResponse;
-
-beforeEach(function () {
-    if (! class_exists(ResponseFactory::class)) {
-        $this->markTestSkipped('These assertions cover Laravel MCP 0.2 and newer.');
-    }
-});
 
 it('registers one local read only server with four schema backed tools', function () {
     $version = (new ReflectionClass(NewDebugBarServer::class))->getDefaultProperties()['version'];
