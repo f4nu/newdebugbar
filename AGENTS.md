@@ -5,6 +5,11 @@
 - Make small commits as you work.
 - Keep each commit about one clear change. Commit its tests and built files with it.
 
+## Working notes
+
+- Do not create or keep Markdown files in the repository to track plans, progress, task status, checklists, audits, QA, or temporary agent notes.
+- Keep working notes outside the repository. Only version Markdown that is part of the product or its maintained documentation.
+
 ## Product choices
 
 - Build for Laravel only. Do not add support for other PHP frameworks.
