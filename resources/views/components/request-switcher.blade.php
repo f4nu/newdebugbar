@@ -26,7 +26,7 @@
           : openInspector('request', $el);
       "
       aria-label="Open current request in Requests"
-      class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-2 ndb:rounded-l-xl ndb:py-1.5 ndb:pl-2.5 ndb:pr-4 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
+      class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-1 ndb:rounded-l-xl ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:min-[360px]:gap-2 ndb:min-[360px]:pl-2.5 ndb:min-[360px]:pr-4 ndb:dark:hover:bg-white/10"
     >
       <span
         class="ndb:flex ndb:w-12 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/60 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-white/10 ndb:dark:text-white"

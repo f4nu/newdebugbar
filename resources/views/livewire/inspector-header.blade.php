@@ -4,7 +4,7 @@
         <x-newdebugbar::request-switcher
             scope="header-mobile"
             direction="below"
-            class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-36 ndb:min-[420px]:w-40"
+            class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-[9.5rem] ndb:min-[420px]:w-40"
         />
 
         <x-newdebugbar::mobile-request-metrics scope="header" data-ndb-header-mobile-control="metrics" />
