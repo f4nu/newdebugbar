@@ -32,7 +32,7 @@ final class DebugBar extends Component
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
         'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',
         'redis' => 'Inspect direct Redis commands, their keys, connections, and timing.',
-        'request' => 'Follow the request from the incoming URL through routing, middleware, and the response.',
+        'request' => 'Inspect the selected request and switch between recently captured requests.',
         'timeline' => 'Follow important work in the order it happened across the request.',
         'validation' => 'Review validation failures, affected fields, rules, and messages.',
         'views' => 'See which Blade templates rendered and the data each received. Use this to spot missing variables, unexpected partials, and repeated renders.',
@@ -47,6 +47,9 @@ final class DebugBar extends Component
 
     #[Locked]
     public bool $detailsLoaded = false;
+
+    #[Locked]
+    public int $profileLimit = 20;
 
     /** @var array<int, array<string, mixed>> */
     #[Locked]
@@ -63,6 +66,7 @@ final class DebugBar extends Component
         ProfileSummaryPresenter $summaries,
     ): void {
         $this->profileId = $profileId;
+        $this->profileLimit = $store->maxProfiles();
         $profile = $presenter->present($store->get($profileId) ?? []);
         $this->summary = $this->makeSummary($profile, $summaries);
         $this->detailsLoaded = (int) ($this->summary['status'] ?? 0) >= 400
@@ -116,6 +120,35 @@ final class DebugBar extends Component
         $this->activateProfile($profileId, $store, $presenter, $summaries);
     }
 
+    #[Renderless]
+    public function noticeProfile(
+        string $profileId,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        abort_unless($this->validProfileId($profileId), 422);
+        $profile = $store->get($profileId);
+        abort_if($profile === null, 404);
+
+        $this->dispatch(
+            'newdebugbar-profile-noticed',
+            summary: $this->makeSummary($presenter->present($profile), $summaries),
+        );
+    }
+
+    #[Renderless]
+    public function refreshRecentProfiles(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        $this->dispatch(
+            'newdebugbar-profiles-refreshed',
+            profiles: $this->recentProfileSummaries($store, $presenter, $summaries),
+        );
+    }
+
     private function activateProfile(
         string $profileId,
         ProfileStore $store,
@@ -145,6 +178,17 @@ final class DebugBar extends Component
         return app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($this->profileId) ?? []);
     }
 
+    /** @return list<array<string, mixed>> */
+    #[Computed]
+    public function recentProfiles(): array
+    {
+        return $this->recentProfileSummaries(
+            app(ProfileStore::class),
+            app(ProfilePresenter::class),
+            app(ProfileSummaryPresenter::class),
+        );
+    }
+
     public function render(): View
     {
         return view('newdebugbar::livewire.debug-bar');
@@ -172,6 +216,9 @@ final class DebugBar extends Component
         }
 
         foreach ($sections as $key => $section) {
+            $label = $key === 'request'
+                ? 'Requests'
+                : (string) ($section['label'] ?? ucfirst($key));
             $count = $section['summary']['count'] ?? null;
             $dropped = (int) ($section['summary']['dropped_count'] ?? 0);
             $secondaryDropped = (int) ($section['summary']['transaction_dropped_count'] ?? 0);
@@ -183,8 +230,8 @@ final class DebugBar extends Component
             $attention = $findingCount > 0 || $truncated || $incomplete;
             $sectionLinks[] = [
                 'key' => $key,
-                'label' => $section['label'] ?? ucfirst($key),
-                'description' => $this->sectionDescription((string) $key, (string) ($section['label'] ?? ucfirst($key))),
+                'label' => $label,
+                'description' => $this->sectionDescription((string) $key, $label),
                 'count' => $count,
                 'active' => $count === null || (int) $count > 0 || $attention,
                 'attention' => $attention,
@@ -211,6 +258,20 @@ final class DebugBar extends Component
     {
         return self::SECTION_DESCRIPTIONS[$key]
             ?? 'Review the collected '.strtolower($label).' details for this request.';
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function recentProfileSummaries(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): array {
+        return array_values(array_map(
+            fn (array $profile): array => $this->makeSummary($presenter->present($profile), $summaries),
+            $store->recent(),
+        ));
     }
 
     private function validProfileId(string $profileId): bool

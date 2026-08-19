@@ -259,3 +259,49 @@ it('switches to an exact foreground application profile', function () {
         ->assertSet('detailsLoaded', false)
         ->assertDispatched('newdebugbar-profile-switched');
 });
+
+it('lists and announces recent requests without changing the selected profile', function () {
+    $firstId = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+    $nextId = $this->get('/profiled-next', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $firstId])
+        ->assertSet('profileLimit', 20)
+        ->assertSet('recentProfiles', function (array $profiles) use ($firstId, $nextId): bool {
+            $profiles = collect($profiles)->keyBy('id');
+
+            return $profiles->keys()->contains($firstId)
+                && $profiles->keys()->contains($nextId)
+                && collect($profiles[$firstId]['sections'])->firstWhere('key', 'request')['label'] === 'Requests';
+        })
+        ->call('noticeProfile', $nextId)
+        ->assertSet('profileId', $firstId)
+        ->assertDispatched('newdebugbar-profile-noticed', function (string $name, array $params) use ($nextId): bool {
+            return $name === 'newdebugbar-profile-noticed'
+                && $params['summary']['id'] === $nextId
+                && $params['summary']['path'] === '/profiled-next';
+        })
+        ->call('refreshRecentProfiles')
+        ->assertDispatched('newdebugbar-profiles-refreshed', function (string $name, array $params) use ($firstId, $nextId): bool {
+            return $name === 'newdebugbar-profiles-refreshed'
+                && collect($params['profiles'])->pluck('id')->contains($firstId)
+                && collect($params['profiles'])->pluck('id')->contains($nextId);
+        });
+});
+
+it('rejects unavailable request summaries', function () {
+    $id = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->call('noticeProfile', 'not-a-profile')
+        ->assertStatus(422);
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->call('noticeProfile', '00000000-0000-4000-8000-000000000000')
+        ->assertNotFound();
+});
