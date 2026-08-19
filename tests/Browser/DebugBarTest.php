@@ -1042,13 +1042,14 @@ it('collects background requests in the split button without changing the host p
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
 
                 return state.summary.path === '/api/plain-json'
+                    && state.inspectorOpen === true
+                    && state.selected === 'request'
                     && location.pathname === '/profiled'
                     && window.__newDebugBarFetchSentinel === true;
             })()
             JS)
         ->assertNoJavaScriptErrors()
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->wait(0.2)
+        ->assertVisible('[data-ndb-section-panel="request"]')
         ->assertVisible('[data-ndb-request-picker-trigger="header"]')
         ->click('[data-ndb-request-picker-trigger="header"]')
         ->assertVisible('#newdebugbar-request-list-header')
@@ -1062,7 +1063,8 @@ it('collects background requests in the split button without changing the host p
                 );
 
                 return current?.dataset.profileId === window.__newDebugBarActiveProfile
-                    && selectedLater !== null;
+                    && selectedLater !== null
+                    && Alpine.$data(document.getElementById('newdebugbar')).selected === 'request';
             })()
             JS)
         ->assertNoJavaScriptErrors();

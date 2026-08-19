@@ -19,12 +19,7 @@
       @if ($scope === 'toolbar') data-ndb-toolbar="request" @endif
       @if ($scope === 'header-mobile') data-ndb-header-mobile-request @endif
       @if ($scope === 'header') data-ndb-header-request @endif
-      @click="
-        closeRequestPicker(false);
-        inspectorOpen
-          ? selectSection('request')
-          : openInspector('request', $el);
-      "
+      @click="openRequestSection($el)"
       aria-label="Open current request in Requests"
       class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-1 ndb:rounded-l-xl ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:min-[360px]:gap-2 ndb:min-[360px]:pl-2.5 ndb:min-[360px]:pr-4 ndb:dark:hover:bg-white/10"
     >

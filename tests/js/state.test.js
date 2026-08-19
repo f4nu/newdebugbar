@@ -581,8 +581,12 @@ test('request summaries format useful labels and update existing recent entries'
 });
 
 test('the request picker manages focus, keyboard movement, and profile selection', async () => {
-  const current = { ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8', path: '/current' };
-  const other = { ...summary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/other' };
+  const requestSummary = {
+    ...summary,
+    sections: [...summary.sections, { key: 'request', label: 'Requests' }],
+  };
+  const current = { ...requestSummary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8', path: '/current' };
+  const other = { ...requestSummary, id: '550e8400-e29b-41d4-a716-446655440000', path: '/other' };
   const browser = runtime();
   let active = null;
   let triggerFocuses = 0;
@@ -647,15 +651,21 @@ test('the request picker manages focus, keyboard movement, and profile selection
   assert.equal(state.requestPickerScope, 'header');
   state.selectRequest(current.id);
   assert.deepEqual(switches, []);
+  assert.equal(state.inspectorOpen, true);
+  assert.equal(state.selected, 'request');
 
+  state.selected = 'logs';
   state.openRequestPicker('header', trigger);
   state.selectRequest(other.id);
   await Promise.resolve();
   assert.deepEqual(switches, [other.id]);
   assert.equal(state.requestSelectionPending, other.id);
+  assert.equal(state.selected, 'logs');
 
   state.switchProfile(other);
   assert.equal(state.requestSelectionPending, null);
+  assert.equal(state.inspectorOpen, true);
+  assert.equal(state.selected, 'request');
   assert.equal(state.currentRequestProfile.id, current.id);
   assert.deepEqual(state.laterRequestProfiles.map((profile) => profile.id), [other.id]);
   state.closeRequestPicker(false);

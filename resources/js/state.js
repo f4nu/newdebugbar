@@ -416,6 +416,18 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.selectSection(target, filter, true);
     },
 
+    openRequestSection(returnFocus = null) {
+      this.closeRequestPicker(false);
+
+      if (this.inspectorOpen) {
+        this.selectSection('request');
+
+        return;
+      }
+
+      this.openInspector('request', returnFocus);
+    },
+
     openMobileSections(returnFocus = null) {
       if (this.mobileSectionsOpen) return;
 
@@ -867,8 +879,9 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
 
       const selectedFromPicker = this.requestSelectionPending === summary.id;
-      const selected = (summary.sections ?? []).some((section) => section.key === this.selected)
-        ? this.selected
+      const requestedSection = selectedFromPicker ? 'request' : this.selected;
+      const selected = (summary.sections ?? []).some((section) => section.key === requestedSection)
+        ? requestedSection
         : 'overview';
       this.detailRequestVersion++;
       this.summary = summary ?? {};
@@ -891,7 +904,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.authorizationFilter = 'all';
       this.eventSource = 'application';
       this.eventSearch = '';
-      if (this.inspectorOpen) {
+      if (this.inspectorOpen || selectedFromPicker) {
         this.openInspector(selected);
       } else {
         this.$nextTick?.(() => this.syncSectionPanels());
@@ -1339,8 +1352,14 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     selectRequest(profileId) {
       if (!PROFILE_PATTERN.test(profileId ?? '')) return;
 
+      const returnFocus = this.requestPickerReturnFocus;
       this.closeRequestPicker();
-      if (profileId === this.summary.id || this.requestSelectionPending === profileId) return;
+      if (profileId === this.summary.id) {
+        this.openRequestSection(returnFocus);
+
+        return;
+      }
+      if (this.requestSelectionPending === profileId) return;
 
       const action = this.$wire?.switchProfile;
       if (typeof action !== 'function') return;
