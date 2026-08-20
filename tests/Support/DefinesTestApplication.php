@@ -28,6 +28,7 @@ use NewDebugBar\ProfileManager;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationEvent;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 use NewDebugBar\Tests\Fixtures\HostCounter;
+use NewDebugBar\Tests\Fixtures\HostValidationForm;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledFailingJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledJob;
 use NewDebugBar\Tests\Fixtures\Models\Client;
@@ -45,6 +46,7 @@ trait DefinesTestApplication
     protected function defineRoutes($router): void
     {
         Livewire::component('host-counter', HostCounter::class);
+        Livewire::component('host-validation-form', HostValidationForm::class);
 
         foreach ([StudioJob::class, Client::class, ProofVersion::class, JobActivity::class, User::class] as $modelClass) {
             new $modelClass;
@@ -93,6 +95,18 @@ trait DefinesTestApplication
                 <html>
                     <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Livewire host</title></head>
                     <body><main><h1 data-testid="host-page">Livewire host</h1>{$component}</main></body>
+                </html>
+                HTML);
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-livewire-validation', function () {
+            $component = app('livewire')->mount('host-validation-form', key: 'host-validation-form-browser');
+
+            return response(<<<HTML
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Livewire validation</title></head>
+                    <body><main><h1 data-testid="host-page">Livewire validation</h1>{$component}</main></body>
                 </html>
                 HTML);
         });
@@ -208,6 +222,11 @@ trait DefinesTestApplication
 
             return response('unreachable');
         });
+
+        $router->middleware(['web', ProfileRequest::class])->get(
+            '/profiled-session-validation',
+            fn () => response('<!doctype html><html><body>Validation redirect target</body></html>'),
+        );
 
         $router->middleware(ProfileRequest::class)->get('/hostile-styles', fn () => response(<<<'HTML'
             <!doctype html>

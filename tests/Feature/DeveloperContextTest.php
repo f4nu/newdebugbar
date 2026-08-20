@@ -6,6 +6,7 @@ use Illuminate\Session\ArraySessionHandler;
 use Illuminate\Session\Store;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Presentation\ProfilePresenter;
@@ -63,19 +64,60 @@ it('captures validation field and rule names with the rendered redirect status',
     $validation = $profile['sections']['validation']['payload']['items'][0];
 
     expect($validation)
+        ->source->toBe('exception')
         ->fields->toBe(['email', 'name'])
         ->rules->email->toContain('Email')
         ->rules->name->toContain('Required')
+        ->messages->name->toContain('The name field is required.')
         ->error_bag->toBe('signup')
+        ->exception_class->toBe(ValidationException::class)
+        ->exception_message->not->toBeEmpty()
+        ->exception_status->toBe(422)
         ->response_status->toBe(302)
+        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(0);
 
     Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-NewDebugBar-Profile')])
         ->call('loadDetails')
-        ->assertSee('2 invalid fields')
+        ->assertSee('2 fields failed validation')
         ->assertSee('signup bag')
-        ->assertSee('HTTP 302')
-        ->assertSee('Required');
+        ->assertSee('Validation 422')
+        ->assertSee('Redirect 302')
+        ->assertSee('The name field is required.')
+        ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertDontSee('Show validation messages');
+});
+
+it('carries redirected validation messages into the next profiled page', function () {
+    config(['session.driver' => 'array']);
+    $errors = new ViewErrorBag;
+    $errors->put('checkout', new MessageBag([
+        'email' => ['The email has already been taken.'],
+        'team' => ['The selected team is invalid.'],
+    ]));
+
+    $response = $this->withSession(['errors' => $errors])
+        ->get('/profiled-session-validation')
+        ->assertOk()
+        ->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $validation = $profile['sections']['validation']['payload']['items'][0];
+
+    expect($validation)
+        ->source->toBe('session')
+        ->from_previous_request->toBeTrue()
+        ->fields->toBe(['email', 'team'])
+        ->rules->toBe(['email' => [], 'team' => []])
+        ->messages->email->toBe(['The email has already been taken.'])
+        ->error_bag->toBe('checkout')
+        ->not->toHaveKey('response_status')
+        ->and($profile['sections']['validation']['summary']['count'])->toBe(1);
+
+    Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-NewDebugBar-Profile')])
+        ->call('loadDetails')
+        ->assertSee('Carried from the previous request.')
+        ->assertSee('The email has already been taken.')
+        ->assertSee('Failed rules and source code are not available on this request.');
 });
 
 it('shows authentication and session shape without identity or values', function () {

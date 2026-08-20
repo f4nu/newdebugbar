@@ -150,6 +150,7 @@ it('promotes explicit HTTP authorization and validation failures before heuristi
             'validation' => ['payload' => ['items' => [[
                 'fields' => ['title', 'facility_id'],
                 'rules' => ['title' => ['Required']],
+                'callsite' => ['file' => 'app/Http/Requests/StoreWorkOrderRequest.php', 'line' => 24],
             ]]]],
         ],
     ]);
@@ -161,7 +162,31 @@ it('promotes explicit HTTP authorization and validation failures before heuristi
     ])->and($findings[0]['summary'])->toBe('GET request to api.example.test failed.')
         ->and($findings[1]['why'])->toBe('WorkOrderPolicy@delete returned a denied result.')
         ->and($findings[1]['action']['filter'])->toBe('denied')
-        ->and($findings[2]['summary'])->toBe('Validation failed for title, facility_id.');
+        ->and($findings[2]['summary'])->toBe('Validation failed for title, facility_id.')
+        ->and($findings[2]['location'])->toBe([
+            'file' => 'app/Http/Requests/StoreWorkOrderRequest.php',
+            'line' => 24,
+        ]);
+});
+
+it('explains validation messages carried from a previous request', function () {
+    $findings = (new ProfileAnalyzer(new QueryAnalyzer))->analyze([
+        'metrics' => ['duration_ms' => 20],
+        'sections' => [
+            'request' => ['summary' => ['status' => 200]],
+            'validation' => ['payload' => ['items' => [[
+                'fields' => ['email'],
+                'from_previous_request' => true,
+            ]]]],
+        ],
+    ]);
+
+    expect($findings)->toHaveCount(1)
+        ->and($findings[0])->toMatchArray([
+            'rule_id' => 'validation.failed',
+            'why' => 'Laravel carried these errors into this page from the previous request.',
+            'next' => 'Inspect the messages, then reproduce the failed request to capture its rules and source.',
+        ]);
 });
 
 it('reports omitted query transaction events as collector evidence', function () {

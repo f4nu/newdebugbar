@@ -5,11 +5,13 @@ namespace NewDebugBar;
 use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\ValidationException;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Contracts\Collector;
+use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestContext;
@@ -38,6 +40,9 @@ final class ProfileManager
     /** @var array<string, mixed> */
     private array $request = [];
 
+    /** @var array<int, true> */
+    private array $recordedValidationExceptions = [];
+
     /** @param iterable<Collector> $collectors */
     public function __construct(
         iterable $collectors,
@@ -45,6 +50,7 @@ final class ProfileManager
         private readonly ?ExceptionNormalizer $exceptionNormalizer = null,
         private readonly ?RuntimeContext $runtimeContext = null,
         private readonly ?RequestContext $requestContext = null,
+        private readonly ?CallSiteResolver $callSites = null,
     ) {
         foreach ($collectors as $collector) {
             $this->collectors[$collector->key()] = $collector;
@@ -117,7 +123,11 @@ final class ProfileManager
             $validation = $this->collectors['validation'] ?? null;
 
             if ($validation instanceof ValidationCollector) {
-                $validation->attachResponseStatus($response?->getStatusCode() ?? 500);
+                if ($validation->hasFailures()) {
+                    $validation->attachResponseStatus($response?->getStatusCode() ?? 500);
+                } else {
+                    $this->recordSessionValidationErrors($request);
+                }
             }
 
             $this->request = [
@@ -200,20 +210,36 @@ final class ProfileManager
 
     public function recordValidationException(ValidationException $exception): void
     {
+        $exceptionId = spl_object_id($exception);
+
+        if (isset($this->recordedValidationExceptions[$exceptionId])) {
+            return;
+        }
+
+        $this->recordedValidationExceptions[$exceptionId] = true;
         $failed = $exception->validator->failed();
+        $messages = $exception->validator->errors()->toArray();
+        $fields = array_values(array_unique(array_map(
+            'strval',
+            [...array_keys($failed), ...array_keys($messages)],
+        )));
         $rules = [];
 
-        foreach ($failed as $field => $fieldRules) {
-            $rules[(string) $field] = array_values(array_map('strval', array_keys((array) $fieldRules)));
+        foreach ($fields as $field) {
+            $rules[$field] = array_values(array_map('strval', array_keys((array) ($failed[$field] ?? []))));
         }
 
         $this->record('validation', [
-            'fields' => array_values(array_map('strval', array_keys($failed))),
+            'source' => 'exception',
+            'fields' => $fields,
             'rules' => $rules,
-            'messages' => $exception->validator->errors()->toArray(),
+            'messages' => $messages,
             'error_bag' => (string) $exception->errorBag,
+            'exception_class' => $exception::class,
+            'exception_message' => $exception->getMessage(),
             'exception_status' => (int) $exception->status,
             'redirect_requested' => is_string($exception->redirectTo) && $exception->redirectTo !== '',
+            'callsite' => $this->callSites?->fromThrowable($exception),
         ]);
     }
 
@@ -273,7 +299,48 @@ final class ProfileManager
         $this->profileId = (string) Str::uuid();
         $this->startedAt = hrtime(true);
         $this->request = [];
+        $this->recordedValidationExceptions = [];
         $this->collecting = true;
+    }
+
+    private function recordSessionValidationErrors(Request $request): void
+    {
+        try {
+            if (! $request->hasSession()) {
+                return;
+            }
+
+            $errors = $request->session()->get('errors');
+        } catch (Throwable) {
+            return;
+        }
+
+        if (! $errors instanceof ViewErrorBag) {
+            return;
+        }
+
+        foreach ($errors->getBags() as $bag => $messages) {
+            $messageArray = $messages->toArray();
+
+            if ($messageArray === []) {
+                continue;
+            }
+
+            $fields = array_values(array_map('strval', array_keys($messageArray)));
+            $this->record('validation', [
+                'source' => 'session',
+                'from_previous_request' => true,
+                'fields' => $fields,
+                'rules' => array_fill_keys($fields, []),
+                'messages' => $messageArray,
+                'error_bag' => (string) $bag,
+                'exception_class' => null,
+                'exception_message' => null,
+                'exception_status' => null,
+                'redirect_requested' => false,
+                'callsite' => null,
+            ]);
+        }
     }
 
     /** @return array<string, mixed> */

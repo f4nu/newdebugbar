@@ -5,9 +5,11 @@ use Livewire\Drawer\Utils;
 use Livewire\Livewire;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Fixtures\HostCounter;
+use NewDebugBar\Tests\Fixtures\HostValidationForm;
 
 beforeEach(function () {
     Livewire::component('host-counter', HostCounter::class);
+    Livewire::component('host-validation-form', HostValidationForm::class);
 });
 
 /** @return array<string, mixed> */
@@ -41,6 +43,33 @@ it('profiles host Livewire requests without storing framework snapshots or a ded
             'snapshot_data_stored' => false,
         ])
         ->and(json_encode($profile))->not->toContain('wire:snapshot', 'checksum');
+});
+
+it('captures validation failures handled inside host Livewire components', function () {
+    $html = (string) app('livewire')->mount('host-validation-form');
+    $snapshot = Utils::extractAttributeDataFromHtml($html, 'wire:snapshot');
+    $response = $this->postJson(app('livewire')->getUpdateUri(), [
+        'components' => [[
+            'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
+            'updates' => [],
+            'calls' => [['method' => 'save', 'params' => []]],
+        ]],
+    ], ['X-Livewire' => '1']);
+
+    $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $validation = $profile['sections']['validation'];
+
+    expect($validation['summary']['count'])->toBe(1)
+        ->and($validation['payload']['items'][0])
+        ->source->toBe('exception')
+        ->fields->toBe(['email', 'name'])
+        ->rules->email->toContain('Email')
+        ->messages->name->toContain('The name field is required.')
+        ->exception_status->toBe(422)
+        ->response_status->toBe(200)
+        ->callsite->file->toBe('tests/Fixtures/HostValidationForm.php')
+        ->and($profile['sections']['exceptions']['summary']['count'])->toBe(0);
 });
 
 it('preserves host Livewire response bytes', function () use ($hostCounterMessage, $hostCounterSnapshot) {

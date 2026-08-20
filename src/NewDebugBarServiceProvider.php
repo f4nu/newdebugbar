@@ -47,6 +47,9 @@ use NewDebugBar\Support\RequestContext;
 use NewDebugBar\Support\RuntimeContext;
 use NewDebugBar\Support\RuntimeProfiler;
 use NewDebugBar\Support\SafeUrl;
+use Throwable;
+
+use function Livewire\on;
 
 /** Registers profiling services only in explicitly allowed environments. */
 final class NewDebugBarServiceProvider extends ServiceProvider
@@ -128,6 +131,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 $app->make(ExceptionNormalizer::class),
                 $app->make(RuntimeContext::class),
                 $app->make(RequestContext::class),
+                $app->make(CallSiteResolver::class),
             );
         });
 
@@ -178,6 +182,11 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 return null;
             });
         }
+        on('exception', function (mixed $target, Throwable $exception): void {
+            if ($exception instanceof ValidationException) {
+                $this->app->make(ProfileManager::class)->recordValidationException($exception);
+            }
+        });
         $events->listen(
             RequestHandled::class,
             fn (RequestHandled $event) => $this->app->make(ProfileFinalizer::class)->handle($event),

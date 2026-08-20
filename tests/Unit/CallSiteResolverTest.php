@@ -25,6 +25,19 @@ it('can disable call site capture', function () {
     expect($location)->toBe(['callsite' => null, 'stack' => []]);
 });
 
+it('finds the first application location in a throwable', function () {
+    $root = dirname(__DIR__, 2);
+    $resolver = new CallSiteResolver(
+        projectPath: $root,
+        packagePath: $root,
+    );
+    $exception = new RuntimeException('Validation failed.');
+
+    expect($resolver->fromThrowable($exception))->toMatchArray([
+        'file' => 'tests/Unit/CallSiteResolverTest.php',
+    ]);
+});
+
 it('resolves template files without applying the application call site filter', function () {
     $root = dirname(__DIR__, 2);
     $resolver = new CallSiteResolver(

@@ -2,6 +2,8 @@
 
 namespace NewDebugBar\Support;
 
+use Throwable;
+
 /** Captures a short project-relative stack without arguments or vendor frames. */
 final class CallSiteResolver
 {
@@ -65,6 +67,27 @@ final class CallSiteResolver
             ],
             'stack' => $frames,
         ];
+    }
+
+    /** Returns the first application frame from a thrown error. */
+    public function fromThrowable(Throwable $exception): ?array
+    {
+        foreach ([
+            ['file' => $exception->getFile(), 'line' => $exception->getLine()],
+            ...$exception->getTrace(),
+        ] as $frame) {
+            if (! isset($frame['file'])) {
+                continue;
+            }
+
+            $location = $this->location((string) $frame['file'], (int) ($frame['line'] ?? 1));
+
+            if ($location !== null) {
+                return $location;
+            }
+        }
+
+        return null;
     }
 
     /** @return array{file: string, line: int}|null */

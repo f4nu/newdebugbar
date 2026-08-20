@@ -127,6 +127,7 @@ final class ProfileAnalyzer
         if (is_array($validation)) {
             $fields = array_values(array_filter(array_map('strval', (array) ($validation['fields'] ?? []))));
             $fieldSummary = $fields === [] ? 'the submitted data' : implode(', ', array_slice($fields, 0, 3));
+            $fromPreviousRequest = (bool) ($validation['from_previous_request'] ?? false);
             $findings[] = $this->finding(
                 'validation.failed',
                 'error',
@@ -134,8 +135,13 @@ final class ProfileAnalyzer
                 sprintf('Validation failed for %s.', $fieldSummary),
                 $validation,
                 [
-                    'why' => 'Laravel rejected one or more fields before the requested action could finish.',
-                    'next' => 'Inspect the field messages and rules, then compare them with the submitted form.',
+                    'why' => $fromPreviousRequest
+                        ? 'Laravel carried these errors into this page from the previous request.'
+                        : 'Laravel rejected one or more fields before the requested action could finish.',
+                    'location' => $validation['callsite'] ?? null,
+                    'next' => $fromPreviousRequest
+                        ? 'Inspect the messages, then reproduce the failed request to capture its rules and source.'
+                        : 'Inspect the field messages and rules, then compare them with the submitted form.',
                     'action' => ['label' => 'Inspect validation', 'section' => 'validation'],
                 ],
             );

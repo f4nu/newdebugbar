@@ -4,6 +4,7 @@ use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
+use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Support\Redactor;
 
 it('counts dropped collector items without retaining their payload', function () {
@@ -116,6 +117,22 @@ it('includes dropped items in cache and log summaries', function () {
         'truncated' => true,
         'errors' => 1,
     ]);
+});
+
+it('attaches the rendered response to every retained validation failure', function () {
+    $validation = new ValidationCollector(new Redactor, maxItems: 2);
+    $validation->record(['fields' => ['email']]);
+    $validation->record(['fields' => ['name']]);
+
+    expect($validation->hasFailures())->toBeTrue();
+
+    $validation->attachResponseStatus(200);
+
+    expect(array_column($validation->payload()['items'], 'response_status'))->toBe([200, 200]);
+
+    $validation->reset();
+
+    expect($validation->hasFailures())->toBeFalse();
 });
 
 it('collapses duplicate MIME mail logs into a link to the Mail collector', function () {
