@@ -320,11 +320,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         { id: 'theme:system', label: 'Use system theme', hint: 'Theme' },
         { id: 'theme:light', label: 'Use light theme', hint: 'Theme' },
         { id: 'theme:dark', label: 'Use dark theme', hint: 'Theme' },
-        { id: 'toolbar:top-left', label: 'Pin to top left', hint: 'Toolbar' },
         { id: 'toolbar:top', label: 'Pin to top', hint: 'Toolbar' },
+        { id: 'toolbar:bottom', label: 'Pin to bottom', hint: 'Toolbar' },
+        { id: 'toolbar:top-left', label: 'Pin to top left', hint: 'Toolbar' },
         { id: 'toolbar:top-right', label: 'Pin to top right', hint: 'Toolbar' },
         { id: 'toolbar:bottom-left', label: 'Pin to bottom left', hint: 'Toolbar' },
-        { id: 'toolbar:bottom', label: 'Pin to bottom', hint: 'Toolbar' },
         { id: 'toolbar:bottom-right', label: 'Pin to bottom right', hint: 'Toolbar' },
       ];
     },

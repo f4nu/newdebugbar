@@ -56,9 +56,18 @@ test('restores and commands every supported toolbar anchor', () => {
   });
 
   const state = createNewDebugBar(summary, runtime());
+  const commandPlacements = [
+    'top',
+    'bottom',
+    'top-left',
+    'top-right',
+    'bottom-left',
+    'bottom-right',
+  ];
+
   assert.deepEqual(
     state.allCommands.filter((command) => command.id.startsWith('toolbar:')).map((command) => command.id),
-    placements.map((placement) => `toolbar:${placement}`),
+    commandPlacements.map((placement) => `toolbar:${placement}`),
   );
 });
 
