@@ -45,7 +45,10 @@
             queryExplainError = $event.detail.error;
             $nextTick(() => {
                 if (queryExplainScrollTop !== null) {
-                    $el.closest('#newdebugbar')?.querySelector('main')?.scrollTo(0, queryExplainScrollTop);
+                    $el
+                        .closest('#newdebugbar')
+                        ?.querySelector('[data-ndb-inspector-content]')
+                        ?.scrollTo(0, queryExplainScrollTop);
                 }
                 window.newDebugBarHighlight?.($el);
             });

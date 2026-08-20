@@ -97,7 +97,7 @@ it('shows an explained query in place without losing the open query or scroll po
         ->assertVisible($actions.' [data-ndb-query-explain-action]')
         ->assertScript(<<<'JS'
             (() => {
-                const content = document.querySelector('#newdebugbar main');
+                const content = document.querySelector('[data-ndb-inspector-content]');
                 const query = document.querySelector('[data-ndb-query-group-execution][open]');
 
                 content.scrollTop = Math.min(120, content.scrollHeight - content.clientHeight);
@@ -115,7 +115,7 @@ it('shows an explained query in place without losing the open query or scroll po
         ->assertScript('document.querySelector("[data-ndb-query-group-execution][open]").__newDebugBarExplainMarker === "preserved"')
         ->assertScript(<<<'JS'
             (() => {
-                const content = document.querySelector('#newdebugbar main');
+                const content = document.querySelector('[data-ndb-inspector-content]');
                 const query = document.querySelector('[data-ndb-query-group-execution][open]');
 
                 return Math.abs(content.scrollTop - Alpine.$data(query).queryExplainScrollTop) <= 1;

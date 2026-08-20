@@ -145,6 +145,31 @@ it('uses one non-sticky title and description hierarchy for every section', func
     $page->assertNoJavaScriptErrors();
 });
 
+it('keeps host main element styles out of inspector content', function () {
+    $page = visit('/profiled');
+    $page->script(<<<'JS'
+        const style = document.createElement('style');
+        style.textContent = 'main { width: min(920px, 100% - 32px); margin: 0 auto; padding: 72px 0 160px; }';
+        document.head.appendChild(style);
+        JS);
+
+    $page
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const style = getComputedStyle(content);
+
+                return content.tagName === 'DIV'
+                    && style.paddingTop === '0px'
+                    && style.paddingBottom === '0px'
+                    && style.marginLeft === '0px'
+                    && style.marginRight === '0px';
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('caps the compact and expanded bars at the large breakpoint', function () {
     visit('/profiled')
         ->resize(1440, 900)

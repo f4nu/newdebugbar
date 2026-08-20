@@ -52,7 +52,8 @@
                 wire:target="explainQuery({{ $query['execution'] }})"
                 data-ndb-query-explain-action
                 @click="
-                    queryExplainScrollTop = $el.closest('#newdebugbar')?.querySelector('main')?.scrollTop ?? null;
+                    queryExplainScrollTop =
+                        $el.closest('#newdebugbar')?.querySelector('[data-ndb-inspector-content]')?.scrollTop ?? null;
                     $el.closest('details').open = false;
                 "
                 class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50 ndb:dark:hover:bg-white/10"

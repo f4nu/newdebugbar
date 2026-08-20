@@ -64,7 +64,7 @@ it('keeps model evidence contained on a narrow screen', function () {
         ->assertVisible('[data-ndb-section-panel="models"]')
         ->assertScript(<<<'JS'
             (() => {
-                const content = document.querySelector('#newdebugbar main');
+                const content = document.querySelector('[data-ndb-inspector-content]');
                 const panel = document.querySelector('[data-ndb-section-panel="models"]');
 
                 return panel.getBoundingClientRect().width <= content.clientWidth + 1
@@ -75,7 +75,7 @@ it('keeps model evidence contained on a narrow screen', function () {
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
         ->assertScript(<<<'JS'
             (() => {
-                const content = document.querySelector('#newdebugbar main');
+                const content = document.querySelector('[data-ndb-inspector-content]');
                 const tableScroller = document.querySelector('[data-ndb-model-record]').closest('.ndb\\:overflow-x-auto');
 
                 return content.scrollWidth <= content.clientWidth + 1

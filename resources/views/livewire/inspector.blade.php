@@ -167,7 +167,8 @@
                 </div>
             </nav>
 
-            <main
+            <div
+                data-ndb-inspector-content
                 x-ref="content"
                 :inert="mobileSectionsOpen"
                 class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
@@ -321,7 +322,7 @@
                         <p class="ndb:mt-3 ndb:text-xs ndb:font-semibold">Reload the page to capture a new request.</p>
                     </div>
                 @endif
-            </main>
+            </div>
         </div>
     </aside>
 </div>
