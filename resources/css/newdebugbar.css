@@ -226,7 +226,7 @@
 #newdebugbar .ndb-toolbar-draggable {
     cursor: grab;
     touch-action: none;
-    transform: translate3d(0, var(--ndb-toolbar-drag-y, 0), 0);
+    transform: translate3d(var(--ndb-toolbar-drag-x, 0), var(--ndb-toolbar-drag-y, 0), 0);
     transition:
         transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
         border-color 180ms ease,
@@ -237,7 +237,7 @@
 
 #newdebugbar .ndb-toolbar-draggable[data-dragging="true"] {
     cursor: grabbing;
-    transform: translate3d(0, var(--ndb-toolbar-drag-y, 0), 0) scale(0.985);
+    transform: translate3d(var(--ndb-toolbar-drag-x, 0), var(--ndb-toolbar-drag-y, 0), 0) scale(0.985);
     transition: none;
 }
 
@@ -250,12 +250,12 @@
     cursor: grabbing !important;
 }
 
-#newdebugbar .ndb-toolbar-draggable[data-drag-target="top"][data-dragging="true"] {
+#newdebugbar .ndb-toolbar-draggable[data-drag-target^="top"][data-dragging="true"] {
     border-color: rgb(129 140 248 / 70%);
     box-shadow: 0 -18px 60px -18px rgb(79 70 229 / 35%);
 }
 
-#newdebugbar .ndb-toolbar-draggable[data-drag-target="bottom"][data-dragging="true"] {
+#newdebugbar .ndb-toolbar-draggable[data-drag-target^="bottom"][data-dragging="true"] {
     border-color: rgb(129 140 248 / 70%);
     box-shadow: 0 18px 60px -18px rgb(79 70 229 / 35%);
 }

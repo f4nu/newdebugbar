@@ -1,5 +1,21 @@
 const STORAGE_KEY = 'newdebugbar.preferences.v1';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TOOLBAR_PLACEMENTS = [
+  'top-left',
+  'top',
+  'top-right',
+  'bottom-left',
+  'bottom',
+  'bottom-right',
+];
+const TOOLBAR_CORNER_PLACEMENTS = TOOLBAR_PLACEMENTS.filter((placement) => placement.includes('-'));
+const toolbarHorizontalPlacement = (placement) => {
+  if (placement.endsWith('-left')) return 'left';
+  if (placement.endsWith('-right')) return 'right';
+
+  return 'center';
+};
+const toolbarVerticalPlacement = (placement) => placement.startsWith('top') ? 'top' : 'bottom';
 
 const defaultRuntime = () => ({
   storage: {
@@ -14,6 +30,7 @@ const defaultRuntime = () => ({
   nextFrame: (callback) => window.requestAnimationFrame(callback),
   schedule: (callback, delay) => window.setTimeout(callback, delay),
   cancelSchedule: (timer) => window.clearTimeout(timer),
+  viewportWidth: () => window.innerWidth,
   viewportHeight: () => window.innerHeight,
   lockHost: (root) => {
     if (!root || root.__newDebugBarHostLock) return;
@@ -57,13 +74,19 @@ const defaultRuntime = () => ({
     const toolbar = root?.querySelector?.('[data-ndb-toolbar-shell]');
     if (!toolbar) return 'bottom';
 
+    const validPreferred = TOOLBAR_PLACEMENTS.includes(preferred) ? preferred : 'bottom';
     const toolbarBox = toolbar.getBoundingClientRect();
     const width = Math.min(toolbarBox.width, Math.max(0, window.innerWidth - 24));
     const height = toolbarBox.height;
-    const left = (window.innerWidth - width) / 2;
+    const horizontal = toolbarHorizontalPlacement(validPreferred);
+    const left = horizontal === 'left'
+      ? 12
+      : (horizontal === 'right' ? Math.max(12, window.innerWidth - width - 12) : (window.innerWidth - width) / 2);
+    const topPlacement = horizontal === 'center' ? 'top' : `top-${horizontal}`;
+    const bottomPlacement = horizontal === 'center' ? 'bottom' : `bottom-${horizontal}`;
     const candidates = {
-      top: { left, right: left + width, top: 12, bottom: 12 + height },
-      bottom: {
+      [topPlacement]: { left, right: left + width, top: 12, bottom: 12 + height },
+      [bottomPlacement]: {
         left,
         right: left + width,
         top: window.innerHeight - height - 12,
@@ -89,12 +112,12 @@ const defaultRuntime = () => ({
       return area + widthOverlap * heightOverlap;
     }, 0);
 
-    const topOverlap = overlap(candidates.top);
-    const bottomOverlap = overlap(candidates.bottom);
+    const topOverlap = overlap(candidates[topPlacement]);
+    const bottomOverlap = overlap(candidates[bottomPlacement]);
 
-    if (topOverlap === bottomOverlap && ['top', 'bottom'].includes(preferred)) return preferred;
+    if (topOverlap === bottomOverlap) return validPreferred;
 
-    return topOverlap < bottomOverlap ? 'top' : 'bottom';
+    return topOverlap < bottomOverlap ? topPlacement : bottomPlacement;
   },
   watchHostDialogs: (_root, callback) => {
     let frame = null;
@@ -165,10 +188,18 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     toolbarDragPointerId: null,
     toolbarDragStartX: 0,
     toolbarDragStartY: 0,
+    toolbarDragPointerOffsetX: 0,
     toolbarDragPointerOffsetY: 0,
+    toolbarDragPointerRatioX: 0.5,
+    toolbarDragPointerRatioY: 0.5,
     toolbarDragWidth: 0,
     toolbarDragHeight: 0,
+    toolbarDragOffsetX: 0,
     toolbarDragOffsetY: 0,
+    toolbarCenterWidth: 0,
+    toolbarCenterHeight: 60,
+    toolbarCornerWidth: 196,
+    toolbarCornerHeight: 56,
     toolbarDragTarget: 'bottom',
     toolbarDragOriginPlacement: 'bottom',
     toolbarSuppressClick: false,
@@ -245,7 +276,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         const saved = JSON.parse(browser.storage?.getItem(STORAGE_KEY) ?? '{}');
 
         if (['system', 'light', 'dark'].includes(saved.theme)) this.theme = saved.theme;
-        if (['top', 'bottom'].includes(saved.toolbarAnchor)) {
+        if (TOOLBAR_PLACEMENTS.includes(saved.toolbarAnchor)) {
           this.toolbarPreferredPlacement = saved.toolbarAnchor;
           this.toolbarPlacement = saved.toolbarAnchor;
           this.toolbarDragTarget = saved.toolbarAnchor;
@@ -289,9 +320,33 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         { id: 'theme:system', label: 'Use system theme', hint: 'Theme' },
         { id: 'theme:light', label: 'Use light theme', hint: 'Theme' },
         { id: 'theme:dark', label: 'Use dark theme', hint: 'Theme' },
+        { id: 'toolbar:top-left', label: 'Pin to top left', hint: 'Toolbar' },
         { id: 'toolbar:top', label: 'Pin to top', hint: 'Toolbar' },
+        { id: 'toolbar:top-right', label: 'Pin to top right', hint: 'Toolbar' },
+        { id: 'toolbar:bottom-left', label: 'Pin to bottom left', hint: 'Toolbar' },
         { id: 'toolbar:bottom', label: 'Pin to bottom', hint: 'Toolbar' },
+        { id: 'toolbar:bottom-right', label: 'Pin to bottom right', hint: 'Toolbar' },
       ];
+    },
+
+    get toolbarIsCorner() {
+      return TOOLBAR_CORNER_PLACEMENTS.includes(this.toolbarPlacement);
+    },
+
+    get toolbarIsTop() {
+      return toolbarVerticalPlacement(this.toolbarPlacement) === 'top';
+    },
+
+    get toolbarIsLeft() {
+      return toolbarHorizontalPlacement(this.toolbarPlacement) === 'left';
+    },
+
+    get toolbarIsRight() {
+      return toolbarHorizontalPlacement(this.toolbarPlacement) === 'right';
+    },
+
+    get toolbarVerticalPlacement() {
+      return toolbarVerticalPlacement(this.toolbarPlacement);
     },
 
     get hiddenCommandCount() {
@@ -486,15 +541,49 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       const placement = browser.toolbarPlacement?.(this.$root, this.toolbarPreferredPlacement);
 
-      if (['top', 'bottom'].includes(placement) && placement !== this.toolbarPlacement) {
+      if (TOOLBAR_PLACEMENTS.includes(placement) && placement !== this.toolbarPlacement) {
         this.moveToolbarTo(placement);
       }
     },
 
+    toolbarAnchorLeft(placement, width) {
+      const viewportWidth = browser.viewportWidth?.() ?? 0;
+      const horizontal = toolbarHorizontalPlacement(placement);
+
+      if (horizontal === 'left') return 12;
+      if (horizontal === 'right') return Math.max(12, viewportWidth - width - 12);
+
+      return Math.max(12, (viewportWidth - width) / 2);
+    },
+
     toolbarAnchorTop(placement, height) {
-      if (placement === 'top') return 12;
+      if (toolbarVerticalPlacement(placement) === 'top') return 12;
 
       return Math.max(12, (browser.viewportHeight?.() ?? 0) - height - 12);
+    },
+
+    toolbarPreviewWidth(placement) {
+      if (TOOLBAR_CORNER_PLACEMENTS.includes(placement)) return this.toolbarCornerWidth;
+
+      return this.toolbarCenterWidth
+        || Math.min(1024, Math.max(0, (browser.viewportWidth?.() ?? 0) - 24));
+    },
+
+    toolbarPreviewHeight(placement) {
+      return TOOLBAR_CORNER_PLACEMENTS.includes(placement)
+        ? this.toolbarCornerHeight
+        : this.toolbarCenterHeight;
+    },
+
+    toolbarTargetAt(clientX, clientY) {
+      const width = Math.max(1, browser.viewportWidth?.() ?? 0);
+      const height = Math.max(1, browser.viewportHeight?.() ?? 0);
+      const vertical = clientY < height / 2 ? 'top' : 'bottom';
+      const horizontal = clientX < width / 3
+        ? 'left'
+        : (clientX > width * 2 / 3 ? 'right' : 'center');
+
+      return horizontal === 'center' ? vertical : `${vertical}-${horizontal}`;
     },
 
     startToolbarDrag(event) {
@@ -504,7 +593,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       const toolbar = event.currentTarget;
       const box = toolbar?.getBoundingClientRect?.();
-      if (!toolbar || !box || box.height <= 0) return;
+      if (!toolbar || !box || box.width <= 0 || box.height <= 0) return;
 
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       this.toolbarSnapTimer = null;
@@ -514,10 +603,21 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.toolbarDragPointerId = event.pointerId;
       this.toolbarDragStartX = event.clientX;
       this.toolbarDragStartY = event.clientY;
+      this.toolbarDragPointerOffsetX = Math.min(Math.max(event.clientX - box.left, 0), box.width);
       this.toolbarDragPointerOffsetY = Math.min(Math.max(event.clientY - box.top, 0), box.height);
+      this.toolbarDragPointerRatioX = this.toolbarDragPointerOffsetX / box.width;
+      this.toolbarDragPointerRatioY = this.toolbarDragPointerOffsetY / box.height;
       this.toolbarDragWidth = box.width;
       this.toolbarDragHeight = box.height;
+      this.toolbarDragOffsetX = box.left - this.toolbarAnchorLeft(this.toolbarPlacement, box.width);
       this.toolbarDragOffsetY = box.top - this.toolbarAnchorTop(this.toolbarPlacement, box.height);
+      if (this.toolbarIsCorner) {
+        this.toolbarCornerWidth = box.width;
+        this.toolbarCornerHeight = box.height;
+      } else {
+        this.toolbarCenterWidth = box.width;
+        this.toolbarCenterHeight = box.height;
+      }
       this.toolbarDragTarget = this.toolbarPlacement;
       this.toolbarDragOriginPlacement = this.toolbarPlacement;
     },
@@ -543,32 +643,40 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       }
 
       event.preventDefault?.();
+      const width = this.toolbarDragWidth;
       const height = this.toolbarDragHeight;
-      const topAnchor = this.toolbarAnchorTop('top', height);
-      const bottomAnchor = this.toolbarAnchorTop('bottom', height);
+      const viewportWidth = browser.viewportWidth?.() ?? 0;
+      const viewportHeight = browser.viewportHeight?.() ?? 0;
+      const minLeft = 12;
+      const maxLeft = Math.max(minLeft, viewportWidth - width - 12);
+      const minTop = 12;
+      const maxTop = Math.max(minTop, viewportHeight - height - 12);
+      const left = Math.min(
+        maxLeft,
+        Math.max(minLeft, event.clientX - this.toolbarDragPointerOffsetX),
+      );
       const top = Math.min(
-        bottomAnchor,
-        Math.max(topAnchor, event.clientY - this.toolbarDragPointerOffsetY),
+        maxTop,
+        Math.max(minTop, event.clientY - this.toolbarDragPointerOffsetY),
       );
 
+      this.toolbarDragOffsetX = left - this.toolbarAnchorLeft(this.toolbarPlacement, width);
       this.toolbarDragOffsetY = top - this.toolbarAnchorTop(this.toolbarPlacement, height);
-      this.toolbarDragTarget = Math.abs(top - topAnchor) <= Math.abs(top - bottomAnchor)
-        ? 'top'
-        : 'bottom';
+      this.toolbarDragTarget = this.toolbarTargetAt(event.clientX, event.clientY);
     },
 
     endToolbarDrag(event) {
       if (event.pointerId !== this.toolbarDragPointerId) return;
 
       const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
-      const currentTop = toolbar?.getBoundingClientRect?.().top;
+      const currentBox = toolbar?.getBoundingClientRect?.();
       if (toolbar?.hasPointerCapture?.(event.pointerId)) {
         toolbar.releasePointerCapture?.(event.pointerId);
       }
       this.toolbarDragPointerId = null;
 
       if (!this.toolbarDragging) {
-        this.moveToolbarTo(this.toolbarPlacement, false, currentTop);
+        this.moveToolbarTo(this.toolbarPlacement, false, currentBox, event);
 
         return;
       }
@@ -576,28 +684,28 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       event.preventDefault?.();
       this.toolbarDragging = false;
       this.suppressToolbarClick();
-      this.moveToolbarTo(this.toolbarDragTarget, true, currentTop);
+      this.moveToolbarTo(this.toolbarDragTarget, true, currentBox, event);
     },
 
     cancelToolbarDrag(event) {
       if (event.pointerId !== this.toolbarDragPointerId) return;
 
       const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
-      const currentTop = toolbar?.getBoundingClientRect?.().top;
+      const currentBox = toolbar?.getBoundingClientRect?.();
       if (toolbar?.hasPointerCapture?.(event.pointerId)) {
         toolbar.releasePointerCapture?.(event.pointerId);
       }
       this.toolbarDragPointerId = null;
 
       if (!this.toolbarDragging) {
-        this.moveToolbarTo(this.toolbarPlacement, false, currentTop);
+        this.moveToolbarTo(this.toolbarPlacement, false, currentBox);
 
         return;
       }
 
       this.toolbarDragging = false;
       this.suppressToolbarClick();
-      this.moveToolbarTo(this.toolbarDragOriginPlacement, false, currentTop);
+      this.moveToolbarTo(this.toolbarDragOriginPlacement, false, currentBox);
     },
 
     suppressToolbarClick() {
@@ -620,21 +728,53 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     pinToolbar(placement) {
-      if (!['top', 'bottom'].includes(placement)) return;
+      if (!TOOLBAR_PLACEMENTS.includes(placement)) return;
 
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
       this.moveToolbarTo(placement, true);
     },
 
-    moveToolbarTo(placement, remember = false, currentTop = null) {
-      if (!['top', 'bottom'].includes(placement)) return;
+    moveToolbarTo(placement, remember = false, currentBox = null, releasePointer = null) {
+      if (!TOOLBAR_PLACEMENTS.includes(placement)) return;
 
       const snapVersion = ++this.toolbarSnapVersion;
       const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
-      const box = toolbar?.getBoundingClientRect?.();
-      const height = box?.height ?? this.toolbarDragHeight;
-      const fromTop = Number.isFinite(currentTop) ? currentTop : box?.top;
+      const sourceBox = currentBox ?? toolbar?.getBoundingClientRect?.();
+      const source = sourceBox && Number.isFinite(sourceBox.left) && Number.isFinite(sourceBox.top)
+        ? {
+            left: sourceBox.left,
+            top: sourceBox.top,
+            width: sourceBox.width,
+            height: sourceBox.height,
+          }
+        : null;
+      const pointer = releasePointer
+        && Number.isFinite(releasePointer.clientX)
+        && Number.isFinite(releasePointer.clientY)
+        ? { x: releasePointer.clientX, y: releasePointer.clientY }
+        : null;
+      const viewportWidth = browser.viewportWidth?.() ?? 0;
+      const viewportHeight = browser.viewportHeight?.() ?? 0;
+      const positionAtRelease = (width, height) => {
+        const desiredLeft = pointer
+          ? pointer.x - width * this.toolbarDragPointerRatioX
+          : source.left + (source.width - width) / 2;
+        const desiredTop = pointer
+          ? pointer.y - height * this.toolbarDragPointerRatioY
+          : source.top + (source.height - height) / 2;
+
+        return {
+          left: Math.min(
+            Math.max(12, viewportWidth - width - 12),
+            Math.max(12, desiredLeft),
+          ),
+          top: Math.min(
+            Math.max(12, viewportHeight - height - 12),
+            Math.max(12, desiredTop),
+          ),
+        };
+      };
 
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       this.toolbarSnapTimer = null;
@@ -646,10 +786,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         this.persist();
       }
 
-      this.toolbarPlacement = placement;
-      this.toolbarDragTarget = placement;
-
-      if (!Number.isFinite(fromTop) || height <= 0) {
+      if (!toolbar || !source || source.width <= 0 || source.height <= 0) {
+        this.toolbarPlacement = placement;
+        this.toolbarDragTarget = placement;
+        this.toolbarDragOffsetX = 0;
         this.toolbarDragOffsetY = 0;
         this.toolbarRebasing = false;
         this.toolbarSnapping = false;
@@ -657,16 +797,38 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         return;
       }
 
-      const offset = fromTop - this.toolbarAnchorTop(placement, height);
-      this.toolbarDragOffsetY = Math.abs(offset) > 0.5 ? offset : 0;
+      const provisionalWidth = this.toolbarPreviewWidth(placement);
+      const provisionalHeight = this.toolbarPreviewHeight(placement);
+      const provisional = positionAtRelease(provisionalWidth, provisionalHeight);
 
-      if (this.toolbarDragOffsetY === 0) {
-        this.toolbarRebasing = false;
+      this.toolbarPlacement = placement;
+      this.toolbarDragTarget = placement;
+      this.toolbarDragOffsetX = provisional.left - this.toolbarAnchorLeft(placement, provisionalWidth);
+      this.toolbarDragOffsetY = provisional.top - this.toolbarAnchorTop(placement, provisionalHeight);
 
-        return;
-      }
+      const rebase = () => {
+        const destination = toolbar.getBoundingClientRect?.();
+        if (!destination || destination.width <= 0 || destination.height <= 0) {
+          this.toolbarRebasing = false;
 
-      this.$nextTick?.(() => {
+          return;
+        }
+
+        const release = positionAtRelease(destination.width, destination.height);
+        const baseLeft = destination.left - this.toolbarDragOffsetX;
+        const baseTop = destination.top - this.toolbarDragOffsetY;
+        const offsetX = release.left - baseLeft;
+        const offsetY = release.top - baseTop;
+
+        this.toolbarDragOffsetX = Math.abs(offsetX) > 0.5 ? offsetX : 0;
+        this.toolbarDragOffsetY = Math.abs(offsetY) > 0.5 ? offsetY : 0;
+
+        if (this.toolbarDragOffsetX === 0 && this.toolbarDragOffsetY === 0) {
+          this.toolbarRebasing = false;
+
+          return;
+        }
+
         const prepare = () => {
           if (snapVersion !== this.toolbarSnapVersion) return;
 
@@ -676,6 +838,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
           const settle = () => {
             if (snapVersion !== this.toolbarSnapVersion) return;
 
+            this.toolbarDragOffsetX = 0;
             this.toolbarDragOffsetY = 0;
             this.toolbarSnapTimer = browser.schedule?.(
               () => this.finishToolbarSnap(snapVersion),
@@ -689,7 +852,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
         if (browser.afterPaint) browser.afterPaint(prepare);
         else prepare();
-      });
+      };
+
+      if (this.$nextTick) this.$nextTick(rebase);
+      else rebase();
     },
 
     finishToolbarSnap(snapVersion = null) {
@@ -698,6 +864,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       this.toolbarSnapTimer = null;
+      this.toolbarDragOffsetX = 0;
       this.toolbarDragOffsetY = 0;
       this.toolbarRebasing = false;
       this.toolbarSnapping = false;
@@ -1271,7 +1438,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     openRequestPicker(scope, returnFocus = null) {
-      const compactPicker = scope === 'toolbar';
+      const compactPicker = ['toolbar', 'corner'].includes(scope);
       const inspectorPicker = ['header-mobile', 'header'].includes(scope);
 
       if (!this.barVisible
@@ -1288,6 +1455,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       this.$nextTick?.(() => {
         const focus = () => {
+          this.syncRequestPickerArrow(scope, this.requestPickerReturnFocus);
           const switcher = this.requestPickerReturnFocus?.closest?.('[data-ndb-request-switcher]')
             ?? this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
           const options = [...(switcher?.querySelectorAll?.('[data-ndb-request-option]') ?? [])];
@@ -1300,20 +1468,27 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     syncRequestPickerArrow(scope = this.requestPickerScope, trigger = this.requestPickerReturnFocus) {
-      if (!['toolbar', 'header-mobile', 'header'].includes(scope)) return;
+      if (!['toolbar', 'corner', 'header-mobile', 'header'].includes(scope)) return;
 
       const switcher = trigger?.closest?.('[data-ndb-request-switcher]')
         ?? this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
       const pickerTrigger = switcher?.querySelector?.(`[data-ndb-request-picker-trigger="${scope}"]`)
         ?? trigger;
+      const popover = switcher?.querySelector?.(`[data-ndb-request-popover="${scope}"]`);
       const switcherBox = switcher?.getBoundingClientRect?.();
       const triggerBox = pickerTrigger?.getBoundingClientRect?.();
+      const popoverBox = popover?.getBoundingClientRect?.();
 
       if (!switcherBox || !triggerBox) return;
 
+      const originLeft = popoverBox?.width > 0 ? popoverBox.left : switcherBox.left;
+      const maximum = popoverBox?.width > 0 ? popoverBox.width - 16 : Number.POSITIVE_INFINITY;
       this.requestPickerArrowLeft = Math.max(
         0,
-        Math.round(triggerBox.left - switcherBox.left + (triggerBox.width - 16) / 2),
+        Math.min(
+          maximum,
+          Math.round(triggerBox.left - originLeft + (triggerBox.width - 16) / 2),
+        ),
       );
     },
 

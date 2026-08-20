@@ -29,6 +29,7 @@ export function runtime(saved = null) {
       timers.clear();
       callbacks.forEach((callback) => callback());
     },
+    viewportWidth: () => 1440,
     viewportHeight: () => 900,
     lockHost: () => host.locks++,
     unlockHost: () => host.unlocks++,
@@ -57,10 +58,17 @@ export function toolbarHarness(saved = null) {
       capture.pointerId = null;
     },
     getBoundingClientRect: () => {
-      const height = 60;
-      const baseTop = state.toolbarPlacement === 'top' ? 12 : 828;
+      const corner = state.toolbarPlacement.includes('-');
+      const width = corner ? 196 : 1024;
+      const height = corner ? 56 : 60;
+      const baseLeft = state.toolbarPlacement.endsWith('-left')
+        ? 12
+        : (state.toolbarPlacement.endsWith('-right') ? 1440 - width - 12 : (1440 - width) / 2);
+      const baseTop = state.toolbarPlacement.startsWith('top') ? 12 : 900 - height - 12;
+      const left = baseLeft + state.toolbarDragOffsetX;
+      const top = baseTop + state.toolbarDragOffsetY;
 
-      return { top: baseTop + state.toolbarDragOffsetY, width: 1024, height };
+      return { left, top, right: left + width, bottom: top + height, width, height };
     },
   };
   state.$root = {
@@ -85,4 +93,3 @@ export function toolbarHarness(saved = null) {
 
   return { browser, capture, pointer, state, toolbar };
 }
-

@@ -34,6 +34,63 @@ test('moves the compact toolbar to the edge with less host dialog overlap', () =
   assert.equal(stopped, 1);
 });
 
+test('restores and commands every supported toolbar anchor', () => {
+  const placements = [
+    'top-left',
+    'top',
+    'top-right',
+    'bottom-left',
+    'bottom',
+    'bottom-right',
+  ];
+
+  placements.forEach((placement) => {
+    const { state } = toolbarHarness({ toolbarAnchor: placement });
+
+    assert.equal(state.toolbarPlacement, placement);
+    assert.equal(state.toolbarPreferredPlacement, placement);
+    assert.equal(state.toolbarVerticalPlacement, placement.startsWith('top') ? 'top' : 'bottom');
+    assert.equal(state.toolbarIsCorner, placement.includes('-'));
+    assert.equal(state.toolbarIsLeft, placement.endsWith('-left'));
+    assert.equal(state.toolbarIsRight, placement.endsWith('-right'));
+  });
+
+  const state = createNewDebugBar(summary, runtime());
+  assert.deepEqual(
+    state.allCommands.filter((command) => command.id.startsWith('toolbar:')).map((command) => command.id),
+    placements.map((placement) => `toolbar:${placement}`),
+  );
+});
+
+test('targets all four compact corners and uses their destination dimensions', () => {
+  const targets = [
+    ['top-left', 40, 40],
+    ['top-right', 1400, 40],
+    ['bottom-left', 40, 860],
+    ['bottom-right', 1400, 860],
+  ];
+
+  targets.forEach(([placement, clientX, clientY]) => {
+    const { browser, pointer, state } = toolbarHarness();
+
+    state.startToolbarDrag(pointer());
+    state.moveToolbarDrag(pointer({ clientX, clientY }));
+
+    assert.equal(state.toolbarDragging, true);
+    assert.equal(state.toolbarDragTarget, placement);
+    assert.equal(state.toolbarPreviewWidth(placement), 196);
+    assert.equal(state.toolbarPreviewHeight(placement), 56);
+
+    state.endToolbarDrag(pointer({ clientX, clientY }));
+    assert.equal(state.toolbarPlacement, placement);
+    assert.equal(state.toolbarPreferredPlacement, placement);
+    assert.equal(JSON.parse(browser.values.get(STORAGE_KEY)).toolbarAnchor, placement);
+
+    browser.runTimers();
+    assert.equal(state.toolbarSnapping, false);
+  });
+});
+
 test('the compact toolbar follows a pointer and pins to the nearest anchor', () => {
   const { browser, capture, pointer, state } = toolbarHarness();
   const paintCallbacks = [];
@@ -49,6 +106,7 @@ test('the compact toolbar follows a pointer and pins to the nearest anchor', () 
   assert.equal(state.toolbarDragging, true);
   assert.equal(state.toolbarDragTarget, 'top');
   assert.equal(state.toolbarDragWidth, 1024);
+  assert.equal(state.toolbarDragOffsetX, 0);
   assert.equal(state.toolbarDragOffsetY, -758);
   assert.equal(capture.pointerId, 7);
   assert.equal(prevented, 1);

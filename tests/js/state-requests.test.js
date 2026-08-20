@@ -182,8 +182,11 @@ test('the request picker manages focus, keyboard movement, and profile selection
   });
   const currentOption = option(current.id);
   const laterOption = option(other.id);
+  const popover = {
+    getBoundingClientRect: () => ({ left: 20, width: 384 }),
+  };
   const switcher = {
-    getBoundingClientRect: () => ({ left: 20 }),
+    getBoundingClientRect: () => ({ left: 20, width: 184 }),
     querySelectorAll: () => [currentOption, laterOption],
   };
   const trigger = {
@@ -191,7 +194,7 @@ test('the request picker manages focus, keyboard movement, and profile selection
     focus: () => triggerFocuses++,
     getBoundingClientRect: () => ({ left: 160, width: 40 }),
   };
-  switcher.querySelector = () => trigger;
+  switcher.querySelector = (selector) => selector.includes('request-popover') ? popover : trigger;
   const listbox = { querySelectorAll: () => [currentOption, laterOption] };
   const state = createNewDebugBar(current, browser, [other]);
   browser.activeElement = () => active;
@@ -228,6 +231,10 @@ test('the request picker manages focus, keyboard movement, and profile selection
   state.toggleRequestPicker('toolbar', trigger);
   assert.equal(state.requestPickerScope, null);
   assert.equal(triggerFocuses, 1);
+
+  state.openRequestPicker('corner', trigger);
+  assert.equal(state.requestPickerScope, 'corner');
+  state.closeRequestPicker(false);
 
   state.inspectorOpen = true;
   state.openRequestPicker('toolbar', trigger);

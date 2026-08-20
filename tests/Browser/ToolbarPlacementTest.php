@@ -137,7 +137,7 @@ it('drags the compact toolbar between animated persistent anchors', function () 
                 const hint = document.getElementById(toolbar.getAttribute('aria-describedby'));
 
                 return getComputedStyle(toolbar).transitionProperty.includes('transform')
-                    && hint.textContent.includes('Drag vertically');
+                    && hint.textContent.includes('or any corner');
             })()
             JS);
 
@@ -172,6 +172,120 @@ it('drags the compact toolbar between animated persistent anchors', function () 
         ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
         ->assertAttribute('[data-ndb-toolbar-shell]', 'data-preferred-placement', 'bottom')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().bottom >= window.innerHeight - 13')
+        ->assertNoJavaScriptErrors();
+});
+
+it('uses only the existing request split button at every corner', function () {
+    $page = visit('/profiled')->resize(1440, 900);
+
+    foreach (['top-left', 'top-right', 'bottom-left', 'bottom-right'] as $placement) {
+        $page
+            ->assertScript(<<<JS
+                (() => {
+                    const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                    Alpine.\$data(toolbar).pinToolbar('{$placement}');
+
+                    return true;
+                })()
+                JS)
+            ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', $placement)
+            ->assertAttribute('[data-ndb-toolbar-shell]', 'data-form', 'corner')
+            ->assertScript(<<<'JS'
+                (() => {
+                    const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                    const corner = toolbar.querySelector('[data-ndb-corner-toolbar]');
+                    const center = toolbar.querySelector('[data-ndb-center-toolbar]');
+                    const switcher = corner.querySelector('[data-ndb-request-switcher="corner"]');
+                    const primary = corner.querySelector('[data-ndb-corner-request]');
+                    const trigger = corner.querySelector('[data-ndb-request-picker-trigger="corner"]');
+                    const method = corner.querySelector('[data-ndb-request-method="corner"]');
+                    const path = corner.querySelector('[data-ndb-corner-request-path]');
+                    const status = corner.querySelector('[data-ndb-corner-request-status]');
+                    const box = toolbar.getBoundingClientRect();
+                    const triggerStyle = getComputedStyle(trigger);
+                    const methodStyle = getComputedStyle(method);
+                    const statusStyle = getComputedStyle(status);
+                    const methodBox = method.getBoundingClientRect();
+                    const pathBox = path.getBoundingClientRect();
+                    const statusBox = status.getBoundingClientRect();
+                    const placement = toolbar.dataset.placement;
+                    const topInset = placement.startsWith('top') ? box.top : window.innerHeight - box.bottom;
+                    const sideInset = placement.endsWith('left') ? box.left : window.innerWidth - box.right;
+
+                    return Math.abs(box.width - 196) <= 1
+                        && Math.abs(box.height - 56) <= 1
+                        && Math.abs(topInset - 12) <= 1
+                        && Math.abs(sideInset - 12) <= 1
+                        && getComputedStyle(toolbar).borderRadius === '18px'
+                        && getComputedStyle(corner).display !== 'none'
+                        && getComputedStyle(center).display === 'none'
+                        && getComputedStyle(switcher).display !== 'none'
+                        && primary !== null
+                        && trigger !== null
+                        && method.textContent.trim() === method.textContent.trim().toUpperCase()
+                        && path.textContent.trim().startsWith('/')
+                        && /^\d{3}$/.test(status.textContent.trim())
+                        && Number.parseFloat(triggerStyle.paddingLeft) === 2
+                        && Number.parseFloat(triggerStyle.paddingRight) === 2
+                        && Number.parseFloat(methodStyle.paddingLeft) === 0
+                        && Number.parseFloat(methodStyle.paddingRight) === 0
+                        && methodStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+                        && methodStyle.borderRadius === '0px'
+                        && methodStyle.textTransform === 'uppercase'
+                        && !method.className.includes('indigo')
+                        && methodStyle.color !== statusStyle.color
+                        && method.getBoundingClientRect().width < 48
+                        && methodBox.right < pathBox.left
+                        && Math.abs((methodBox.top + methodBox.height / 2) - (pathBox.top + pathBox.height / 2)) <= 1
+                        && methodBox.top < statusBox.top
+                        && corner.querySelector('[data-ndb-corner-toolbar-trigger]') === null
+                        && corner.querySelector('[data-ndb-mobile-toolbar-menu]') === null
+                        && JSON.parse(localStorage.getItem('newdebugbar.preferences.v1')).toolbarAnchor === placement;
+                })()
+                JS);
+    }
+
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                const state = Alpine.$data(toolbar);
+                state.toolbarDragging = true;
+                state.toolbarDragTarget = 'bottom-right';
+
+                return true;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const preview = document.querySelector('[data-ndb-toolbar-anchor="bottom-right"]');
+                const box = preview.getBoundingClientRect();
+
+                return preview.dataset.active === 'true'
+                    && Math.abs(box.width - 196) <= 1
+                    && Math.abs(box.height - 56) <= 1
+                    && Math.abs(window.innerWidth - box.right - 12) <= 1
+                    && Math.abs(window.innerHeight - box.bottom - 12) <= 1
+                    && getComputedStyle(preview).borderRadius === '18px'
+                    && Number.parseFloat(getComputedStyle(preview).opacity) === 1;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                const state = Alpine.$data(toolbar);
+                state.toolbarDragging = false;
+
+                return true;
+            })()
+            JS)
+        ->click('[data-ndb-corner-request]')
+        ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'bottom')
+        ->assertVisible('[data-ndb-section-panel="request"]')
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Requests"')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->assertVisible('[data-ndb-corner-toolbar]')
         ->assertNoJavaScriptErrors();
 });
 

@@ -319,8 +319,8 @@ it('keeps the main interactions usable on a phone viewport', function () {
                 const actionStyles = getComputedStyle(actions);
                 const metricButtons = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
 
-                return requestBox.width <= 113
-                    && requestBox.width < toolbarBox.width / 3
+                return requestBox.width <= 130
+                    && requestBox.width < toolbarBox.width * 0.36
                     && metricsBox.width > 120
                     && metricButtons.length === 3
                     && metricButtons.every((button) => button.getBoundingClientRect().height >= 44)

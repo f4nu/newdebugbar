@@ -24,15 +24,25 @@
     $alignmentClass = match ($align) {
         'left' => 'ndb:left-0',
         'right' => 'ndb:right-0',
+        'dynamic' => '',
         default => throw new InvalidArgumentException("Unsupported popover alignment [{$align}]."),
     };
 @endphp
 
 <div
-    @if ($direction === 'dynamic')
-        :class="toolbarPlacement === 'top'
+    @if ($direction === 'dynamic' && $align === 'dynamic')
+        :class="[
+            toolbarIsTop
+                ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
+                : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom',
+            toolbarIsRight ? 'ndb:right-0' : 'ndb:left-0',
+        ]"
+    @elseif ($direction === 'dynamic')
+        :class="toolbarIsTop
             ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
             : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom'"
+    @elseif ($align === 'dynamic')
+        :class="toolbarIsRight ? 'ndb:right-0' : 'ndb:left-0'"
     @endif
     {{ $attributes->class("ndb:absolute ndb:z-50 {$alignmentClass} {$widthClass} {$directionClass}") }}
 >
@@ -41,7 +51,7 @@
         data-ndb-popover-arrow
         @if ($mobileMenu !== null) data-ndb-mobile-toolbar-popover-arrow="{{ $mobileMenu }}" @endif
         @if ($direction === 'dynamic')
-            :class="toolbarPlacement === 'top' ? 'ndb:-top-[7px] ndb:rotate-180' : 'ndb:-bottom-[7px]'"
+            :class="toolbarIsTop ? 'ndb:-top-[7px] ndb:rotate-180' : 'ndb:-bottom-[7px]'"
         @endif
         class="ndb:pointer-events-none ndb:absolute ndb:z-20 ndb:h-2 ndb:w-4 {{ $arrowClass }} {{ $arrowDirectionClass }}"
     >

@@ -17,42 +17,74 @@
         <button
             type="button"
             @if ($scope === 'toolbar') data-ndb-toolbar="request" @endif
+            @if ($scope === 'corner') data-ndb-corner-request @endif
             @if ($scope === 'header-mobile') data-ndb-header-mobile-request @endif
             @if ($scope === 'header') data-ndb-header-request @endif
             @click="openRequestSection($el)"
             aria-label="Open current request in Requests"
             class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-center ndb:gap-1 ndb:rounded-l-xl ndb:py-1.5 ndb:pl-1.5 ndb:pr-1.5 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:min-[360px]:gap-2 ndb:min-[360px]:pl-2.5 ndb:min-[360px]:pr-4 ndb:dark:hover:bg-white/10"
         >
-            <span
-                class="ndb:flex ndb:w-12 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/60 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-white/10 ndb:dark:text-white"
-                x-text="summary.method"
-            ></span>
-            <span class="ndb:min-w-0">
+            @if ($scope === 'corner')
+                <span class="ndb:min-w-0 ndb:flex-1">
+                    <span class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1.5">
+                        <span
+                            data-ndb-request-method="corner"
+                            class="ndb:shrink-0 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            x-text="summary.method"
+                        ></span>
+                        <span
+                            data-ndb-corner-request-path
+                            class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-semibold"
+                            :title="summary.path"
+                            x-text="summary.path"
+                        ></span>
+                    </span>
+                    <span class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
+                        <span
+                            data-ndb-corner-request-status
+                            :class="requestStatusClass(summary.status)"
+                            x-text="summary.status"
+                        ></span>
+                        <span
+                            class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
+                            x-show="summary.response_size"
+                            x-text="summary.response_size"
+                        ></span>
+                    </span>
+                </span>
+            @else
                 <span
-                    @if ($scope === 'toolbar') data-ndb-toolbar-request-path @endif
-                    @if ($scope === 'header-mobile') data-ndb-header-mobile-request-path @endif
-                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
-                    :title="summary.path"
-                    x-text="summary.path"
+                    data-ndb-request-method="{{ $scope }}"
+                    class="ndb:flex ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/60 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-indigo-700 ndb:dark:bg-white/10 ndb:dark:text-white"
+                    x-text="summary.method"
                 ></span>
-                <span
-                    class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-                    ><span
-                        @if ($scope === 'toolbar') data-ndb-toolbar-status @endif
-                        @if ($scope === 'header-mobile') data-ndb-header-mobile-status @endif
-                        @if ($scope === 'header') data-ndb-header-status @endif
-                        :class="requestStatusClass(summary.status)"
-                        x-text="summary.status"
-                    ></span
-                    ><span
-                        @if ($scope === 'toolbar') data-ndb-toolbar-response-size @endif
-                        @if ($scope === 'header') data-ndb-header-response-size @endif
-                        class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
-                        x-show="summary.response_size"
-                        x-text="summary.response_size"
-                    ></span
-                ></span>
-            </span>
+                <span class="ndb:min-w-0">
+                    <span
+                        @if ($scope === 'toolbar') data-ndb-toolbar-request-path @endif
+                        @if ($scope === 'header-mobile') data-ndb-header-mobile-request-path @endif
+                        class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
+                        :title="summary.path"
+                        x-text="summary.path"
+                    ></span>
+                    <span
+                        class="ndb:flex ndb:items-center ndb:gap-1.5 ndb:whitespace-nowrap ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
+                        ><span
+                            @if ($scope === 'toolbar') data-ndb-toolbar-status @endif
+                            @if ($scope === 'header-mobile') data-ndb-header-mobile-status @endif
+                            @if ($scope === 'header') data-ndb-header-status @endif
+                            :class="requestStatusClass(summary.status)"
+                            x-text="summary.status"
+                        ></span
+                        ><span
+                            @if ($scope === 'toolbar') data-ndb-toolbar-response-size @endif
+                            @if ($scope === 'header') data-ndb-header-response-size @endif
+                            class="ndb:hidden ndb:font-semibold ndb:text-zinc-500 ndb:lg:inline ndb:dark:text-zinc-300"
+                            x-show="summary.response_size"
+                            x-text="summary.response_size"
+                        ></span
+                    ></span>
+                </span>
+            @endif
         </button>
 
         <button
@@ -65,7 +97,7 @@
             aria-haspopup="listbox"
             :aria-label="requestPickerButtonLabel"
             :title="requestPickerButtonLabel"
-            class="ndb:relative ndb:flex ndb:w-11 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-r-xl ndb:border-l ndb:border-zinc-200/80 ndb:text-zinc-400 ndb:transition-colors ndb:hover:bg-zinc-100 ndb:hover:text-zinc-700 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:cursor-default ndb:disabled:text-zinc-300 ndb:disabled:hover:bg-transparent ndb:sm:w-10 ndb:dark:border-white/10 ndb:dark:hover:bg-white/10 ndb:dark:hover:text-zinc-200 ndb:dark:disabled:text-zinc-700 ndb:dark:disabled:hover:bg-transparent"
+            class="ndb:relative ndb:flex ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-r-xl ndb:border-l ndb:border-zinc-200/80 ndb:px-0.5 ndb:text-zinc-400 ndb:transition-colors ndb:hover:bg-zinc-100 ndb:hover:text-zinc-700 ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:cursor-default ndb:disabled:text-zinc-300 ndb:disabled:hover:bg-transparent ndb:dark:border-white/10 ndb:dark:hover:bg-white/10 ndb:dark:hover:text-zinc-200 ndb:dark:disabled:text-zinc-700 ndb:dark:disabled:hover:bg-transparent"
         >
             <span
                 class="ndb:flex ndb:transition-transform ndb:motion-reduce:transition-none"
@@ -97,7 +129,7 @@
         data-ndb-request-popover="{{ $scope }}"
         ::style="{ '--ndb-request-arrow-left': requestPickerArrowLeft + 'px' }"
         :direction="$direction"
-        align="left"
+        :align="$scope === 'corner' ? 'dynamic' : 'left'"
         width-class="ndb:w-[calc(100vw-1.5rem)] ndb:max-w-sm"
         surface-class="ndb:p-0"
         arrow-class="ndb:left-[var(--ndb-request-arrow-left)]"

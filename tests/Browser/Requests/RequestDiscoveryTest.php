@@ -8,14 +8,21 @@ it('collects background requests in the split button without changing the host p
                 const control = document.querySelector('[data-ndb-request-switcher="toolbar"] [data-ndb-request-control]');
                 const primary = document.querySelector('[data-ndb-toolbar="request"]');
                 const picker = document.querySelector('[data-ndb-request-picker-trigger="toolbar"]');
+                const method = document.querySelector('[data-ndb-request-method="toolbar"]');
                 const controlStyle = getComputedStyle(control);
                 const primaryStyle = getComputedStyle(primary);
                 const pickerStyle = getComputedStyle(picker);
+                const methodStyle = getComputedStyle(method);
 
                 return Number.parseFloat(controlStyle.borderTopWidth) === 1
                     && Number.parseFloat(primaryStyle.paddingLeft) === 10
                     && Number.parseFloat(primaryStyle.paddingRight) === 16
-                    && Number.parseFloat(pickerStyle.borderLeftWidth) === 1;
+                    && Number.parseFloat(pickerStyle.borderLeftWidth) === 1
+                    && Number.parseFloat(pickerStyle.paddingLeft) === 2
+                    && Number.parseFloat(pickerStyle.paddingRight) === 2
+                    && Number.parseFloat(methodStyle.paddingLeft) === 6
+                    && Number.parseFloat(methodStyle.paddingRight) === 6
+                    && method.getBoundingClientRect().width < 48;
             })()
             JS)
         ->assertNoJavaScriptErrors()
@@ -67,6 +74,47 @@ it('collects background requests in the split button without changing the host p
         ->assertNoJavaScriptErrors()
         ->assertVisible('[data-testid="host-page"]')
         ->assertSeeIn('[data-ndb-request-badge="toolbar"]', '3')
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                Alpine.$data(toolbar).pinToolbar('bottom-right');
+
+                return true;
+            })()
+            JS)
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom-right')
+        ->assertSeeIn('[data-ndb-request-badge="corner"]', '3')
+        ->click('[data-ndb-request-picker-trigger="corner"]')
+        ->assertVisible('#newdebugbar-request-list-corner')
+        ->assertScript(<<<'JS'
+            (() => {
+                const trigger = document.querySelector('[data-ndb-request-picker-trigger="corner"]');
+                const popover = document.querySelector('[data-ndb-request-popover="corner"]');
+                const surface = popover.querySelector('[data-ndb-popover-surface]');
+                const arrow = popover.querySelector('[data-ndb-popover-arrow]');
+                const triggerBox = trigger.getBoundingClientRect();
+                const surfaceBox = surface.getBoundingClientRect();
+                const arrowBox = arrow.getBoundingClientRect();
+
+                return surfaceBox.top < triggerBox.top
+                    && surfaceBox.left >= 6
+                    && surfaceBox.right <= window.innerWidth - 6
+                    && Math.abs(
+                        (triggerBox.left + triggerBox.width / 2)
+                        - (arrowBox.left + arrowBox.width / 2),
+                    ) <= 1;
+            })()
+            JS)
+        ->keys('#newdebugbar-request-list-corner [data-ndb-request-option][aria-selected="true"]', 'Escape')
+        ->assertScript('document.activeElement === document.querySelector(\'[data-ndb-request-picker-trigger="corner"]\')')
+        ->assertScript(<<<'JS'
+            (() => {
+                const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
+                Alpine.$data(toolbar).pinToolbar('bottom');
+
+                return true;
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));

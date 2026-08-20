@@ -26,10 +26,15 @@
     class="ndb:pointer-events-none ndb:fixed ndb:inset-0 ndb:z-[2147483000] ndb:text-zinc-900 ndb:dark:text-zinc-100"
 >
     <span id="newdebugbar-toolbar-drag-hint" class="ndb:sr-only"
-        >Drag vertically to pin this toolbar to the top or bottom. The command palette offers the same actions.</span>
+        >Drag this toolbar to pin it to the top, bottom, or any corner. The command palette offers the same
+        actions.</span>
 
+    <x-newdebugbar::toolbar-anchor-preview placement="top-left" />
     <x-newdebugbar::toolbar-anchor-preview placement="top" />
+    <x-newdebugbar::toolbar-anchor-preview placement="top-right" />
+    <x-newdebugbar::toolbar-anchor-preview placement="bottom-left" />
     <x-newdebugbar::toolbar-anchor-preview placement="bottom" />
+    <x-newdebugbar::toolbar-anchor-preview placement="bottom-right" />
 
     @include('newdebugbar::livewire.toolbar')
 

@@ -21,8 +21,8 @@
         x-transition:leave="ndb:transition ndb:duration-150 ndb:ease-in ndb:motion-reduce:transition-none"
         x-transition:leave-start="ndb-inspector-onscreen"
         x-transition:leave-end="ndb-inspector-offscreen"
-        :data-placement="toolbarPlacement"
-        :class="toolbarPlacement === 'top'
+        :data-placement="toolbarVerticalPlacement"
+        :class="toolbarIsTop
             ? 'ndb:top-0 ndb:rounded-b-2xl ndb:border-x ndb:border-b ndb:shadow-[0_24px_80px_-28px_rgba(24,24,27,0.5)]'
             : 'ndb:bottom-0 ndb:rounded-t-2xl ndb:border-x ndb:border-t ndb:shadow-[0_-24px_80px_-28px_rgba(24,24,27,0.5)]'"
         role="dialog"
