@@ -10,7 +10,7 @@ permissions:
 jobs:
   package:
     name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -41,8 +41,8 @@ jobs:
             pest: '^4.4'
 
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ matrix.php }}
           coverage: none
@@ -57,17 +57,34 @@ jobs:
       - run: composer update --with-all-dependencies --prefer-dist --no-interaction --no-progress
       - if: matrix.laravel == '13'
         run: composer validate --strict
-      - if: matrix.laravel == '13'
-        run: composer audit
+      - name: Audit dependencies
+        if: matrix.laravel == '13'
+        run: |
+          for audit_attempt in 1 2 3; do
+            audit_exit=0
+            composer audit || audit_exit=$?
+
+            if [ "$audit_exit" -eq 0 ]; then
+              exit 0
+            fi
+
+            if [ "$audit_exit" -ne 100 ] || [ "$audit_attempt" -eq 3 ]; then
+              exit "$audit_exit"
+            fi
+
+            audit_delay=$((audit_attempt * 10))
+            echo "::warning::Packagist audit request failed; retrying in ${audit_delay} seconds."
+            sleep "$audit_delay"
+          done
       - run: composer test:php
 
   frontend:
     name: Frontend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: npm
@@ -78,15 +95,15 @@ jobs:
 
   browser:
     name: Browser
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
           coverage: none
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: npm
