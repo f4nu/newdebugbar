@@ -433,6 +433,40 @@ test('keeps property edits as drafts until an explicit successful apply', async 
   assert.equal(state.livewireDrafts[key], undefined);
 });
 
+test('clears property drafts only when leaving their component context', () => {
+  const { state } = stateHarness();
+  const count = state.livewirePropertyRows.find(({ path }) => path === 'count');
+  state.editLivewireProperty(count);
+  const key = state.livewireDraftKey(count);
+
+  assert.ok(state.livewireDrafts[key]);
+
+  state.setLivewireTab('activity');
+  assert.deepEqual(state.livewireDrafts, {});
+
+  state.setLivewireTab('components');
+  state.editLivewireProperty(count);
+  state.selectLivewireComponent('child-1');
+  assert.deepEqual(state.livewireDrafts, {});
+});
+
+test('keeps a closing draft alive until Alpine removes its popover', () => {
+  const { state } = stateHarness();
+  const count = state.livewirePropertyRows.find(({ path }) => path === 'count');
+  const ticks = [];
+  state.$nextTick = (callback) => ticks.push(callback);
+  state.editLivewireProperty(count);
+  const key = state.livewireDraftKey(count);
+
+  state.cancelLivewireDraft(count);
+
+  assert.equal(state.livewireDrafts[key].status, 'closing');
+  assert.equal(ticks.length, 1);
+
+  ticks.shift()();
+  assert.equal(state.livewireDrafts[key], undefined);
+});
+
 test('positions property popovers inside the visible viewport', () => {
   const { state } = stateHarness();
   const styles = {};

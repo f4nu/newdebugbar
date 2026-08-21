@@ -76,7 +76,6 @@
 
   <div
     :class="livewireDetailOpen ? 'ndb:block' : 'ndb:hidden ndb:sm:block'"
-    @scroll.passive="livewireDrafts = {}"
     class="ndb-scrollbar ndb:min-w-0 ndb:sm:sticky ndb:sm:top-0 ndb:sm:z-10 ndb:sm:max-h-[min(62vh,36rem)] ndb:sm:overflow-x-hidden ndb:sm:overflow-y-auto ndb:sm:bg-white/95 ndb:sm:dark:bg-zinc-950/95"
   >
     <button
@@ -218,7 +217,6 @@
 
             <div
               x-show.important="livewirePropertyRows.length > 0"
-              @scroll.passive="livewireDrafts = {}"
               data-ndb-livewire-property-table
               class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
             >

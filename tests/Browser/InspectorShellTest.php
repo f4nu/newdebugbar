@@ -170,7 +170,7 @@ it('keeps host main element styles out of inspector content', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('caps the compact and expanded bars at the large breakpoint', function () {
+it('caps the compact bar at large and the inspector at eight extra large', function () {
     visit('/profiled')
         ->resize(1440, 900)
         ->assertScript(<<<'JS'
@@ -210,7 +210,7 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     .map((fact) => fact.dataset.ndbHeaderFact);
                 const box = inspector.getBoundingClientRect();
 
-                return Math.abs(box.width - 1024) <= 1
+                return Math.abs(box.width - window.innerWidth) <= 1
                     && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
                     && Math.abs(window.innerWidth - box.right - box.left) <= 1
                     && getComputedStyle(request).flexGrow === '0'
@@ -219,6 +219,17 @@ it('caps the compact and expanded bars at the large breakpoint', function () {
                     && facts.getBoundingClientRect().right <= actions.getBoundingClientRect().left
                     && actions.getBoundingClientRect().left - facts.getBoundingClientRect().right <= 8
                     && JSON.stringify(factOrder) === JSON.stringify(['environment', 'queries', 'duration', 'memory']);
+            })()
+            JS)
+        ->resize(1680, 900)
+        ->assertScript(<<<'JS'
+            (() => {
+                const inspector = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const box = inspector.getBoundingClientRect();
+
+                return Math.abs(box.width - 1536) <= 1
+                    && Math.abs(box.left - (window.innerWidth - box.width) / 2) <= 1
+                    && Math.abs(window.innerWidth - box.right - box.left) <= 1;
             })()
             JS)
         ->resize(900, 900)

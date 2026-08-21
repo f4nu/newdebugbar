@@ -10,28 +10,42 @@
 >
   <button
     x-ref="livewireEditButton"
-    x-show.important="row.editable && !livewireDrafts[livewireDraftKey(row)]"
+    x-show.important="
+      row.editable &&
+        (!livewireDrafts[livewireDraftKey(row)] ||
+          livewireDrafts[livewireDraftKey(row)]?.status === 'closing')
+    "
     type="button"
     :id="$id('livewire-edit-trigger')"
     :data-ndb-livewire-edit-key="livewireDraftKey(row)"
     :aria-controls="$id('livewire-edit-popover')"
-    :aria-expanded="Boolean(livewireDrafts[livewireDraftKey(row)])"
-    @click="
+    :aria-expanded="Boolean(
+      livewireDrafts[livewireDraftKey(row)] &&
+        livewireDrafts[livewireDraftKey(row)]?.status !== 'closing',
+    )"
+    @click.stop="
       editLivewireProperty(row);
-      $nextTick(() => {
-        const popover = document.getElementById($id('livewire-edit-popover'));
-        positionLivewirePropertyPopover($el, popover);
-        popover?.querySelector('[data-ndb-livewire-edit-control]')?.focus();
-      });
     "
     class="ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
   >
     Edit
   </button>
 
-  <template x-if="livewireDrafts[livewireDraftKey(row)]">
+  <template
+    x-if="
+      livewireDrafts[livewireDraftKey(row)] &&
+        livewireDrafts[livewireDraftKey(row)]?.status !== 'closing'
+    "
+  >
     <template x-teleport="#newdebugbar">
       <x-newdebugbar::popover-surface
+        x-init="
+          $nextTick(() => {
+            const trigger = document.getElementById($id('livewire-edit-trigger'));
+            positionLivewirePropertyPopover(trigger, $el);
+            $el.querySelector('[data-ndb-livewire-edit-control]')?.focus();
+          });
+        "
         @keydown.escape.stop.prevent="
           cancelLivewireDraft(row, true);
         "
@@ -143,6 +157,7 @@
           class="ndb:flex ndb:justify-end ndb:gap-2 ndb:border-t ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-950/30"
         >
           <button
+            data-ndb-livewire-edit-cancel
             type="button"
             @click="
               cancelLivewireDraft(row, true);
@@ -152,6 +167,7 @@
             Cancel
           </button>
           <button
+            data-ndb-livewire-edit-apply
             type="button"
             @click="
               applyLivewireDraft(

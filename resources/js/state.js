@@ -1442,6 +1442,7 @@ export function createNewDebugBar(
 
     setLivewireTab(tab) {
       if (!['activity', 'components'].includes(tab)) return;
+      this.closeLivewireDrafts();
       this.livewireTab = tab;
       this.livewireDetailOpen = false;
       this.livewireSearch = '';
@@ -1469,6 +1470,7 @@ export function createNewDebugBar(
 
     selectLivewireComponent(id) {
       if (!this.livewireComponents.some((component) => component.id === id)) return;
+      this.closeLivewireDrafts();
       this.livewireSelectedComponentId = id;
       this.livewireDetailOpen = true;
     },
@@ -1560,7 +1562,9 @@ export function createNewDebugBar(
       if (!row?.editable) return;
       const key = this.livewireDraftKey(row);
       const type = row.value === null ? 'String' : row.type;
+      this.closeLivewireDrafts();
       this.livewireDrafts = {
+        ...this.livewireDrafts,
         [key]: {
           componentId: row.componentId,
           path: row.path,
@@ -1603,12 +1607,44 @@ export function createNewDebugBar(
     },
 
     cancelLivewireDraft(row, restoreFocus = false) {
-      if (restoreFocus) this.focusLivewirePropertyEditor(row);
-
       const key = this.livewireDraftKey(row);
-      const drafts = { ...this.livewireDrafts };
-      delete drafts[key];
-      this.livewireDrafts = drafts;
+      const draft = this.livewireDrafts[key];
+      if (!draft) return;
+
+      draft.status = 'closing';
+      if (restoreFocus) this.focusLivewirePropertyEditor(row);
+      this.scheduleLivewireDraftCleanup();
+    },
+
+    closeLivewireDrafts() {
+      const drafts = Object.values(this.livewireDrafts);
+      if (drafts.length === 0) return;
+
+      drafts.forEach((draft) => {
+        draft.status = 'closing';
+      });
+      this.scheduleLivewireDraftCleanup();
+    },
+
+    scheduleLivewireDraftCleanup() {
+      const cleanup = () => {
+        this.livewireDrafts = Object.fromEntries(
+          Object.entries(this.livewireDrafts).filter(([, draft]) => draft.status !== 'closing'),
+        );
+      };
+
+      if (typeof this.$nextTick === 'function') {
+        this.$nextTick(cleanup);
+
+        return;
+      }
+      if (browser.nextFrame) {
+        browser.nextFrame(cleanup);
+
+        return;
+      }
+
+      cleanup();
     },
 
     focusLivewirePropertyEditor(row, trigger = null) {

@@ -17,7 +17,7 @@ it('keeps package asset updates inside Livewire navigation', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('keeps the bar working after host Livewire updates without a dedicated section', function () {
+it('keeps the Livewire section available after host updates and request inspection', function () {
     $page = visit('/profiled-livewire')
         ->assertSeeIn('[data-testid="host-counter-value"]', '0')
         ->click('[data-testid="host-counter"] button')
@@ -57,7 +57,8 @@ it('keeps the bar working after host Livewire updates without a dedicated sectio
             })()
             JS)
         ->assertVisible('[data-ndb-section-panel="request"]')
-        ->assertMissing('[data-ndb-select-section="livewire"]')
-        ->assertMissing('[data-ndb-section-panel="livewire"]')
+        ->assertVisible('[data-ndb-select-section="livewire"]')
+        ->click('[data-ndb-select-section="livewire"]')
+        ->assertVisible('[data-ndb-section-panel="livewire"]')
         ->assertNoJavaScriptErrors();
 });
