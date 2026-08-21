@@ -173,6 +173,17 @@ it('opens and applies a component property edit from its popover', function () {
     $page
         ->click('[data-ndb-livewire-tab="components"]')
         ->assertVisible('[data-ndb-livewire-components]')
+        ->assertCount('[data-ndb-livewire-property-path="count"] [data-ndb-livewire-property-toggle]', 0)
+        ->assertVisible('[data-ndb-livewire-property-path="settings"] [data-ndb-livewire-property-toggle]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const row = document.querySelector('[data-ndb-livewire-property-path="count"]');
+                const name = row.querySelector('[data-ndb-livewire-property-name]').getBoundingClientRect();
+                const label = row.querySelector('[data-ndb-livewire-property-label]').getBoundingClientRect();
+
+                return Math.abs(label.left - name.left) <= 0.75;
+            })()
+            JS)
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
         ->click('[data-ndb-livewire-edit-key$=":count"]')
         ->assertVisible('[data-ndb-livewire-property-popover]')

@@ -238,23 +238,28 @@
                                 >
                                     <div class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:px-3 ndb:py-2.5 ndb:sm:grid-cols-[minmax(10rem,1fr)_minmax(7rem,0.8fr)_minmax(7rem,0.8fr)_5rem_3rem] ndb:sm:items-center ndb:sm:gap-3">
                                         <div
+                                            data-ndb-livewire-property-name
                                             class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5"
                                             :style="`padding-left: ${row.depth * 16}px`"
                                         >
-                                            <button
-                                                type="button"
-                                                @click="toggleLivewireProperty(row)"
-                                                :disabled="! row.hasChildren"
-                                                :aria-label="`${row.expanded ? 'Collapse' : 'Expand'} ${row.path}`"
-                                                class="ndb:grid ndb:size-5 ndb:shrink-0 ndb:place-items-center ndb:rounded ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-0"
-                                            >
-                                                <x-newdebugbar::icon
-                                                    name="chevron-down"
-                                                    class="ndb:size-3 ndb:transition"
-                                                    ::class="row.expanded ? '' : 'ndb:-rotate-90'"
-                                                />
-                                            </button>
+                                            <template x-if="row.hasChildren">
+                                                <button
+                                                    data-ndb-livewire-property-toggle
+                                                    type="button"
+                                                    @click="toggleLivewireProperty(row)"
+                                                    :aria-expanded="row.expanded"
+                                                    :aria-label="`${row.expanded ? 'Collapse' : 'Expand'} ${row.path}`"
+                                                    class="ndb:grid ndb:size-5 ndb:shrink-0 ndb:place-items-center ndb:rounded ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                                                >
+                                                    <x-newdebugbar::icon
+                                                        name="chevron-down"
+                                                        class="ndb:size-3 ndb:transition"
+                                                        ::class="row.expanded ? '' : 'ndb:-rotate-90'"
+                                                    />
+                                                </button>
+                                            </template>
                                             <code
+                                                data-ndb-livewire-property-label
                                                 class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-bold"
                                                 :title="row.path"
                                                 x-text="row.label"
