@@ -93,9 +93,25 @@ it('captures components mounted during a profiled page render', function () {
         ->and($livewire['payload']['components'][0])
         ->name->toBe('host-counter')
         ->parent_id->toBeNull()
+        ->implementation->toBe('class')
         ->source->file->toBe('tests/Fixtures/HostCounter.php')
         ->and(array_column($livewire['payload']['activity'], 'type'))
         ->toContain('mount', 'render');
+});
+
+it('reports the original source for single-file components', function () {
+    $response = $this->get('/profiled-livewire-single-file', ['Accept' => 'text/html']);
+
+    $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $component = $profile['sections']['livewire']['payload']['components'][0];
+
+    expect($component)
+        ->name->toBe('host-functional-status')
+        ->implementation->toBe('single_file')
+        ->source->file->toBe('tests/Fixtures/views/components/⚡host-functional-status.blade.php')
+        ->view->name->toBe('Same file')
+        ->view->source->file->toBe('tests/Fixtures/views/components/⚡host-functional-status.blade.php');
 });
 
 it('preserves nested component instance identity and parentage', function () {

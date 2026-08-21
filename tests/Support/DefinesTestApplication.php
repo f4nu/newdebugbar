@@ -49,6 +49,7 @@ trait DefinesTestApplication
         Livewire::component('host-counter', HostCounter::class);
         Livewire::component('host-counter-group', HostCounterGroup::class);
         Livewire::component('host-validation-form', HostValidationForm::class);
+        Livewire::addLocation(viewPath: dirname(__DIR__).'/Fixtures/views/components');
 
         foreach ([StudioJob::class, Client::class, ProofVersion::class, JobActivity::class, User::class] as $modelClass) {
             new $modelClass;
@@ -123,6 +124,12 @@ trait DefinesTestApplication
                     <body><main><h1 data-testid="host-page">Livewire validation</h1>{$component}</main></body>
                 </html>
                 HTML);
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-livewire-single-file', function () {
+            $component = app('livewire')->mount('host-functional-status', key: 'host-functional-status-browser');
+
+            return response('<!doctype html><html><body>'.$component.'</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-rich', function () use ($profiledPage) {

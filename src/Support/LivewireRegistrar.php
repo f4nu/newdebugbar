@@ -229,9 +229,11 @@ final class LivewireRegistrar
     {
         $reflection = new ReflectionClass($component);
         $state = $this->componentState[$component] ?? [];
-        $source = is_string($reflection->getFileName())
-            ? $this->callSites->location($reflection->getFileName(), $reflection->getStartLine())
-            : null;
+        $implementation = $this->componentImplementation($component, $reflection);
+        $source = $implementation['source'];
+        $view = $implementation['type'] === 'single_file'
+            ? ['name' => 'Same file', 'source' => $source]
+            : ($state['view'] ?? null);
 
         $this->manager()->record('livewire', [
             'kind' => 'component',
@@ -240,12 +242,43 @@ final class LivewireRegistrar
                 'name' => $component->getName(),
                 'title' => $this->componentTitle($component),
                 'class' => $component::class,
+                'implementation' => $implementation['type'],
                 'source' => $source,
-                'view' => $state['view'] ?? null,
+                'view' => $view,
                 'parent_id' => $state['parent_id'] ?? null,
                 'properties' => $this->propertyDescriptors($component, $reflection),
             ],
         ]);
+    }
+
+    /** @return array{type: 'class'|'single_file', source: array{file: string, line: int}|null} */
+    private function componentImplementation(Component $component, ReflectionClass $reflection): array
+    {
+        try {
+            $finder = $this->container->make('livewire.finder');
+            $class = method_exists($finder, 'resolveClassComponentClassName')
+                ? $finder->resolveClassComponentClassName($component->getName())
+                : null;
+            $path = $class === null && method_exists($finder, 'resolveSingleFileComponentPath')
+                ? $finder->resolveSingleFileComponentPath($component->getName())
+                : null;
+
+            if (is_string($path)) {
+                return [
+                    'type' => 'single_file',
+                    'source' => $this->callSites->templateLocation($path),
+                ];
+            }
+        } catch (Throwable) {
+            // Component metadata should never interrupt a host Livewire request.
+        }
+
+        return [
+            'type' => 'class',
+            'source' => is_string($reflection->getFileName())
+                ? $this->callSites->location($reflection->getFileName(), $reflection->getStartLine())
+                : null,
+        ];
     }
 
     /** @param array<string, mixed> $activity */
