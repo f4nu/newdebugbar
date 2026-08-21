@@ -6,7 +6,7 @@
             'key' => 'queries',
             'section' => 'queries',
             'label' => 'Queries',
-            'shortLabel' => 'SQL',
+            'shortLabel' => 'QRY',
             'value' => 'summary.query_count',
             'ariaLabel' => 'Open query details',
         ],

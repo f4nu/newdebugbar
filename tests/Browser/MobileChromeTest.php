@@ -26,6 +26,7 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
                     && buttons.every((button) => button.getAttribute('aria-label')?.startsWith('Open '))
                     && values.every((value) => value.getBoundingClientRect().width > 0 && value.scrollWidth <= value.clientWidth)
                     && values[0].textContent.trim() !== ''
+                    && labels[0].textContent.includes('QRY')
                     && labels[1].textContent.includes('ms')
                     && labels[2].textContent.includes('MB');
             })()
