@@ -6,9 +6,7 @@
         :class="livewireDetailOpen ? 'ndb:hidden ndb:sm:block' : 'ndb:block'"
         class="ndb:min-w-0 ndb:border-zinc-200/90 ndb:sm:border-r ndb:dark:border-zinc-800"
     >
-        <div
-            class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/65 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/45"
-        >
+        <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/65 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/45">
             <div>
                 <h3 class="ndb:text-xs ndb:font-bold">Activity</h3>
                 <p class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
@@ -20,8 +18,7 @@
                 <span
                     x-show.important="livewireActivity.some((item) => item.status === 'updating')"
                     class="ndb:rounded-md ndb:bg-indigo-50 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:text-indigo-700 ndb:dark:bg-indigo-950/60 ndb:dark:text-indigo-300"
-                    >Live</span
-                >
+                >Live</span>
                 <label class="ndb:relative">
                     <span class="ndb:sr-only">Order Livewire activity</span>
                     <select
@@ -61,7 +58,7 @@
                     </div>
 
                     <div class="ndb:min-w-0">
-                        @include ('newdebugbar::livewire.livewire.activity-item')
+                        @include('newdebugbar::livewire.livewire.activity-item')
                     </div>
                 </li>
             </template>
@@ -72,5 +69,5 @@
         </div>
     </div>
 
-    @include ('newdebugbar::livewire.livewire.activity-detail')
+    @include('newdebugbar::livewire.livewire.activity-detail')
 </div>

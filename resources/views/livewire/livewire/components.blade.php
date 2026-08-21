@@ -75,7 +75,7 @@
                             ></span>
                             <span
                                 x-show.important="livewireComponentIsSearchContext(component)"
-                                class="ndb:mt-0.5 ndb:inline-flex ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
+                                class="ndb:mt-0.5 ndb:inline-flex ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
                             >
                                 Context
                             </span>
@@ -310,7 +310,6 @@
                             <x-newdebugbar::empty-state label="This component has no serialized public properties." />
                         </div>
                     </section>
-
                 </div>
             </article>
         </template>

@@ -45,10 +45,12 @@
     @elseif (! $anchored && $align === 'dynamic')
         :class="toolbarIsRight ? 'ndb:right-0' : 'ndb:left-0'"
     @endif
-    {{ $attributes->class([
-        "ndb:z-50 {$alignmentClass} {$widthClass} {$directionClass}",
-        'ndb:absolute' => ! $anchored,
-    ]) }}
+    {{
+        $attributes->class([
+            "ndb:z-50 {$alignmentClass} {$widthClass} {$directionClass}",
+            'ndb:absolute' => ! $anchored,
+        ])
+    }}
 >
     <span
         aria-hidden="true"

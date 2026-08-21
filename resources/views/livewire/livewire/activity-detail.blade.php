@@ -91,13 +91,9 @@
                     <h4 class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                         Property changes
                     </h4>
-                    <div
-                        class="ndb:mt-2 ndb:overflow-hidden ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
-                    >
+                    <div class="ndb:mt-2 ndb:overflow-hidden ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                         <template x-for="change in selectedLivewireActivity.changes" :key="change.path">
-                            <div
-                                class="ndb:grid ndb:grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:px-3 ndb:py-2.5 ndb:last:border-b-0 ndb:dark:border-zinc-800"
-                            >
+                            <div class="ndb:grid ndb:grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:px-3 ndb:py-2.5 ndb:last:border-b-0 ndb:dark:border-zinc-800">
                                 <code
                                     class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
                                     x-text="change.path"
@@ -147,9 +143,7 @@
                     </h4>
                     <div class="ndb:mt-2 ndb:space-y-2">
                         <template x-for="event in livewireActivityEvents(selectedLivewireActivity)" :key="event.name">
-                            <div
-                                class="ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:px-3 ndb:py-3 ndb:dark:border-zinc-800"
-                            >
+                            <div class="ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:px-3 ndb:py-3 ndb:dark:border-zinc-800">
                                 <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
                                     <code class="ndb:text-[11px] ndb:font-bold" x-text="event.name"></code>
                                     <span
@@ -204,9 +198,7 @@
                                                     x-show.important="index < group.phases.length - 1"
                                                     class="ndb:absolute ndb:top-3 ndb:-bottom-1 ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-zinc-200 ndb:dark:bg-zinc-800"
                                                 ></span>
-                                                <span
-                                                    class="ndb:relative ndb:z-[1] ndb:size-2 ndb:rounded-full ndb:bg-indigo-500 ndb:ring-2 ndb:ring-white ndb:dark:bg-indigo-400 ndb:dark:ring-zinc-950"
-                                                ></span>
+                                                <span class="ndb:relative ndb:z-[1] ndb:size-2 ndb:rounded-full ndb:bg-indigo-500 ndb:ring-2 ndb:ring-white ndb:dark:bg-indigo-400 ndb:dark:ring-zinc-950"></span>
                                             </div>
                                             <span class="ndb:pb-3">
                                                 <span
@@ -233,13 +225,15 @@
                     <p
                         x-show.important="selectedLivewireActivity.phases.length === 0"
                         class="ndb:mt-2 ndb:text-xs ndb:text-zinc-400"
-                    >Browser phases were not available for this stored request.</p>
+                    >
+                        Browser phases were not available for this stored request.
+                    </p>
                 </section>
             </div>
         </article>
     </template>
 
-    <div x-show.important="!selectedLivewireActivity" data-ndb-livewire-activity-detail-empty class="ndb:p-5">
+    <div x-show.important="! selectedLivewireActivity" data-ndb-livewire-activity-detail-empty class="ndb:p-5">
         <div x-show.important="filteredLivewireActivity.length === 0">
             <x-newdebugbar::empty-state label="No matching activity to inspect." />
         </div>

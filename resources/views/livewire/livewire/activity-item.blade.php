@@ -18,7 +18,7 @@
                 ></span>
                 <span
                     x-show.important="item.status === 'failed' || item.status === 'failed_validation'"
-                    class="ndb:shrink-0 ndb:rounded-md ndb:bg-red-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-red-700 ndb:dark:bg-red-950/60 ndb:dark:text-red-300"
+                    class="ndb:shrink-0 ndb:rounded-md ndb:bg-red-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-red-700 ndb:dark:bg-red-950/60 ndb:dark:text-red-300"
                     x-text="livewireActivityStatusLabel(item)"
                 ></span>
             </span>
@@ -33,9 +33,7 @@
                 ></span>
             </span>
         </span>
-        <span
-            class="ndb:flex ndb:shrink-0 ndb:flex-col ndb:items-end ndb:gap-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
-        >
+        <span class="ndb:flex ndb:shrink-0 ndb:flex-col ndb:items-end ndb:gap-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
             <span
                 data-ndb-livewire-activity-age
                 class="ndb:whitespace-nowrap"
