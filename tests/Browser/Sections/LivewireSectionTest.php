@@ -26,6 +26,48 @@ it('centers activity dots with their labels', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('keeps the property editor usable in a narrow dark inspector', function () {
+    $page = visit('/profiled-livewire')
+        ->resize(390, 844)
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]');
+
+    $page->script(<<<'JS'
+        Alpine.$data(document.getElementById('newdebugbar')).setTheme('dark');
+        JS);
+
+    $page
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="palette"]')
+        ->click('[data-ndb-command="section:livewire"]');
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->click('[data-ndb-livewire-tab="components"]')
+        ->click('[data-ndb-livewire-component-list] button:first-of-type')
+        ->click('[data-ndb-livewire-edit-key$=":count"]')
+        ->assertVisible('[data-ndb-livewire-property-popover]')
+        ->assertVisible('[data-ndb-livewire-edit-key$=":count"]');
+
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const popover = document.querySelector('[data-ndb-livewire-property-popover]').getBoundingClientRect();
+
+                return popover.left >= 4
+                    && popover.top >= 4
+                    && popover.right <= window.innerWidth - 4
+                    && popover.bottom <= window.innerHeight - 4;
+            })()
+            JS);
+
+    $page
+        ->keys('[data-ndb-livewire-edit-control]', 'Escape')
+        ->assertMissing('[data-ndb-livewire-property-popover]')
+        ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
+        ->assertNoJavaScriptErrors();
+});
+
 it('opens and applies a component property edit from its popover', function () {
     $page = visit('/profiled-livewire')
         ->resize(1024, 900)
