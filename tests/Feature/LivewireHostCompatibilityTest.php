@@ -28,7 +28,7 @@ $hostCounterMessage = function (array $snapshot): array {
     ];
 };
 
-it('profiles host Livewire requests without storing framework snapshots or a dedicated section', function () use ($hostCounterMessage, $hostCounterSnapshot) {
+it('profiles host Livewire requests without storing framework snapshots', function () use ($hostCounterMessage, $hostCounterSnapshot) {
     $response = $this->postJson(app('livewire')->getUpdateUri(), [
         'components' => [$hostCounterMessage($hostCounterSnapshot())],
     ], ['X-Livewire' => '1']);
@@ -36,13 +36,81 @@ it('profiles host Livewire requests without storing framework snapshots or a ded
     $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
     $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
 
-    expect($profile['sections'])
-        ->not->toHaveKey('livewire')
-        ->and($profile['sections']['request']['payload']['input'])->toBe([
-            'component_message_count' => 1,
-            'snapshot_data_stored' => false,
+    $livewire = $profile['sections']['livewire'];
+
+    expect($profile['sections']['request']['payload']['input'])->toBe([
+        'component_message_count' => 1,
+        'snapshot_data_stored' => false,
+    ])
+        ->and($livewire['summary'])
+        ->component_count->toBe(1)
+        ->activity_count->toBeGreaterThanOrEqual(2)
+        ->and($livewire['payload']['components'])
+        ->toHaveCount(1)
+        ->{0}->name->toBe('host-counter')
+        ->{0}->class->toBe(HostCounter::class)
+        ->{0}->properties->{0}->toMatchArray([
+            'path' => 'count',
+            'type' => 'Integer',
+            'php_type' => 'int',
+            'server_value' => 1,
+            'writable' => true,
+            'write_allowed' => true,
         ])
-        ->and(json_encode($profile))->not->toContain('wire:snapshot', 'checksum');
+        ->{0}->properties->{1}->toMatchArray([
+            'path' => 'settings',
+            'type' => 'Array',
+            'server_value' => null,
+            'writable' => false,
+            'array_leaf_writable' => true,
+            'write_allowed' => true,
+        ])
+        ->{0}->properties->{2}->toMatchArray([
+            'path' => 'fixedLabel',
+            'type' => 'String',
+            'server_value' => 'Host counter',
+            'writable' => false,
+            'write_allowed' => false,
+            'write_reason' => 'locked',
+        ])
+        ->and(array_column($livewire['payload']['activity'], 'type'))
+        ->toContain('action', 'render')
+        ->and(array_unique(array_column($livewire['payload']['activity'], 'component_id')))
+        ->toBe([$livewire['payload']['components'][0]['id']])
+        ->and(json_encode($profile))->not->toContain('wire:snapshot', 'checksum', 'newdebugbar.toolbar');
+});
+
+it('captures components mounted during a profiled page render', function () {
+    $response = $this->get('/profiled-livewire', ['Accept' => 'text/html']);
+
+    $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $livewire = $profile['sections']['livewire'];
+
+    expect($livewire['summary'])
+        ->component_count->toBe(1)
+        ->activity_count->toBeGreaterThanOrEqual(1)
+        ->and($livewire['payload']['components'][0])
+        ->name->toBe('host-counter')
+        ->parent_id->toBeNull()
+        ->source->file->toBe('tests/Fixtures/HostCounter.php')
+        ->and(array_column($livewire['payload']['activity'], 'type'))
+        ->toContain('mount', 'render');
+});
+
+it('preserves nested component instance identity and parentage', function () {
+    $response = $this->get('/profiled-livewire-nested', ['Accept' => 'text/html']);
+
+    $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $components = collect($profile['sections']['livewire']['payload']['components'])->keyBy('name');
+
+    expect($components)
+        ->toHaveCount(2)
+        ->toHaveKeys(['host-counter-group', 'host-counter'])
+        ->and($components['host-counter-group']['parent_id'])->toBeNull()
+        ->and($components['host-counter']['parent_id'])->toBe($components['host-counter-group']['id'])
+        ->and($components['host-counter']['id'])->not->toBe($components['host-counter-group']['id']);
 });
 
 it('captures validation failures handled inside host Livewire components', function () {

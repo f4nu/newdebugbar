@@ -28,6 +28,7 @@ use NewDebugBar\ProfileManager;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationEvent;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 use NewDebugBar\Tests\Fixtures\HostCounter;
+use NewDebugBar\Tests\Fixtures\HostCounterGroup;
 use NewDebugBar\Tests\Fixtures\HostValidationForm;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledFailingJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledJob;
@@ -46,6 +47,7 @@ trait DefinesTestApplication
     protected function defineRoutes($router): void
     {
         Livewire::component('host-counter', HostCounter::class);
+        Livewire::component('host-counter-group', HostCounterGroup::class);
         Livewire::component('host-validation-form', HostValidationForm::class);
 
         foreach ([StudioJob::class, Client::class, ProofVersion::class, JobActivity::class, User::class] as $modelClass) {
@@ -95,6 +97,18 @@ trait DefinesTestApplication
                 <html>
                     <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Livewire host</title></head>
                     <body><main><h1 data-testid="host-page">Livewire host</h1>{$component}</main></body>
+                </html>
+                HTML);
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-livewire-nested', function () {
+            $component = app('livewire')->mount('host-counter-group', key: 'host-counter-group-browser');
+
+            return response(<<<HTML
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Nested Livewire host</title></head>
+                    <body><main><h1 data-testid="host-page">Nested Livewire host</h1>{$component}</main></body>
                 </html>
                 HTML);
         });

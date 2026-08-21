@@ -19,6 +19,7 @@ use NewDebugBar\Analysis\SectionAnalyzer;
 use NewDebugBar\Analysis\TimelineBuilder;
 use NewDebugBar\Collectors\CacheCollector;
 use NewDebugBar\Collectors\ItemCollector;
+use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\MailCollector;
 use NewDebugBar\Collectors\NotificationCollector;
@@ -39,6 +40,7 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
+use NewDebugBar\Support\LivewireRegistrar;
 use NewDebugBar\Support\MailPreview;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\QueryExplainer;
@@ -126,6 +128,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new ItemCollector($redactor, $maxItems, 'messages', 'Messages'),
                 new LogCollector($redactor, $maxItems),
                 new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
+                new LivewireCollector($redactor),
             ],
                 $redactor,
                 $app->make(ExceptionNormalizer::class),
@@ -172,6 +175,10 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(RuntimeProfiler::class),
             $this->app->make(Redactor::class),
             $this->app->make(MailPreview::class),
+        ))->register();
+        (new LivewireRegistrar(
+            $this->app,
+            $this->app->make(CallSiteResolver::class),
         ))->register();
         $exceptions = $this->app->make(ExceptionHandler::class);
 
