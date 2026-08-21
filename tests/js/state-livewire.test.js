@@ -460,7 +460,7 @@ test('keeps the newest visible activity selected until the developer chooses ano
   assert.equal(state.livewireSelectedComponentId, 'root-1');
 });
 
-test('groups shared requests and consecutive repetitive activity while keeping every interaction inspectable', () => {
+test('keeps shared requests and repetitive activity as separate inspectable interactions', () => {
   const poll = (id, sequence) => ({
     ...activity[2],
     id,
@@ -494,34 +494,24 @@ test('groups shared requests and consecutive repetitive activity while keeping e
     dropped: { components: 0, activity: 0 },
   });
   const { state } = stateHarness(trace);
-  const groups = state.livewireActivityGroups;
-
   assert.deepEqual(
-    groups.map((group) => [group.title, group.items.map(({ id }) => id)]),
+    state.filteredLivewireActivity.map(({ id }) => id),
     [
-      ['Polled component', ['poll-3']],
-      ['Refresh ran', ['action-6']],
-      ['Polled 2 times', ['poll-2', 'poll-1']],
-      ['Refresh ran', ['activity-3']],
-      ['Count changed', ['activity-2']],
-      ['2 components mounted', ['activity-1', 'activity-0']],
+      'poll-3',
+      'action-6',
+      'poll-2',
+      'poll-1',
+      'activity-3',
+      'activity-2',
+      'activity-1',
+      'activity-0',
     ],
   );
-  const polls = groups.find(({ grouped, mode }) => grouped && mode === 'poll:root-1');
-  const mounts = groups.at(-1);
-  assert.equal(polls.showContext, true);
-  assert.equal(mounts.subtitle, 'Page startup');
-  assert.equal(mounts.showContext, false);
-  state.toggleLivewireActivityGroup(polls);
-  assert.equal(state.livewireActivityGroupExpanded(polls), true);
   state.selectLivewireActivity('poll-1');
-  assert.equal(state.livewireActivityGroupSelected(polls), true);
-  state.toggleLivewireActivityGroup(polls);
-  assert.equal(state.livewireActivityGroupExpanded(polls), false);
-  state.toggleLivewireActivityGroup(groups[0]);
+  assert.equal(state.livewireSelectedActivityId, 'poll-1');
 });
 
-test('groups a bundled request around its initiating action', () => {
+test('keeps every interaction in a bundled request separate', () => {
   const profileId = '550e8400-e29b-41d4-a716-446655440001';
   const requestActivity = [
     {
@@ -559,19 +549,11 @@ test('groups a bundled request around its initiating action', () => {
     dropped: { components: 0, activity: 0 },
   });
   const { state } = stateHarness(trace);
-  const group = state.livewireActivityGroups[0];
-
-  assert.equal(group.grouped, true);
-  assert.equal(group.title, 'Increment ran');
-  assert.equal(group.subtitle, 'Control Panel');
-  assert.equal(group.countLabel, '3 components');
-  assert.equal(group.showContext, true);
-  assert.equal(group.first.id, 'request-action');
   assert.deepEqual(
-    group.items.map(({ id }) => id),
+    state.filteredLivewireActivity.slice(0, 3).map(({ id }) => id),
     ['request-child-2', 'request-child-1', 'request-action'],
   );
-  assert.equal(state.livewireSelectedActivityId, 'request-action');
+  assert.equal(state.livewireSelectedActivityId, 'request-child-2');
 });
 
 test('explains activity, phases, component context, and property states in plain language', () => {
@@ -742,7 +724,6 @@ test('resets Livewire selection when browser navigation starts a new page sessio
   });
   const { state } = stateHarness(trace);
   state.selectLivewireActivity('activity-1');
-  state.livewireExpandedActivityGroups = ['old-group'];
 
   trace.emit({
     ready: true,
@@ -755,7 +736,6 @@ test('resets Livewire selection when browser navigation starts a new page sessio
   assert.equal(state.livewireSelectedActivityId, null);
   assert.equal(state.livewireSelectedComponentId, 'root-2');
   assert.equal(state.livewireActivitySelectionPinned, false);
-  assert.deepEqual(state.livewireExpandedActivityGroups, []);
 });
 
 test('builds an expandable typed property tree with proven edit eligibility', () => {

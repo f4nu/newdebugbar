@@ -296,7 +296,6 @@ export function createNewDebugBar(
     livewireServerActivity: [],
     livewireCollapsedComponents: [],
     livewireKnownComponentParents: [],
-    livewireExpandedActivityGroups: [],
     livewireExpandedProperties: [],
     livewireDrafts: {},
     stopLivewireTrace: null,
@@ -325,7 +324,6 @@ export function createNewDebugBar(
             this.livewireActivitySelectionPinned = false;
             this.livewireCollapsedComponents = [];
             this.livewireKnownComponentParents = [];
-            this.livewireExpandedActivityGroups = [];
           }
           this.livewireTrace = snapshot;
           this.syncLivewireSelection();
@@ -682,89 +680,6 @@ export function createNewDebugBar(
         const difference = Number(left.sequence ?? 0) - Number(right.sequence ?? 0);
 
         return this.livewireActivityOrder === 'oldest' ? difference : -difference;
-      });
-    },
-
-    get livewireActivityGroups() {
-      const groups = [];
-      const requestCounts = new Map();
-
-      this.filteredLivewireActivity.forEach((item) => {
-        const profileId = item.profileIds?.[0];
-        if (!profileId) return;
-
-        requestCounts.set(profileId, (requestCounts.get(profileId) ?? 0) + 1);
-      });
-
-      this.filteredLivewireActivity.forEach((item) => {
-        const profileId = item.profileIds?.[0];
-        const mode =
-          profileId && requestCounts.get(profileId) > 1
-            ? `request:${profileId}`
-            : ['mount', 'unmount'].includes(item.kind)
-              ? item.kind
-              : item.kind === 'poll'
-                ? `poll:${item.componentId}`
-                : null;
-        const previous = groups.at(-1);
-
-        if (mode && previous?.mode === mode) {
-          previous.items.push(item);
-
-          return;
-        }
-
-        groups.push({ mode, items: [item] });
-      });
-
-      return groups.map((group) => {
-        const count = group.items.length;
-        const renderedFirst = group.items[0];
-        const requestGroup = group.mode?.startsWith('request:') ?? false;
-        const first = requestGroup
-          ? (group.items.find((item) => this.livewireMeaningfulActions(item).length > 0) ??
-            group.items.find((item) => item.changes.length > 0 || this.livewireActivityEvents(item).length > 0) ??
-            renderedFirst)
-          : renderedFirst;
-        const componentCount = new Set(group.items.map((item) => item.componentId)).size;
-        const title =
-          count === 1
-            ? first.title
-            : requestGroup
-              ? first.title === 'Component updated'
-                ? `${componentCount} components updated`
-                : first.title
-              : group.mode === 'mount'
-                ? `${count} components mounted`
-                : group.mode === 'unmount'
-                  ? `${count} components unmounted`
-                  : `Polled ${count} times`;
-        const subtitle = requestGroup
-          ? first.componentTitle
-          : group.mode === 'mount'
-            ? 'Page startup'
-            : group.mode === 'unmount'
-              ? 'Page update'
-              : first.componentTitle;
-        const idAnchor = requestGroup
-          ? group.mode
-          : group.mode
-            ? this.livewireActivityOrder === 'newest'
-              ? group.items.at(-1).id
-              : group.items[0].id
-            : renderedFirst.id;
-
-        return {
-          ...group,
-          id: `livewire-activity-group-${idAnchor}`,
-          count,
-          first,
-          subtitle,
-          title,
-          countLabel: requestGroup ? `${componentCount} ${componentCount === 1 ? 'component' : 'components'}` : null,
-          showContext: requestGroup || group.mode?.startsWith('poll:'),
-          grouped: count > 1,
-        };
       });
     },
 
@@ -1601,7 +1516,7 @@ export function createNewDebugBar(
 
       const visibleActivity = this.filteredLivewireActivity;
       const selectedActivityIsVisible = visibleActivity.some((item) => item.id === this.livewireSelectedActivityId);
-      const defaultActivityId = this.livewireActivityGroups[0]?.first?.id ?? visibleActivity[0]?.id ?? null;
+      const defaultActivityId = visibleActivity[0]?.id ?? null;
 
       if (!this.livewireActivitySelectionPinned && this.livewireActivityOrder === 'newest') {
         this.livewireSelectedActivityId = defaultActivityId;
@@ -1874,21 +1789,6 @@ export function createNewDebugBar(
           Rendered: 'The browser finished this render pass.',
         }[name] ?? 'Livewire recorded this phase.'
       );
-    },
-
-    toggleLivewireActivityGroup(group) {
-      if (!group?.grouped) return;
-      this.livewireExpandedActivityGroups = this.livewireExpandedActivityGroups.includes(group.id)
-        ? this.livewireExpandedActivityGroups.filter((id) => id !== group.id)
-        : [...this.livewireExpandedActivityGroups, group.id];
-    },
-
-    livewireActivityGroupExpanded(group) {
-      return this.livewireExpandedActivityGroups.includes(group?.id);
-    },
-
-    livewireActivityGroupSelected(group) {
-      return group?.items?.some((item) => item.id === this.livewireSelectedActivityId) ?? false;
     },
 
     livewirePropertyStateLabel(row) {

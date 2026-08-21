@@ -1,5 +1,6 @@
 <button
     type="button"
+    data-ndb-livewire-activity-item
     @click="selectLivewireActivity(item.id)"
     :aria-current="livewireSelectedActivityId === item.id ? 'true' : null"
     class="ndb:w-full ndb:min-w-0 ndb:rounded-lg ndb:border ndb:border-transparent ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"

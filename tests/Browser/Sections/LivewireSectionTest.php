@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('centers activity dots and the left collapse control with their rows', function () {
+it('renders each activity as a timeline row with a centered dot', function () {
     $page = visit('/profiled-livewire-nested')
         ->resize(1024, 900)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
@@ -16,25 +16,14 @@ it('centers activity dots and the left collapse control with their rows', functi
                 const items = Array.from(document.querySelectorAll('[data-ndb-livewire-activity-list] > li'));
                 const detail = document.querySelector('[data-ndb-livewire-activity]').lastElementChild;
                 const detailStyle = getComputedStyle(detail);
-                const group = document.querySelector('[data-ndb-livewire-activity-group]');
-                const toggle = group?.querySelector('[data-ndb-livewire-activity-group-toggle]');
-                const groupBox = group?.getBoundingClientRect();
-                const toggleBox = toggle?.getBoundingClientRect();
-                const titleBox = group?.querySelector('[data-ndb-livewire-activity-title]')?.getBoundingClientRect();
 
-                return group && toggle && items.length > 0 && items.every((item) => {
+                return items.length > 1 && items.every((item) => {
                     const dot = item.querySelector('[data-ndb-livewire-activity-dot]').getBoundingClientRect();
                     const title = item.querySelector('[data-ndb-livewire-activity-title]').getBoundingClientRect();
 
-                    return Math.abs((dot.top + dot.height / 2) - (title.top + title.height / 2)) <= 0.75;
+                    return item.querySelector('[data-ndb-livewire-activity-item]')
+                        && Math.abs((dot.top + dot.height / 2) - (title.top + title.height / 2)) <= 0.75;
                 })
-                    && Math.abs(toggleBox.width - 16) <= 0.5
-                    && Math.abs(toggleBox.height - 16) <= 0.5
-                    && Math.abs(
-                        (toggleBox.top + toggleBox.height / 2)
-                        - (groupBox.top + groupBox.height / 2),
-                    ) <= 0.75
-                    && toggleBox.right < titleBox.left
                     && detailStyle.position === 'sticky'
                     && detailStyle.overflowX === 'clip'
                     && detailStyle.overflowY === 'visible';
