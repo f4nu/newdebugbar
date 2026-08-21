@@ -40,11 +40,8 @@
 - Keep every Blade file under 500 lines. Split screens by product section and extract repeated controls into package components before a view reaches that limit.
 
 - Start with the built-in browser.
-- Use the canonical example repositories to check Blade, Livewire, and Inertia:
-  - Blade: local `../example-blade-app` at `http://example-blade-app.test`; GitHub `newdebugbar/example-blade-app` at `https://github.com/newdebugbar/example-blade-app`
-  - Livewire: local `../example-livewire-app` at `http://example-livewire-app.test`; GitHub `newdebugbar/example-livewire-app` at `https://github.com/newdebugbar/example-livewire-app`
-  - Inertia: local `../example-inertia-app` at `http://example-inertia-app.test`; GitHub `newdebugbar/example-inertia-app` at `https://github.com/newdebugbar/example-inertia-app`
-- Do not change the example apps just to make a package test pass.
-- Check one example app or browser test group at a time.
+- Use package-owned Testbench routes, fixtures, and browser suites instead of standalone example projects.
+- Do not create standalone example apps solely for package verification.
+- Check one browser test group at a time.
 - Check light and dark themes, keyboard use, browser errors, and a 390px-wide screen.
 - Update screenshot baselines only for planned changes. Look at each changed image, then run the same checks again.
