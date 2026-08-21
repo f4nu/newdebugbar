@@ -176,6 +176,16 @@ it('opens and applies a component property edit from its popover', function () {
         ->assertVisible('[data-ndb-livewire-property-popover]')
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
         ->assertAttribute('[data-ndb-livewire-edit-key$=":count"]', 'aria-expanded', 'true')
+        ->assertSeeIn('[data-ndb-livewire-property-popover]', 'Sends one Livewire update.')
+        ->assertSeeIn('[data-ndb-livewire-edit-apply]', 'Apply to component')
+        ->assertScript(<<<'JS'
+            (() => {
+                const dialog = document.querySelector('[data-ndb-livewire-property-popover]');
+                const title = document.getElementById(dialog.getAttribute('aria-labelledby'));
+
+                return title?.textContent.trim() === 'Edit count';
+            })()
+            JS)
         ->assertScript('document.activeElement.matches("[data-ndb-livewire-edit-control]")');
 
     $page->script(<<<'JS'
@@ -263,5 +273,27 @@ it('opens and applies a component property edit from its popover', function () {
         ->assertAttribute('[data-ndb-livewire-edit-control][role="switch"]', 'aria-checked', 'false')
         ->click('[data-ndb-livewire-edit-apply]')
         ->assertMissing('[data-ndb-livewire-property-popover]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('clears stale details when activity or component searches have no matches', function () {
+    $page = visit('/profiled-livewire')
+        ->resize(1024, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::selectSectionViaPalette($page, 'livewire');
+
+    $page
+        ->assertVisible('[data-ndb-livewire-activity] article')
+        ->type('[data-ndb-livewire-search]', 'no matching activity exists')
+        ->assertMissing('[data-ndb-livewire-activity] article')
+        ->assertVisible('[data-ndb-livewire-activity-detail-empty]')
+        ->assertSeeIn('[data-ndb-livewire-activity-detail-empty]', 'No matching activity to inspect.')
+        ->click('[data-ndb-livewire-tab="components"]')
+        ->assertVisible('[data-ndb-livewire-components] article')
+        ->type('[data-ndb-livewire-search]', 'no matching component exists')
+        ->assertMissing('[data-ndb-livewire-components] article')
+        ->assertVisible('[data-ndb-livewire-component-detail-empty]')
+        ->assertSeeIn('[data-ndb-livewire-component-detail-empty]', 'No matching component to inspect.')
         ->assertNoJavaScriptErrors();
 });
