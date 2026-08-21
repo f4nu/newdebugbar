@@ -97,6 +97,7 @@ export function createLivewireTrace(runtime = globalThis) {
   const snapshotComponent = (component, previous = {}) => {
     const name = componentName(component);
     const state = component?.reactive ?? component?.canonical ?? {};
+    const canonical = component?.canonical ?? {};
     const parentElement = component?.el?.parentElement?.closest?.('[wire\\:id]');
     const parent = parentElement?.__livewire;
 
@@ -110,6 +111,11 @@ export function createLivewireTrace(runtime = globalThis) {
       status: previous.status === 'failed' ? 'failed' : 'idle',
       latestActivityId: previous.latestActivityId ?? null,
       properties: Object.entries(state).map(([path, value]) => ({
+        path,
+        type: valueType(value),
+        value: cloneValue(value),
+      })),
+      serverProperties: Object.entries(canonical).map(([path, value]) => ({
         path,
         type: valueType(value),
         value: cloneValue(value),
@@ -233,9 +239,15 @@ export function createLivewireTrace(runtime = globalThis) {
   const phase = (id, name, changes = {}) => {
     const item = activity.get(id);
     if (!item) return;
+    const phaseAt = now();
+    const durationMs =
+      item.finishedAt === null
+        ? item.durationMs
+        : Math.max(item.durationMs ?? 0, Math.round((phaseAt - item.startedAt) * 1000) / 1000);
     updateActivity(id, {
       ...changes,
-      phases: [...item.phases, { name, at: now(), status: 'complete' }],
+      durationMs,
+      phases: [...item.phases, { name, at: phaseAt, status: 'complete' }],
     });
   };
 

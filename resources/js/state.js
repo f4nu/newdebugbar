@@ -283,6 +283,7 @@ export function createNewDebugBar(
     livewireActivityType: 'all',
     livewireActivityOrder: 'newest',
     livewireSelectedActivityId: null,
+    livewireActivitySelectionPinned: false,
     livewireSelectedComponentId: null,
     livewireDetailOpen: false,
     livewireTrace: {
@@ -294,6 +295,7 @@ export function createNewDebugBar(
     livewireServerComponents: [],
     livewireServerActivity: [],
     livewireCollapsedComponents: [],
+    livewireExpandedActivityGroups: [],
     livewireExpandedProperties: [],
     livewireDrafts: {},
     stopLivewireTrace: null,
@@ -313,6 +315,15 @@ export function createNewDebugBar(
       this.restore();
       this.stopLivewireTrace =
         trace?.subscribe?.((snapshot) => {
+          if (
+            this.livewireTrace.pageSequence !== undefined &&
+            snapshot.pageSequence !== this.livewireTrace.pageSequence
+          ) {
+            this.livewireSelectedActivityId = null;
+            this.livewireSelectedComponentId = null;
+            this.livewireActivitySelectionPinned = false;
+            this.livewireExpandedActivityGroups = [];
+          }
           this.livewireTrace = snapshot;
           this.syncLivewireSelection();
         }) ?? null;
@@ -576,7 +587,13 @@ export function createNewDebugBar(
 
     get filteredLivewireComponents() {
       const search = this.livewireSearch.toLowerCase().trim();
-      if (search !== '') return this.matchingLivewireComponents;
+      if (search !== '') {
+        const visible = new Set(
+          this.matchingLivewireComponents.flatMap((component) => [String(component.id), ...component.ancestorIds]),
+        );
+
+        return this.livewireComponents.filter((component) => visible.has(String(component.id)));
+      }
 
       return this.matchingLivewireComponents.filter(
         (component) => !component.ancestorIds.some((id) => this.livewireCollapsedComponents.includes(id)),
@@ -648,9 +665,9 @@ export function createNewDebugBar(
             item.status,
             item.componentTitle,
             item.componentName,
-            ...item.actions.map((action) => action.name),
+            ...this.livewireMeaningfulActions(item).map((action) => action.name),
             ...item.changes.map((change) => change.path),
-            ...item.events.map((event) => event.name),
+            ...this.livewireActivityEvents(item).map((event) => event.name),
           ].some((value) =>
             String(value ?? '')
               .toLowerCase()
@@ -662,6 +679,89 @@ export function createNewDebugBar(
         const difference = Number(left.sequence ?? 0) - Number(right.sequence ?? 0);
 
         return this.livewireActivityOrder === 'oldest' ? difference : -difference;
+      });
+    },
+
+    get livewireActivityGroups() {
+      const groups = [];
+      const requestCounts = new Map();
+
+      this.filteredLivewireActivity.forEach((item) => {
+        const profileId = item.profileIds?.[0];
+        if (!profileId) return;
+
+        requestCounts.set(profileId, (requestCounts.get(profileId) ?? 0) + 1);
+      });
+
+      this.filteredLivewireActivity.forEach((item) => {
+        const profileId = item.profileIds?.[0];
+        const mode =
+          profileId && requestCounts.get(profileId) > 1
+            ? `request:${profileId}`
+            : ['mount', 'unmount'].includes(item.kind)
+              ? item.kind
+              : item.kind === 'poll'
+                ? `poll:${item.componentId}`
+                : null;
+        const previous = groups.at(-1);
+
+        if (mode && previous?.mode === mode) {
+          previous.items.push(item);
+
+          return;
+        }
+
+        groups.push({ mode, items: [item] });
+      });
+
+      return groups.map((group) => {
+        const count = group.items.length;
+        const renderedFirst = group.items[0];
+        const requestGroup = group.mode?.startsWith('request:') ?? false;
+        const first = requestGroup
+          ? (group.items.find((item) => this.livewireMeaningfulActions(item).length > 0) ??
+            group.items.find((item) => item.changes.length > 0 || this.livewireActivityEvents(item).length > 0) ??
+            renderedFirst)
+          : renderedFirst;
+        const componentCount = new Set(group.items.map((item) => item.componentId)).size;
+        const title =
+          count === 1
+            ? first.title
+            : requestGroup
+              ? first.title === 'Component updated'
+                ? `${componentCount} components updated`
+                : first.title
+              : group.mode === 'mount'
+                ? `${count} components mounted`
+                : group.mode === 'unmount'
+                  ? `${count} components unmounted`
+                  : `Polled ${count} times`;
+        const subtitle = requestGroup
+          ? first.componentTitle
+          : group.mode === 'mount'
+            ? 'Page startup'
+            : group.mode === 'unmount'
+              ? 'Page update'
+              : first.componentTitle;
+        const idAnchor = requestGroup
+          ? group.mode
+          : group.mode
+            ? this.livewireActivityOrder === 'newest'
+              ? group.items.at(-1).id
+              : group.items[0].id
+            : renderedFirst.id;
+
+        return {
+          ...group,
+          id: `livewire-activity-group-${idAnchor}`,
+          count,
+          first,
+          subtitle,
+          title,
+          countLabel: requestGroup ? `${componentCount} ${componentCount === 1 ? 'component' : 'components'}` : null,
+          showIdentity: requestGroup || group.mode?.startsWith('poll:'),
+          grouped: count > 1,
+        };
       });
     },
 
@@ -684,12 +784,24 @@ export function createNewDebugBar(
       const descriptors = new Map(
         (component.server?.properties ?? []).map((descriptor) => [descriptor.path, descriptor]),
       );
+      const canonicalProperties = new Map(
+        (component.serverProperties ?? []).map((property) => [property.path, property.value]),
+      );
       const latestChanges = [...this.livewireActivity]
         .filter((item) => item.componentId === component.id)
         .flatMap((item) => item.changes)
         .reverse();
       const rows = [];
-      const append = (path, label, value, depth, root, safePath = true) => {
+      const append = (
+        path,
+        label,
+        value,
+        depth,
+        root,
+        safePath = true,
+        canonicalKnown = false,
+        canonicalValue = null,
+      ) => {
         const descriptor = descriptors.get(root);
         const childEntries = Array.isArray(value)
           ? value.map((child, index) => [String(index), child])
@@ -708,11 +820,16 @@ export function createNewDebugBar(
           (change) => change.path === path && (change.serverKnown === true || change.server !== null),
         );
         const serverKnown =
+          canonicalKnown ||
           latest !== undefined ||
           (!nested &&
             descriptor?.server_value !== undefined &&
             (descriptor.server_value !== null || descriptor.type === 'Null'));
-        const serverValue = latest !== undefined ? latest.server : (descriptor?.server_value ?? null);
+        const serverValue = canonicalKnown
+          ? canonicalValue
+          : latest !== undefined
+            ? latest.server
+            : (descriptor?.server_value ?? null);
         const draft = this.livewireDrafts[this.livewireDraftKey({ componentId: component.id, path })];
         const state =
           draft?.status === 'updating'
@@ -748,14 +865,39 @@ export function createNewDebugBar(
 
         if (!hasChildren || !expanded) return;
 
-        childEntries.forEach(([key, child]) =>
-          append(`${path}.${key}`, key, child, depth + 1, root, safePath && !key.includes('.')),
-        );
+        childEntries.forEach(([key, child]) => {
+          const canonicalChildKnown =
+            canonicalKnown &&
+            canonicalValue !== null &&
+            typeof canonicalValue === 'object' &&
+            Object.prototype.hasOwnProperty.call(canonicalValue, key);
+
+          append(
+            `${path}.${key}`,
+            key,
+            child,
+            depth + 1,
+            root,
+            safePath && !key.includes('.'),
+            canonicalChildKnown,
+            canonicalChildKnown ? canonicalValue[key] : null,
+          );
+        });
       };
 
-      component.properties.forEach((property) =>
-        append(property.path, property.path, property.value, 0, property.path),
-      );
+      component.properties.forEach((property) => {
+        const canonicalKnown = canonicalProperties.has(property.path);
+        append(
+          property.path,
+          property.path,
+          property.value,
+          0,
+          property.path,
+          true,
+          canonicalKnown,
+          canonicalKnown ? canonicalProperties.get(property.path) : null,
+        );
+      });
 
       return rows;
     },
@@ -1452,11 +1594,21 @@ export function createNewDebugBar(
     },
 
     syncLivewireSelection() {
-      if (!this.livewireActivity.some((item) => item.id === this.livewireSelectedActivityId)) {
-        this.livewireSelectedActivityId = this.livewireActivity.at(-1)?.id ?? null;
+      const visibleActivity = this.filteredLivewireActivity;
+      const selectedActivityIsVisible = visibleActivity.some((item) => item.id === this.livewireSelectedActivityId);
+      const defaultActivityId = this.livewireActivityGroups[0]?.first?.id ?? visibleActivity[0]?.id ?? null;
+
+      if (!this.livewireActivitySelectionPinned && this.livewireActivityOrder === 'newest') {
+        this.livewireSelectedActivityId = defaultActivityId;
+      } else if (!selectedActivityIsVisible) {
+        this.livewireSelectedActivityId = defaultActivityId;
       }
-      if (!this.livewireComponents.some((component) => component.id === this.livewireSelectedComponentId)) {
-        this.livewireSelectedComponentId = this.livewireComponents[0]?.id ?? null;
+
+      const search = this.livewireSearch.toLowerCase().trim();
+      const selectableComponents = search === '' ? this.livewireComponents : this.matchingLivewireComponents;
+      if (!selectableComponents.some((component) => component.id === this.livewireSelectedComponentId)) {
+        this.closeLivewireDrafts();
+        this.livewireSelectedComponentId = selectableComponents[0]?.id ?? null;
       }
     },
 
@@ -1472,19 +1624,19 @@ export function createNewDebugBar(
     setLivewireActivityType(type) {
       if (type !== 'all' && !this.livewireActivityTypes.includes(type)) return;
       this.livewireActivityType = type;
-      if (!this.filteredLivewireActivity.some((item) => item.id === this.livewireSelectedActivityId)) {
-        this.livewireSelectedActivityId = this.filteredLivewireActivity[0]?.id ?? null;
-      }
+      this.syncLivewireSelection();
     },
 
     setLivewireActivityOrder(order) {
       if (!['newest', 'oldest'].includes(order)) return;
       this.livewireActivityOrder = order;
+      this.syncLivewireSelection();
     },
 
     selectLivewireActivity(id) {
       if (!this.livewireActivity.some((item) => item.id === id)) return;
       this.livewireSelectedActivityId = id;
+      this.livewireActivitySelectionPinned = true;
       this.livewireDetailOpen = true;
     },
 
@@ -1514,6 +1666,12 @@ export function createNewDebugBar(
       return this.livewireCollapsedComponents.includes(String(component?.id));
     },
 
+    livewireComponentIsSearchContext(component) {
+      return (
+        this.livewireSearch.trim() !== '' && !this.matchingLivewireComponents.some((item) => item.id === component?.id)
+      );
+    },
+
     inspectLivewireActivityComponent() {
       const id = this.selectedLivewireActivity?.componentId;
       if (!id || !this.livewireComponents.some((component) => component.id === id)) return;
@@ -1527,6 +1685,7 @@ export function createNewDebugBar(
       const id = this.selectedLivewireComponent?.latestActivityId;
       if (!id || !this.livewireActivity.some((item) => item.id === id)) return;
       this.livewireSelectedActivityId = id;
+      this.livewireActivitySelectionPinned = true;
       this.livewireTab = 'activity';
       this.livewireDetailOpen = true;
       this.livewireSearch = '';
@@ -1536,8 +1695,53 @@ export function createNewDebugBar(
       return [...this.livewireActivity].reverse().find((item) => item.componentId === component?.id) ?? null;
     },
 
+    livewireComponentActivityTitle(item) {
+      if (item?.kind === 'mount') return 'Mounted';
+      if (item?.kind === 'unmount') return 'Unmounted';
+
+      return item?.title ?? 'Activity';
+    },
+
     livewireComponentTitle(id) {
       return this.livewireComponents.find((component) => component.id === String(id))?.title ?? String(id);
+    },
+
+    livewireComponentById(id) {
+      return this.livewireComponents.find((component) => component.id === String(id)) ?? null;
+    },
+
+    livewireShortInstance(id) {
+      const value = String(id ?? '');
+      return value === '' ? 'Unknown instance' : `Instance ${value.slice(-6)}`;
+    },
+
+    livewireComponentNeedsIdentity(component) {
+      if (!component) return false;
+
+      return (
+        this.livewireComponents.filter(
+          (item) => item.title === component.title || (component.name && item.name === component.name),
+        ).length > 1
+      );
+    },
+
+    livewireComponentParentLabel(component) {
+      return component?.parentId ? this.livewireComponentTitle(component.parentId) : 'Top level';
+    },
+
+    livewireComponentStatusDescription(component) {
+      return (
+        {
+          idle: 'Mounted and waiting for the next update.',
+          updating: 'A Livewire update is running.',
+          failed: 'The latest Livewire update failed.',
+          stale: 'Only server-captured state is available for this request.',
+        }[component?.status] ?? 'Component state was captured.'
+      );
+    },
+
+    livewireActivityComponent(item) {
+      return this.livewireComponentById(item?.componentId);
     },
 
     livewireComponentActivity(id, limit = 5) {
@@ -1547,8 +1751,174 @@ export function createNewDebugBar(
         .slice(0, limit);
     },
 
+    livewireMeaningfulActions(item) {
+      return (item?.actions ?? []).filter((action) => !['$commit', '$set', '__dispatch'].includes(action.name));
+    },
+
+    livewireActivityEvents(item) {
+      const events = [...(item?.events ?? [])];
+
+      (item?.actions ?? [])
+        .filter((action) => action.name === '__dispatch' && action.params?.[0])
+        .forEach((action) => {
+          const name = action.params[0];
+          if (events.some((event) => event.name === name)) return;
+
+          events.push({
+            name,
+            params: action.params[1] ?? {},
+            mode: 'received',
+            declaredTarget: null,
+            observedRecipientIds: [],
+          });
+        });
+
+      return events;
+    },
+
     livewireActivityFactCount(item) {
-      return (item?.actions?.length ?? 0) + (item?.changes?.length ?? 0) + (item?.events?.length ?? 0);
+      return (
+        this.livewireMeaningfulActions(item).length +
+        (item?.changes?.length ?? 0) +
+        this.livewireActivityEvents(item).length
+      );
+    },
+
+    livewireActivityStatusLabel(item) {
+      return (
+        {
+          complete: 'Finished',
+          updating: 'Running',
+          failed: 'Failed',
+          failed_validation: 'Validation failed',
+          cancelled: 'Cancelled',
+          skipped: 'Skipped',
+        }[item?.status] ?? 'Recorded'
+      );
+    },
+
+    livewireActivityKindLabel(item) {
+      if (item?.kind === 'action' && this.livewireMeaningfulActions(item).length === 0) return 'Update';
+
+      return (
+        {
+          mount: 'Mount',
+          unmount: 'Unmount',
+          mutation: 'Change',
+          action: 'Action',
+          event: 'Event',
+          poll: 'Poll',
+        }[item?.kind] ?? String(item?.kind ?? 'Activity').replaceAll('_', ' ')
+      );
+    },
+
+    livewireActivitySummary(item) {
+      if (!item) return '';
+      const component = item.componentTitle || 'This component';
+      const failed = ['failed', 'failed_validation', 'cancelled'].includes(item.status);
+
+      if (item.kind === 'mount') return `${component} was added to the page.`;
+      if (item.kind === 'unmount') return `${component} was removed from the page.`;
+      if (item.kind === 'poll') return `${component} asked the server for fresh state.`;
+      if (item.kind === 'event') {
+        const event = this.livewireActivityEvents(item)[0]?.name;
+        return event ? `${component} handled the ${event} event.` : `${component} handled a Livewire event.`;
+      }
+      if (item.kind === 'mutation') {
+        const paths = item.changes?.map((change) => change.path) ?? [];
+        const confirmed = item.changes?.some((change) => change.serverKnown === true);
+        if (paths.length === 1) {
+          if (failed) return `${component} tried to change ${paths[0]}, but the update did not finish.`;
+          return `${component} changed ${paths[0]}${confirmed ? ' and the server confirmed it' : ''}.`;
+        }
+        if (paths.length > 1) {
+          if (failed) return `${component} tried to change ${paths.length} properties, but the update did not finish.`;
+          return `${component} changed ${paths.length} properties${confirmed ? ' and the server confirmed them' : ''}.`;
+        }
+        return `${component} sent a state change to the server.`;
+      }
+      if (item.kind === 'action') {
+        const actions = this.livewireMeaningfulActions(item);
+        if (actions.length === 1) {
+          return failed
+            ? `${component} tried to run ${actions[0].name}, but the update did not finish.`
+            : `${component} ran ${actions[0].name} on the server.`;
+        }
+        if (actions.length > 1) return `${component} ran ${actions.length} actions on the server.`;
+      }
+
+      return `${component} completed a Livewire update.`;
+    },
+
+    livewireActivityContents(item) {
+      const parts = [];
+      const add = (count, singular, plural = `${singular}s`) => {
+        if (count > 0) parts.push(`${count} ${count === 1 ? singular : plural}`);
+      };
+
+      add(this.livewireMeaningfulActions(item).length, 'action');
+      add(item?.changes?.length ?? 0, 'change');
+      add(this.livewireActivityEvents(item).length, 'event');
+
+      return parts.join(', ') || 'Lifecycle';
+    },
+
+    livewireActivityPhaseGroups(item) {
+      const phases = item?.phases ?? [];
+      const requestNames = new Set(['Queued', 'Sent', 'Responded', 'Streamed']);
+      const request = phases.filter((phase) => requestNames.has(phase.name));
+      const browserPhases = phases.filter((phase) => !requestNames.has(phase.name));
+
+      return [
+        { name: 'Request', phases: request },
+        { name: 'Browser', phases: browserPhases },
+      ].filter((group) => group.phases.length > 0);
+    },
+
+    livewirePhaseDescription(name) {
+      return (
+        {
+          Queued: 'Livewire prepared the update.',
+          Sent: 'The browser sent the request.',
+          Responded: 'The server response arrived.',
+          Streamed: 'A streamed response chunk arrived.',
+          Synced: 'Server state replaced the browser baseline.',
+          Effects: 'Livewire applied returned effects and events.',
+          Morphed: 'Livewire updated the page HTML.',
+          Rendered: 'The browser finished this render pass.',
+        }[name] ?? 'Livewire recorded this phase.'
+      );
+    },
+
+    toggleLivewireActivityGroup(group) {
+      if (!group?.grouped) return;
+      this.livewireExpandedActivityGroups = this.livewireExpandedActivityGroups.includes(group.id)
+        ? this.livewireExpandedActivityGroups.filter((id) => id !== group.id)
+        : [...this.livewireExpandedActivityGroups, group.id];
+    },
+
+    livewireActivityGroupExpanded(group) {
+      return this.livewireExpandedActivityGroups.includes(group?.id);
+    },
+
+    livewireActivityGroupSelected(group) {
+      return group?.items?.some((item) => item.id === this.livewireSelectedActivityId) ?? false;
+    },
+
+    livewirePropertyStateLabel(row) {
+      return row?.state === 'Unknown' ? 'Not confirmed' : row?.state;
+    },
+
+    livewirePropertyStateDescription(row) {
+      return (
+        {
+          Synced: 'Browser and server values match.',
+          Dirty: 'The browser value differs from the latest server value.',
+          Updating: 'A Livewire update is in progress.',
+          Locked: 'Livewire prevents this property from being edited.',
+          Unknown: 'No server-confirmed value was captured.',
+        }[row?.state] ?? ''
+      );
     },
 
     livewireDuration(item) {

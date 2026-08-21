@@ -223,8 +223,13 @@ test('orders several roots and nested instances while preserving stable instance
   state.livewireSearch = 'metric';
   assert.deepEqual(
     state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'child-1'],
+  );
+  assert.deepEqual(
+    state.matchingLivewireComponents.map(({ id }) => id),
     ['child-1'],
   );
+  assert.equal(state.livewireComponentIsSearchContext(state.filteredLivewireComponents[0]), true);
   state.livewireSearch = 'ControlPanel.php';
   assert.deepEqual(
     state.filteredLivewireComponents.map(({ id }) => id),
@@ -233,10 +238,40 @@ test('orders several roots and nested instances while preserving stable instance
   assert.equal(state.livewireComponentTitle('root-2'), 'Event Console');
   assert.equal(state.livewireComponentTitle('missing'), 'missing');
   assert.equal(state.livewireComponentLatestActivity(state.livewireComponents[0]).id, 'activity-2');
+  assert.equal(state.livewireComponentActivityTitle(activity[0]), 'Mounted');
+  assert.equal(state.livewireComponentActivityTitle({ ...activity[0], kind: 'unmount' }), 'Unmounted');
+  assert.equal(state.livewireComponentActivityTitle(activity[1]), 'Count changed');
+  assert.equal(state.livewireComponentActivityTitle(null), 'Activity');
   assert.deepEqual(
     state.livewireComponentActivity('root-1').map(({ id }) => id),
     ['activity-2', 'activity-1'],
   );
+});
+
+test('distinguishes repeated component instances by id and parent context', () => {
+  const repeated = {
+    ...browserComponents[2],
+    id: 'child-2-abcdef',
+    sequence: 4,
+    parentId: 'root-2',
+  };
+  const trace = traceHarness({
+    ready: true,
+    components: [...browserComponents, repeated],
+    activity,
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+  const first = state.livewireComponentById('child-1');
+  const second = state.livewireComponentById('child-2-abcdef');
+
+  assert.equal(state.livewireComponentNeedsIdentity(first), true);
+  assert.equal(state.livewireComponentNeedsIdentity(second), true);
+  assert.equal(state.livewireComponentNeedsIdentity(state.livewireComponentById('root-1')), false);
+  assert.equal(state.livewireComponentParentLabel(first), 'Control Panel');
+  assert.equal(state.livewireComponentParentLabel(second), 'Event Console');
+  assert.equal(state.livewireShortInstance(second.id), 'Instance abcdef');
+  assert.equal(state.livewireComponentStatusDescription(second), 'A Livewire update is running.');
 });
 
 test('collapses every component branch without hiding search matches', () => {
@@ -293,6 +328,10 @@ test('collapses every component branch without hiding search matches', () => {
   state.livewireSearch = 'pulse';
   assert.deepEqual(
     state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'child-1', 'grandchild-1'],
+  );
+  assert.deepEqual(
+    state.matchingLivewireComponents.map(({ id }) => id),
     ['grandchild-1'],
   );
 
@@ -336,7 +375,10 @@ test('filters activity and moves between activity and component details', () => 
   state.setLivewireActivityType('missing');
   assert.equal(state.livewireActivityType, 'mutation');
   assert.deepEqual(state.livewireActivityTypes, ['action', 'mount', 'mutation']);
-  assert.equal(state.livewireActivityFactCount(state.selectedLivewireActivity), 2);
+  assert.equal(state.livewireActivityFactCount(state.selectedLivewireActivity), 1);
+  assert.equal(state.livewireActivityContents(state.selectedLivewireActivity), '1 change');
+  assert.equal(state.livewireActivityStatusLabel(state.selectedLivewireActivity), 'Finished');
+  assert.equal(state.livewireActivitySummary(state.selectedLivewireActivity), 'Control Panel changed count.');
   assert.equal(state.livewireDuration(state.selectedLivewireActivity), '8.3 ms');
   assert.equal(state.livewireDuration(activity[2]), 'In progress');
   assert.equal(state.livewireDuration({ status: 'complete', durationMs: null }), '—');
@@ -372,6 +414,363 @@ test('filters activity and moves between activity and component details', () => 
   assert.equal(state.livewireTab, 'components');
 });
 
+test('keeps the newest visible activity selected until the developer chooses another item', () => {
+  const trace = traceHarness();
+  const { state } = stateHarness(trace);
+  const fourth = {
+    ...activity[2],
+    id: 'activity-4',
+    sequence: 4,
+    title: 'Another refresh ran',
+  };
+
+  trace.emit({
+    ready: true,
+    components: browserComponents,
+    activity: [...activity, fourth],
+    dropped: { components: 0, activity: 0 },
+  });
+  assert.equal(state.livewireSelectedActivityId, 'activity-4');
+
+  state.selectLivewireActivity('activity-2');
+  const fifth = { ...fourth, id: 'activity-5', sequence: 5 };
+  trace.emit({
+    ready: true,
+    components: browserComponents,
+    activity: [...activity, fourth, fifth],
+    dropped: { components: 0, activity: 0 },
+  });
+  assert.equal(state.livewireSelectedActivityId, 'activity-2');
+
+  state.livewireSearch = 'nothing matches this';
+  state.syncLivewireSelection();
+  assert.equal(state.livewireSelectedActivityId, null);
+  assert.equal(state.livewireSelectedComponentId, null);
+
+  state.livewireSearch = '';
+  state.syncLivewireSelection();
+  assert.equal(state.livewireSelectedActivityId, 'activity-5');
+  assert.equal(state.livewireSelectedComponentId, 'root-1');
+});
+
+test('groups shared requests and consecutive repetitive activity while keeping every interaction inspectable', () => {
+  const poll = (id, sequence) => ({
+    ...activity[2],
+    id,
+    sequence,
+    componentId: 'root-1',
+    componentTitle: 'Control Panel',
+    componentName: 'benchmark.control-panel',
+    title: 'Polled component',
+    kind: 'poll',
+    status: 'complete',
+    actions: [{ name: '$refresh', metadata: { type: 'poll' } }],
+  });
+  const secondMount = {
+    ...activity[0],
+    id: 'activity-0',
+    sequence: 0,
+    componentId: 'root-2',
+    componentTitle: 'Event Console',
+  };
+  const trace = traceHarness({
+    ready: true,
+    components: browserComponents,
+    activity: [
+      secondMount,
+      ...activity,
+      poll('poll-1', 4),
+      poll('poll-2', 5),
+      { ...activity[2], id: 'action-6', sequence: 6 },
+      poll('poll-3', 7),
+    ],
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+  const groups = state.livewireActivityGroups;
+
+  assert.deepEqual(
+    groups.map((group) => [group.title, group.items.map(({ id }) => id)]),
+    [
+      ['Polled component', ['poll-3']],
+      ['Refresh ran', ['action-6']],
+      ['Polled 2 times', ['poll-2', 'poll-1']],
+      ['Refresh ran', ['activity-3']],
+      ['Count changed', ['activity-2']],
+      ['2 components mounted', ['activity-1', 'activity-0']],
+    ],
+  );
+  const polls = groups.find(({ grouped, mode }) => grouped && mode === 'poll:root-1');
+  state.toggleLivewireActivityGroup(polls);
+  assert.equal(state.livewireActivityGroupExpanded(polls), true);
+  state.selectLivewireActivity('poll-1');
+  assert.equal(state.livewireActivityGroupSelected(polls), true);
+  state.toggleLivewireActivityGroup(polls);
+  assert.equal(state.livewireActivityGroupExpanded(polls), false);
+  state.toggleLivewireActivityGroup(groups[0]);
+});
+
+test('groups a bundled request around its initiating action', () => {
+  const profileId = '550e8400-e29b-41d4-a716-446655440001';
+  const requestActivity = [
+    {
+      ...activity[2],
+      id: 'request-action',
+      sequence: 4,
+      componentId: 'root-1',
+      componentTitle: 'Control Panel',
+      title: 'Increment ran',
+      actions: [{ name: 'increment' }],
+      profileIds: [profileId],
+    },
+    {
+      ...activity[2],
+      id: 'request-child-1',
+      sequence: 5,
+      title: 'Component updated',
+      actions: [{ name: '$commit' }],
+      profileIds: [profileId],
+    },
+    {
+      ...activity[2],
+      id: 'request-child-2',
+      sequence: 6,
+      componentId: 'child-2',
+      title: 'Component updated',
+      actions: [{ name: '$commit' }],
+      profileIds: [profileId],
+    },
+  ];
+  const trace = traceHarness({
+    ready: true,
+    components: browserComponents,
+    activity: [...activity, ...requestActivity],
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+  const group = state.livewireActivityGroups[0];
+
+  assert.equal(group.grouped, true);
+  assert.equal(group.title, 'Increment ran');
+  assert.equal(group.subtitle, 'Control Panel');
+  assert.equal(group.countLabel, '3 components');
+  assert.equal(group.first.id, 'request-action');
+  assert.deepEqual(
+    group.items.map(({ id }) => id),
+    ['request-child-2', 'request-child-1', 'request-action'],
+  );
+  assert.equal(state.livewireSelectedActivityId, 'request-action');
+});
+
+test('explains activity, phases, instance identity, and property states in plain language', () => {
+  const { state } = stateHarness();
+  const item = {
+    ...activity[1],
+    status: 'failed_validation',
+    changes: [{ path: 'count', serverKnown: false }],
+    phases: [
+      { name: 'Queued', at: 1 },
+      { name: 'Responded', at: 2 },
+      { name: 'Synced', at: 3 },
+      { name: 'Rendered', at: 4 },
+    ],
+  };
+
+  assert.equal(state.livewireActivityStatusLabel(item), 'Validation failed');
+  assert.equal(
+    state.livewireActivitySummary(item),
+    'Control Panel tried to change count, but the update did not finish.',
+  );
+  assert.deepEqual(
+    state.livewireActivityPhaseGroups(item).map((group) => [group.name, group.phases.map(({ name }) => name)]),
+    [
+      ['Request', ['Queued', 'Responded']],
+      ['Browser', ['Synced', 'Rendered']],
+    ],
+  );
+  assert.equal(state.livewirePhaseDescription('Morphed'), 'Livewire updated the page HTML.');
+  assert.equal(state.livewirePhaseDescription('Other'), 'Livewire recorded this phase.');
+  assert.equal(state.livewireShortInstance('abcdefgh123456'), 'Instance 123456');
+  assert.equal(state.livewireShortInstance(''), 'Unknown instance');
+  assert.equal(state.livewireComponentParentLabel(state.livewireComponents[0]), 'Top level');
+  assert.equal(state.livewireComponentParentLabel(state.livewireComponents[2]), 'Control Panel');
+  assert.equal(state.livewireActivityComponent(activity[1]).id, 'root-1');
+  assert.equal(state.livewireActivityComponent({ componentId: 'missing' }), null);
+  assert.equal(state.livewirePropertyStateLabel({ state: 'Unknown' }), 'Not confirmed');
+  assert.equal(
+    state.livewirePropertyStateDescription({ state: 'Dirty' }),
+    'The browser value differs from the latest server value.',
+  );
+});
+
+test('uses distinct plain-language explanations for every captured Livewire outcome', () => {
+  const { state } = stateHarness();
+  const item = (values) => ({
+    ...activity[2],
+    status: 'complete',
+    actions: [],
+    changes: [],
+    events: [],
+    ...values,
+  });
+
+  assert.equal(state.livewireActivitySummary(item({ kind: 'mount' })), 'Metric Card was added to the page.');
+  assert.equal(state.livewireActivitySummary(item({ kind: 'unmount' })), 'Metric Card was removed from the page.');
+  assert.equal(state.livewireActivitySummary(item({ kind: 'poll' })), 'Metric Card asked the server for fresh state.');
+  assert.equal(
+    state.livewireActivitySummary(item({ kind: 'event', events: [{ name: 'saved' }] })),
+    'Metric Card handled the saved event.',
+  );
+  assert.equal(state.livewireActivitySummary(item({ kind: 'event' })), 'Metric Card handled a Livewire event.');
+  assert.equal(
+    state.livewireActivitySummary(
+      item({
+        kind: 'mutation',
+        changes: [{ path: 'count', serverKnown: true }],
+      }),
+    ),
+    'Metric Card changed count and the server confirmed it.',
+  );
+  assert.equal(
+    state.livewireActivitySummary(
+      item({
+        kind: 'mutation',
+        changes: [
+          { path: 'count', serverKnown: true },
+          { path: 'label', serverKnown: true },
+        ],
+      }),
+    ),
+    'Metric Card changed 2 properties and the server confirmed them.',
+  );
+  assert.equal(
+    state.livewireActivitySummary(
+      item({
+        kind: 'mutation',
+        status: 'failed',
+        changes: [{ path: 'count' }, { path: 'label' }],
+      }),
+    ),
+    'Metric Card tried to change 2 properties, but the update did not finish.',
+  );
+  assert.equal(
+    state.livewireActivitySummary(item({ kind: 'action', actions: [{ name: 'save' }] })),
+    'Metric Card ran save on the server.',
+  );
+  assert.equal(
+    state.livewireActivitySummary(item({ kind: 'action', status: 'failed', actions: [{ name: 'save' }] })),
+    'Metric Card tried to run save, but the update did not finish.',
+  );
+  assert.equal(
+    state.livewireActivitySummary(
+      item({
+        kind: 'action',
+        actions: [{ name: 'save' }, { name: 'publish' }],
+      }),
+    ),
+    'Metric Card ran 2 actions on the server.',
+  );
+  assert.equal(state.livewireActivitySummary(item({ kind: 'other' })), 'Metric Card completed a Livewire update.');
+  assert.equal(state.livewireActivitySummary(null), '');
+
+  assert.deepEqual(
+    ['complete', 'updating', 'failed', 'failed_validation', 'cancelled', 'skipped', 'other'].map((status) =>
+      state.livewireActivityStatusLabel({ status }),
+    ),
+    ['Finished', 'Running', 'Failed', 'Validation failed', 'Cancelled', 'Skipped', 'Recorded'],
+  );
+  assert.deepEqual(
+    [
+      { kind: 'action', actions: [{ name: '$commit' }] },
+      { kind: 'action', actions: [{ name: 'save' }] },
+      { kind: 'mutation' },
+      { kind: 'custom_kind' },
+    ].map((value) => state.livewireActivityKindLabel(value)),
+    ['Update', 'Action', 'Change', 'custom kind'],
+  );
+  assert.equal(state.livewireActivityContents(item({ kind: 'mount' })), 'Lifecycle');
+  assert.equal(
+    state.livewireActivityContents(
+      item({
+        actions: [{ name: '$commit' }, { name: '$set' }, { name: 'save' }],
+      }),
+    ),
+    '1 action',
+  );
+  assert.deepEqual(
+    state.livewireActivityEvents(
+      item({
+        actions: [{ name: '__dispatch', params: ['saved', { id: 7 }] }],
+      }),
+    ),
+    [
+      {
+        name: 'saved',
+        params: { id: 7 },
+        mode: 'received',
+        declaredTarget: null,
+        observedRecipientIds: [],
+      },
+    ],
+  );
+  assert.equal(
+    state.livewireActivityContents(item({ actions: [{}, {}], changes: [{}, {}], events: [{}, {}] })),
+    '2 actions, 2 changes, 2 events',
+  );
+  assert.deepEqual(
+    ['idle', 'updating', 'failed', 'stale', 'other'].map((status) =>
+      state.livewireComponentStatusDescription({ status }),
+    ),
+    [
+      'Mounted and waiting for the next update.',
+      'A Livewire update is running.',
+      'The latest Livewire update failed.',
+      'Only server-captured state is available for this request.',
+      'Component state was captured.',
+    ],
+  );
+  assert.equal(state.livewireComponentNeedsIdentity(null), false);
+  assert.deepEqual(
+    ['Synced', 'Dirty', 'Updating', 'Locked', 'Unknown', 'Other'].map((status) =>
+      state.livewirePropertyStateDescription({ state: status }),
+    ),
+    [
+      'Browser and server values match.',
+      'The browser value differs from the latest server value.',
+      'A Livewire update is in progress.',
+      'Livewire prevents this property from being edited.',
+      'No server-confirmed value was captured.',
+      '',
+    ],
+  );
+});
+
+test('resets Livewire selection when browser navigation starts a new page session', () => {
+  const trace = traceHarness({
+    ready: true,
+    pageSequence: 1,
+    components: browserComponents,
+    activity,
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+  state.selectLivewireActivity('activity-1');
+  state.livewireExpandedActivityGroups = ['old-group'];
+
+  trace.emit({
+    ready: true,
+    pageSequence: 2,
+    components: [browserComponents[1]],
+    activity: [],
+    dropped: { components: 0, activity: 0 },
+  });
+
+  assert.equal(state.livewireSelectedActivityId, null);
+  assert.equal(state.livewireSelectedComponentId, 'root-2');
+  assert.equal(state.livewireActivitySelectionPinned, false);
+  assert.deepEqual(state.livewireExpandedActivityGroups, []);
+});
+
 test('builds an expandable typed property tree with proven edit eligibility', () => {
   const { state } = stateHarness();
   let rows = state.livewirePropertyRows;
@@ -403,6 +802,35 @@ test('builds an expandable typed property tree with proven edit eligibility', ()
     false,
   );
   state.toggleLivewireProperty({ hasChildren: false });
+});
+
+test('uses the current canonical component snapshot as the latest server value', () => {
+  const components = structuredClone(browserComponents);
+  components[0].properties[0].value = 8;
+  components[0].serverProperties = [
+    { path: 'count', type: 'Integer', value: 8 },
+    { path: 'settings', type: 'Array', value: structuredClone(components[0].properties[1].value) },
+  ];
+  const trace = traceHarness({
+    ready: true,
+    components,
+    activity,
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+
+  let count = state.livewirePropertyRows.find(({ path }) => path === 'count');
+  assert.equal(count.serverValue, 8);
+  assert.equal(count.state, 'Synced');
+
+  components[0].properties[0].value = 9;
+  count = state.livewirePropertyRows.find(({ path }) => path === 'count');
+  assert.equal(count.serverValue, 8);
+  assert.equal(count.state, 'Dirty');
+
+  const settings = state.livewirePropertyRows.find(({ path }) => path === 'settings');
+  state.toggleLivewireProperty(settings);
+  assert.equal(state.livewirePropertyRows.find(({ path }) => path === 'settings.enabled').state, 'Synced');
 });
 
 test('summarizes arrays, empty strings, booleans, and unknown browser values', () => {

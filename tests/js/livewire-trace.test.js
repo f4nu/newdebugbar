@@ -155,6 +155,9 @@ test('tracks multiple top-level and nested component instances while excluding t
     ['root-1', 'root-2', 'child-1'],
   );
   assert.equal(snapshot.components.find(({ id }) => id === 'child-1').parentId, 'root-1');
+  assert.deepEqual(snapshot.components.find(({ id }) => id === 'child-1').serverProperties, [
+    { path: 'label', type: 'String', value: 'Revenue' },
+  ]);
   assert.equal(snapshot.activity.length, 3);
   assert.ok(snapshot.activity.every(({ kind }) => kind === 'mount'));
 });
@@ -194,11 +197,13 @@ test('groups actions, property changes, phases, and a request profile into one i
     serverKnown: true,
   });
   assert.deepEqual(interaction.profileIds, [profileId]);
+  assert.deepEqual(trace.snapshot().components[0].serverProperties, [{ path: 'count', type: 'Integer', value: 3 }]);
   assert.deepEqual(
     interaction.phases.map(({ name }) => name),
     ['Queued', 'Sent', 'Responded', 'Synced', 'Effects', 'Morphed', 'Rendered'],
   );
   assert.ok(interaction.durationMs > 0);
+  assert.ok(interaction.durationMs >= interaction.phases.at(-1).at - interaction.startedAt);
 });
 
 test('labels polls, grouped actions, and commit-only messages plainly', () => {
