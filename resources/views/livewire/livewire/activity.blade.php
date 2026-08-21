@@ -10,7 +10,7 @@
       class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/65 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/45"
     >
       <div>
-        <h3 class="ndb:text-xs ndb:font-bold">Page activity</h3>
+        <h3 class="ndb:text-xs ndb:font-bold">Activity</h3>
         <p class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
           <span x-text="filteredLivewireActivity.length"></span>
           <span
@@ -57,10 +57,7 @@
         <li
           class="ndb:relative ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-3"
         >
-          <div
-            aria-hidden="true"
-            class="ndb:relative ndb:translate-x-2"
-          >
+          <div aria-hidden="true" class="ndb:relative ndb:translate-x-2">
             <span
               x-show.important="index < filteredLivewireActivity.length - 1"
               class="ndb:absolute ndb:top-[28px] ndb:-bottom-[18px] ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-zinc-200 ndb:dark:bg-zinc-800"
@@ -152,12 +149,13 @@
 
   <div
     :class="livewireDetailOpen ? 'ndb:block' : 'ndb:hidden ndb:sm:block'"
-    class="ndb-scrollbar ndb:min-w-0 ndb:sm:sticky ndb:sm:top-0 ndb:sm:z-10 ndb:sm:max-h-[min(62vh,36rem)] ndb:sm:overflow-x-hidden ndb:sm:overflow-y-auto ndb:sm:bg-white/95 ndb:sm:dark:bg-zinc-950/95"
+    class="ndb:min-w-0 ndb:sm:sticky ndb:sm:top-0 ndb:sm:z-10 ndb:sm:overflow-x-clip ndb:sm:bg-white/95 ndb:sm:dark:bg-zinc-950/95"
   >
     <button
       type="button"
+      data-ndb-livewire-detail-back="activity"
       @click="livewireDetailOpen = false"
-      class="ndb:m-3 ndb:inline-flex ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:py-1.5 ndb:text-xs ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:text-indigo-300"
+      class="ndb:m-2 ndb:inline-flex ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:p-2 ndb:text-xs ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:text-indigo-300"
     >
       <x-newdebugbar::icon
         name="chevron-down"

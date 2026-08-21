@@ -17,15 +17,13 @@
     :aria-controls="$id('livewire-edit-popover')"
     :aria-expanded="Boolean(
       livewireDrafts[livewireDraftKey(row)] &&
-        livewireDrafts[livewireDraftKey(row)]?.status !== 'closing',
+      livewireDrafts[livewireDraftKey(row)]?.status !== 'closing',
     )"
     @click.stop="toggleLivewirePropertyEditor(row)"
-    :class="
-      livewireDrafts[livewireDraftKey(row)] &&
-      livewireDrafts[livewireDraftKey(row)]?.status !== 'closing'
-        ? 'ndb:bg-indigo-50 ndb:dark:bg-indigo-950/60'
-        : 'ndb:hover:bg-zinc-100 ndb:dark:hover:bg-zinc-800'
-    "
+    :class="livewireDrafts[livewireDraftKey(row)] &&
+    livewireDrafts[livewireDraftKey(row)]?.status !== 'closing'
+      ? 'ndb:bg-indigo-50 ndb:dark:bg-indigo-950/60'
+      : 'ndb:hover:bg-zinc-100 ndb:dark:hover:bg-zinc-800'"
     class="ndb:inline-flex ndb:h-7 ndb:items-center ndb:rounded-md ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
   >
     Edit
@@ -34,7 +32,7 @@
   <template
     x-if="
       livewireDrafts[livewireDraftKey(row)] &&
-        livewireDrafts[livewireDraftKey(row)]?.status !== 'closing'
+      livewireDrafts[livewireDraftKey(row)]?.status !== 'closing'
     "
   >
     <template x-teleport="#newdebugbar">
@@ -46,11 +44,9 @@
         x-init="
           $nextTick(() => {
             $el.querySelector('[data-ndb-livewire-edit-control]')?.focus();
-          });
+          })
         "
-        @keydown.escape.stop.prevent="
-          cancelLivewireDraft(row, true);
-        "
+        @keydown.escape.stop.prevent="cancelLivewireDraft(row, true)"
         @click.outside="
           if (livewireDrafts[livewireDraftKey(row)]?.status !== 'updating') {
             cancelLivewireDraft(row);
@@ -74,18 +70,12 @@
         <div
           class="ndb:border-b ndb:border-zinc-200/80 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-700/80"
         >
-          <p class="ndb:text-xs ndb:font-bold">
-            Edit <code x-text="row.path"></code>
-          </p>
-          <p class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-            Server value:
-            <code class="ndb:font-semibold" x-text="row.serverSummary"></code>
+          <p class="ndb:truncate ndb:text-xs ndb:font-bold" :title="row.path">
+            Edit <span x-text="row.path"></span>
           </p>
         </div>
 
         <div class="ndb:space-y-3 ndb:px-4 ndb:py-3">
-          <p class="ndb:text-[11px] ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">Applying sends a real Livewire update and may run application code.</p>
-
           <template x-if="row.value === null">
             <select
               data-ndb-livewire-edit-control
@@ -109,19 +99,21 @@
               data-ndb-livewire-edit-control
               :aria-checked="livewireDrafts[livewireDraftKey(row)].value"
               @click="toggleLivewireBoolean(row)"
-              class="ndb:inline-flex ndb:h-9 ndb:w-full ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
+              class="ndb:group ndb:inline-flex ndb:h-10 ndb:w-full ndb:items-center ndb:justify-between ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
             >
-              <span
-                class="ndb:size-2 ndb:rounded-full"
-                :class="livewireDrafts[livewireDraftKey(row)].value
-                  ? 'ndb:bg-emerald-500'
-                  : 'ndb:bg-zinc-400'"
-              ></span>
               <span
                 x-text="
                   livewireDrafts[livewireDraftKey(row)].value ? 'True' : 'False'
                 "
               ></span>
+              <span
+                aria-hidden="true"
+                class="ndb:relative ndb:h-6 ndb:w-11 ndb:shrink-0 ndb:rounded-full ndb:bg-zinc-300 ndb:shadow-inner ndb:transition-colors ndb:group-aria-checked:bg-indigo-600 ndb:dark:bg-zinc-700 ndb:dark:group-aria-checked:bg-indigo-500"
+              >
+                <span
+                  class="ndb:absolute ndb:top-0.5 ndb:left-0.5 ndb:size-5 ndb:rounded-full ndb:bg-white ndb:shadow-sm ndb:transition-transform ndb:group-aria-checked:translate-x-5"
+                ></span>
+              </span>
             </button>
           </template>
 
@@ -158,9 +150,7 @@
           <button
             data-ndb-livewire-edit-cancel
             type="button"
-            @click="
-              cancelLivewireDraft(row, true);
-            "
+            @click="cancelLivewireDraft(row, true)"
             class="ndb:h-9 ndb:rounded-lg ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400"
           >
             Cancel

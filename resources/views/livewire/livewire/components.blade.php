@@ -11,10 +11,10 @@
     >
       <h3 class="ndb:text-xs ndb:font-bold">Mounted components</h3>
       <p class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-        <span x-text="filteredLivewireComponents.length"></span>
+        <span x-text="matchingLivewireComponents.length"></span>
         <span
           x-text="
-            filteredLivewireComponents.length === 1 ? 'instance' : 'instances'
+            matchingLivewireComponents.length === 1 ? 'instance' : 'instances'
           "
         ></span>
       </p>
@@ -25,42 +25,81 @@
         x-for="component in filteredLivewireComponents"
         :key="component.id"
       >
-        <button
-          type="button"
-          @click="selectLivewireComponent(component.id)"
-          :aria-current="livewireSelectedComponentId === component.id
-            ? 'true'
-            : null"
+        <div
+          data-ndb-livewire-component-row
+          :data-ndb-livewire-component-id="component.id"
+          :data-ndb-livewire-component-depth="component.depth"
           :style="`padding-left: ${12 + component.depth * 18}px`"
-          class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-start ndb:gap-2.5 ndb:rounded-lg ndb:border ndb:border-transparent ndb:py-2.5 ndb:pr-3 ndb:text-left ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
+          class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-start ndb:gap-2 ndb:rounded-lg ndb:border ndb:border-transparent ndb:pr-3 ndb:transition"
           :class="livewireSelectedComponentId === component.id
             ? 'ndb:border-indigo-200 ndb:bg-indigo-50/80 ndb:dark:border-indigo-900 ndb:dark:bg-indigo-950/45'
             : 'ndb:hover:bg-zinc-50 ndb:dark:hover:bg-zinc-900/65'"
         >
+          <button
+            x-show.important="component.hasChildren"
+            data-ndb-livewire-component-toggle
+            type="button"
+            @click.stop="toggleLivewireComponent(component)"
+            :aria-expanded="!livewireComponentCollapsed(component)"
+            :aria-label="`${livewireComponentCollapsed(component) ? 'Expand' : 'Collapse'} ${component.title}`"
+            class="ndb:mt-2.5 ndb:grid ndb:size-4 ndb:shrink-0 ndb:place-items-center ndb:rounded-[2px] ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:text-zinc-500 ndb:transition ndb:hover:border-zinc-300 ndb:hover:text-zinc-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70 ndb:dark:text-zinc-400 ndb:dark:hover:border-zinc-600 ndb:dark:hover:text-zinc-200"
+          >
+            <span aria-hidden="true" class="ndb:relative ndb:size-2">
+              <span
+                class="ndb:absolute ndb:top-1/2 ndb:left-0 ndb:h-px ndb:w-full ndb:-translate-y-1/2 ndb:bg-current"
+              ></span>
+              <span
+                x-show.important="livewireComponentCollapsed(component)"
+                data-ndb-livewire-component-toggle-vertical
+                class="ndb:absolute ndb:top-0 ndb:left-1/2 ndb:h-full ndb:w-px ndb:-translate-x-1/2 ndb:bg-current"
+              ></span>
+            </span>
+          </button>
           <span
-            class="ndb:mt-1 ndb:size-2 ndb:shrink-0 ndb:rounded-full"
-            :class="component.status === 'failed'
-              ? 'ndb:bg-red-500'
-              : component.status === 'updating'
-                ? 'ndb:bg-indigo-500 ndb:animate-pulse'
-                : 'ndb:bg-emerald-500'"
+            x-show.important="!component.hasChildren"
+            aria-hidden="true"
+            class="ndb:mt-2.5 ndb:size-4 ndb:shrink-0"
           ></span>
-          <span class="ndb:min-w-0 ndb:flex-1">
+          <button
+            data-ndb-livewire-component-select
+            type="button"
+            @click="selectLivewireComponent(component.id)"
+            :aria-current="livewireSelectedComponentId === component.id
+              ? 'true'
+              : null"
+            class="ndb:flex ndb:min-w-0 ndb:flex-1 ndb:items-start ndb:gap-2 ndb:py-2.5 ndb:text-left ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-1 ndb:focus-visible:outline-indigo-500"
+          >
             <span
-              class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
-              x-text="component.title"
+              data-ndb-livewire-component-dot
+              class="ndb:mt-1 ndb:size-2 ndb:shrink-0 ndb:rounded-full"
+              :class="component.status === 'failed'
+                ? 'ndb:bg-red-500'
+                : component.status === 'updating'
+                  ? 'ndb:bg-indigo-500 ndb:animate-pulse'
+                  : 'ndb:bg-emerald-500'"
             ></span>
-            <span
-              class="ndb:mt-0.5 ndb:block ndb:truncate ndb:font-mono ndb:text-[11px] ndb:text-zinc-400"
-              x-text="component.name"
-            ></span>
-            <span
-              x-show.important="livewireComponentLatestActivity(component)"
-              class="ndb:mt-1.5 ndb:block ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
-              x-text="livewireComponentLatestActivity(component)?.title"
-            ></span>
-          </span>
-        </button>
+            <span class="ndb:min-w-0 ndb:flex-1">
+              <span
+                data-ndb-livewire-component-title
+                class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
+                x-text="component.title"
+              ></span>
+              <span
+                class="ndb:mt-0.5 ndb:block ndb:truncate ndb:font-mono ndb:text-[11px] ndb:text-zinc-400"
+                x-text="component.name"
+              ></span>
+              <span
+                x-show.important="livewireComponentLatestActivity(component)"
+                class="ndb:mt-1.5 ndb:block ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                x-text="
+                  livewireComponentLatestActivity(component)?.kind === 'mount'
+                    ? 'Mounted'
+                    : livewireComponentLatestActivity(component)?.title
+                "
+              ></span>
+            </span>
+          </button>
+        </div>
       </template>
     </div>
 
@@ -76,12 +115,13 @@
 
   <div
     :class="livewireDetailOpen ? 'ndb:block' : 'ndb:hidden ndb:sm:block'"
-    class="ndb-scrollbar ndb:min-w-0 ndb:sm:sticky ndb:sm:top-0 ndb:sm:z-10 ndb:sm:max-h-[min(62vh,36rem)] ndb:sm:overflow-x-hidden ndb:sm:overflow-y-auto ndb:sm:bg-white/95 ndb:sm:dark:bg-zinc-950/95"
+    class="ndb:min-w-0 ndb:sm:sticky ndb:sm:top-0 ndb:sm:z-10 ndb:sm:overflow-x-clip ndb:sm:bg-white/95 ndb:sm:dark:bg-zinc-950/95"
   >
     <button
       type="button"
+      data-ndb-livewire-detail-back="components"
       @click="livewireDetailOpen = false"
-      class="ndb:m-3 ndb:inline-flex ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:py-1.5 ndb:text-xs ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:text-indigo-300"
+      class="ndb:m-2 ndb:inline-flex ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:p-2 ndb:text-xs ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:hidden ndb:dark:text-indigo-300"
     >
       <x-newdebugbar::icon
         name="chevron-down"
@@ -119,10 +159,7 @@
               </div>
               <code
                 class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                x-text="
-                  selectedLivewireComponent.server?.class ??
-                  selectedLivewireComponent.name
-                "
+                x-text="selectedLivewireComponent.name"
               ></code>
             </div>
             <button
@@ -172,7 +209,7 @@
               <dt
                 class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
               >
-                Class source
+                Source
               </dt>
               <dd
                 class="ndb:mt-1 ndb:truncate ndb:text-[11px] ndb:font-semibold"
@@ -232,6 +269,7 @@
                 :key="`${row.componentId}:${row.path}`"
               >
                 <div
+                  :data-ndb-livewire-property-path="row.path"
                   class="ndb:border-b ndb:border-zinc-200/80 ndb:last:border-b-0 ndb:sm:min-w-[36rem] ndb:dark:border-zinc-800"
                 >
                   <div

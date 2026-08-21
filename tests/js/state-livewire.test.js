@@ -239,6 +239,76 @@ test('orders several roots and nested instances while preserving stable instance
   );
 });
 
+test('collapses every component branch without hiding search matches', () => {
+  const grandchild = {
+    id: 'grandchild-1',
+    name: 'benchmark.metric-pulse',
+    title: 'Metric Pulse',
+    parentId: 'child-1',
+    sequence: 4,
+    mounted: true,
+    status: 'idle',
+    latestActivityId: null,
+    properties: [],
+  };
+  const trace = traceHarness({
+    ready: true,
+    components: [...browserComponents, grandchild],
+    activity,
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+  const root = state.livewireComponents.find(({ id }) => id === 'root-1');
+  const child = state.livewireComponents.find(({ id }) => id === 'child-1');
+  const pulse = state.livewireComponents.find(({ id }) => id === 'grandchild-1');
+
+  assert.equal(root.hasChildren, true);
+  assert.equal(child.hasChildren, true);
+  assert.deepEqual(child.ancestorIds, ['root-1']);
+  assert.deepEqual(pulse.ancestorIds, ['child-1', 'root-1']);
+
+  state.selectLivewireComponent('grandchild-1');
+  state.toggleLivewireComponent(child);
+
+  assert.equal(state.livewireComponentCollapsed(child), true);
+  assert.deepEqual(
+    state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'root-2', 'child-1'],
+  );
+  assert.equal(state.livewireSelectedComponentId, 'child-1');
+
+  state.toggleLivewireComponent(child);
+
+  state.selectLivewireComponent('grandchild-1');
+  state.toggleLivewireComponent(root);
+
+  assert.equal(state.livewireComponentCollapsed(root), true);
+  assert.deepEqual(
+    state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'root-2'],
+  );
+  assert.equal(state.matchingLivewireComponents.length, 4);
+  assert.equal(state.livewireSelectedComponentId, 'root-1');
+
+  state.livewireSearch = 'pulse';
+  assert.deepEqual(
+    state.filteredLivewireComponents.map(({ id }) => id),
+    ['grandchild-1'],
+  );
+
+  state.livewireSearch = '';
+  state.toggleLivewireComponent(root);
+  assert.equal(state.livewireComponentCollapsed(root), false);
+  assert.equal(state.filteredLivewireComponents.length, 4);
+
+  state.toggleLivewireComponent(child);
+  assert.equal(state.livewireComponentCollapsed(child), true);
+  assert.deepEqual(
+    state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'root-2', 'child-1'],
+  );
+});
+
 test('filters activity and moves between activity and component details', () => {
   const { state } = stateHarness();
 

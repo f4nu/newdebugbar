@@ -293,6 +293,7 @@ export function createNewDebugBar(
     },
     livewireServerComponents: [],
     livewireServerActivity: [],
+    livewireCollapsedComponents: [],
     livewireExpandedProperties: [],
     livewireDrafts: {},
     stopLivewireTrace: null,
@@ -530,26 +531,36 @@ export function createNewDebugBar(
         server: serverById.get(String(component.id)) ?? null,
       }));
       const byId = new Map(merged.map((component) => [String(component.id), component]));
-      const depth = (component) => {
-        let current = component;
-        let value = 0;
-        const seen = new Set([String(component.id)]);
 
-        while (current?.parentId && byId.has(String(current.parentId)) && !seen.has(String(current.parentId))) {
-          seen.add(String(current.parentId));
-          current = byId.get(String(current.parentId));
-          value++;
-        }
+      const components = merged
+        .map((component) => {
+          let current = component;
+          const seen = new Set([String(component.id)]);
+          const ancestorIds = [];
 
-        return value;
-      };
+          while (current?.parentId && byId.has(String(current.parentId)) && !seen.has(String(current.parentId))) {
+            const parentId = String(current.parentId);
+            seen.add(parentId);
+            ancestorIds.push(parentId);
+            current = byId.get(parentId);
+          }
 
-      return merged
-        .map((component) => ({ ...component, depth: depth(component) }))
+          return {
+            ...component,
+            ancestorIds,
+            depth: ancestorIds.length,
+          };
+        })
         .sort((left, right) => Number(left.sequence ?? 0) - Number(right.sequence ?? 0));
+      const parents = new Set(components.map((component) => String(component.parentId ?? '')).filter(Boolean));
+
+      return components.map((component) => ({
+        ...component,
+        hasChildren: parents.has(String(component.id)),
+      }));
     },
 
-    get filteredLivewireComponents() {
+    get matchingLivewireComponents() {
       const search = this.livewireSearch.toLowerCase().trim();
       if (search === '') return this.livewireComponents;
 
@@ -560,6 +571,15 @@ export function createNewDebugBar(
               .toLowerCase()
               .includes(search),
         ),
+      );
+    },
+
+    get filteredLivewireComponents() {
+      const search = this.livewireSearch.toLowerCase().trim();
+      if (search !== '') return this.matchingLivewireComponents;
+
+      return this.matchingLivewireComponents.filter(
+        (component) => !component.ancestorIds.some((id) => this.livewireCollapsedComponents.includes(id)),
       );
     },
 
@@ -1473,6 +1493,25 @@ export function createNewDebugBar(
       this.closeLivewireDrafts();
       this.livewireSelectedComponentId = id;
       this.livewireDetailOpen = true;
+    },
+
+    toggleLivewireComponent(component) {
+      if (!component?.hasChildren) return;
+
+      const id = String(component.id);
+      const collapsed = this.livewireCollapsedComponents.includes(id);
+      this.livewireCollapsedComponents = collapsed
+        ? this.livewireCollapsedComponents.filter((item) => item !== id)
+        : [...this.livewireCollapsedComponents, id];
+
+      if (!collapsed && this.selectedLivewireComponent?.ancestorIds.includes(id)) {
+        this.closeLivewireDrafts();
+        this.livewireSelectedComponentId = id;
+      }
+    },
+
+    livewireComponentCollapsed(component) {
+      return this.livewireCollapsedComponents.includes(String(component?.id));
     },
 
     inspectLivewireActivityComponent() {

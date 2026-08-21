@@ -10,7 +10,7 @@
   class="ndb:space-y-4"
 >
   <div
-    class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between ndb:dark:border-zinc-800"
+    class="ndb:flex ndb:flex-col ndb:gap-3 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between"
   >
     <x-newdebugbar::filter-tabs label="Livewire view" class="ndb:shrink-0">
       <x-newdebugbar::filter-tab
