@@ -27,11 +27,6 @@
                     class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
                     x-text="livewireActivityComponentTitle(item)"
                 ></span>
-                <span
-                    x-show.important="livewireActivityComponentContext(item)"
-                    class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
-                    x-text="livewireActivityComponentContext(item)"
-                ></span>
             </span>
         </span>
         <span

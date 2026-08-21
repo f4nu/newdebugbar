@@ -56,11 +56,6 @@
                                 class="ndb:truncate"
                                 x-text="livewireActivityComponentTitle(selectedLivewireActivity)"
                             ></span>
-                            <span
-                                x-show.important="livewireActivityComponentContext(selectedLivewireActivity)"
-                                class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-normal ndb:text-indigo-400 ndb:dark:text-indigo-500"
-                                x-text="livewireActivityComponentContext(selectedLivewireActivity)"
-                            ></span>
                             <x-newdebugbar::icon name="chevron-down" class="ndb:size-3 ndb:shrink-0 ndb:-rotate-90" />
                         </button>
                     </div>

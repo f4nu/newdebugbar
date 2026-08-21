@@ -1638,33 +1638,6 @@ export function createNewDebugBar(
       return this.livewireComponents.find((component) => component.id === String(id)) ?? null;
     },
 
-    livewireComponentContext(component) {
-      if (!component) return '';
-
-      const preferredPaths = [
-        'label',
-        'title',
-        'name',
-        'channel',
-        'workspace',
-        'station',
-        'status',
-        'code',
-        'message',
-      ];
-      const property = preferredPaths
-        .map((path) => component.properties?.find((item) => item.path === path))
-        .find((item) => ['string', 'number'].includes(typeof item?.value) && String(item.value).trim() !== '');
-      const value = String(property?.value ?? '').trim();
-
-      return value.toLowerCase() ===
-        String(component.title ?? '')
-          .trim()
-          .toLowerCase()
-        ? ''
-        : value;
-    },
-
     livewireComponentStatusDescription(component) {
       return (
         {
@@ -1682,10 +1655,6 @@ export function createNewDebugBar(
 
     livewireActivityComponentTitle(item) {
       return this.livewireActivityComponent(item)?.title ?? item?.componentTitle ?? 'Livewire component';
-    },
-
-    livewireActivityComponentContext(item) {
-      return this.livewireComponentContext(this.livewireActivityComponent(item));
     },
 
     livewireMeaningfulActions(item) {

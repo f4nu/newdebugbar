@@ -239,30 +239,6 @@ test('orders several roots and nested instances while preserving stable instance
   assert.equal(state.livewireComponentTitle('missing'), 'missing');
 });
 
-test('distinguishes repeated components with meaningful public context', () => {
-  const repeated = {
-    ...browserComponents[2],
-    id: 'child-2-abcdef',
-    sequence: 4,
-    parentId: 'root-2',
-    properties: [{ path: 'label', type: 'String', value: 'Engagement' }],
-  };
-  const trace = traceHarness({
-    ready: true,
-    components: [...browserComponents, repeated],
-    activity,
-    dropped: { components: 0, activity: 0 },
-  });
-  const { state } = stateHarness(trace);
-  const first = state.livewireComponentById('child-1');
-  const second = state.livewireComponentById('child-2-abcdef');
-
-  assert.equal(state.livewireComponentContext(first), 'Revenue');
-  assert.equal(state.livewireComponentContext(second), 'Engagement');
-  assert.equal(state.livewireComponentContext(state.livewireComponentById('root-1')), '');
-  assert.equal(state.livewireComponentStatusDescription(second), 'A Livewire update is running.');
-});
-
 test('collapses every component branch without hiding search matches', () => {
   const grandchild = {
     id: 'grandchild-1',
@@ -382,7 +358,6 @@ test('filters activity and moves between activity and component details', () => 
   assert.equal(state.livewireActivityStatusLabel(state.selectedLivewireActivity), 'Finished');
   assert.equal(state.livewireActivitySummary(state.selectedLivewireActivity), 'Control Panel changed count.');
   assert.equal(state.livewireActivityComponentTitle(activity[2]), 'Metric Card');
-  assert.equal(state.livewireActivityComponentContext(activity[2]), 'Revenue');
   assert.equal(state.livewireDuration(state.selectedLivewireActivity), '8.3 ms');
   assert.equal(state.livewireDuration(activity[2]), 'In progress');
   assert.equal(state.livewireDuration({ status: 'complete', durationMs: null }), '—');
@@ -556,7 +531,7 @@ test('keeps every interaction in a bundled request separate', () => {
   assert.equal(state.livewireSelectedActivityId, 'request-child-2');
 });
 
-test('explains activity, phases, component context, and property states in plain language', () => {
+test('explains activity, phases, component links, and property states in plain language', () => {
   const { state } = stateHarness();
   const item = {
     ...activity[1],
@@ -584,8 +559,6 @@ test('explains activity, phases, component context, and property states in plain
   );
   assert.equal(state.livewirePhaseDescription('Morphed'), 'Livewire updated the page HTML.');
   assert.equal(state.livewirePhaseDescription('Other'), 'Livewire recorded this phase.');
-  assert.equal(state.livewireComponentContext(state.livewireComponents[2]), 'Revenue');
-  assert.equal(state.livewireComponentContext(null), '');
   assert.equal(state.livewireActivityComponent(activity[1]).id, 'root-1');
   assert.equal(state.livewireActivityComponent({ componentId: 'missing' }), null);
   assert.equal(state.livewirePropertyStateLabel({ state: 'Unknown' }), 'Not confirmed');

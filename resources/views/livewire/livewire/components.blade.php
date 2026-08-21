@@ -74,18 +74,10 @@
                                 x-text="component.title"
                             ></span>
                             <span
-                                x-show.important="livewireComponentContext(component) || livewireComponentIsSearchContext(component)"
-                                class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5"
+                                x-show.important="livewireComponentIsSearchContext(component)"
+                                class="ndb:mt-0.5 ndb:inline-flex ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
                             >
-                                <span
-                                    x-show.important="livewireComponentContext(component)"
-                                    class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
-                                    x-text="livewireComponentContext(component)"
-                                ></span>
-                                <span
-                                    x-show.important="livewireComponentIsSearchContext(component)"
-                                    class="ndb:shrink-0 ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
-                                >Context</span>
+                                Context
                             </span>
                         </span>
                     </button>
