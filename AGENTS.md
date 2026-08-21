@@ -1,47 +1,29 @@
-# New Debug Bar rules
+# New Debug Bar
 
-## Commits
-
-- Make small commits as you work.
-- Keep each commit about one clear change. Commit its tests and built files with it.
-
-## Working notes
-
-- Do not create or keep Markdown files in the repository to track plans, progress, task status, checklists, audits, QA, or temporary agent notes.
-- Keep working notes outside the repository. Only version Markdown that is part of the product or its maintained documentation.
-
-## Product choices
+## Scope and compatibility
 
 - Build for Laravel only. Do not add support for other PHP frameworks.
 - Match the minimum PHP and Laravel versions supported by Livewire 4.
 - Use `NewDebugBar` or `newdebugbar` as one word in machine-facing names. Use “New Debug Bar” in text written for people.
+
+## Product behavior
+
 - Make the full local debugging experience work immediately. Do not hide useful diagnostics behind opt-in flags or masked defaults only because the captured data may be sensitive.
 - Add a config value only when developers have a real, repeated reason to change the behavior. Every value must have a distinct runtime effect and a clear reason for its default. Otherwise, use one fixed product behavior and remove the setting, branches, and tests.
 - Use a protective default only when the normal behavior could change external state, break the host app, or create unbounded work or storage. Local diagnostic visibility by itself is not a reason to disable a feature.
 - Treat the local MCP server as a main product feature. Explain that coding agents can read exact debug data instead of guessing from a web page.
+
+## Documentation
+
 - Keep the public README short. Explain why the package exists and how to start using it.
 - Keep client-specific MCP setup in `docs/mcp.md`. Link to it from the README.
 - Keep test reports, support tables, and long setup notes out of the README.
-- Treat the first public release as v1. Do not add a changelog for work done before v1.
-- Ask the user before changing the license or copyright owner.
 
-## Interface
+## Interface priorities
 
-- Make the bar look clean and modern. It should feel at home on the page while a developer works.
-- Do not use `·`, `•`, or `|` to split facts. Use space, labels, icons, or groups.
+- Keep the bar visually quiet until something needs attention. It should feel at home on the page while a developer works.
 - Help developers answer: What happened? What is wrong? Why? Where? What should I check next?
-- Show the request, errors, query count, and time first.
-- Keep framework details, raw data, hashes, and repeated facts out of the main view.
+- Show the request, errors, query count, and duration first.
+- Keep framework internals, raw data, hashes, and repeated facts out of the main view.
 - A finding should explain the problem, why it matters, where it came from, and what to do next.
 - Do not show two findings for the same cause.
-
-## Checking interface work
-
-- Keep every Blade file under 500 lines. Split screens by product section and extract repeated controls into package components before a view reaches that limit.
-
-- Start with the built-in browser.
-- Use package-owned Testbench routes, fixtures, and browser suites instead of standalone example projects.
-- Do not create standalone example apps solely for package verification.
-- Check one browser test group at a time.
-- Check light and dark themes, keyboard use, browser errors, and a 390px-wide screen.
-- Update screenshot baselines only for planned changes. Look at each changed image, then run the same checks again.
