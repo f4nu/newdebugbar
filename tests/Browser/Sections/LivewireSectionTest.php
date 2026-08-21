@@ -19,9 +19,12 @@ it('renders each activity as a timeline row with a centered dot', function () {
 
                 return items.length > 1 && items.every((item) => {
                     const dot = item.querySelector('[data-ndb-livewire-activity-dot]').getBoundingClientRect();
-                    const title = item.querySelector('[data-ndb-livewire-activity-title]').getBoundingClientRect();
+                    const titleElement = item.querySelector('[data-ndb-livewire-activity-title]');
+                    const title = titleElement.getBoundingClientRect();
+                    const component = item.querySelector('[data-ndb-livewire-activity-component]');
 
                     return item.querySelector('[data-ndb-livewire-activity-item]')
+                        && (!titleElement.textContent.trim().endsWith(' mounted') || getComputedStyle(component).display === 'none')
                         && Math.abs((dot.top + dot.height / 2) - (title.top + title.height / 2)) <= 0.75;
                 })
                     && detailStyle.position === 'sticky'

@@ -358,6 +358,9 @@ test('filters activity and moves between activity and component details', () => 
   assert.equal(state.livewireActivityStatusLabel(state.selectedLivewireActivity), 'Finished');
   assert.equal(state.livewireActivitySummary(state.selectedLivewireActivity), 'Control Panel changed count.');
   assert.equal(state.livewireActivityComponentTitle(activity[2]), 'Metric Card');
+  assert.equal(state.livewireActivityShowsComponent(activity[0]), false);
+  assert.equal(state.livewireActivityShowsComponent(activity[1]), true);
+  assert.equal(state.livewireActivityShowsComponent({ ...activity[2], kind: 'poll', title: 'Polled component' }), true);
   assert.equal(state.livewireDuration(state.selectedLivewireActivity), '8.3 ms');
   assert.equal(state.livewireDuration(activity[2]), 'In progress');
   assert.equal(state.livewireDuration({ status: 'complete', durationMs: null }), '—');

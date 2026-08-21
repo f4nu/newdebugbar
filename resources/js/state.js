@@ -1657,6 +1657,15 @@ export function createNewDebugBar(
       return this.livewireActivityComponent(item)?.title ?? item?.componentTitle ?? 'Livewire component';
     },
 
+    livewireActivityShowsComponent(item) {
+      const componentTitle = this.livewireActivityComponentTitle(item).trim();
+      const activityTitle = String(item?.title ?? '').trim();
+
+      if (!componentTitle || componentTitle === 'Livewire component') return false;
+
+      return !activityTitle.toLowerCase().includes(componentTitle.toLowerCase());
+    },
+
     livewireMeaningfulActions(item) {
       return (item?.actions ?? []).filter((action) => !['$commit', '$set', '__dispatch'].includes(action.name));
     },

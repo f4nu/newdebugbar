@@ -22,7 +22,11 @@
                     x-text="livewireActivityStatusLabel(item)"
                 ></span>
             </span>
-            <span class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5">
+            <span
+                x-show.important="livewireActivityShowsComponent(item)"
+                data-ndb-livewire-activity-component
+                class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5"
+            >
                 <span
                     class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
                     x-text="livewireActivityComponentTitle(item)"
