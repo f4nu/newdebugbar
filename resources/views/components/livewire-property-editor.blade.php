@@ -10,11 +10,7 @@
 >
   <button
     x-ref="livewireEditButton"
-    x-show.important="
-      row.editable &&
-        (!livewireDrafts[livewireDraftKey(row)] ||
-          livewireDrafts[livewireDraftKey(row)]?.status === 'closing')
-    "
+    x-show.important="row.editable"
     type="button"
     :id="$id('livewire-edit-trigger')"
     :data-ndb-livewire-edit-key="livewireDraftKey(row)"
@@ -23,10 +19,14 @@
       livewireDrafts[livewireDraftKey(row)] &&
         livewireDrafts[livewireDraftKey(row)]?.status !== 'closing',
     )"
-    @click.stop="
-      editLivewireProperty(row);
+    @click.stop="toggleLivewirePropertyEditor(row)"
+    :class="
+      livewireDrafts[livewireDraftKey(row)] &&
+      livewireDrafts[livewireDraftKey(row)]?.status !== 'closing'
+        ? 'ndb:bg-indigo-50 ndb:dark:bg-indigo-950/60'
+        : 'ndb:hover:bg-zinc-100 ndb:dark:hover:bg-zinc-800'
     "
-    class="ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+    class="ndb:inline-flex ndb:h-7 ndb:items-center ndb:rounded-md ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
   >
     Edit
   </button>
@@ -39,10 +39,12 @@
   >
     <template x-teleport="#newdebugbar">
       <x-newdebugbar::popover-surface
+        :anchored="true"
+        x-anchor.bottom-end.offset.12.fixed="
+          document.getElementById($id('livewire-edit-trigger'))
+        "
         x-init="
           $nextTick(() => {
-            const trigger = document.getElementById($id('livewire-edit-trigger'));
-            positionLivewirePropertyPopover(trigger, $el);
             $el.querySelector('[data-ndb-livewire-edit-control]')?.focus();
           });
         "
@@ -54,23 +56,20 @@
             cancelLivewireDraft(row);
           }
         "
-        @resize.window="
-          positionLivewirePropertyPopover(
-            document.getElementById($id('livewire-edit-trigger')),
-            $el,
-          )
-        "
         data-ndb-livewire-property-popover
         ::id="$id('livewire-edit-popover')"
         ::aria-labelledby="$id('livewire-edit-trigger')"
+        ::style="{
+          visibility:
+            $anchor.x !== 0 || $anchor.y !== 0 ? 'visible' : 'hidden',
+        }"
         role="dialog"
         direction="below"
         align="left"
         width-class="ndb:w-[min(21rem,calc(100vw-3rem))]"
         surface-class="ndb:p-0"
-        arrow-class="ndb:left-[var(--ndb-livewire-popover-arrow-left)]"
+        arrow-class="ndb:hidden"
         class="ndb:pointer-events-auto"
-        style="visibility: hidden"
       >
         <div
           class="ndb:border-b ndb:border-zinc-200/80 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-700/80"

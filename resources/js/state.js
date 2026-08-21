@@ -1577,33 +1577,17 @@ export function createNewDebugBar(
       };
     },
 
-    positionLivewirePropertyPopover(trigger, popover) {
-      if (!trigger?.getBoundingClientRect || !popover?.getBoundingClientRect || !popover?.style) return;
+    toggleLivewirePropertyEditor(row) {
+      if (!row?.editable) return;
+      const draft = this.livewireDrafts[this.livewireDraftKey(row)];
 
-      const triggerBox = trigger.getBoundingClientRect();
-      const popoverBox = popover.getBoundingClientRect();
-      const edge = 16;
-      const gap = 12;
-      const viewportWidth = browser.viewportWidth?.() ?? 0;
-      const viewportHeight = browser.viewportHeight?.() ?? 0;
-      const maxLeft = Math.max(edge, viewportWidth - popoverBox.width - edge);
-      const left = Math.min(Math.max(edge, triggerBox.right - popoverBox.width), maxLeft);
-      const maxTop = Math.max(edge, viewportHeight - popoverBox.height - edge);
-      const top = Math.min(triggerBox.bottom + gap, maxTop);
-      const arrowLeft = Math.min(
-        Math.max(13, triggerBox.left + triggerBox.width / 2 - left - 8),
-        Math.max(13, popoverBox.width - 29),
-      );
+      if (draft && draft.status !== 'closing') {
+        this.cancelLivewireDraft(row);
 
-      Object.entries({
-        bottom: 'auto',
-        left: `${Math.round(left)}px`,
-        position: 'fixed',
-        right: 'auto',
-        top: `${Math.round(top)}px`,
-      }).forEach(([property, value]) => popover.style.setProperty?.(property, value, 'important'));
-      popover.style.visibility = 'visible';
-      popover.style.setProperty?.('--ndb-livewire-popover-arrow-left', `${Math.round(arrowLeft)}px`);
+        return;
+      }
+
+      this.editLivewireProperty(row);
     },
 
     cancelLivewireDraft(row, restoreFocus = false) {

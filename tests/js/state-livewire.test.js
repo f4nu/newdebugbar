@@ -467,36 +467,16 @@ test('keeps a closing draft alive until Alpine removes its popover', () => {
   assert.equal(state.livewireDrafts[key], undefined);
 });
 
-test('positions property popovers inside the visible viewport', () => {
+test('toggles a property editor without replacing its trigger', () => {
   const { state } = stateHarness();
-  const styles = {};
-  const popover = {
-    getBoundingClientRect: () => ({ width: 336, height: 280 }),
-    style: {
-      setProperty(property, value, priority = '') {
-        styles[property] = value;
-        styles[`${property}:priority`] = priority;
-        this[property] = value;
-      },
-    },
-  };
-  const trigger = {
-    getBoundingClientRect: () => ({
-      bottom: 860,
-      left: 1370,
-      right: 1420,
-      width: 50,
-    }),
-  };
+  const count = state.livewirePropertyRows.find(({ path }) => path === 'count');
+  const key = state.livewireDraftKey(count);
 
-  state.positionLivewirePropertyPopover(trigger, popover);
+  state.toggleLivewirePropertyEditor(count);
+  assert.equal(state.livewireDrafts[key].status, 'editing');
 
-  assert.equal(popover.style.position, 'fixed');
-  assert.equal(popover.style.left, '1084px');
-  assert.equal(popover.style.top, '604px');
-  assert.equal(popover.style.visibility, 'visible');
-  assert.equal(styles['position:priority'], 'important');
-  assert.equal(styles['--ndb-livewire-popover-arrow-left'], '303px');
+  state.toggleLivewirePropertyEditor(count);
+  assert.equal(state.livewireDrafts[key], undefined);
 });
 
 test('returns focus to the stable property editor after applying', () => {

@@ -1,4 +1,5 @@
 @props([
+    'anchored' => false,
     'direction' => 'below',
     'widthClass' => 'ndb:w-64',
     'surfaceClass' => 'ndb:p-1.5',
@@ -8,20 +9,20 @@
 ])
 
 @php
-    $directionClass = match ($direction) {
+    $directionClass = $anchored ? '' : match ($direction) {
         'dynamic' => '',
         'below' => 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top',
         'above' => 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom',
         default => throw new InvalidArgumentException("Unsupported popover direction [{$direction}]."),
     };
 
-    $arrowDirectionClass = match ($direction) {
+    $arrowDirectionClass = $anchored ? '' : match ($direction) {
         'dynamic' => '',
         'below' => 'ndb:-top-[7px] ndb:rotate-180',
         'above' => 'ndb:-bottom-[7px]',
     };
 
-    $alignmentClass = match ($align) {
+    $alignmentClass = $anchored ? '' : match ($align) {
         'left' => 'ndb:left-0',
         'right' => 'ndb:right-0',
         'dynamic' => '',
@@ -30,27 +31,30 @@
 @endphp
 
 <div
-    @if ($direction === 'dynamic' && $align === 'dynamic')
+    @if (! $anchored && $direction === 'dynamic' && $align === 'dynamic')
         :class="[
             toolbarIsTop
                 ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
                 : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom',
             toolbarIsRight ? 'ndb:right-0' : 'ndb:left-0',
         ]"
-    @elseif ($direction === 'dynamic')
+    @elseif (! $anchored && $direction === 'dynamic')
         :class="toolbarIsTop
             ? 'ndb:top-[calc(100%+0.75rem)] ndb:origin-top'
             : 'ndb:bottom-[calc(100%+0.75rem)] ndb:origin-bottom'"
-    @elseif ($align === 'dynamic')
+    @elseif (! $anchored && $align === 'dynamic')
         :class="toolbarIsRight ? 'ndb:right-0' : 'ndb:left-0'"
     @endif
-    {{ $attributes->class("ndb:absolute ndb:z-50 {$alignmentClass} {$widthClass} {$directionClass}") }}
+    {{ $attributes->class([
+        "ndb:z-50 {$alignmentClass} {$widthClass} {$directionClass}",
+        'ndb:absolute' => ! $anchored,
+    ]) }}
 >
     <span
         aria-hidden="true"
         data-ndb-popover-arrow
         @if ($mobileMenu !== null) data-ndb-mobile-toolbar-popover-arrow="{{ $mobileMenu }}" @endif
-        @if ($direction === 'dynamic')
+        @if (! $anchored && $direction === 'dynamic')
             :class="toolbarIsTop ? 'ndb:-top-[7px] ndb:rotate-180' : 'ndb:-bottom-[7px]'"
         @endif
         class="ndb:pointer-events-none ndb:absolute ndb:z-20 ndb:h-2 ndb:w-4 {{ $arrowClass }} {{ $arrowDirectionClass }}"
