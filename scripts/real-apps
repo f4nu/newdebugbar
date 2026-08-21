@@ -455,6 +455,29 @@ OLD.PHP_EOL => "    'aliases' => Facade::defaultAliases()->toArray(),".PHP_EOL,
         'use Debugbar;'.PHP_EOL.PHP_EOL => '',
         '        Debugbar::disable();'.PHP_EOL.PHP_EOL => '',
     ],
+    $root.'/resources/views/layout/default.blade.php' => [
+        '    $usesLivewire = $livewire || $comments;'.PHP_EOL
+            => '    $usesLivewire = app()->isLocal() || $livewire || $comments;'.PHP_EOL,
+    ],
+    $root.'/resources/views/layout/blank.blade.php' => [
+        <<<'OLD'
+@props([
+    'cssEntry' => 'resources/css/front/front.css',
+    'gtmStrategy' => 'delayed',
+    'livewire' => false,
+    'usesAlpineFocus' => false,
+])
+OLD.PHP_EOL => <<<'NEW'
+@props([
+    'cssEntry' => 'resources/css/front/front.css',
+    'gtmStrategy' => 'delayed',
+    'livewire' => false,
+    'usesAlpineFocus' => false,
+])
+
+@php($livewire = app()->isLocal() || $livewire)
+NEW.PHP_EOL,
+    ],
 ];
 
 foreach ($files as $file => $replacements) {
@@ -479,6 +502,15 @@ $remaining = file_get_contents($root.'/config/app.php')
 
 if (str_contains($remaining, 'Fruitcake\\LaravelDebugbar') || str_contains($remaining, 'Debugbar::')) {
     fwrite(STDERR, 'The old Debugbar integration changed upstream and was not fully removed.'.PHP_EOL);
+    exit(1);
+}
+
+$defaultLayout = file_get_contents($root.'/resources/views/layout/default.blade.php');
+$blankLayout = file_get_contents($root.'/resources/views/layout/blank.blade.php');
+
+if (! str_contains($defaultLayout, '$usesLivewire = app()->isLocal() || $livewire || $comments;')
+    || ! str_contains($blankLayout, '@php($livewire = app()->isLocal() || $livewire)')) {
+    fwrite(STDERR, 'The Spatie layouts changed upstream and were not prepared for New Debug Bar.'.PHP_EOL);
     exit(1);
 }
 PHP
