@@ -2,6 +2,30 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
+it('centers activity dots with their labels', function () {
+    $page = visit('/profiled-livewire')
+        ->resize(1024, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::selectSectionViaPalette($page, 'livewire');
+
+    $page
+        ->assertVisible('[data-ndb-livewire-activity-list]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const items = Array.from(document.querySelectorAll('[data-ndb-livewire-activity-list] > li'));
+
+                return items.length > 0 && items.every((item) => {
+                    const dot = item.querySelector('[data-ndb-livewire-activity-dot]').getBoundingClientRect();
+                    const title = item.querySelector('[data-ndb-livewire-activity-title]').getBoundingClientRect();
+
+                    return Math.abs((dot.top + dot.height / 2) - (title.top + title.height / 2)) <= 0.75;
+                });
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('opens and applies a component property edit from its popover', function () {
     $page = visit('/profiled-livewire')
         ->resize(1024, 900)

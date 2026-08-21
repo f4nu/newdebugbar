@@ -59,14 +59,15 @@
         >
           <div
             aria-hidden="true"
-            class="ndb:relative ndb:flex ndb:translate-x-2 ndb:justify-center ndb:pt-[18px]"
+            class="ndb:relative ndb:translate-x-2"
           >
             <span
               x-show.important="index < filteredLivewireActivity.length - 1"
-              class="ndb:absolute ndb:top-[27px] ndb:-bottom-[18px] ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-zinc-200 ndb:dark:bg-zinc-800"
+              class="ndb:absolute ndb:top-[28px] ndb:-bottom-[18px] ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-zinc-200 ndb:dark:bg-zinc-800"
             ></span>
             <span
-              class="ndb:relative ndb:z-[1] ndb:size-2.5 ndb:rounded-full ndb:ring-4 ndb:ring-white ndb:dark:ring-zinc-950"
+              data-ndb-livewire-activity-dot
+              class="ndb:absolute ndb:top-[19px] ndb:left-1/2 ndb:z-[1] ndb:size-2.5 ndb:-translate-x-1/2 ndb:-translate-y-1/2 ndb:rounded-full ndb:ring-4 ndb:ring-white ndb:dark:ring-zinc-950"
               :class="item.status === 'failed' ||
               item.status === 'failed_validation'
                 ? 'ndb:bg-red-500'
@@ -89,6 +90,7 @@
             <span class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
               <span class="ndb:min-w-0 ndb:flex-1">
                 <span
+                  data-ndb-livewire-activity-title
                   class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
                   x-text="item.title"
                 ></span>
