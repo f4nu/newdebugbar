@@ -67,6 +67,8 @@ final class LivewireRegistrar
                 return;
             }
 
+            $this->remember($component, 'validation_before', $this->validationMessages($component));
+            $this->remember($component, 'validation_recorded', false);
             $this->recordComponent($component);
         });
 
@@ -163,6 +165,7 @@ final class LivewireRegistrar
                 return;
             }
 
+            $this->recordValidationStateChange($component);
             $this->recordComponent($component);
             $effects = is_array($context->effects ?? null) ? $context->effects : [];
 
@@ -203,6 +206,10 @@ final class LivewireRegistrar
 
             if (! $component instanceof Component || ! $this->isHostComponent($component)) {
                 return;
+            }
+
+            if ($exception instanceof ValidationException) {
+                $this->remember($component, 'validation_recorded', true);
             }
 
             $this->recordActivity($component, [
@@ -255,6 +262,64 @@ final class LivewireRegistrar
                 ...$activity,
             ],
         ]);
+    }
+
+    private function recordValidationStateChange(Component $component): void
+    {
+        $state = $this->componentState[$component] ?? [];
+
+        if (($state['validation_recorded'] ?? false) === true) {
+            return;
+        }
+
+        $before = is_array($state['validation_before'] ?? null)
+            ? $state['validation_before']
+            : [];
+        $messages = $this->validationMessages($component);
+
+        if ($messages === [] || $messages === $before) {
+            return;
+        }
+
+        $fields = array_values(array_map('strval', array_keys($messages)));
+        $reflection = new ReflectionClass($component);
+        $source = is_string($reflection->getFileName())
+            ? $this->callSites->location($reflection->getFileName(), $reflection->getStartLine())
+            : null;
+
+        $this->manager()->record('validation', [
+            'source' => 'livewire',
+            'fields' => $fields,
+            'rules' => array_fill_keys($fields, []),
+            'messages' => $messages,
+            'error_bag' => 'default',
+            'exception_class' => null,
+            'exception_message' => null,
+            'exception_status' => null,
+            'redirect_requested' => false,
+            'callsite' => $source,
+        ]);
+        $this->recordActivity($component, [
+            'type' => 'failure',
+            'status' => 'failed_validation',
+            'name' => $this->componentTitle($component).' failed validation',
+            'fields' => $fields,
+            'messages' => $messages,
+            'callsite' => $source,
+        ]);
+        $this->remember($component, 'validation_recorded', true);
+    }
+
+    /** @return array<string, list<string>> */
+    private function validationMessages(Component $component): array
+    {
+        try {
+            $messages = $component->getErrorBag()->toArray();
+
+            return is_array($messages) ? $messages : [];
+        } catch (Throwable) {
+            return [];
+        }
     }
 
     /** @return list<array<string, mixed>> */

@@ -41,7 +41,7 @@ it('profiles host Livewire requests without storing framework snapshots', functi
     expect($profile['sections']['request']['payload']['input'])->toBe([
         'component_message_count' => 1,
         'snapshot_data_stored' => false,
-    ])
+    ])->and($profile['sections']['request']['payload']['request_type'])->toBe('livewire')
         ->and($livewire['summary'])
         ->component_count->toBe(1)
         ->activity_count->toBeGreaterThanOrEqual(2)
@@ -138,6 +138,39 @@ it('captures validation failures handled inside host Livewire components', funct
         ->response_status->toBe(200)
         ->callsite->file->toBe('tests/Fixtures/HostValidationForm.php')
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(0);
+});
+
+it('captures a changed Livewire error bag when framework propagation has stopped', function () {
+    $html = (string) app('livewire')->mount('host-validation-form');
+    $snapshot = Utils::extractAttributeDataFromHtml($html, 'wire:snapshot');
+    $response = $this->postJson(app('livewire')->getUpdateUri(), [
+        'components' => [[
+            'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
+            'updates' => [],
+            'calls' => [['method' => 'addManualError', 'params' => []]],
+        ]],
+    ], ['X-Livewire' => '1']);
+
+    $response->assertOk()->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $failures = collect($profile['sections']['livewire']['payload']['activity'])
+        ->where('status', 'failed_validation');
+
+    expect($profile['sections']['validation']['payload']['items'])
+        ->toHaveCount(1)
+        ->{0}->toMatchArray([
+            'source' => 'livewire',
+            'fields' => ['email'],
+            'messages' => ['email' => ['This email was rejected by the component.']],
+            'exception_class' => null,
+        ])
+        ->and($failures)->toHaveCount(1)
+        ->and($failures->first())->toMatchArray([
+            'component_name' => 'host-validation-form',
+            'type' => 'failure',
+            'status' => 'failed_validation',
+            'fields' => ['email'],
+        ]);
 });
 
 it('preserves host Livewire response bytes', function () use ($hostCounterMessage, $hostCounterSnapshot) {

@@ -486,6 +486,10 @@ final class ProfileManager
             return 'stream';
         }
 
+        if ($request->headers->has('X-Livewire')) {
+            return 'livewire';
+        }
+
         if ($request->ajax()) {
             return 'ajax';
         }

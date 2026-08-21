@@ -19,6 +19,11 @@ final class HostValidationForm extends Component
         ]);
     }
 
+    public function addManualError(): void
+    {
+        $this->addError('email', 'This email was rejected by the component.');
+    }
+
     public function render(): string
     {
         return <<<'HTML'
