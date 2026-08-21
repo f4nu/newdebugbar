@@ -689,7 +689,7 @@ cleanup_servers() {
 wait_for_server() {
     local target="$1"
     local pid="$2"
-    local port log_file attempt=0
+    local port log_file response_headers attempt=0
 
     port="$(target_port "${target}")"
     log_file="${LOGS_ROOT}/${target}.log"
@@ -700,7 +700,8 @@ wait_for_server() {
             fail "$(target_label "${target}") exited before it became ready."
         fi
 
-        if curl --fail --silent --output /dev/null "http://127.0.0.1:${port}"; then
+        if response_headers="$(curl --fail --silent --dump-header - --output /dev/null "http://127.0.0.1:${port}" 2>/dev/null)" \
+            && printf '%s\n' "${response_headers}" | grep -qi '^X-NewDebugBar-Profile:'; then
             printf '%s is running at http://127.0.0.1:%s\n' "$(target_label "${target}")" "${port}"
             return
         fi
