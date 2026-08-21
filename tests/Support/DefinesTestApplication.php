@@ -249,20 +249,28 @@ trait DefinesTestApplication
             fn () => response('<!doctype html><html><body>Validation redirect target</body></html>'),
         );
 
-        $router->middleware(ProfileRequest::class)->get('/hostile-styles', fn () => response(<<<'HTML'
-            <!doctype html>
-            <html>
-                <head>
-                    <style>
-                        body { font-family: serif; }
-                        button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
-                    </style>
-                </head>
-                <body>
-                    <button data-testid="host-button">Host button</button>
-                </body>
-            </html>
-            HTML));
+        $router->middleware(ProfileRequest::class)->get('/hostile-styles', function () {
+            foreach (['alpha', 'beta', 'gamma'] as $value) {
+                DB::select('select ? as hostile_value', [$value]);
+            }
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head>
+                        <style>
+                            body { font-family: serif; }
+                            button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
+                        </style>
+                    </head>
+                    <body>
+                        <button data-testid="host-button">Host button</button>
+                        <code data-testid="host-code">Host code</code>
+                    </body>
+                </html>
+                HTML);
+        });
 
         $router->middleware(ProfileRequest::class)->get('/plain-json', fn () => response()->json(['ready' => true]));
 

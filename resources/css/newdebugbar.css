@@ -53,6 +53,11 @@
     margin: 0;
 }
 
+#newdebugbar :where(pre, code) {
+    background: transparent;
+    color: inherit;
+}
+
 #newdebugbar :where(button, input, select) {
     letter-spacing: inherit;
 }
