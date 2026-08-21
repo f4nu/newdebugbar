@@ -90,24 +90,24 @@
                             data-ndb-livewire-edit-control
                             :aria-checked="livewireDrafts[livewireDraftKey(row)].value"
                             @click="toggleLivewireBoolean(row)"
-                            class="ndb:group ndb:grid ndb:h-10 ndb:w-full ndb:grid-cols-[1fr_auto_1fr] ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
+                            class="ndb:group ndb:flex ndb:w-full ndb:items-center ndb:justify-center ndb:gap-3 ndb:focus-visible:outline-none"
                         >
                             <span
                                 data-ndb-livewire-boolean-label="false"
-                                class="ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:transition-colors"
+                                class="ndb:text-right ndb:text-[11px] ndb:leading-none ndb:font-semibold ndb:transition-colors"
                                 :class="livewireDrafts[livewireDraftKey(row)].value
                                     ? 'ndb:text-zinc-400'
                                     : 'ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100'"
                             >False</span>
                             <span
                                 aria-hidden="true"
-                                class="ndb:relative ndb:h-6 ndb:w-11 ndb:shrink-0 ndb:rounded-full ndb:bg-zinc-300 ndb:shadow-inner ndb:transition-colors ndb:group-aria-checked:bg-indigo-600 ndb:dark:bg-zinc-700 ndb:dark:group-aria-checked:bg-indigo-500"
+                                class="ndb:relative ndb:h-6 ndb:w-11 ndb:shrink-0 ndb:rounded-full ndb:bg-zinc-300 ndb:shadow-inner ndb:transition-colors ndb:group-aria-checked:bg-indigo-600 ndb:group-focus-visible:ring-2 ndb:group-focus-visible:ring-indigo-500 ndb:group-focus-visible:ring-offset-2 ndb:dark:bg-zinc-700 ndb:dark:group-aria-checked:bg-indigo-500 ndb:dark:group-focus-visible:ring-indigo-400 ndb:dark:group-focus-visible:ring-offset-zinc-950"
                             >
                                 <span class="ndb:absolute ndb:top-0.5 ndb:left-0.5 ndb:size-5 ndb:rounded-full ndb:bg-white ndb:shadow-sm ndb:transition-transform ndb:group-aria-checked:translate-x-5"></span>
                             </span>
                             <span
                                 data-ndb-livewire-boolean-label="true"
-                                class="ndb:text-left ndb:text-[11px] ndb:font-semibold ndb:transition-colors"
+                                class="ndb:text-left ndb:text-[11px] ndb:leading-none ndb:font-semibold ndb:transition-colors"
                                 :class="livewireDrafts[livewireDraftKey(row)].value
                                     ? 'ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100'
                                     : 'ndb:text-zinc-400'"

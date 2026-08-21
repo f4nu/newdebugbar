@@ -281,13 +281,25 @@ it('opens and applies a component property edit from its popover', function () {
                 const thumbBox = thumb.getBoundingClientRect();
                 const falseBox = falseLabel.getBoundingClientRect();
                 const trueBox = trueLabel.getBoundingClientRect();
+                const controlBox = control.getBoundingClientRect();
+                const controlStyle = getComputedStyle(control);
+                const trackCenter = (trackBox.top + trackBox.bottom) / 2;
+                const falseCenter = (falseBox.top + falseBox.bottom) / 2;
+                const trueCenter = (trueBox.top + trueBox.bottom) / 2;
 
                 return Math.abs(trackBox.width - 44) <= 1
                     && Math.abs(trackBox.height - 24) <= 1
                     && Math.abs(thumbBox.width - 20) <= 1
                     && thumbBox.left > trackBox.left + 16
-                    && falseBox.right < trackBox.left
-                    && trackBox.right < trueBox.left;
+                    && Math.abs(trackBox.left - falseBox.right - 12) <= 1
+                    && Math.abs(trueBox.left - trackBox.right - 12) <= 1
+                    && Math.abs(falseCenter - trackCenter) <= 0.75
+                    && Math.abs(trueCenter - trackCenter) <= 0.75
+                    && Math.abs(controlBox.height - trackBox.height) <= 1
+                    && parseFloat(controlStyle.borderTopWidth) === 0
+                    && parseFloat(controlStyle.paddingTop) === 0
+                    && parseFloat(controlStyle.paddingBottom) === 0
+                    && controlStyle.backgroundColor === 'rgba(0, 0, 0, 0)';
             })()
             JS)
         ->click('[data-ndb-livewire-edit-control][role="switch"]')
