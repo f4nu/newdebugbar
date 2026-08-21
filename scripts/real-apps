@@ -1,0 +1,781 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+readonly SCRIPT_DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly PACKAGE_ROOT="$(cd "${SCRIPT_DIRECTORY}/.." && pwd)"
+readonly WORKBENCH_ROOT="${PACKAGE_ROOT}/.workbench"
+readonly APPS_ROOT="${WORKBENCH_ROOT}/real-apps"
+readonly LOGS_ROOT="${WORKBENCH_ROOT}/logs"
+
+readonly FREEK_REPOSITORY="https://github.com/spatie/freek.dev.git"
+readonly FREEK_REVISION="579faaa057ee855eececa99cbf4a929df2d3f5ef"
+readonly SPATIE_REPOSITORY="https://github.com/spatie/spatie.be.git"
+readonly SPATIE_REVISION="2c9d83613cb11dd7a6276f1bc4f0113265ba195d"
+
+readonly DATABASE_HOST="${NEWDEBUGBAR_REAL_APPS_DB_HOST:-127.0.0.1}"
+readonly DATABASE_PORT="${NEWDEBUGBAR_REAL_APPS_DB_PORT:-3306}"
+readonly DATABASE_USER="${NEWDEBUGBAR_REAL_APPS_DB_USER:-root}"
+readonly DATABASE_PASSWORD="${NEWDEBUGBAR_REAL_APPS_DB_PASSWORD:-}"
+
+SERVER_PIDS=()
+
+usage() {
+    cat <<'EOF'
+Set up and serve real Laravel applications with this New Debug Bar checkout.
+
+Usage:
+  scripts/real-apps doctor [freek|spatie|all]
+  scripts/real-apps setup [freek|spatie|all]
+  scripts/real-apps serve [freek|spatie|all]
+  scripts/real-apps status [freek|spatie|all]
+  scripts/real-apps help
+
+Commands:
+  doctor  Check the local PHP, Node, Composer, Git, curl, and MySQL runtime.
+  setup   Clone, configure, instrument, migrate, seed, and build each app.
+  serve   Run each app with php artisan serve until Ctrl-C is pressed.
+  status  Show revisions, package state, local package linkage, and URLs.
+
+The default target is all. Runtime files live below .workbench and are ignored.
+
+MySQL connection overrides:
+  NEWDEBUGBAR_REAL_APPS_DB_HOST      Default: 127.0.0.1
+  NEWDEBUGBAR_REAL_APPS_DB_PORT      Default: 3306
+  NEWDEBUGBAR_REAL_APPS_DB_USER      Default: root
+  NEWDEBUGBAR_REAL_APPS_DB_PASSWORD  Default: empty
+
+Applications:
+  freek   http://127.0.0.1:8141
+  spatie  http://127.0.0.1:8142
+
+For MCP access, start a fresh task inside the selected directory below
+.workbench/real-apps after setup. The MCP server runs through that app's artisan.
+EOF
+}
+
+fail() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+heading() {
+    printf '\n%s\n' "$*"
+}
+
+target_label() {
+    case "$1" in
+        freek) printf 'freek.dev\n' ;;
+        spatie) printf 'spatie.be\n' ;;
+        *) fail "Unknown target: $1" ;;
+    esac
+}
+
+target_repository() {
+    case "$1" in
+        freek) printf '%s\n' "${FREEK_REPOSITORY}" ;;
+        spatie) printf '%s\n' "${SPATIE_REPOSITORY}" ;;
+        *) fail "Unknown target: $1" ;;
+    esac
+}
+
+target_revision() {
+    case "$1" in
+        freek) printf '%s\n' "${FREEK_REVISION}" ;;
+        spatie) printf '%s\n' "${SPATIE_REVISION}" ;;
+        *) fail "Unknown target: $1" ;;
+    esac
+}
+
+target_directory() {
+    printf '%s/%s\n' "${APPS_ROOT}" "$(target_label "$1")"
+}
+
+target_database() {
+    case "$1" in
+        freek) printf 'newdebugbar_freek_dev\n' ;;
+        spatie) printf 'newdebugbar_spatie_be\n' ;;
+        *) fail "Unknown target: $1" ;;
+    esac
+}
+
+target_port() {
+    case "$1" in
+        freek) printf '8141\n' ;;
+        spatie) printf '8142\n' ;;
+        *) fail "Unknown target: $1" ;;
+    esac
+}
+
+target_old_debugbar() {
+    case "$1" in
+        freek) printf 'barryvdh/laravel-debugbar\n' ;;
+        spatie) printf 'fruitcake/laravel-debugbar\n' ;;
+        *) fail "Unknown target: $1" ;;
+    esac
+}
+
+targets() {
+    case "$1" in
+        freek|spatie) printf '%s\n' "$1" ;;
+        all) printf 'freek\nspatie\n' ;;
+        *) fail "Target must be freek, spatie, or all." ;;
+    esac
+}
+
+require_commands() {
+    local command_name
+
+    for command_name in git composer php node npm curl; do
+        command -v "${command_name}" >/dev/null 2>&1 || fail "${command_name} is required."
+    done
+}
+
+check_php() {
+    local selection="$1"
+    local minimum_version="8.4.0"
+
+    if [ "${selection}" = "freek" ] || [ "${selection}" = "all" ]; then
+        minimum_version="8.5.0"
+    fi
+
+    php -r 'exit(version_compare(PHP_VERSION, $argv[1], ">=") ? 0 : 1);' "${minimum_version}" \
+        || fail "PHP ${minimum_version} or newer is required for ${selection}."
+
+    php <<'PHP' || fail "Install the missing PHP extensions listed above."
+<?php
+
+$required = [
+    'bcmath',
+    'curl',
+    'dom',
+    'exif',
+    'gd',
+    'intl',
+    'json',
+    'libxml',
+    'mbstring',
+    'openssl',
+    'pcntl',
+    'pdo_mysql',
+    'simplexml',
+    'soap',
+    'zip',
+];
+
+$missing = array_values(array_filter(
+    $required,
+    static fn (string $extension): bool => ! extension_loaded($extension),
+));
+
+if ($missing !== []) {
+    fwrite(STDERR, 'Missing PHP extensions: '.implode(', ', $missing).PHP_EOL);
+    exit(1);
+}
+PHP
+}
+
+check_node() {
+    node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit((major === 20 && minor >= 19) || major >= 22 ? 0 : 1)' \
+        || fail "Node 20.19 or Node 22 or newer is required."
+}
+
+with_database_environment() {
+    (
+        export NDB_REAL_APPS_DB_HOST="${DATABASE_HOST}"
+        export NDB_REAL_APPS_DB_PORT="${DATABASE_PORT}"
+        export NDB_REAL_APPS_DB_USER="${DATABASE_USER}"
+        export NDB_REAL_APPS_DB_PASSWORD="${DATABASE_PASSWORD}"
+
+        "$@"
+    )
+}
+
+check_mysql_connection() {
+    with_database_environment php <<'PHP' || fail "MySQL is not reachable with the configured connection."
+<?php
+
+try {
+    $pdo = new PDO(
+        sprintf(
+            'mysql:host=%s;port=%s;charset=utf8mb4',
+            getenv('NDB_REAL_APPS_DB_HOST'),
+            getenv('NDB_REAL_APPS_DB_PORT'),
+        ),
+        getenv('NDB_REAL_APPS_DB_USER'),
+        getenv('NDB_REAL_APPS_DB_PASSWORD'),
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+    );
+
+    $pdo->query('SELECT 1');
+} catch (Throwable) {
+    exit(1);
+}
+PHP
+}
+
+doctor() {
+    local selection="$1"
+
+    targets "${selection}" >/dev/null
+
+    heading "Checking the real-app runtime"
+    require_commands
+    check_php "${selection}"
+    check_node
+    check_mysql_connection
+
+    printf 'PHP %s\n' "$(php -r 'echo PHP_VERSION;')"
+    printf 'Node %s\n' "$(node --version)"
+    printf '%s\n' "$(composer --version --no-ansi 2>/dev/null)"
+    printf 'MySQL connection available at %s:%s\n' "${DATABASE_HOST}" "${DATABASE_PORT}"
+}
+
+clone_target() {
+    local target="$1"
+    local directory repository revision current_repository current_revision
+
+    directory="$(target_directory "${target}")"
+    repository="$(target_repository "${target}")"
+    revision="$(target_revision "${target}")"
+
+    if [ ! -e "${directory}" ]; then
+        heading "Cloning $(target_label "${target}")"
+        mkdir -p "${APPS_ROOT}"
+        git init --quiet "${directory}"
+        git -C "${directory}" remote add origin "${repository}"
+        git -C "${directory}" fetch --quiet --depth 1 origin "${revision}"
+        git -C "${directory}" checkout --quiet --detach FETCH_HEAD
+        return
+    fi
+
+    [ -d "${directory}/.git" ] || fail "${directory} exists but is not a Git checkout."
+
+    current_repository="$(git -C "${directory}" config --get remote.origin.url || true)"
+    [ "${current_repository}" = "${repository}" ] \
+        || fail "$(target_label "${target}") has an unexpected origin: ${current_repository}"
+
+    current_revision="$(git -C "${directory}" rev-parse HEAD 2>/dev/null || true)"
+    [ "${current_revision}" = "${revision}" ] \
+        || fail "$(target_label "${target}") is not at the pinned revision ${revision}."
+}
+
+configure_environment() {
+    local target="$1"
+    local directory database port cookie queue_connection="sync"
+
+    directory="$(target_directory "${target}")"
+    database="$(target_database "${target}")"
+    port="$(target_port "${target}")"
+    cookie="newdebugbar_${target}_session"
+
+    if [ "${target}" = "spatie" ]; then
+        queue_connection="database"
+    fi
+
+    cp "${directory}/.env.example" "${directory}/.env"
+    chmod 600 "${directory}/.env"
+
+    (
+        export NDB_ENV_FILE="${directory}/.env"
+        export NDB_ENV_APP_URL="http://127.0.0.1:${port}"
+        export NDB_ENV_DB_HOST="${DATABASE_HOST}"
+        export NDB_ENV_DB_PORT="${DATABASE_PORT}"
+        export NDB_ENV_DB_DATABASE="${database}"
+        export NDB_ENV_DB_USER="${DATABASE_USER}"
+        export NDB_ENV_DB_PASSWORD="${DATABASE_PASSWORD}"
+        export NDB_ENV_SESSION_COOKIE="${cookie}"
+        export NDB_ENV_QUEUE_CONNECTION="${queue_connection}"
+
+        php <<'PHP'
+<?php
+
+$file = getenv('NDB_ENV_FILE');
+$contents = file_get_contents($file);
+
+$values = [
+    'APP_ENV' => 'local',
+    'APP_DEBUG' => 'true',
+    'APP_URL' => getenv('NDB_ENV_APP_URL'),
+    'APP_MAINTENANCE_STORE' => 'file',
+    'DB_CONNECTION' => 'mysql',
+    'DB_HOST' => getenv('NDB_ENV_DB_HOST'),
+    'DB_PORT' => getenv('NDB_ENV_DB_PORT'),
+    'DB_DATABASE' => getenv('NDB_ENV_DB_DATABASE'),
+    'DB_USERNAME' => getenv('NDB_ENV_DB_USER'),
+    'DB_PASSWORD' => getenv('NDB_ENV_DB_PASSWORD'),
+    'BROADCAST_CONNECTION' => 'log',
+    'BROADCAST_DRIVER' => 'log',
+    'CACHE_STORE' => 'file',
+    'CACHE_DRIVER' => 'file',
+    'SESSION_DRIVER' => 'file',
+    'SESSION_COOKIE' => getenv('NDB_ENV_SESSION_COOKIE'),
+    'QUEUE_CONNECTION' => getenv('NDB_ENV_QUEUE_CONNECTION'),
+    'QUEUE_DRIVER' => getenv('NDB_ENV_QUEUE_CONNECTION'),
+    'MAIL_MAILER' => 'log',
+    'RESPONSE_CACHE_ENABLED' => 'false',
+    'NEWDEBUGBAR_ENABLED' => 'true',
+    'STRIPE_KEY' => '',
+    'STRIPE_SECRET' => '',
+    'GITHUB_TOKEN' => '',
+    'GITHUB_ACCESS_TOKEN' => '',
+    'MAILCOACH_DOMAIN' => '',
+    'MAILCOACH_TOKEN' => '',
+    'OPENAI_API_KEY' => '',
+    'OPENAI_ORGANIZATION' => '',
+    'REMOTE_HOST' => '',
+    'REMOTE_USER' => '',
+    'REMOTE_PATH' => '',
+];
+
+$encode = static function (string $value): string {
+    if ($value === '') {
+        return '';
+    }
+
+    if (preg_match('/^[A-Za-z0-9_:\/.@+\-]+$/', $value) === 1) {
+        return $value;
+    }
+
+    return '"'.str_replace(['\\', '"', '$'], ['\\\\', '\\"', '\\$'], $value).'"';
+};
+
+foreach ($values as $key => $value) {
+    $line = $key.'='.$encode((string) $value);
+    $pattern = '/^'.preg_quote($key, '/').'=[^\r\n]*$/m';
+
+    if (preg_match($pattern, $contents) === 1) {
+        $contents = preg_replace_callback($pattern, static fn (): string => $line, $contents, 1);
+        continue;
+    }
+
+    $contents = rtrim($contents).PHP_EOL.$line.PHP_EOL;
+}
+
+file_put_contents($file, $contents);
+PHP
+    )
+}
+
+create_database() {
+    local database="$1"
+
+    case "${database}" in
+        newdebugbar_freek_dev|newdebugbar_spatie_be) ;;
+        *) fail "Refusing to create an unexpected database: ${database}" ;;
+    esac
+
+    (
+        export NDB_REAL_APPS_DB_HOST="${DATABASE_HOST}"
+        export NDB_REAL_APPS_DB_PORT="${DATABASE_PORT}"
+        export NDB_REAL_APPS_DB_USER="${DATABASE_USER}"
+        export NDB_REAL_APPS_DB_PASSWORD="${DATABASE_PASSWORD}"
+        export NDB_REAL_APPS_DATABASE="${database}"
+
+        php <<'PHP'
+<?php
+
+$database = getenv('NDB_REAL_APPS_DATABASE');
+$allowed = ['newdebugbar_freek_dev', 'newdebugbar_spatie_be'];
+
+if (! in_array($database, $allowed, true)) {
+    fwrite(STDERR, 'Unexpected database name.'.PHP_EOL);
+    exit(1);
+}
+
+$pdo = new PDO(
+    sprintf(
+        'mysql:host=%s;port=%s;charset=utf8mb4',
+        getenv('NDB_REAL_APPS_DB_HOST'),
+        getenv('NDB_REAL_APPS_DB_PORT'),
+    ),
+    getenv('NDB_REAL_APPS_DB_USER'),
+    getenv('NDB_REAL_APPS_DB_PASSWORD'),
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+);
+
+$pdo->exec(sprintf(
+    'CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+    $database,
+));
+PHP
+    )
+}
+
+root_requires_package() {
+    local directory="$1"
+    local section="$2"
+    local package="$3"
+
+    php -r '
+        $composer = json_decode(file_get_contents($argv[1]), true, flags: JSON_THROW_ON_ERROR);
+        exit(isset($composer[$argv[2]][$argv[3]]) ? 0 : 1);
+    ' "${directory}/composer.json" "${section}" "${package}"
+}
+
+prepare_host_for_swap() {
+    local target="$1"
+    local directory
+
+    [ "${target}" = "spatie" ] || return 0
+
+    directory="$(target_directory "${target}")"
+
+    (
+        export NDB_HOST_APP="${directory}"
+
+        php <<'PHP'
+<?php
+
+$root = getenv('NDB_HOST_APP');
+$files = [
+    $root.'/config/app.php' => [
+        "        Fruitcake\\LaravelDebugbar\\ServiceProvider::class,".PHP_EOL => '',
+        <<<'OLD'
+    'aliases' => Facade::defaultAliases()->merge([
+        'Debugbar' => Fruitcake\LaravelDebugbar\Facades\Debugbar::class,
+    ])->toArray(),
+OLD.PHP_EOL => "    'aliases' => Facade::defaultAliases()->toArray(),".PHP_EOL,
+    ],
+    $root.'/app/Http/Controllers/PackageHeaderController.php' => [
+        'use Debugbar;'.PHP_EOL.PHP_EOL => '',
+        '        Debugbar::disable();'.PHP_EOL.PHP_EOL => '',
+    ],
+];
+
+foreach ($files as $file => $replacements) {
+    $contents = file_get_contents($file);
+
+    foreach ($replacements as $old => $new) {
+        $contents = str_replace($old, $new, $contents);
+    }
+
+    file_put_contents($file, $contents);
+}
+
+$oldConfig = $root.'/config/debugbar.php';
+
+if (is_file($oldConfig) && ! unlink($oldConfig)) {
+    fwrite(STDERR, 'Could not remove the old Debugbar config.'.PHP_EOL);
+    exit(1);
+}
+
+$remaining = file_get_contents($root.'/config/app.php')
+    .file_get_contents($root.'/app/Http/Controllers/PackageHeaderController.php');
+
+if (str_contains($remaining, 'Fruitcake\\LaravelDebugbar') || str_contains($remaining, 'Debugbar::')) {
+    fwrite(STDERR, 'The old Debugbar integration changed upstream and was not fully removed.'.PHP_EOL);
+    exit(1);
+}
+PHP
+    )
+}
+
+swap_debugbar() {
+    local target="$1"
+    local directory old_debugbar
+
+    directory="$(target_directory "${target}")"
+    old_debugbar="$(target_old_debugbar "${target}")"
+
+    heading "Installing New Debug Bar in $(target_label "${target}")"
+    prepare_host_for_swap "${target}"
+
+    (
+        cd "${directory}"
+
+        composer show newdebugbar/newdebugbar --no-ansi >/dev/null 2>&1 || true
+        composer config repositories.newdebugbar path ../../..
+
+        if [ "${target}" = "spatie" ]; then
+            composer config use-github-api false
+        fi
+
+        if [ "${target}" = "freek" ] && root_requires_package "${directory}" require-dev "${old_debugbar}"; then
+            composer remove --dev "${old_debugbar}" --no-update --no-interaction
+        elif [ "${target}" = "spatie" ] && root_requires_package "${directory}" require "${old_debugbar}"; then
+            composer remove "${old_debugbar}" --no-update --no-interaction
+        fi
+
+        composer require --dev newdebugbar/newdebugbar:dev-main \
+            --with-all-dependencies \
+            --minimal-changes \
+            --no-interaction \
+            --prefer-dist
+    )
+}
+
+create_spatie_jobs_table() {
+    local target="$1"
+
+    [ "${target}" = "spatie" ] || return 0
+
+    (
+        cd "$(target_directory "${target}")"
+
+        php <<'PHP'
+<?php
+
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+require 'vendor/autoload.php';
+
+$app = require 'bootstrap/app.php';
+$app->make(Kernel::class)->bootstrap();
+
+if (! Schema::hasTable('jobs')) {
+    Schema::create('jobs', function (Blueprint $table): void {
+        $table->bigIncrements('id');
+        $table->string('queue')->index();
+        $table->longText('payload');
+        $table->unsignedTinyInteger('attempts');
+        $table->unsignedInteger('reserved_at')->nullable();
+        $table->unsignedInteger('available_at');
+        $table->unsignedInteger('created_at');
+    });
+}
+PHP
+    )
+}
+
+build_target() {
+    local target="$1"
+    local directory
+
+    directory="$(target_directory "${target}")"
+
+    heading "Preparing $(target_label "${target}")"
+
+    (
+        cd "${directory}"
+
+        php artisan key:generate --force --no-interaction
+        php artisan optimize:clear --no-interaction
+        php artisan migrate:fresh --force --no-interaction
+        create_spatie_jobs_table "${target}"
+        php artisan db:seed --force --no-interaction
+        php artisan storage:link --no-interaction
+
+        PUPPETEER_SKIP_DOWNLOAD=true npm ci --no-audit --no-fund
+        npm run build
+    )
+}
+
+verify_target() {
+    local target="$1"
+    local directory old_debugbar resolved_package resolved_root
+
+    directory="$(target_directory "${target}")"
+    old_debugbar="$(target_old_debugbar "${target}")"
+
+    (
+        cd "${directory}"
+
+        composer show newdebugbar/newdebugbar --no-ansi >/dev/null
+
+        if composer show "${old_debugbar}" --no-ansi >/dev/null 2>&1; then
+            fail "${old_debugbar} is still installed in $(target_label "${target}")."
+        fi
+
+        resolved_package="$(cd vendor/newdebugbar/newdebugbar && pwd -P)"
+        resolved_root="$(cd "${PACKAGE_ROOT}" && pwd -P)"
+        [ "${resolved_package}" = "${resolved_root}" ] \
+            || fail "$(target_label "${target}") is not using the local package checkout."
+
+        php artisan env --no-ansi | grep -q 'local' \
+            || fail "$(target_label "${target}") is not running in the local environment."
+    )
+
+    printf '%s is ready at http://127.0.0.1:%s\n' \
+        "$(target_label "${target}")" \
+        "$(target_port "${target}")"
+}
+
+setup_target() {
+    local target="$1"
+
+    clone_target "${target}"
+    configure_environment "${target}"
+    create_database "$(target_database "${target}")"
+    swap_debugbar "${target}"
+    build_target "${target}"
+    verify_target "${target}"
+}
+
+setup() {
+    local selection="$1"
+    local target
+
+    doctor "${selection}"
+
+    while IFS= read -r target; do
+        setup_target "${target}"
+    done < <(targets "${selection}")
+}
+
+status_target() {
+    local target="$1"
+    local directory expected_revision current_revision old_debugbar resolved_package
+
+    directory="$(target_directory "${target}")"
+    expected_revision="$(target_revision "${target}")"
+    old_debugbar="$(target_old_debugbar "${target}")"
+
+    heading "$(target_label "${target}")"
+
+    if [ ! -d "${directory}/.git" ]; then
+        printf 'State: not set up\n'
+        printf 'Path: %s\n' "${directory}"
+        return 1
+    fi
+
+    current_revision="$(git -C "${directory}" rev-parse HEAD)"
+    printf 'Path: %s\n' "${directory}"
+    printf 'Revision: %s\n' "${current_revision}"
+
+    if [ "${current_revision}" != "${expected_revision}" ]; then
+        printf 'Pinned revision: %s (mismatch)\n' "${expected_revision}"
+        return 1
+    fi
+
+    if ! (cd "${directory}" && composer show newdebugbar/newdebugbar --no-ansi >/dev/null 2>&1); then
+        printf 'New Debug Bar: missing\n'
+        return 1
+    fi
+
+    if (cd "${directory}" && composer show "${old_debugbar}" --no-ansi >/dev/null 2>&1); then
+        printf 'Old Debugbar: still installed\n'
+        return 1
+    fi
+
+    resolved_package="$(cd "${directory}/vendor/newdebugbar/newdebugbar" && pwd -P)"
+    if [ "${resolved_package}" != "$(cd "${PACKAGE_ROOT}" && pwd -P)" ]; then
+        printf 'New Debug Bar: installed, but not linked to this checkout\n'
+        return 1
+    fi
+
+    printf 'New Debug Bar: linked to this checkout\n'
+    printf 'Old Debugbar: absent\n'
+    printf 'URL: http://127.0.0.1:%s\n' "$(target_port "${target}")"
+}
+
+status() {
+    local selection="$1"
+    local target result=0
+
+    while IFS= read -r target; do
+        status_target "${target}" || result=1
+    done < <(targets "${selection}")
+
+    return "${result}"
+}
+
+cleanup_servers() {
+    local pid
+
+    trap - EXIT INT TERM
+
+    for pid in "${SERVER_PIDS[@]}"; do
+        kill "${pid}" >/dev/null 2>&1 || true
+    done
+
+    for pid in "${SERVER_PIDS[@]}"; do
+        wait "${pid}" >/dev/null 2>&1 || true
+    done
+}
+
+wait_for_server() {
+    local target="$1"
+    local pid="$2"
+    local port log_file attempt=0
+
+    port="$(target_port "${target}")"
+    log_file="${LOGS_ROOT}/${target}.log"
+
+    while [ "${attempt}" -lt 60 ]; do
+        if ! kill -0 "${pid}" >/dev/null 2>&1; then
+            tail -n 30 "${log_file}" >&2 || true
+            fail "$(target_label "${target}") exited before it became ready."
+        fi
+
+        if curl --fail --silent --output /dev/null "http://127.0.0.1:${port}"; then
+            printf '%s is running at http://127.0.0.1:%s\n' "$(target_label "${target}")" "${port}"
+            return
+        fi
+
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+
+    tail -n 30 "${log_file}" >&2 || true
+    fail "$(target_label "${target}") did not become ready within 60 seconds."
+}
+
+start_server() {
+    local target="$1"
+    local directory port log_file pid
+
+    directory="$(target_directory "${target}")"
+    port="$(target_port "${target}")"
+    log_file="${LOGS_ROOT}/${target}.log"
+
+    [ -f "${directory}/artisan" ] || fail "Run setup for $(target_label "${target}") first."
+    verify_target "${target}"
+
+    mkdir -p "${LOGS_ROOT}"
+    : > "${log_file}"
+
+    (
+        cd "${directory}"
+        exec php artisan serve --host=127.0.0.1 --port="${port}" --no-interaction
+    ) >"${log_file}" 2>&1 &
+
+    pid=$!
+    SERVER_PIDS+=("${pid}")
+    wait_for_server "${target}" "${pid}"
+}
+
+serve() {
+    local selection="$1"
+    local target pid
+
+    require_commands
+    mkdir -p "${LOGS_ROOT}"
+    trap cleanup_servers EXIT INT TERM
+
+    while IFS= read -r target; do
+        start_server "${target}"
+    done < <(targets "${selection}")
+
+    printf '\nLogs are in %s. Press Ctrl-C to stop.\n' "${LOGS_ROOT}"
+
+    while true; do
+        for pid in "${SERVER_PIDS[@]}"; do
+            kill -0 "${pid}" >/dev/null 2>&1 || fail "A real-app server stopped unexpectedly."
+        done
+
+        sleep 1
+    done
+}
+
+main() {
+    local command="${1:-help}"
+    local selection="${2:-all}"
+
+    if [ "$#" -gt 2 ]; then
+        fail "Too many arguments."
+    fi
+
+    case "${command}" in
+        doctor) doctor "${selection}" ;;
+        setup) setup "${selection}" ;;
+        serve) serve "${selection}" ;;
+        status) status "${selection}" ;;
+        help|-h|--help) usage ;;
+        *) usage >&2; fail "Unknown command: ${command}" ;;
+    esac
+}
+
+main "$@"
