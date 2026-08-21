@@ -237,23 +237,15 @@ test('orders several roots and nested instances while preserving stable instance
   );
   assert.equal(state.livewireComponentTitle('root-2'), 'Event Console');
   assert.equal(state.livewireComponentTitle('missing'), 'missing');
-  assert.equal(state.livewireComponentLatestActivity(state.livewireComponents[0]).id, 'activity-2');
-  assert.equal(state.livewireComponentActivityTitle(activity[0]), 'Mounted');
-  assert.equal(state.livewireComponentActivityTitle({ ...activity[0], kind: 'unmount' }), 'Unmounted');
-  assert.equal(state.livewireComponentActivityTitle(activity[1]), 'Count changed');
-  assert.equal(state.livewireComponentActivityTitle(null), 'Activity');
-  assert.deepEqual(
-    state.livewireComponentActivity('root-1').map(({ id }) => id),
-    ['activity-2', 'activity-1'],
-  );
 });
 
-test('distinguishes repeated component instances by id and parent context', () => {
+test('distinguishes repeated components with meaningful public context', () => {
   const repeated = {
     ...browserComponents[2],
     id: 'child-2-abcdef',
     sequence: 4,
     parentId: 'root-2',
+    properties: [{ path: 'label', type: 'String', value: 'Engagement' }],
   };
   const trace = traceHarness({
     ready: true,
@@ -265,12 +257,9 @@ test('distinguishes repeated component instances by id and parent context', () =
   const first = state.livewireComponentById('child-1');
   const second = state.livewireComponentById('child-2-abcdef');
 
-  assert.equal(state.livewireComponentNeedsIdentity(first), true);
-  assert.equal(state.livewireComponentNeedsIdentity(second), true);
-  assert.equal(state.livewireComponentNeedsIdentity(state.livewireComponentById('root-1')), false);
-  assert.equal(state.livewireComponentParentLabel(first), 'Control Panel');
-  assert.equal(state.livewireComponentParentLabel(second), 'Event Console');
-  assert.equal(state.livewireShortInstance(second.id), 'Instance abcdef');
+  assert.equal(state.livewireComponentContext(first), 'Revenue');
+  assert.equal(state.livewireComponentContext(second), 'Engagement');
+  assert.equal(state.livewireComponentContext(state.livewireComponentById('root-1')), '');
   assert.equal(state.livewireComponentStatusDescription(second), 'A Livewire update is running.');
 });
 
@@ -301,6 +290,24 @@ test('collapses every component branch without hiding search matches', () => {
   assert.equal(child.hasChildren, true);
   assert.deepEqual(child.ancestorIds, ['root-1']);
   assert.deepEqual(pulse.ancestorIds, ['child-1', 'root-1']);
+  assert.deepEqual(state.livewireCollapsedComponents, ['root-1', 'child-1']);
+  assert.equal(state.livewireComponentCollapsed(root), true);
+  assert.equal(state.livewireComponentCollapsed(child), true);
+  assert.deepEqual(
+    state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'root-2'],
+  );
+
+  state.toggleLivewireComponent(root);
+  assert.equal(state.livewireComponentCollapsed(root), false);
+  assert.deepEqual(
+    state.filteredLivewireComponents.map(({ id }) => id),
+    ['root-1', 'root-2', 'child-1'],
+  );
+
+  state.toggleLivewireComponent(child);
+  assert.equal(state.livewireComponentCollapsed(child), false);
+  assert.equal(state.filteredLivewireComponents.length, 4);
 
   state.selectLivewireComponent('grandchild-1');
   state.toggleLivewireComponent(child);
@@ -312,9 +319,6 @@ test('collapses every component branch without hiding search matches', () => {
   );
   assert.equal(state.livewireSelectedComponentId, 'child-1');
 
-  state.toggleLivewireComponent(child);
-
-  state.selectLivewireComponent('grandchild-1');
   state.toggleLivewireComponent(root);
 
   assert.equal(state.livewireComponentCollapsed(root), true);
@@ -338,14 +342,14 @@ test('collapses every component branch without hiding search matches', () => {
   state.livewireSearch = '';
   state.toggleLivewireComponent(root);
   assert.equal(state.livewireComponentCollapsed(root), false);
-  assert.equal(state.filteredLivewireComponents.length, 4);
-
-  state.toggleLivewireComponent(child);
-  assert.equal(state.livewireComponentCollapsed(child), true);
   assert.deepEqual(
     state.filteredLivewireComponents.map(({ id }) => id),
     ['root-1', 'root-2', 'child-1'],
   );
+
+  state.toggleLivewireComponent(child);
+  assert.equal(state.livewireComponentCollapsed(child), false);
+  assert.equal(state.filteredLivewireComponents.length, 4);
 });
 
 test('filters activity and moves between activity and component details', () => {
@@ -504,6 +508,10 @@ test('groups shared requests and consecutive repetitive activity while keeping e
     ],
   );
   const polls = groups.find(({ grouped, mode }) => grouped && mode === 'poll:root-1');
+  const mounts = groups.at(-1);
+  assert.equal(polls.showContext, true);
+  assert.equal(mounts.subtitle, 'Page startup');
+  assert.equal(mounts.showContext, false);
   state.toggleLivewireActivityGroup(polls);
   assert.equal(state.livewireActivityGroupExpanded(polls), true);
   state.selectLivewireActivity('poll-1');
@@ -557,6 +565,7 @@ test('groups a bundled request around its initiating action', () => {
   assert.equal(group.title, 'Increment ran');
   assert.equal(group.subtitle, 'Control Panel');
   assert.equal(group.countLabel, '3 components');
+  assert.equal(group.showContext, true);
   assert.equal(group.first.id, 'request-action');
   assert.deepEqual(
     group.items.map(({ id }) => id),
@@ -565,7 +574,7 @@ test('groups a bundled request around its initiating action', () => {
   assert.equal(state.livewireSelectedActivityId, 'request-action');
 });
 
-test('explains activity, phases, instance identity, and property states in plain language', () => {
+test('explains activity, phases, component context, and property states in plain language', () => {
   const { state } = stateHarness();
   const item = {
     ...activity[1],
@@ -593,10 +602,8 @@ test('explains activity, phases, instance identity, and property states in plain
   );
   assert.equal(state.livewirePhaseDescription('Morphed'), 'Livewire updated the page HTML.');
   assert.equal(state.livewirePhaseDescription('Other'), 'Livewire recorded this phase.');
-  assert.equal(state.livewireShortInstance('abcdefgh123456'), 'Instance 123456');
-  assert.equal(state.livewireShortInstance(''), 'Unknown instance');
-  assert.equal(state.livewireComponentParentLabel(state.livewireComponents[0]), 'Top level');
-  assert.equal(state.livewireComponentParentLabel(state.livewireComponents[2]), 'Control Panel');
+  assert.equal(state.livewireComponentContext(state.livewireComponents[2]), 'Revenue');
+  assert.equal(state.livewireComponentContext(null), '');
   assert.equal(state.livewireActivityComponent(activity[1]).id, 'root-1');
   assert.equal(state.livewireActivityComponent({ componentId: 'missing' }), null);
   assert.equal(state.livewirePropertyStateLabel({ state: 'Unknown' }), 'Not confirmed');
@@ -710,7 +717,6 @@ test('uses distinct plain-language explanations for every captured Livewire outc
       'Component state was captured.',
     ],
   );
-  assert.equal(state.livewireComponentNeedsIdentity(null), false);
   assert.deepEqual(
     ['Synced', 'Dirty', 'Updating', 'Locked', 'Unknown', 'Other'].map((status) =>
       state.livewirePropertyStateDescription({ state: status }),

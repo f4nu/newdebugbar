@@ -54,8 +54,8 @@ it('collapses component branches with an aligned plus and minus control', functi
 
     $page
         ->click('[data-ndb-livewire-tab="components"]')
-        ->assertCount('[data-ndb-livewire-component-row]', 2)
-        ->assertAttribute($rootToggle, 'aria-expanded', 'true')
+        ->assertCount('[data-ndb-livewire-component-row]', 1)
+        ->assertAttribute($rootToggle, 'aria-expanded', 'false')
         ->assertScript(<<<'JS'
             (() => {
                 const row = document.querySelector('[data-ndb-livewire-component-row][data-ndb-livewire-component-depth="0"]');
@@ -77,23 +77,23 @@ it('collapses component branches with an aligned plus and minus control', functi
                     ) <= 0.75
                     && Math.abs(dotBox.left - toggleBox.right - 8) <= 0.75
                     && Math.abs(titleBox.left - dotBox.right - 8) <= 0.75
-                    && getComputedStyle(vertical).display === 'none';
+                    && getComputedStyle(vertical).display !== 'none';
             })()
             JS)
         ->click($rootToggle)
-        ->assertCount('[data-ndb-livewire-component-row]', 1)
-        ->assertAttribute($rootToggle, 'aria-expanded', 'false')
-        ->assertScript(<<<'JS'
-            getComputedStyle(
-                document.querySelector('[data-ndb-livewire-component-toggle-vertical]'),
-            ).display !== 'none'
-            JS)
-        ->click($rootToggle)
         ->assertCount('[data-ndb-livewire-component-row]', 2)
+        ->assertAttribute($rootToggle, 'aria-expanded', 'true')
         ->assertScript(<<<'JS'
             getComputedStyle(
                 document.querySelector('[data-ndb-livewire-component-toggle-vertical]'),
             ).display === 'none'
+            JS)
+        ->click($rootToggle)
+        ->assertCount('[data-ndb-livewire-component-row]', 1)
+        ->assertScript(<<<'JS'
+            getComputedStyle(
+                document.querySelector('[data-ndb-livewire-component-toggle-vertical]'),
+            ).display !== 'none'
             JS)
         ->assertScript(<<<'JS'
             (() => {

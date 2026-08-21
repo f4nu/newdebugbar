@@ -73,34 +73,20 @@
                                 class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
                                 x-text="component.title"
                             ></span>
-                            <span class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5">
+                            <span
+                                x-show.important="livewireComponentContext(component) || livewireComponentIsSearchContext(component)"
+                                class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5"
+                            >
                                 <span
-                                    class="ndb:min-w-0 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:text-zinc-400"
-                                    x-text="component.name"
+                                    x-show.important="livewireComponentContext(component)"
+                                    class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
+                                    x-text="livewireComponentContext(component)"
                                 ></span>
                                 <span
                                     x-show.important="livewireComponentIsSearchContext(component)"
                                     class="ndb:shrink-0 ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
                                 >Context</span>
-                                <span
-                                    x-show.important="livewireComponentNeedsIdentity(component)"
-                                    class="ndb:shrink-0 ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:font-mono ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:bg-zinc-800"
-                                    x-text="livewireShortInstance(component.id)"
-                                ></span>
                             </span>
-                            <span
-                                x-show.important="livewireComponentNeedsIdentity(component)"
-                                class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
-                                x-text="livewireComponentParentLabel(component)"
-                            ></span>
-                            <span
-                                x-show.important="
-                                    livewireComponentLatestActivity(component) &&
-                                    livewireComponentLatestActivity(component)?.kind !== 'mount'
-                                "
-                                class="ndb:mt-1.5 ndb:block ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                x-text="livewireComponentLatestActivity(component)?.title"
-                            ></span>
                         </span>
                     </button>
                 </div>
@@ -140,12 +126,13 @@
                                     x-text="selectedLivewireComponent.title"
                                 ></h3>
                                 <span
+                                    x-show.important="selectedLivewireComponent.status !== 'idle'"
                                     class="ndb:rounded-md ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide"
                                     :class="selectedLivewireComponent.status === 'failed'
                                         ? 'ndb:bg-red-50 ndb:text-red-700 ndb:dark:bg-red-950/60 ndb:dark:text-red-300'
                                         : selectedLivewireComponent.status === 'updating'
                                           ? 'ndb:bg-indigo-50 ndb:text-indigo-700 ndb:dark:bg-indigo-950/60 ndb:dark:text-indigo-300'
-                                          : 'ndb:bg-emerald-50 ndb:text-emerald-700 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300'"
+                                          : 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300'"
                                     :title="livewireComponentStatusDescription(selectedLivewireComponent)"
                                     :aria-label="`${selectedLivewireComponent.status}. ${livewireComponentStatusDescription(selectedLivewireComponent)}`"
                                     x-text="selectedLivewireComponent.status"
@@ -162,6 +149,7 @@
                                 x-text="selectedLivewireComponent.name"
                             ></code>
                             <p
+                                x-show.important="selectedLivewireComponent.status !== 'idle'"
                                 class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-400"
                                 x-text="livewireComponentStatusDescription(selectedLivewireComponent)"
                             ></p>
@@ -230,8 +218,7 @@
                             <div>
                                 <h4 class="ndb:text-xs ndb:font-bold">Properties</h4>
                                 <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-400">
-                                    Browser is the value on this page. Server is the latest confirmed value. Differences
-                                    are marked Dirty.
+                                    Browser values compared with the latest server-confirmed values.
                                 </p>
                             </div>
                             <span
@@ -303,6 +290,7 @@
                                         </div>
                                         <div>
                                             <span
+                                                x-show.important="row.state !== 'Synced'"
                                                 class="ndb:rounded-md ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide"
                                                 :class="row.state === 'Dirty'
                                                     ? 'ndb:bg-amber-50 ndb:text-amber-700 ndb:dark:bg-amber-950/60 ndb:dark:text-amber-300'
@@ -326,45 +314,6 @@
                         </div>
                     </section>
 
-                    <section>
-                        <h4 class="ndb:text-xs ndb:font-bold">Recent activity</h4>
-                        <div class="ndb:mt-3 ndb:space-y-2">
-                            <template
-                                x-for="item in livewireComponentActivity(selectedLivewireComponent.id)"
-                                :key="item.id"
-                            >
-                                <button
-                                    type="button"
-                                    @click="
-                                        selectLivewireActivity(item.id);
-                                        livewireTab = 'activity';
-                                    "
-                                    class="ndb:flex ndb:w-full ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition ndb:hover:bg-zinc-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-800 ndb:dark:hover:bg-zinc-900/65"
-                                >
-                                    <span
-                                        class="ndb:size-2 ndb:shrink-0 ndb:rounded-full"
-                                        :class="item.status === 'failed' || item.status === 'failed_validation'
-                                            ? 'ndb:bg-red-500'
-                                            : 'ndb:bg-emerald-500'"
-                                    ></span>
-                                    <span
-                                        class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold"
-                                        x-text="livewireComponentActivityTitle(item)"
-                                    ></span>
-                                    <span
-                                        class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
-                                        x-text="livewireDuration(item)"
-                                    ></span>
-                                </button>
-                            </template>
-                            <p
-                                x-show.important="livewireComponentActivity(selectedLivewireComponent.id).length === 0"
-                                class="ndb:text-xs ndb:text-zinc-400"
-                            >
-                                No activity has been observed for this instance.
-                            </p>
-                        </div>
-                    </section>
                 </div>
             </article>
         </template>

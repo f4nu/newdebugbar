@@ -120,10 +120,13 @@
                                                 >
                                                     <span
                                                         class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                                        x-text="livewireActivityComponentTitle(group.first)"
+                                                        x-text="group.subtitle"
                                                     ></span>
                                                     <span
-                                                        x-show.important="livewireActivityComponentContext(group.first)"
+                                                        x-show.important="
+                                                            group.showContext &&
+                                                            livewireActivityComponentContext(group.first)
+                                                        "
                                                         class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
                                                         x-text="livewireActivityComponentContext(group.first)"
                                                     ></span>

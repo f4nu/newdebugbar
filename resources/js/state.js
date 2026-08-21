@@ -295,6 +295,7 @@ export function createNewDebugBar(
     livewireServerComponents: [],
     livewireServerActivity: [],
     livewireCollapsedComponents: [],
+    livewireKnownComponentParents: [],
     livewireExpandedActivityGroups: [],
     livewireExpandedProperties: [],
     livewireDrafts: {},
@@ -322,6 +323,8 @@ export function createNewDebugBar(
             this.livewireSelectedActivityId = null;
             this.livewireSelectedComponentId = null;
             this.livewireActivitySelectionPinned = false;
+            this.livewireCollapsedComponents = [];
+            this.livewireKnownComponentParents = [];
             this.livewireExpandedActivityGroups = [];
           }
           this.livewireTrace = snapshot;
@@ -759,6 +762,7 @@ export function createNewDebugBar(
           subtitle,
           title,
           countLabel: requestGroup ? `${componentCount} ${componentCount === 1 ? 'component' : 'components'}` : null,
+          showContext: requestGroup || group.mode?.startsWith('poll:'),
           grouped: count > 1,
         };
       });
@@ -1593,6 +1597,8 @@ export function createNewDebugBar(
     },
 
     syncLivewireSelection() {
+      this.syncLivewireComponentCollapseState();
+
       const visibleActivity = this.filteredLivewireActivity;
       const selectedActivityIsVisible = visibleActivity.some((item) => item.id === this.livewireSelectedActivityId);
       const defaultActivityId = this.livewireActivityGroups[0]?.first?.id ?? visibleActivity[0]?.id ?? null;
@@ -1646,6 +1652,21 @@ export function createNewDebugBar(
       this.livewireDetailOpen = true;
     },
 
+    syncLivewireComponentCollapseState() {
+      const parentIds = this.livewireComponents
+        .filter((component) => component.hasChildren)
+        .map((component) => String(component.id));
+      const newParentIds = parentIds.filter((id) => !this.livewireKnownComponentParents.includes(id));
+
+      this.livewireCollapsedComponents = [
+        ...new Set([
+          ...this.livewireCollapsedComponents.filter((id) => parentIds.includes(id)),
+          ...newParentIds,
+        ]),
+      ];
+      this.livewireKnownComponentParents = parentIds;
+    },
+
     toggleLivewireComponent(component) {
       if (!component?.hasChildren) return;
 
@@ -1678,7 +1699,7 @@ export function createNewDebugBar(
 
     inspectLivewireComponent(id) {
       if (!id || !this.livewireComponents.some((component) => component.id === String(id))) return;
-      this.livewireSelectedComponentId = id;
+      this.livewireSelectedComponentId = String(id);
       this.livewireTab = 'components';
       this.livewireDetailOpen = true;
       this.livewireSearch = '';
@@ -1694,17 +1715,6 @@ export function createNewDebugBar(
       this.livewireSearch = '';
     },
 
-    livewireComponentLatestActivity(component) {
-      return [...this.livewireActivity].reverse().find((item) => item.componentId === component?.id) ?? null;
-    },
-
-    livewireComponentActivityTitle(item) {
-      if (item?.kind === 'mount') return 'Mounted';
-      if (item?.kind === 'unmount') return 'Unmounted';
-
-      return item?.title ?? 'Activity';
-    },
-
     livewireComponentTitle(id) {
       return this.livewireComponents.find((component) => component.id === String(id))?.title ?? String(id);
     },
@@ -1716,7 +1726,17 @@ export function createNewDebugBar(
     livewireComponentContext(component) {
       if (!component) return '';
 
-      const preferredPaths = ['label', 'title', 'name', 'channel', 'workspace', 'station', 'status', 'code'];
+      const preferredPaths = [
+        'label',
+        'title',
+        'name',
+        'channel',
+        'workspace',
+        'station',
+        'status',
+        'code',
+        'message',
+      ];
       const property = preferredPaths
         .map((path) => component.properties?.find((item) => item.path === path))
         .find((item) => ['string', 'number'].includes(typeof item?.value) && String(item.value).trim() !== '');
@@ -1728,25 +1748,6 @@ export function createNewDebugBar(
           .toLowerCase()
         ? ''
         : value;
-    },
-
-    livewireShortInstance(id) {
-      const value = String(id ?? '');
-      return value === '' ? 'Unknown instance' : `Instance ${value.slice(-6)}`;
-    },
-
-    livewireComponentNeedsIdentity(component) {
-      if (!component) return false;
-
-      return (
-        this.livewireComponents.filter(
-          (item) => item.title === component.title || (component.name && item.name === component.name),
-        ).length > 1
-      );
-    },
-
-    livewireComponentParentLabel(component) {
-      return component?.parentId ? this.livewireComponentTitle(component.parentId) : 'Top level';
     },
 
     livewireComponentStatusDescription(component) {
@@ -1770,13 +1771,6 @@ export function createNewDebugBar(
 
     livewireActivityComponentContext(item) {
       return this.livewireComponentContext(this.livewireActivityComponent(item));
-    },
-
-    livewireComponentActivity(id, limit = 5) {
-      return [...this.livewireActivity]
-        .filter((item) => item.componentId === String(id))
-        .reverse()
-        .slice(0, limit);
     },
 
     livewireMeaningfulActions(item) {

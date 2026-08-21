@@ -25,7 +25,7 @@ final class DebugBar extends Component
         'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',
         'http_client' => 'Review outbound HTTP requests, responses, timing, and their source.',
         'logs' => 'Review log messages, their context, and the application code that wrote them.',
-        'livewire' => 'Follow Livewire requests, property changes, and component events, then inspect the exact mounted instance.',
+        'livewire' => 'Inspect Livewire activity and mounted components.',
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
         'messages' => 'Review developer messages, their context, and when they were recorded.',
         'models' => 'See which Eloquent models this request loaded or changed. Find repeated record loads, unexpected writes, and when the work happened. Repeated means extra retrievals after a record’s first load.',
