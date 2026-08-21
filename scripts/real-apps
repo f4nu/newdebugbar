@@ -17,6 +17,7 @@ readonly DATABASE_HOST="${NEWDEBUGBAR_REAL_APPS_DB_HOST:-127.0.0.1}"
 readonly DATABASE_PORT="${NEWDEBUGBAR_REAL_APPS_DB_PORT:-3306}"
 readonly DATABASE_USER="${NEWDEBUGBAR_REAL_APPS_DB_USER:-root}"
 readonly DATABASE_PASSWORD="${NEWDEBUGBAR_REAL_APPS_DB_PASSWORD:-}"
+readonly SERVER_WORKERS="${NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS:-4}"
 
 SERVER_PIDS=()
 
@@ -39,11 +40,13 @@ Commands:
 
 The default target is all. Runtime files live below .workbench and are ignored.
 
-MySQL connection overrides:
+Runtime overrides:
   NEWDEBUGBAR_REAL_APPS_DB_HOST      Default: 127.0.0.1
   NEWDEBUGBAR_REAL_APPS_DB_PORT      Default: 3306
   NEWDEBUGBAR_REAL_APPS_DB_USER      Default: root
   NEWDEBUGBAR_REAL_APPS_DB_PASSWORD  Default: empty
+  NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS
+                                        Default: 4
 
 Applications:
   freek   http://127.0.0.1:8141
@@ -180,6 +183,15 @@ check_node() {
         || fail "Node 20.19 or Node 22 or newer is required."
 }
 
+check_server_workers() {
+    case "${SERVER_WORKERS}" in
+        ''|*[!0-9]*) fail "NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS must be an integer of at least 2." ;;
+    esac
+
+    [ "${SERVER_WORKERS}" -ge 2 ] \
+        || fail "NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS must be an integer of at least 2."
+}
+
 with_database_environment() {
     (
         export NDB_REAL_APPS_DB_HOST="${DATABASE_HOST}"
@@ -223,12 +235,14 @@ doctor() {
     require_commands
     check_php "${selection}"
     check_node
+    check_server_workers
     check_mysql_connection
 
     printf 'PHP %s\n' "$(php -r 'echo PHP_VERSION;')"
     printf 'Node %s\n' "$(node --version)"
     printf '%s\n' "$(composer --version --no-ansi 2>/dev/null)"
     printf 'MySQL connection available at %s:%s\n' "${DATABASE_HOST}" "${DATABASE_PORT}"
+    printf 'PHP development server workers: %s\n' "${SERVER_WORKERS}"
 }
 
 clone_target() {
@@ -730,7 +744,8 @@ start_server() {
 
     (
         cd "${directory}"
-        exec php artisan serve --host=127.0.0.1 --port="${port}" --no-interaction
+        export PHP_CLI_SERVER_WORKERS="${SERVER_WORKERS}"
+        exec php artisan serve --host=127.0.0.1 --port="${port}" --no-reload --no-interaction
     ) >"${log_file}" 2>&1 &
 
     pid=$!
@@ -743,6 +758,7 @@ serve() {
     local target pid
 
     require_commands
+    check_server_workers
     mkdir -p "${LOGS_ROOT}"
     trap cleanup_servers EXIT INT TERM
 
