@@ -210,7 +210,7 @@
                             <div>
                                 <h4 class="ndb:text-xs ndb:font-bold">Properties</h4>
                                 <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-400">
-                                    Browser values compared with the latest server-confirmed values.
+                                    Client values compared with the latest server-confirmed values.
                                 </p>
                             </div>
                             <span
@@ -227,7 +227,7 @@
                             class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
                         >
                             <div class="ndb:hidden ndb:grid-cols-[minmax(10rem,1fr)_minmax(7rem,0.8fr)_minmax(7rem,0.8fr)_5rem_3rem] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/75 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:grid ndb:sm:min-w-[36rem] ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/55">
-                                <span>Property</span><span>Browser</span><span>Server</span><span>State</span
+                                <span>Property</span><span>Client</span><span>Server</span><span>State</span
                                 ><span></span>
                             </div>
 
@@ -265,7 +265,7 @@
                                             ></span>
                                         </div>
                                         <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-2 ndb:sm:block">
-                                            <span class="ndb:w-16 ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:hidden">Browser</span>
+                                            <span class="ndb:w-16 ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:hidden">Client</span>
                                             <code
                                                 class="ndb:block ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[11px] ndb:sm:w-full"
                                                 :title="row.valueSummary"

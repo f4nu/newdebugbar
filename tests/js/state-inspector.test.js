@@ -25,6 +25,21 @@ test('the inspector moves focus to shrink and returns it when closed', () => {
   assert.equal(browser.host.unlocks, 1);
 });
 
+test('consumed escape events do not close the inspector', () => {
+  const state = createNewDebugBar(summary, runtime());
+  state.inspectorOpen = true;
+
+  state.handleShortcut({
+    defaultPrevented: true,
+    metaKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    key: 'Escape',
+  });
+
+  assert.equal(state.inspectorOpen, true);
+});
+
 test('the request action reuses an open inspector and opens a closed one', () => {
   const browser = runtime();
   const opener = {};

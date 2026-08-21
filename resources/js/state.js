@@ -1767,8 +1767,8 @@ export function createNewDebugBar(
     livewirePropertyStateDescription(row) {
       return (
         {
-          Synced: 'Browser and server values match.',
-          Dirty: 'The browser value differs from the latest server value.',
+          Synced: 'Client and server values match.',
+          Dirty: 'The client value differs from the latest server value.',
           Updating: 'A Livewire update is in progress.',
           Locked: 'Livewire prevents this property from being edited.',
           Unknown: 'No server-confirmed value was captured.',
@@ -2566,6 +2566,7 @@ export function createNewDebugBar(
 
     handleShortcut(event) {
       if (!this.barVisible) return;
+      if (event.defaultPrevented) return;
 
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'p') {
         event.preventDefault();

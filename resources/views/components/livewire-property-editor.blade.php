@@ -1,6 +1,6 @@
 <div
     x-data="{}"
-    x-id="['livewire-edit-trigger', 'livewire-edit-popover', 'livewire-edit-title', 'livewire-edit-help']"
+    x-id="['livewire-edit-trigger', 'livewire-edit-popover', 'livewire-edit-title']"
     class="ndb:relative ndb:w-full ndb:sm:w-auto ndb:sm:justify-self-end"
     @keydown.escape.stop="
         if (livewireDrafts[livewireDraftKey(row)]) {
@@ -46,7 +46,6 @@
                 data-ndb-livewire-property-popover
                 ::id="$id('livewire-edit-popover')"
                 ::aria-labelledby="$id('livewire-edit-title')"
-                ::aria-describedby="$id('livewire-edit-help')"
                 ::style="{
           visibility:
             $anchor.x !== 0 || $anchor.y !== 0 ? 'visible' : 'hidden',
@@ -66,9 +65,6 @@
                         :title="row.path"
                     >
                         Edit <span x-text="row.path"></span>
-                    </p>
-                    <p :id="$id('livewire-edit-help')" class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-400">
-                        Sends one Livewire update.
                     </p>
                 </div>
 
@@ -94,15 +90,28 @@
                             data-ndb-livewire-edit-control
                             :aria-checked="livewireDrafts[livewireDraftKey(row)].value"
                             @click="toggleLivewireBoolean(row)"
-                            class="ndb:group ndb:inline-flex ndb:h-10 ndb:w-full ndb:items-center ndb:justify-between ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
+                            class="ndb:group ndb:grid ndb:h-10 ndb:w-full ndb:grid-cols-[1fr_auto_1fr] ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                         >
-                            <span x-text="livewireDrafts[livewireDraftKey(row)].value ? 'True' : 'False'"></span>
+                            <span
+                                data-ndb-livewire-boolean-label="false"
+                                class="ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:transition-colors"
+                                :class="livewireDrafts[livewireDraftKey(row)].value
+                                    ? 'ndb:text-zinc-400'
+                                    : 'ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100'"
+                            >False</span>
                             <span
                                 aria-hidden="true"
                                 class="ndb:relative ndb:h-6 ndb:w-11 ndb:shrink-0 ndb:rounded-full ndb:bg-zinc-300 ndb:shadow-inner ndb:transition-colors ndb:group-aria-checked:bg-indigo-600 ndb:dark:bg-zinc-700 ndb:dark:group-aria-checked:bg-indigo-500"
                             >
                                 <span class="ndb:absolute ndb:top-0.5 ndb:left-0.5 ndb:size-5 ndb:rounded-full ndb:bg-white ndb:shadow-sm ndb:transition-transform ndb:group-aria-checked:translate-x-5"></span>
                             </span>
+                            <span
+                                data-ndb-livewire-boolean-label="true"
+                                class="ndb:text-left ndb:text-[11px] ndb:font-semibold ndb:transition-colors"
+                                :class="livewireDrafts[livewireDraftKey(row)].value
+                                    ? 'ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100'
+                                    : 'ndb:text-zinc-400'"
+                            >True</span>
                         </button>
                     </template>
 

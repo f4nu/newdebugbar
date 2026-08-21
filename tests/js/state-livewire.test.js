@@ -564,7 +564,7 @@ test('explains activity, phases, component links, and property states in plain l
   assert.equal(state.livewirePropertyStateLabel({ state: 'Unknown' }), 'Not confirmed');
   assert.equal(
     state.livewirePropertyStateDescription({ state: 'Dirty' }),
-    'The browser value differs from the latest server value.',
+    'The client value differs from the latest server value.',
   );
 });
 
@@ -677,8 +677,8 @@ test('uses distinct plain-language explanations for every captured Livewire outc
       state.livewirePropertyStateDescription({ state: status }),
     ),
     [
-      'Browser and server values match.',
-      'The browser value differs from the latest server value.',
+      'Client and server values match.',
+      'The client value differs from the latest server value.',
       'A Livewire update is in progress.',
       'Livewire prevents this property from being edited.',
       'No server-confirmed value was captured.',
@@ -773,7 +773,7 @@ test('uses the current canonical component snapshot as the latest server value',
   assert.equal(state.livewirePropertyRows.find(({ path }) => path === 'settings.enabled').state, 'Synced');
 });
 
-test('summarizes arrays, empty strings, booleans, and unknown browser values', () => {
+test('summarizes arrays, empty strings, booleans, and unknown client values', () => {
   const { state } = stateHarness();
   const selected = state.livewireTrace.components.find(({ id }) => id === 'root-1');
   selected.properties.push(

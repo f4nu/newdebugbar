@@ -159,6 +159,7 @@ it('keeps the property editor usable in a narrow dark inspector', function () {
         ->keys('[data-ndb-livewire-edit-control]', 'Escape')
         ->assertMissing('[data-ndb-livewire-property-popover]')
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
+        ->assertVisible('[data-ndb-livewire-components]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -177,7 +178,6 @@ it('opens and applies a component property edit from its popover', function () {
         ->assertVisible('[data-ndb-livewire-property-popover]')
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
         ->assertAttribute('[data-ndb-livewire-edit-key$=":count"]', 'aria-expanded', 'true')
-        ->assertSeeIn('[data-ndb-livewire-property-popover]', 'Sends one Livewire update.')
         ->assertSeeIn('[data-ndb-livewire-edit-apply]', 'Apply to component')
         ->assertScript(<<<'JS'
             (() => {
@@ -261,13 +261,19 @@ it('opens and applies a component property edit from its popover', function () {
                 const control = document.querySelector('[data-ndb-livewire-edit-control][role="switch"]');
                 const track = control.querySelector('[aria-hidden="true"]');
                 const thumb = track.firstElementChild;
+                const falseLabel = control.querySelector('[data-ndb-livewire-boolean-label="false"]');
+                const trueLabel = control.querySelector('[data-ndb-livewire-boolean-label="true"]');
                 const trackBox = track.getBoundingClientRect();
                 const thumbBox = thumb.getBoundingClientRect();
+                const falseBox = falseLabel.getBoundingClientRect();
+                const trueBox = trueLabel.getBoundingClientRect();
 
                 return Math.abs(trackBox.width - 44) <= 1
                     && Math.abs(trackBox.height - 24) <= 1
                     && Math.abs(thumbBox.width - 20) <= 1
-                    && thumbBox.left > trackBox.left + 16;
+                    && thumbBox.left > trackBox.left + 16
+                    && falseBox.right < trackBox.left
+                    && trackBox.right < trueBox.left;
             })()
             JS)
         ->click('[data-ndb-livewire-edit-control][role="switch"]')
