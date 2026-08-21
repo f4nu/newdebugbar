@@ -32,6 +32,7 @@
                                 x-text="selectedLivewireActivity.title"
                             ></h3>
                             <span
+                                x-show.important="selectedLivewireActivity.status !== 'complete'"
                                 class="ndb:rounded-md ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide"
                                 :class="selectedLivewireActivity.status === 'failed' ||
                                 selectedLivewireActivity.status === 'failed_validation'
@@ -51,47 +52,33 @@
                             @click="inspectLivewireActivityComponent()"
                             class="ndb:mt-2 ndb:flex ndb:max-w-full ndb:items-center ndb:gap-1.5 ndb:text-left ndb:text-xs ndb:font-semibold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
                         >
-                            <span class="ndb:truncate" x-text="selectedLivewireActivity.componentTitle"></span>
                             <span
-                                class="ndb:shrink-0 ndb:rounded ndb:bg-indigo-50 ndb:px-1 ndb:py-0.5 ndb:font-mono ndb:text-[10px] ndb:dark:bg-indigo-950/60"
-                                x-text="livewireShortInstance(selectedLivewireActivity.componentId)"
+                                class="ndb:truncate"
+                                x-text="livewireActivityComponentTitle(selectedLivewireActivity)"
                             ></span>
+                            <span
+                                x-show.important="livewireActivityComponentContext(selectedLivewireActivity)"
+                                class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-normal ndb:text-indigo-400 ndb:dark:text-indigo-500"
+                                x-text="livewireActivityComponentContext(selectedLivewireActivity)"
+                            ></span>
+                            <x-newdebugbar::icon name="chevron-down" class="ndb:size-3 ndb:shrink-0 ndb:-rotate-90" />
                         </button>
-                        <code
-                            class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[10px] ndb:text-zinc-400"
-                            :title="selectedLivewireActivity.componentId"
-                            x-text="selectedLivewireActivity.componentId"
-                        ></code>
                     </div>
                 </div>
 
-                <dl class="ndb:mt-4 ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-3">
-                    <div class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/65">
-                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                            Duration
-                        </dt>
+                <dl class="ndb:mt-4 ndb:flex ndb:flex-wrap ndb:gap-x-5 ndb:gap-y-2 ndb:text-[11px]">
+                    <div class="ndb:flex ndb:items-baseline ndb:gap-1.5">
+                        <dt class="ndb:font-semibold ndb:text-zinc-400">Happened</dt>
                         <dd
-                            class="ndb:mt-1 ndb:text-xs ndb:font-bold ndb:tabular-nums"
+                            class="ndb:font-bold ndb:tabular-nums"
+                            x-text="livewireActivityAge(selectedLivewireActivity)"
+                        ></dd>
+                    </div>
+                    <div class="ndb:flex ndb:items-baseline ndb:gap-1.5">
+                        <dt class="ndb:font-semibold ndb:text-zinc-400">Duration</dt>
+                        <dd
+                            class="ndb:font-bold ndb:tabular-nums"
                             x-text="livewireDuration(selectedLivewireActivity)"
-                        ></dd>
-                    </div>
-                    <div class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/65">
-                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                            Contains
-                        </dt>
-                        <dd
-                            class="ndb:mt-1 ndb:truncate ndb:text-xs ndb:font-bold"
-                            :title="livewireActivityContents(selectedLivewireActivity)"
-                            x-text="livewireActivityContents(selectedLivewireActivity)"
-                        ></dd>
-                    </div>
-                    <div class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/65">
-                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                            HTTP requests
-                        </dt>
-                        <dd
-                            class="ndb:mt-1 ndb:text-xs ndb:font-bold"
-                            x-text="selectedLivewireActivity.profileIds.length"
                         ></dd>
                     </div>
                 </dl>
@@ -109,9 +96,13 @@
                     <h4 class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                         Property changes
                     </h4>
-                    <div class="ndb:mt-2 ndb:overflow-hidden ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
+                    <div
+                        class="ndb:mt-2 ndb:overflow-hidden ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
+                    >
                         <template x-for="change in selectedLivewireActivity.changes" :key="change.path">
-                            <div class="ndb:grid ndb:grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:px-3 ndb:py-2.5 ndb:last:border-b-0 ndb:dark:border-zinc-800">
+                            <div
+                                class="ndb:grid ndb:grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/80 ndb:px-3 ndb:py-2.5 ndb:last:border-b-0 ndb:dark:border-zinc-800"
+                            >
                                 <code
                                     class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
                                     x-text="change.path"
@@ -161,7 +152,9 @@
                     </h4>
                     <div class="ndb:mt-2 ndb:space-y-2">
                         <template x-for="event in livewireActivityEvents(selectedLivewireActivity)" :key="event.name">
-                            <div class="ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:px-3 ndb:py-3 ndb:dark:border-zinc-800">
+                            <div
+                                class="ndb:rounded-lg ndb:border ndb:border-zinc-200/90 ndb:px-3 ndb:py-3 ndb:dark:border-zinc-800"
+                            >
                                 <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
                                     <code class="ndb:text-[11px] ndb:font-bold" x-text="event.name"></code>
                                     <span
@@ -181,12 +174,12 @@
                                 >
                                     <span class="ndb:text-zinc-400">Observed recipients</span>
                                     <template x-for="recipient in event.observedRecipientIds" :key="recipient">
-                                        <code
-                                            class="ndb:rounded-md ndb:bg-emerald-50 ndb:px-1.5 ndb:py-0.5 ndb:text-emerald-700 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300"
-                                            x-text="
-                                                `${livewireComponentTitle(recipient)} ${livewireShortInstance(recipient)}`
-                                            "
-                                        ></code>
+                                        <button
+                                            type="button"
+                                            @click="inspectLivewireComponent(recipient)"
+                                            class="ndb:rounded-md ndb:bg-emerald-50 ndb:px-1.5 ndb:py-0.5 ndb:font-semibold ndb:text-emerald-700 ndb:focus-visible:outline-2 ndb:focus-visible:outline-emerald-500 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300"
+                                            x-text="livewireComponentTitle(recipient)"
+                                        ></button>
                                     </template>
                                 </div>
                             </div>
@@ -216,7 +209,9 @@
                                                     x-show.important="index < group.phases.length - 1"
                                                     class="ndb:absolute ndb:top-3 ndb:-bottom-1 ndb:left-1/2 ndb:w-px ndb:-translate-x-1/2 ndb:bg-zinc-200 ndb:dark:bg-zinc-800"
                                                 ></span>
-                                                <span class="ndb:relative ndb:z-[1] ndb:size-2 ndb:rounded-full ndb:bg-indigo-500 ndb:ring-2 ndb:ring-white ndb:dark:bg-indigo-400 ndb:dark:ring-zinc-950"></span>
+                                                <span
+                                                    class="ndb:relative ndb:z-[1] ndb:size-2 ndb:rounded-full ndb:bg-indigo-500 ndb:ring-2 ndb:ring-white ndb:dark:bg-indigo-400 ndb:dark:ring-zinc-950"
+                                                ></span>
                                             </div>
                                             <span class="ndb:pb-3">
                                                 <span
@@ -243,15 +238,13 @@
                     <p
                         x-show.important="selectedLivewireActivity.phases.length === 0"
                         class="ndb:mt-2 ndb:text-xs ndb:text-zinc-400"
-                    >
-                        Browser phases were not available for this stored request.
-                    </p>
+                    >Browser phases were not available for this stored request.</p>
                 </section>
             </div>
         </article>
     </template>
 
-    <div x-show.important="! selectedLivewireActivity" data-ndb-livewire-activity-detail-empty class="ndb:p-5">
+    <div x-show.important="!selectedLivewireActivity" data-ndb-livewire-activity-detail-empty class="ndb:p-5">
         <div x-show.important="filteredLivewireActivity.length === 0">
             <x-newdebugbar::empty-state label="No matching activity to inspect." />
         </div>

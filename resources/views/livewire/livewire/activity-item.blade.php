@@ -9,23 +9,33 @@
 >
     <span class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
         <span class="ndb:min-w-0 ndb:flex-1">
-            <span
-                data-ndb-livewire-activity-title
-                class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
-                x-text="item.title"
-            ></span>
+            <span class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2">
+                <span
+                    data-ndb-livewire-activity-title
+                    class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
+                    x-text="item.title"
+                ></span>
+                <span
+                    x-show.important="item.status === 'failed' || item.status === 'failed_validation'"
+                    class="ndb:shrink-0 ndb:rounded-md ndb:bg-red-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-red-700 ndb:dark:bg-red-950/60 ndb:dark:text-red-300"
+                    x-text="livewireActivityStatusLabel(item)"
+                ></span>
+            </span>
             <span class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5">
                 <span
                     class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                    x-text="item.componentTitle"
+                    x-text="livewireActivityComponentTitle(item)"
                 ></span>
                 <span
-                    class="ndb:shrink-0 ndb:rounded ndb:bg-zinc-100 ndb:px-1 ndb:py-0.5 ndb:font-mono ndb:text-[10px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:bg-zinc-800"
-                    x-text="livewireShortInstance(item.componentId)"
+                    x-show.important="livewireActivityComponentContext(item)"
+                    class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
+                    x-text="livewireActivityComponentContext(item)"
                 ></span>
             </span>
         </span>
-        <span class="ndb:flex ndb:shrink-0 ndb:flex-col ndb:items-end ndb:gap-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
+        <span
+            class="ndb:flex ndb:shrink-0 ndb:flex-col ndb:items-end ndb:gap-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
+        >
             <span
                 data-ndb-livewire-activity-age
                 class="ndb:whitespace-nowrap"
@@ -37,21 +47,5 @@
                 x-text="livewireDuration(item)"
             ></span>
         </span>
-    </span>
-    <span class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-1.5">
-        <span
-            x-show.important="item.status === 'failed' || item.status === 'failed_validation'"
-            class="ndb:rounded-md ndb:bg-red-50 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-red-700 ndb:dark:bg-red-950/60 ndb:dark:text-red-300"
-            x-text="livewireActivityStatusLabel(item)"
-        ></span>
-        <span
-            class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
-            x-text="livewireActivityKindLabel(item)"
-        ></span>
-        <span
-            x-show.important="livewireActivityFactCount(item) > 0"
-            class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
-            x-text="livewireActivityContents(item)"
-        ></span>
     </span>
 </button>

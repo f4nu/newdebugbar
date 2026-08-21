@@ -375,10 +375,10 @@ test('filters activity and moves between activity and component details', () => 
   state.setLivewireActivityType('missing');
   assert.equal(state.livewireActivityType, 'mutation');
   assert.deepEqual(state.livewireActivityTypes, ['action', 'mount', 'mutation']);
-  assert.equal(state.livewireActivityFactCount(state.selectedLivewireActivity), 1);
-  assert.equal(state.livewireActivityContents(state.selectedLivewireActivity), '1 change');
   assert.equal(state.livewireActivityStatusLabel(state.selectedLivewireActivity), 'Finished');
   assert.equal(state.livewireActivitySummary(state.selectedLivewireActivity), 'Control Panel changed count.');
+  assert.equal(state.livewireActivityComponentTitle(activity[2]), 'Metric Card');
+  assert.equal(state.livewireActivityComponentContext(activity[2]), 'Revenue');
   assert.equal(state.livewireDuration(state.selectedLivewireActivity), '8.3 ms');
   assert.equal(state.livewireDuration(activity[2]), 'In progress');
   assert.equal(state.livewireDuration({ status: 'complete', durationMs: null }), '—');
@@ -398,6 +398,9 @@ test('filters activity and moves between activity and component details', () => 
   state.inspectLivewireComponentActivity();
   assert.equal(state.livewireTab, 'activity');
   assert.equal(state.livewireSelectedActivityId, 'activity-2');
+  state.inspectLivewireComponent('child-1');
+  assert.equal(state.livewireTab, 'components');
+  assert.equal(state.livewireSelectedComponentId, 'child-1');
   state.setLivewireTab('components');
   assert.equal(state.livewireTab, 'components');
   assert.equal(state.livewireDetailOpen, false);
@@ -680,24 +683,6 @@ test('uses distinct plain-language explanations for every captured Livewire outc
     ['Finished', 'Running', 'Failed', 'Validation failed', 'Cancelled', 'Skipped', 'Recorded'],
   );
   assert.deepEqual(
-    [
-      { kind: 'action', actions: [{ name: '$commit' }] },
-      { kind: 'action', actions: [{ name: 'save' }] },
-      { kind: 'mutation' },
-      { kind: 'custom_kind' },
-    ].map((value) => state.livewireActivityKindLabel(value)),
-    ['Update', 'Action', 'Change', 'custom kind'],
-  );
-  assert.equal(state.livewireActivityContents(item({ kind: 'mount' })), 'Lifecycle');
-  assert.equal(
-    state.livewireActivityContents(
-      item({
-        actions: [{ name: '$commit' }, { name: '$set' }, { name: 'save' }],
-      }),
-    ),
-    '1 action',
-  );
-  assert.deepEqual(
     state.livewireActivityEvents(
       item({
         actions: [{ name: '__dispatch', params: ['saved', { id: 7 }] }],
@@ -712,10 +697,6 @@ test('uses distinct plain-language explanations for every captured Livewire outc
         observedRecipientIds: [],
       },
     ],
-  );
-  assert.equal(
-    state.livewireActivityContents(item({ actions: [{}, {}], changes: [{}, {}], events: [{}, {}] })),
-    '2 actions, 2 changes, 2 events',
   );
   assert.deepEqual(
     ['idle', 'updating', 'failed', 'stale', 'other'].map((status) =>

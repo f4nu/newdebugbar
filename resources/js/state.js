@@ -759,7 +759,6 @@ export function createNewDebugBar(
           subtitle,
           title,
           countLabel: requestGroup ? `${componentCount} ${componentCount === 1 ? 'component' : 'components'}` : null,
-          showIdentity: requestGroup || group.mode?.startsWith('poll:'),
           grouped: count > 1,
         };
       });
@@ -1674,7 +1673,11 @@ export function createNewDebugBar(
 
     inspectLivewireActivityComponent() {
       const id = this.selectedLivewireActivity?.componentId;
-      if (!id || !this.livewireComponents.some((component) => component.id === id)) return;
+      this.inspectLivewireComponent(id);
+    },
+
+    inspectLivewireComponent(id) {
+      if (!id || !this.livewireComponents.some((component) => component.id === String(id))) return;
       this.livewireSelectedComponentId = id;
       this.livewireTab = 'components';
       this.livewireDetailOpen = true;
@@ -1708,6 +1711,23 @@ export function createNewDebugBar(
 
     livewireComponentById(id) {
       return this.livewireComponents.find((component) => component.id === String(id)) ?? null;
+    },
+
+    livewireComponentContext(component) {
+      if (!component) return '';
+
+      const preferredPaths = ['label', 'title', 'name', 'channel', 'workspace', 'station', 'status', 'code'];
+      const property = preferredPaths
+        .map((path) => component.properties?.find((item) => item.path === path))
+        .find((item) => ['string', 'number'].includes(typeof item?.value) && String(item.value).trim() !== '');
+      const value = String(property?.value ?? '').trim();
+
+      return value.toLowerCase() ===
+        String(component.title ?? '')
+          .trim()
+          .toLowerCase()
+        ? ''
+        : value;
     },
 
     livewireShortInstance(id) {
@@ -1744,6 +1764,14 @@ export function createNewDebugBar(
       return this.livewireComponentById(item?.componentId);
     },
 
+    livewireActivityComponentTitle(item) {
+      return this.livewireActivityComponent(item)?.title ?? item?.componentTitle ?? 'Livewire component';
+    },
+
+    livewireActivityComponentContext(item) {
+      return this.livewireComponentContext(this.livewireActivityComponent(item));
+    },
+
     livewireComponentActivity(id, limit = 5) {
       return [...this.livewireActivity]
         .filter((item) => item.componentId === String(id))
@@ -1776,14 +1804,6 @@ export function createNewDebugBar(
       return events;
     },
 
-    livewireActivityFactCount(item) {
-      return (
-        this.livewireMeaningfulActions(item).length +
-        (item?.changes?.length ?? 0) +
-        this.livewireActivityEvents(item).length
-      );
-    },
-
     livewireActivityStatusLabel(item) {
       return (
         {
@@ -1794,21 +1814,6 @@ export function createNewDebugBar(
           cancelled: 'Cancelled',
           skipped: 'Skipped',
         }[item?.status] ?? 'Recorded'
-      );
-    },
-
-    livewireActivityKindLabel(item) {
-      if (item?.kind === 'action' && this.livewireMeaningfulActions(item).length === 0) return 'Update';
-
-      return (
-        {
-          mount: 'Mount',
-          unmount: 'Unmount',
-          mutation: 'Change',
-          action: 'Action',
-          event: 'Event',
-          poll: 'Poll',
-        }[item?.kind] ?? String(item?.kind ?? 'Activity').replaceAll('_', ' ')
       );
     },
 
@@ -1848,19 +1853,6 @@ export function createNewDebugBar(
       }
 
       return `${component} completed a Livewire update.`;
-    },
-
-    livewireActivityContents(item) {
-      const parts = [];
-      const add = (count, singular, plural = `${singular}s`) => {
-        if (count > 0) parts.push(`${count} ${count === 1 ? singular : plural}`);
-      };
-
-      add(this.livewireMeaningfulActions(item).length, 'action');
-      add(item?.changes?.length ?? 0, 'change');
-      add(this.livewireActivityEvents(item).length, 'event');
-
-      return parts.join(', ') || 'Lifecycle';
     },
 
     livewireActivityPhaseGroups(item) {
