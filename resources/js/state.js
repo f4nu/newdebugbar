@@ -1,13 +1,6 @@
 const STORAGE_KEY = 'newdebugbar.preferences.v1';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const TOOLBAR_PLACEMENTS = [
-  'top-left',
-  'top',
-  'top-right',
-  'bottom-left',
-  'bottom',
-  'bottom-right',
-];
+const TOOLBAR_PLACEMENTS = ['top-left', 'top', 'top-right', 'bottom-left', 'bottom', 'bottom-right'];
 const TOOLBAR_CORNER_PLACEMENTS = TOOLBAR_PLACEMENTS.filter((placement) => placement.includes('-'));
 const toolbarHorizontalPlacement = (placement) => {
   if (placement.endsWith('-left')) return 'left';
@@ -15,7 +8,39 @@ const toolbarHorizontalPlacement = (placement) => {
 
   return 'center';
 };
-const toolbarVerticalPlacement = (placement) => placement.startsWith('top') ? 'top' : 'bottom';
+const toolbarVerticalPlacement = (placement) => (placement.startsWith('top') ? 'top' : 'bottom');
+const isLivewirePrimitive = (value) =>
+  value === null || typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string';
+const livewireValueType = (value) => {
+  if (value === null) return 'Null';
+  if (Array.isArray(value)) return 'Array';
+  if (typeof value === 'boolean') return 'Boolean';
+  if (typeof value === 'number') return Number.isInteger(value) ? 'Integer' : 'Float';
+  if (typeof value === 'string') return 'String';
+
+  return 'Object';
+};
+const livewireValueCopy = (value) => {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return value;
+  }
+};
+const livewireValueSummary = (value) => {
+  if (value === null) return 'null';
+  if (value === true) return 'true';
+  if (value === false) return 'false';
+  if (typeof value === 'string') return value === '' ? 'Empty string' : value;
+  if (typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? 'item' : 'items'}`;
+  if (typeof value === 'object') {
+    const count = Object.keys(value).length;
+    return `${count} ${count === 1 ? 'property' : 'properties'}`;
+  }
+
+  return String(value);
+};
 
 const defaultRuntime = () => ({
   storage: {
@@ -24,12 +49,14 @@ const defaultRuntime = () => ({
   },
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
+  queryAll: (selector) => document.querySelectorAll(selector),
   writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
   nextFrame: (callback) => window.requestAnimationFrame(callback),
   schedule: (callback, delay) => window.setTimeout(callback, delay),
   cancelSchedule: (timer) => window.clearTimeout(timer),
+  now: () => Date.now(),
   viewportWidth: () => window.innerWidth,
   viewportHeight: () => window.innerHeight,
   lockHost: (root) => {
@@ -44,10 +71,13 @@ const defaultRuntime = () => ({
     };
 
     [...body.children].forEach((element) => {
-      if (element === root
-        || element.contains(root)
-        || !(element instanceof HTMLElement)
-        || element.matches('script, style, link')) return;
+      if (
+        element === root ||
+        element.contains(root) ||
+        !(element instanceof HTMLElement) ||
+        element.matches('script, style, link')
+      )
+        return;
 
       previous.inert.push([element, element.inert]);
       element.inert = true;
@@ -67,7 +97,9 @@ const defaultRuntime = () => ({
 
     document.body.style.overflow = previous.overflow;
     document.body.style.paddingRight = previous.paddingRight;
-    previous.inert.forEach(([element, inert]) => { element.inert = inert; });
+    previous.inert.forEach(([element, inert]) => {
+      element.inert = inert;
+    });
     delete root.__newDebugBarHostLock;
   },
   toolbarPlacement: (root, preferred = 'bottom') => {
@@ -79,13 +111,21 @@ const defaultRuntime = () => ({
     const width = Math.min(toolbarBox.width, Math.max(0, window.innerWidth - 24));
     const height = toolbarBox.height;
     const horizontal = toolbarHorizontalPlacement(validPreferred);
-    const left = horizontal === 'left'
-      ? 12
-      : (horizontal === 'right' ? Math.max(12, window.innerWidth - width - 12) : (window.innerWidth - width) / 2);
+    const left =
+      horizontal === 'left'
+        ? 12
+        : horizontal === 'right'
+          ? Math.max(12, window.innerWidth - width - 12)
+          : (window.innerWidth - width) / 2;
     const topPlacement = horizontal === 'center' ? 'top' : `top-${horizontal}`;
     const bottomPlacement = horizontal === 'center' ? 'bottom' : `bottom-${horizontal}`;
     const candidates = {
-      [topPlacement]: { left, right: left + width, top: 12, bottom: 12 + height },
+      [topPlacement]: {
+        left,
+        right: left + width,
+        top: 12,
+        bottom: 12 + height,
+      },
       [bottomPlacement]: {
         left,
         right: left + width,
@@ -99,18 +139,22 @@ const defaultRuntime = () => ({
       .filter(({ dialog, box }) => {
         const style = window.getComputedStyle(dialog);
 
-        return box.width > 0
-          && box.height > 0
-          && style.display !== 'none'
-          && style.visibility !== 'hidden';
+        return box.width > 0 && box.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
       })
       .map(({ box }) => box);
-    const overlap = (candidate) => dialogs.reduce((area, dialog) => {
-      const widthOverlap = Math.max(0, Math.min(candidate.right, dialog.right) - Math.max(candidate.left, dialog.left));
-      const heightOverlap = Math.max(0, Math.min(candidate.bottom, dialog.bottom) - Math.max(candidate.top, dialog.top));
+    const overlap = (candidate) =>
+      dialogs.reduce((area, dialog) => {
+        const widthOverlap = Math.max(
+          0,
+          Math.min(candidate.right, dialog.right) - Math.max(candidate.left, dialog.left),
+        );
+        const heightOverlap = Math.max(
+          0,
+          Math.min(candidate.bottom, dialog.bottom) - Math.max(candidate.top, dialog.top),
+        );
 
-      return area + widthOverlap * heightOverlap;
-    }, 0);
+        return area + widthOverlap * heightOverlap;
+      }, 0);
 
     const topOverlap = overlap(candidates[topPlacement]);
     const bottomOverlap = overlap(candidates[bottomPlacement]);
@@ -147,8 +191,15 @@ const defaultRuntime = () => ({
   },
 });
 
-export function createNewDebugBar(summary = {}, runtime = null, recentProfiles = [], profileLimit = 20) {
+export function createNewDebugBar(
+  summary = {},
+  runtime = null,
+  recentProfiles = [],
+  profileLimit = 20,
+  livewireTrace = null,
+) {
   const browser = runtime ?? defaultRuntime();
+  const trace = livewireTrace ?? browser.livewireTrace ?? null;
   const requestLimit = Number.isInteger(profileLimit) && profileLimit > 0 ? profileLimit : 20;
   const requests = [];
 
@@ -227,6 +278,27 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     logLevel: 'all',
     logSearch: '',
     visibleLogCount: summary.section_counts?.logs ?? 0,
+    livewireTab: 'activity',
+    livewireSearch: '',
+    livewireActivityType: 'all',
+    livewireActivityOrder: 'newest',
+    livewireSelectedActivityId: null,
+    livewireSelectedComponentId: null,
+    livewireDetailOpen: false,
+    livewireTrace: {
+      ready: false,
+      components: [],
+      activity: [],
+      dropped: { components: 0, activity: 0 },
+    },
+    livewireServerComponents: [],
+    livewireServerActivity: [],
+    livewireExpandedProperties: [],
+    livewireDrafts: {},
+    stopLivewireTrace: null,
+    livewireClock: browser.now?.() ?? Date.now(),
+    livewireClockTimer: null,
+    livewireClockRunning: false,
     paletteOpen: false,
     paletteSearch: '',
     paletteIndex: 0,
@@ -238,6 +310,13 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
     init() {
       this.restore();
+      this.stopLivewireTrace =
+        trace?.subscribe?.((snapshot) => {
+          this.livewireTrace = snapshot;
+          this.syncLivewireSelection();
+        }) ?? null;
+      this.livewireClockRunning = true;
+      this.scheduleLivewireClock();
       this.colorScheme = browser.matchMedia?.('(prefers-color-scheme: dark)') ?? null;
       this.colorSchemeListener = () => {
         if (this.theme === 'system') this.applyTheme();
@@ -247,10 +326,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         this.syncSectionPanels();
         this.syncHostLock();
         this.syncToolbarPlacement();
-        this.stopToolbarPlacementWatch = browser.watchHostDialogs?.(
-          this.$root,
-          () => this.syncToolbarPlacement(),
-        ) ?? null;
+        this.stopToolbarPlacementWatch =
+          browser.watchHostDialogs?.(this.$root, () => this.syncToolbarPlacement()) ?? null;
       });
       this.colorScheme?.addEventListener?.('change', this.colorSchemeListener);
     },
@@ -261,6 +338,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.colorSchemeListener = null;
       this.stopToolbarPlacementWatch?.();
       this.stopToolbarPlacementWatch = null;
+      this.stopLivewireTrace?.();
+      this.stopLivewireTrace = null;
+      this.livewireClockRunning = false;
+      browser.cancelSchedule?.(this.livewireClockTimer);
+      this.livewireClockTimer = null;
       this.requestPickerScope = null;
       this.requestPickerReturnFocus = null;
       this.toolbarSnapVersion += 1;
@@ -293,11 +375,14 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
     persist() {
       try {
-        browser.storage?.setItem(STORAGE_KEY, JSON.stringify({
-          theme: this.theme,
-          toolbarAnchor: this.toolbarPreferredPlacement,
-          favorites: this.favorites,
-        }));
+        browser.storage?.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            theme: this.theme,
+            toolbarAnchor: this.toolbarPreferredPlacement,
+            favorites: this.favorites,
+          }),
+        );
       } catch {
         // Private browsing and strict storage policies are allowed.
       }
@@ -311,8 +396,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const sections = (this.summary.sections ?? []).map((section) => ({
         id: `section:${section.key}`,
         label: `Go to ${section.label}`,
-        hint: section.active === false ? 'Other collector' : (section.attention ? 'Needs attention' : 'Active section'),
-        priority: section.attention ? 0 : (section.active === false ? 2 : 1),
+        hint: section.active === false ? 'Other collector' : section.attention ? 'Needs attention' : 'Active section',
+        priority: section.attention ? 0 : section.active === false ? 2 : 1,
       }));
 
       return [
@@ -324,8 +409,16 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         { id: 'toolbar:bottom', label: 'Pin to bottom', hint: 'Toolbar' },
         { id: 'toolbar:top-left', label: 'Pin to top left', hint: 'Toolbar' },
         { id: 'toolbar:top-right', label: 'Pin to top right', hint: 'Toolbar' },
-        { id: 'toolbar:bottom-left', label: 'Pin to bottom left', hint: 'Toolbar' },
-        { id: 'toolbar:bottom-right', label: 'Pin to bottom right', hint: 'Toolbar' },
+        {
+          id: 'toolbar:bottom-left',
+          label: 'Pin to bottom left',
+          hint: 'Toolbar',
+        },
+        {
+          id: 'toolbar:bottom-right',
+          label: 'Pin to bottom right',
+          hint: 'Toolbar',
+        },
       ];
     },
 
@@ -360,7 +453,14 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         const active = this.allCommands.filter((command) => command.hint !== 'Other collector');
 
         return this.hiddenCommandCount > 0
-          ? [...active, { id: 'collectors:show', label: 'Show other collectors', hint: `${this.hiddenCommandCount} hidden` }]
+          ? [
+              ...active,
+              {
+                id: 'collectors:show',
+                label: 'Show other collectors',
+                hint: `${this.hiddenCommandCount} hidden`,
+              },
+            ]
           : active;
       }
 
@@ -379,20 +479,265 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const overview = this.isFavorite('overview') ? null : byKey.get('overview');
       const sections = allSections
         .filter((section) => section.key !== 'overview' && !this.isFavorite(section.key))
-        .sort((left, right) => left.label.localeCompare(right.label, undefined, { sensitivity: 'base' }));
+        .sort((left, right) =>
+          left.label.localeCompare(right.label, undefined, {
+            sensitivity: 'base',
+          }),
+        );
 
       return [...favorites, ...(overview ? [overview] : []), ...sections];
     },
 
     get firstVisibleNonFavoriteKey() {
-      return this.orderedSections.find((section) => (
-        !this.isFavorite(section.key) && this.isSectionVisible(section)
-      ))?.key ?? null;
+      return (
+        this.orderedSections.find((section) => !this.isFavorite(section.key) && this.isSectionVisible(section))?.key ??
+        null
+      );
     },
 
     get selectedSection() {
-      return (this.summary.sections ?? []).find((section) => section.key === this.selected)
-        ?? { key: 'overview', label: 'Overview', description: '', count: null };
+      return (
+        (this.summary.sections ?? []).find((section) => section.key === this.selected) ?? {
+          key: 'overview',
+          label: 'Overview',
+          description: '',
+          count: null,
+        }
+      );
+    },
+
+    get livewireComponents() {
+      const serverById = new Map(this.livewireServerComponents.map((component) => [String(component.id), component]));
+      const browserComponents = this.livewireTrace.ready
+        ? this.livewireTrace.components
+        : this.livewireServerComponents.map((component, index) => ({
+            id: String(component.id),
+            name: component.name,
+            title: component.title,
+            parentId: component.parent_id ?? null,
+            sequence: index + 1,
+            mounted: false,
+            status: 'stale',
+            latestActivityId: null,
+            properties: (component.properties ?? []).map((property) => ({
+              path: property.path,
+              type: property.type,
+              value: property.server_value,
+            })),
+          }));
+      const merged = browserComponents.map((component) => ({
+        ...component,
+        server: serverById.get(String(component.id)) ?? null,
+      }));
+      const byId = new Map(merged.map((component) => [String(component.id), component]));
+      const depth = (component) => {
+        let current = component;
+        let value = 0;
+        const seen = new Set([String(component.id)]);
+
+        while (current?.parentId && byId.has(String(current.parentId)) && !seen.has(String(current.parentId))) {
+          seen.add(String(current.parentId));
+          current = byId.get(String(current.parentId));
+          value++;
+        }
+
+        return value;
+      };
+
+      return merged
+        .map((component) => ({ ...component, depth: depth(component) }))
+        .sort((left, right) => Number(left.sequence ?? 0) - Number(right.sequence ?? 0));
+    },
+
+    get filteredLivewireComponents() {
+      const search = this.livewireSearch.toLowerCase().trim();
+      if (search === '') return this.livewireComponents;
+
+      return this.livewireComponents.filter((component) =>
+        [component.title, component.name, component.id, component.server?.class, component.server?.source?.file].some(
+          (value) =>
+            String(value ?? '')
+              .toLowerCase()
+              .includes(search),
+        ),
+      );
+    },
+
+    get livewireActivity() {
+      if (this.livewireTrace.ready) return this.livewireTrace.activity;
+
+      return this.livewireServerActivity.map((item, index) => ({
+        id: item.id ?? `server-livewire-${index + 1}`,
+        sequence: index + 1,
+        componentId: String(item.component_id ?? ''),
+        componentName: item.component_name ?? '',
+        componentTitle: item.component_title ?? 'Livewire component',
+        title: item.name ?? 'Livewire activity',
+        kind: item.type ?? 'activity',
+        status: item.status ?? 'complete',
+        occurredAt: null,
+        startedAt: item.at_ms ?? null,
+        finishedAt: null,
+        durationMs: item.duration_ms ?? null,
+        profileIds: [],
+        actions: item.method
+          ? [
+              {
+                name: item.method,
+                params: item.params ?? [],
+                metadata: item.metadata ?? {},
+              },
+            ]
+          : [],
+        changes: item.property
+          ? [
+              {
+                path: item.property,
+                before: item.before,
+                submitted: item.submitted,
+                server: item.server,
+              },
+            ]
+          : [],
+        events: item.event
+          ? [
+              {
+                name: item.event,
+                params: item.params ?? {},
+                mode: item.mode ?? 'unknown',
+                declaredTarget: item.declared_target ?? null,
+                observedRecipientIds: [],
+              },
+            ]
+          : [],
+        effects: item.effect ? { [item.effect]: true } : {},
+        phases: [],
+        error: item.message ?? null,
+      }));
+    },
+
+    get filteredLivewireActivity() {
+      const search = this.livewireSearch.toLowerCase().trim();
+
+      const items = this.livewireActivity.filter(
+        (item) =>
+          (this.livewireActivityType === 'all' || item.kind === this.livewireActivityType) &&
+          [
+            item.title,
+            item.kind,
+            item.status,
+            item.componentTitle,
+            item.componentName,
+            ...item.actions.map((action) => action.name),
+            ...item.changes.map((change) => change.path),
+            ...item.events.map((event) => event.name),
+          ].some((value) =>
+            String(value ?? '')
+              .toLowerCase()
+              .includes(search),
+          ),
+      );
+
+      return [...items].sort((left, right) => {
+        const difference = Number(left.sequence ?? 0) - Number(right.sequence ?? 0);
+
+        return this.livewireActivityOrder === 'oldest' ? difference : -difference;
+      });
+    },
+
+    get livewireActivityTypes() {
+      return [...new Set(this.livewireActivity.map((item) => item.kind))].sort();
+    },
+
+    get selectedLivewireActivity() {
+      return this.livewireActivity.find((item) => item.id === this.livewireSelectedActivityId) ?? null;
+    },
+
+    get selectedLivewireComponent() {
+      return this.livewireComponents.find((component) => component.id === this.livewireSelectedComponentId) ?? null;
+    },
+
+    get livewirePropertyRows() {
+      const component = this.selectedLivewireComponent;
+      if (!component) return [];
+
+      const descriptors = new Map(
+        (component.server?.properties ?? []).map((descriptor) => [descriptor.path, descriptor]),
+      );
+      const latestChanges = [...this.livewireActivity]
+        .filter((item) => item.componentId === component.id)
+        .flatMap((item) => item.changes)
+        .reverse();
+      const rows = [];
+      const append = (path, label, value, depth, root, safePath = true) => {
+        const descriptor = descriptors.get(root);
+        const childEntries = Array.isArray(value)
+          ? value.map((child, index) => [String(index), child])
+          : value && typeof value === 'object'
+            ? Object.entries(value)
+            : [];
+        const hasChildren = childEntries.length > 0;
+        const expanded = this.livewireExpandedProperties.includes(`${component.id}:${path}`);
+        const nested = path !== root;
+        const editable =
+          component.mounted !== false &&
+          isLivewirePrimitive(value) &&
+          safePath &&
+          (nested ? descriptor?.array_leaf_writable === true : descriptor?.writable === true);
+        const latest = latestChanges.find(
+          (change) => change.path === path && (change.serverKnown === true || change.server !== null),
+        );
+        const serverKnown =
+          latest !== undefined ||
+          (!nested &&
+            descriptor?.server_value !== undefined &&
+            (descriptor.server_value !== null || descriptor.type === 'Null'));
+        const serverValue = latest !== undefined ? latest.server : (descriptor?.server_value ?? null);
+        const draft = this.livewireDrafts[this.livewireDraftKey({ componentId: component.id, path })];
+        const state =
+          draft?.status === 'updating'
+            ? 'Updating'
+            : descriptor?.write_reason === 'locked'
+              ? 'Locked'
+              : serverKnown
+                ? JSON.stringify(serverValue) === JSON.stringify(value)
+                  ? 'Synced'
+                  : 'Dirty'
+                : 'Unknown';
+
+        rows.push({
+          componentId: component.id,
+          path,
+          label,
+          value,
+          valueSummary: livewireValueSummary(value),
+          type: nested ? livewireValueType(value) : (descriptor?.type ?? livewireValueType(value)),
+          phpType: nested ? null : descriptor?.php_type,
+          depth,
+          hasChildren,
+          expanded,
+          editable,
+          writeReason: editable
+            ? null
+            : (descriptor?.write_reason ?? (isLivewirePrimitive(value) ? 'unknown' : 'unsupported_type')),
+          serverKnown,
+          serverValue,
+          serverSummary: serverKnown ? livewireValueSummary(serverValue) : 'Not confirmed',
+          state,
+        });
+
+        if (!hasChildren || !expanded) return;
+
+        childEntries.forEach(([key, child]) =>
+          append(`${path}.${key}`, key, child, depth + 1, root, safePath && !key.includes('.')),
+        );
+      };
+
+      component.properties.forEach((property) =>
+        append(property.path, property.path, property.value, 0, property.path),
+      );
+
+      return rows;
     },
 
     get requestBadgeCount() {
@@ -400,8 +745,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     get currentRequestProfile() {
-      return this.recentProfiles.find((profile) => profile.id === this.currentRequestId)
-        ?? this.summary;
+      return this.recentProfiles.find((profile) => profile.id === this.currentRequestId) ?? this.summary;
     },
 
     get laterRequestProfiles() {
@@ -431,16 +775,15 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     isSectionVisible(section) {
-      return this.isSectionActive(section)
-        || this.isFavorite(section.key)
-        || section.key === this.selected;
+      return this.isSectionActive(section) || this.isFavorite(section.key) || section.key === this.selected;
     },
 
     selectSection(section, filter = null, focusHeading = false) {
       const focusContentHeading = focusHeading || this.mobileSectionsOpen;
       this.selected = this.sectionKeys.includes(section) ? section : 'overview';
       if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) this.queryFilter = 'attention';
-      if (this.selected === 'authorization' && ['all', 'allowed', 'denied'].includes(filter)) this.authorizationFilter = filter;
+      if (this.selected === 'authorization' && ['all', 'allowed', 'denied'].includes(filter))
+        this.authorizationFilter = filter;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
       this.$nextTick?.(() => {
@@ -449,9 +792,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         if (this.selected === 'queries') {
           this.applyQueryView();
           if (['repeated', 'slow'].includes(filter)) {
-            const selector = filter === 'repeated'
-              ? '[data-ndb-query-group]:not([hidden])'
-              : '[data-ndb-query-item][data-slow="true"]:not([hidden]), [data-ndb-query-group][data-slow="true"]:not([hidden])';
+            const selector =
+              filter === 'repeated'
+                ? '[data-ndb-query-group]:not([hidden])'
+                : '[data-ndb-query-item][data-slow="true"]:not([hidden]), [data-ndb-query-group][data-slow="true"]:not([hidden])';
             this.$refs?.queryResults?.querySelector?.(selector)?.scrollIntoView?.({ block: 'start' });
           }
         }
@@ -491,8 +835,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.mobileSectionsOpen = true;
       this.$nextTick?.(() => {
         const navigation = this.$refs?.mobileSectionsNav;
-        const selectedSection = navigation
-          ?.querySelector?.('[data-ndb-select-section][aria-current="page"]');
+        const selectedSection = navigation?.querySelector?.('[data-ndb-select-section][aria-current="page"]');
         const firstSection = navigation?.querySelector?.('[data-ndb-select-section]');
 
         (selectedSection ?? firstSection)?.focus?.();
@@ -500,9 +843,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     toggleMobileSections() {
-      this.mobileSectionsOpen
-        ? this.closeMobileSections()
-        : this.openMobileSections();
+      this.mobileSectionsOpen ? this.closeMobileSections() : this.openMobileSections();
     },
 
     closeMobileSections(restoreFocus = true) {
@@ -565,23 +906,18 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     toolbarPreviewWidth(placement) {
       if (TOOLBAR_CORNER_PLACEMENTS.includes(placement)) return this.toolbarCornerWidth;
 
-      return this.toolbarCenterWidth
-        || Math.min(1024, Math.max(0, (browser.viewportWidth?.() ?? 0) - 24));
+      return this.toolbarCenterWidth || Math.min(1024, Math.max(0, (browser.viewportWidth?.() ?? 0) - 24));
     },
 
     toolbarPreviewHeight(placement) {
-      return TOOLBAR_CORNER_PLACEMENTS.includes(placement)
-        ? this.toolbarCornerHeight
-        : this.toolbarCenterHeight;
+      return TOOLBAR_CORNER_PLACEMENTS.includes(placement) ? this.toolbarCornerHeight : this.toolbarCenterHeight;
     },
 
     toolbarTargetAt(clientX, clientY) {
       const width = Math.max(1, browser.viewportWidth?.() ?? 0);
       const height = Math.max(1, browser.viewportHeight?.() ?? 0);
       const vertical = clientY < height / 2 ? 'top' : 'bottom';
-      const horizontal = clientX < width / 3
-        ? 'left'
-        : (clientX > width * 2 / 3 ? 'right' : 'center');
+      const horizontal = clientX < width / 3 ? 'left' : clientX > (width * 2) / 3 ? 'right' : 'center';
 
       return horizontal === 'center' ? vertical : `${vertical}-${horizontal}`;
     },
@@ -625,10 +961,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     moveToolbarDrag(event) {
       if (event.pointerId !== this.toolbarDragPointerId) return;
 
-      const distance = Math.hypot(
-        event.clientX - this.toolbarDragStartX,
-        event.clientY - this.toolbarDragStartY,
-      );
+      const distance = Math.hypot(event.clientX - this.toolbarDragStartX, event.clientY - this.toolbarDragStartY);
 
       if (!this.toolbarDragging && distance < 6) return;
 
@@ -637,9 +970,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
         this.closeRequestPicker(false);
         this.mobileToolbarMenu = null;
         this.mobileToolbarReturnFocus = null;
-        this.$root
-          ?.querySelector?.('[data-ndb-toolbar-shell]')
-          ?.setPointerCapture?.(event.pointerId);
+        this.$root?.querySelector?.('[data-ndb-toolbar-shell]')?.setPointerCapture?.(event.pointerId);
       }
 
       event.preventDefault?.();
@@ -651,14 +982,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const maxLeft = Math.max(minLeft, viewportWidth - width - 12);
       const minTop = 12;
       const maxTop = Math.max(minTop, viewportHeight - height - 12);
-      const left = Math.min(
-        maxLeft,
-        Math.max(minLeft, event.clientX - this.toolbarDragPointerOffsetX),
-      );
-      const top = Math.min(
-        maxTop,
-        Math.max(minTop, event.clientY - this.toolbarDragPointerOffsetY),
-      );
+      const left = Math.min(maxLeft, Math.max(minLeft, event.clientX - this.toolbarDragPointerOffsetX));
+      const top = Math.min(maxTop, Math.max(minTop, event.clientY - this.toolbarDragPointerOffsetY));
 
       this.toolbarDragOffsetX = left - this.toolbarAnchorLeft(this.toolbarPlacement, width);
       this.toolbarDragOffsetY = top - this.toolbarAnchorTop(this.toolbarPlacement, height);
@@ -711,10 +1036,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     suppressToolbarClick() {
       this.toolbarSuppressClick = true;
       browser.cancelSchedule?.(this.toolbarClickTimer);
-      this.toolbarClickTimer = browser.schedule?.(() => {
-        this.toolbarSuppressClick = false;
-        this.toolbarClickTimer = null;
-      }, 250) ?? null;
+      this.toolbarClickTimer =
+        browser.schedule?.(() => {
+          this.toolbarSuppressClick = false;
+          this.toolbarClickTimer = null;
+        }, 250) ?? null;
     },
 
     consumeToolbarClick(event) {
@@ -741,19 +1067,19 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const snapVersion = ++this.toolbarSnapVersion;
       const toolbar = this.$root?.querySelector?.('[data-ndb-toolbar-shell]');
       const sourceBox = currentBox ?? toolbar?.getBoundingClientRect?.();
-      const source = sourceBox && Number.isFinite(sourceBox.left) && Number.isFinite(sourceBox.top)
-        ? {
-            left: sourceBox.left,
-            top: sourceBox.top,
-            width: sourceBox.width,
-            height: sourceBox.height,
-          }
-        : null;
-      const pointer = releasePointer
-        && Number.isFinite(releasePointer.clientX)
-        && Number.isFinite(releasePointer.clientY)
-        ? { x: releasePointer.clientX, y: releasePointer.clientY }
-        : null;
+      const source =
+        sourceBox && Number.isFinite(sourceBox.left) && Number.isFinite(sourceBox.top)
+          ? {
+              left: sourceBox.left,
+              top: sourceBox.top,
+              width: sourceBox.width,
+              height: sourceBox.height,
+            }
+          : null;
+      const pointer =
+        releasePointer && Number.isFinite(releasePointer.clientX) && Number.isFinite(releasePointer.clientY)
+          ? { x: releasePointer.clientX, y: releasePointer.clientY }
+          : null;
       const viewportWidth = browser.viewportWidth?.() ?? 0;
       const viewportHeight = browser.viewportHeight?.() ?? 0;
       const positionAtRelease = (width, height) => {
@@ -765,14 +1091,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
           : source.top + (source.height - height) / 2;
 
         return {
-          left: Math.min(
-            Math.max(12, viewportWidth - width - 12),
-            Math.max(12, desiredLeft),
-          ),
-          top: Math.min(
-            Math.max(12, viewportHeight - height - 12),
-            Math.max(12, desiredTop),
-          ),
+          left: Math.min(Math.max(12, viewportWidth - width - 12), Math.max(12, desiredLeft)),
+          top: Math.min(Math.max(12, viewportHeight - height - 12), Math.max(12, desiredTop)),
         };
       };
 
@@ -840,10 +1160,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
             this.toolbarDragOffsetX = 0;
             this.toolbarDragOffsetY = 0;
-            this.toolbarSnapTimer = browser.schedule?.(
-              () => this.finishToolbarSnap(snapVersion),
-              500,
-            ) ?? null;
+            this.toolbarSnapTimer = browser.schedule?.(() => this.finishToolbarSnap(snapVersion), 500) ?? null;
           };
 
           if (browser.nextFrame) browser.nextFrame(settle);
@@ -875,9 +1192,8 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       if (!this.barVisible) return;
 
       if (!this.inspectorOpen) {
-        this.inspectorReturnFocus = returnFocus
-          ?? (this.mobileToolbarMenu ? this.mobileToolbarReturnFocus : null)
-          ?? browser.activeElement?.();
+        this.inspectorReturnFocus =
+          returnFocus ?? (this.mobileToolbarMenu ? this.mobileToolbarReturnFocus : null) ?? browser.activeElement?.();
       }
 
       this.mobileToolbarMenu = null;
@@ -889,9 +1205,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.inspectorOpen = true;
       this.syncHostLock();
       this.$nextTick?.(() => {
-        const focus = () => this.$root
-          ?.querySelector?.('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
-          ?.focus?.();
+        const focus = () =>
+          this.$root
+            ?.querySelector?.('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+            ?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
 
@@ -982,16 +1299,18 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       if (existing === -1) {
         const current = this.recentProfiles.find((profile) => profile.id === this.currentRequestId);
-        const later = [summary, ...this.recentProfiles.filter((profile) => profile.id !== this.currentRequestId)]
-          .slice(0, Math.max(0, this.profileLimit - (current ? 1 : 0)));
+        const later = [summary, ...this.recentProfiles.filter((profile) => profile.id !== this.currentRequestId)].slice(
+          0,
+          Math.max(0, this.profileLimit - (current ? 1 : 0)),
+        );
         this.recentProfiles = current ? [...later, current] : later;
 
         return;
       }
 
-      this.recentProfiles = this.recentProfiles.map((profile, index) => (
-        index === existing ? { ...profile, ...summary } : profile
-      ));
+      this.recentProfiles = this.recentProfiles.map((profile, index) =>
+        index === existing ? { ...profile, ...summary } : profile,
+      );
     },
 
     receiveProfile(summary) {
@@ -1006,15 +1325,17 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     requestTypeLabel(type) {
-      return ({
-        ajax: 'Ajax',
-        cli: 'CLI',
-        download: 'Download',
-        full_page: 'Page',
-        json: 'JSON',
-        redirect: 'Redirect',
-        stream: 'Stream',
-      })[type] ?? 'Request';
+      return (
+        {
+          ajax: 'Ajax',
+          cli: 'CLI',
+          download: 'Download',
+          full_page: 'Page',
+          json: 'JSON',
+          redirect: 'Redirect',
+          stream: 'Stream',
+        }[type] ?? 'Request'
+      );
     },
 
     requestStatusClass(status) {
@@ -1080,9 +1401,12 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
     noticeProfile(profileId, foreground = false) {
       if (!PROFILE_PATTERN.test(profileId ?? '')) return;
-      if (profileId === this.summary.id
-        || this.recentProfiles.some((profile) => profile.id === profileId)
-        || this.pendingProfileIds.includes(profileId)) return;
+      if (
+        profileId === this.summary.id ||
+        this.recentProfiles.some((profile) => profile.id === profileId) ||
+        this.pendingProfileIds.includes(profileId)
+      )
+        return;
 
       const method = foreground ? 'switchProfile' : 'noticeProfile';
       const action = this.$wire?.[method];
@@ -1094,6 +1418,264 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       Promise.resolve(action.call(this.$wire, profileId)).catch(() => {
         this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== profileId);
       });
+    },
+
+    mergeLivewireServer(payload = {}) {
+      const byId = new Map(this.livewireServerComponents.map((component) => [String(component.id), component]));
+      (payload.components ?? []).forEach((component) => {
+        if (component?.id) byId.set(String(component.id), component);
+      });
+      this.livewireServerComponents = [...byId.values()];
+      this.livewireServerActivity = Array.isArray(payload.activity) ? payload.activity : [];
+      trace?.mergeServerComponents?.(payload.components ?? []);
+      this.syncLivewireSelection();
+    },
+
+    syncLivewireSelection() {
+      if (!this.livewireActivity.some((item) => item.id === this.livewireSelectedActivityId)) {
+        this.livewireSelectedActivityId = this.livewireActivity.at(-1)?.id ?? null;
+      }
+      if (!this.livewireComponents.some((component) => component.id === this.livewireSelectedComponentId)) {
+        this.livewireSelectedComponentId = this.livewireComponents[0]?.id ?? null;
+      }
+    },
+
+    setLivewireTab(tab) {
+      if (!['activity', 'components'].includes(tab)) return;
+      this.livewireTab = tab;
+      this.livewireDetailOpen = false;
+      this.livewireSearch = '';
+      this.syncLivewireSelection();
+    },
+
+    setLivewireActivityType(type) {
+      if (type !== 'all' && !this.livewireActivityTypes.includes(type)) return;
+      this.livewireActivityType = type;
+      if (!this.filteredLivewireActivity.some((item) => item.id === this.livewireSelectedActivityId)) {
+        this.livewireSelectedActivityId = this.filteredLivewireActivity[0]?.id ?? null;
+      }
+    },
+
+    setLivewireActivityOrder(order) {
+      if (!['newest', 'oldest'].includes(order)) return;
+      this.livewireActivityOrder = order;
+    },
+
+    selectLivewireActivity(id) {
+      if (!this.livewireActivity.some((item) => item.id === id)) return;
+      this.livewireSelectedActivityId = id;
+      this.livewireDetailOpen = true;
+    },
+
+    selectLivewireComponent(id) {
+      if (!this.livewireComponents.some((component) => component.id === id)) return;
+      this.livewireSelectedComponentId = id;
+      this.livewireDetailOpen = true;
+    },
+
+    inspectLivewireActivityComponent() {
+      const id = this.selectedLivewireActivity?.componentId;
+      if (!id || !this.livewireComponents.some((component) => component.id === id)) return;
+      this.livewireSelectedComponentId = id;
+      this.livewireTab = 'components';
+      this.livewireDetailOpen = true;
+      this.livewireSearch = '';
+    },
+
+    inspectLivewireComponentActivity() {
+      const id = this.selectedLivewireComponent?.latestActivityId;
+      if (!id || !this.livewireActivity.some((item) => item.id === id)) return;
+      this.livewireSelectedActivityId = id;
+      this.livewireTab = 'activity';
+      this.livewireDetailOpen = true;
+      this.livewireSearch = '';
+    },
+
+    livewireComponentLatestActivity(component) {
+      return [...this.livewireActivity].reverse().find((item) => item.componentId === component?.id) ?? null;
+    },
+
+    livewireComponentTitle(id) {
+      return this.livewireComponents.find((component) => component.id === String(id))?.title ?? String(id);
+    },
+
+    livewireComponentActivity(id, limit = 5) {
+      return [...this.livewireActivity]
+        .filter((item) => item.componentId === String(id))
+        .reverse()
+        .slice(0, limit);
+    },
+
+    livewireActivityFactCount(item) {
+      return (item?.actions?.length ?? 0) + (item?.changes?.length ?? 0) + (item?.events?.length ?? 0);
+    },
+
+    livewireDuration(item) {
+      if (item?.durationMs === null || item?.durationMs === undefined)
+        return item?.status === 'updating' ? 'In progress' : '—';
+      return `${Number(item.durationMs).toFixed(item.durationMs < 10 ? 1 : 0)} ms`;
+    },
+
+    livewireActivityAge(item) {
+      const occurredAt = Number(item?.occurredAt);
+      if (!Number.isFinite(occurredAt) || occurredAt <= 0) return 'Current request';
+
+      const seconds = Math.max(0, Math.floor((this.livewireClock - occurredAt) / 1000));
+      if (seconds < 1) return 'Now';
+      if (seconds < 60) return `${seconds} sec ago`;
+
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes} min ago`;
+
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} hr ago`;
+
+      const days = Math.floor(hours / 24);
+      return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+    },
+
+    scheduleLivewireClock() {
+      if (!this.livewireClockRunning) return;
+
+      this.livewireClockTimer = browser.schedule?.(() => {
+        this.livewireClock = browser.now?.() ?? Date.now();
+        this.livewireClockTimer = null;
+        this.scheduleLivewireClock();
+      }, 1000);
+    },
+
+    livewireDraftKey(row) {
+      return `${row.componentId}:${row.path}`;
+    },
+
+    toggleLivewireProperty(row) {
+      if (!row?.hasChildren) return;
+      const key = `${row.componentId}:${row.path}`;
+      this.livewireExpandedProperties = this.livewireExpandedProperties.includes(key)
+        ? this.livewireExpandedProperties.filter((item) => item !== key)
+        : [...this.livewireExpandedProperties, key];
+    },
+
+    editLivewireProperty(row) {
+      if (!row?.editable) return;
+      const key = this.livewireDraftKey(row);
+      const type = row.value === null ? 'String' : row.type;
+      this.livewireDrafts = {
+        [key]: {
+          componentId: row.componentId,
+          path: row.path,
+          baseline: livewireValueCopy(row.value),
+          type,
+          value: row.value === null ? '' : livewireValueCopy(row.value),
+          status: 'editing',
+          error: null,
+        },
+      };
+    },
+
+    positionLivewirePropertyPopover(trigger, popover) {
+      if (!trigger?.getBoundingClientRect || !popover?.getBoundingClientRect || !popover?.style) return;
+
+      const triggerBox = trigger.getBoundingClientRect();
+      const popoverBox = popover.getBoundingClientRect();
+      const edge = 16;
+      const gap = 12;
+      const viewportWidth = browser.viewportWidth?.() ?? 0;
+      const viewportHeight = browser.viewportHeight?.() ?? 0;
+      const maxLeft = Math.max(edge, viewportWidth - popoverBox.width - edge);
+      const left = Math.min(Math.max(edge, triggerBox.right - popoverBox.width), maxLeft);
+      const maxTop = Math.max(edge, viewportHeight - popoverBox.height - edge);
+      const top = Math.min(triggerBox.bottom + gap, maxTop);
+      const arrowLeft = Math.min(
+        Math.max(13, triggerBox.left + triggerBox.width / 2 - left - 8),
+        Math.max(13, popoverBox.width - 29),
+      );
+
+      Object.entries({
+        bottom: 'auto',
+        left: `${Math.round(left)}px`,
+        position: 'fixed',
+        right: 'auto',
+        top: `${Math.round(top)}px`,
+      }).forEach(([property, value]) => popover.style.setProperty?.(property, value, 'important'));
+      popover.style.visibility = 'visible';
+      popover.style.setProperty?.('--ndb-livewire-popover-arrow-left', `${Math.round(arrowLeft)}px`);
+    },
+
+    cancelLivewireDraft(row, restoreFocus = false) {
+      if (restoreFocus) this.focusLivewirePropertyEditor(row);
+
+      const key = this.livewireDraftKey(row);
+      const drafts = { ...this.livewireDrafts };
+      delete drafts[key];
+      this.livewireDrafts = drafts;
+    },
+
+    focusLivewirePropertyEditor(row, trigger = null) {
+      const key = this.livewireDraftKey(row);
+      browser.afterPaint(() => {
+        browser.afterPaint(() => {
+          const candidates =
+            browser.queryAll?.('[data-ndb-livewire-edit-key]') ??
+            this.$root.querySelectorAll('[data-ndb-livewire-edit-key]');
+          const button =
+            trigger?.isConnected !== false && trigger?.dataset?.ndbLivewireEditKey === key
+              ? trigger
+              : [...candidates].find((item) => item.dataset.ndbLivewireEditKey === key);
+          if (button) button.focus();
+        });
+      });
+    },
+
+    toggleLivewireBoolean(row) {
+      const draft = this.livewireDrafts[this.livewireDraftKey(row)];
+      if (draft) draft.value = !Boolean(draft.value);
+    },
+
+    livewireMutationValue(draft) {
+      if (draft.type === 'Boolean') return Boolean(draft.value);
+      if (draft.type === 'Integer') {
+        if (!/^-?\d+$/.test(String(draft.value).trim())) throw new Error('Enter a whole number.');
+        return Number.parseInt(draft.value, 10);
+      }
+      if (draft.type === 'Float') {
+        const value = Number(draft.value);
+        if (String(draft.value).trim() === '' || !Number.isFinite(value)) throw new Error('Enter a valid number.');
+        return value;
+      }
+
+      return String(draft.value);
+    },
+
+    async applyLivewireDraft(row, trigger = null) {
+      const key = this.livewireDraftKey(row);
+      const draft = this.livewireDrafts[key];
+      if (!draft || draft.status === 'updating') return false;
+
+      draft.error = null;
+
+      try {
+        const value = this.livewireMutationValue(draft);
+        draft.status = 'updating';
+        if (!trace?.applyMutation) throw new Error('Livewire is not available on this page.');
+        const confirmed = await trace.applyMutation({
+          componentId: draft.componentId,
+          path: draft.path,
+          baseline: draft.baseline,
+          value,
+        });
+        draft.baseline = livewireValueCopy(confirmed);
+        draft.value = livewireValueCopy(confirmed);
+        this.cancelLivewireDraft(row);
+        this.focusLivewirePropertyEditor(row, trigger);
+
+        return true;
+      } catch (error) {
+        draft.status = 'failed';
+        draft.error = error?.message ?? 'The Livewire update failed.';
+
+        return false;
+      }
     },
 
     copyText(value) {
@@ -1128,12 +1710,12 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
           .sort((left, right) => this.compareQueries(left, right))
           .forEach((result) => {
             const isGroup = result.dataset.queryKind === 'group';
-            const isRepeatedItem = result.dataset.queryKind === 'item'
-              && result.dataset.repeated === 'true';
-            const matchesFilter = this.queryFilter === 'all'
-              || (this.queryFilter === 'attention' && (isGroup || result.dataset.slow === 'true'))
-              || (this.queryFilter === 'read' && result.dataset.type === 'read')
-              || (this.queryFilter === 'write' && result.dataset.type === 'write');
+            const isRepeatedItem = result.dataset.queryKind === 'item' && result.dataset.repeated === 'true';
+            const matchesFilter =
+              this.queryFilter === 'all' ||
+              (this.queryFilter === 'attention' && (isGroup || result.dataset.slow === 'true')) ||
+              (this.queryFilter === 'read' && result.dataset.type === 'read') ||
+              (this.queryFilter === 'write' && result.dataset.type === 'write');
             const matchesSearch = search === '' || result.dataset.search?.includes(search);
             result.hidden = isRepeatedItem || !matchesFilter || !matchesSearch;
             if (!result.hidden) visible += Number(result.dataset.resultCount ?? 1);
@@ -1156,8 +1738,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
     compareQueries(left, right) {
       if (this.querySort === 'duration') {
-        return Number(right.dataset.duration ?? 0) - Number(left.dataset.duration ?? 0)
-          || Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+        return (
+          Number(right.dataset.duration ?? 0) - Number(left.dataset.duration ?? 0) ||
+          Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0)
+        );
       }
 
       return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
@@ -1177,8 +1761,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     applyViewSort() {
-      const groups = this.$refs?.viewGroups
-        ?? this.$root?.querySelector?.('[x-ref="viewGroups"]');
+      const groups = this.$refs?.viewGroups ?? this.$root?.querySelector?.('[x-ref="viewGroups"]');
 
       if (!groups?.children) return;
 
@@ -1187,15 +1770,18 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
           const direction = this.viewSortDirection === 'asc' ? 1 : -1;
 
           if (this.viewSort === 'count') {
-            return (Number(left.dataset.count ?? 0) - Number(right.dataset.count ?? 0)) * direction
-              || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
+            return (
+              (Number(left.dataset.count ?? 0) - Number(right.dataset.count ?? 0)) * direction ||
+              Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0)
+            );
           }
 
-          return String(left.dataset.name ?? '').localeCompare(
-            String(right.dataset.name ?? ''),
-            undefined,
-            { numeric: true, sensitivity: 'base' },
-          ) * direction || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0);
+          return (
+            String(left.dataset.name ?? '').localeCompare(String(right.dataset.name ?? ''), undefined, {
+              numeric: true,
+              sensitivity: 'base',
+            }) * direction || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0)
+          );
         })
         .forEach((group) => groups.appendChild?.(group));
     },
@@ -1208,8 +1794,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     applyAuthorizationFilters() {
-      const list = this.$refs?.authorizationItems
-        ?? this.$root?.querySelector?.('[x-ref="authorizationItems"]');
+      const list = this.$refs?.authorizationItems ?? this.$root?.querySelector?.('[x-ref="authorizationItems"]');
 
       if (!list?.children) {
         this.visibleAuthorizationCount = 0;
@@ -1220,8 +1805,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       let visible = 0;
 
       [...list.children].forEach((item) => {
-        const matches = this.authorizationFilter === 'all'
-          || item.dataset.result === this.authorizationFilter;
+        const matches = this.authorizationFilter === 'all' || item.dataset.result === this.authorizationFilter;
         item.hidden = !matches;
         if (matches) visible++;
       });
@@ -1249,10 +1833,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       let visible = 0;
 
       [...list.children].forEach((item) => {
-        const matches = (this.timelineFilter === 'all'
-          || (this.timelineFilter === 'key' && item.dataset.key === 'true')
-          || item.dataset.section === this.timelineFilter)
-          && (search === '' || item.dataset.search?.includes(search));
+        const matches =
+          (this.timelineFilter === 'all' ||
+            (this.timelineFilter === 'key' && item.dataset.key === 'true') ||
+            item.dataset.section === this.timelineFilter) &&
+          (search === '' || item.dataset.search?.includes(search));
         item.hidden = !matches;
         if (matches) visible++;
       });
@@ -1273,8 +1858,9 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       let visible = 0;
 
       [...(list?.children ?? [])].forEach((item) => {
-        const matches = (this.eventSource === 'all' || item.dataset.source === this.eventSource)
-          && (search === '' || item.dataset.search?.includes(search));
+        const matches =
+          (this.eventSource === 'all' || item.dataset.source === this.eventSource) &&
+          (search === '' || item.dataset.search?.includes(search));
         item.hidden = !matches;
         if (matches) visible++;
       });
@@ -1297,8 +1883,9 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       let visible = 0;
 
       [...(list?.children ?? [])].forEach((item) => {
-        const matches = (this.logLevel === 'all' || item.dataset.level === this.logLevel)
-          && (search === '' || item.dataset.search?.includes(search));
+        const matches =
+          (this.logLevel === 'all' || item.dataset.level === this.logLevel) &&
+          (search === '' || item.dataset.search?.includes(search));
         item.hidden = !matches;
         if (matches) visible++;
       });
@@ -1309,8 +1896,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     keepFocusWithin(event, container) {
       if (event.key !== 'Tab') return;
 
-      const focusable = [...(container?.querySelectorAll?.('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])]
-        .filter((element) => element.hidden !== true && (element.getClientRects?.().length ?? 1) > 0);
+      const focusable = [
+        ...(container?.querySelectorAll?.(
+          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? []),
+      ].filter((element) => element.hidden !== true && (element.getClientRects?.().length ?? 1) > 0);
 
       if (focusable.length === 0) return;
 
@@ -1422,9 +2012,12 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     },
 
     applyTheme() {
-      this.resolvedTheme = this.theme === 'system'
-        ? ((this.colorScheme ?? browser.matchMedia?.('(prefers-color-scheme: dark)'))?.matches ? 'dark' : 'light')
-        : this.theme;
+      this.resolvedTheme =
+        this.theme === 'system'
+          ? (this.colorScheme ?? browser.matchMedia?.('(prefers-color-scheme: dark)'))?.matches
+            ? 'dark'
+            : 'light'
+          : this.theme;
     },
 
     toggleRequestPicker(scope, returnFocus = null) {
@@ -1441,11 +2034,14 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const compactPicker = ['toolbar', 'corner'].includes(scope);
       const inspectorPicker = ['header-mobile', 'header'].includes(scope);
 
-      if (!this.barVisible
-        || !this.hasOtherRequests
-        || (!compactPicker && !inspectorPicker)
-        || (compactPicker && this.inspectorOpen)
-        || (inspectorPicker && !this.inspectorOpen)) return;
+      if (
+        !this.barVisible ||
+        !this.hasOtherRequests ||
+        (!compactPicker && !inspectorPicker) ||
+        (compactPicker && this.inspectorOpen) ||
+        (inspectorPicker && !this.inspectorOpen)
+      )
+        return;
 
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
@@ -1456,8 +2052,9 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.$nextTick?.(() => {
         const focus = () => {
           this.syncRequestPickerArrow(scope, this.requestPickerReturnFocus);
-          const switcher = this.requestPickerReturnFocus?.closest?.('[data-ndb-request-switcher]')
-            ?? this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
+          const switcher =
+            this.requestPickerReturnFocus?.closest?.('[data-ndb-request-switcher]') ??
+            this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
           const options = [...(switcher?.querySelectorAll?.('[data-ndb-request-option]') ?? [])];
           const selected = options.find((option) => option.dataset.profileId === this.summary.id);
 
@@ -1470,10 +2067,10 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
     syncRequestPickerArrow(scope = this.requestPickerScope, trigger = this.requestPickerReturnFocus) {
       if (!['toolbar', 'corner', 'header-mobile', 'header'].includes(scope)) return;
 
-      const switcher = trigger?.closest?.('[data-ndb-request-switcher]')
-        ?? this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
-      const pickerTrigger = switcher?.querySelector?.(`[data-ndb-request-picker-trigger="${scope}"]`)
-        ?? trigger;
+      const switcher =
+        trigger?.closest?.('[data-ndb-request-switcher]') ??
+        this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
+      const pickerTrigger = switcher?.querySelector?.(`[data-ndb-request-picker-trigger="${scope}"]`) ?? trigger;
       const popover = switcher?.querySelector?.(`[data-ndb-request-popover="${scope}"]`);
       const switcherBox = switcher?.getBoundingClientRect?.();
       const triggerBox = pickerTrigger?.getBoundingClientRect?.();
@@ -1485,10 +2082,7 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const maximum = popoverBox?.width > 0 ? popoverBox.width - 16 : Number.POSITIVE_INFINITY;
       this.requestPickerArrowLeft = Math.max(
         0,
-        Math.min(
-          maximum,
-          Math.round(triggerBox.left - originLeft + (triggerBox.width - 16) / 2),
-        ),
+        Math.min(maximum, Math.round(triggerBox.left - originLeft + (triggerBox.width - 16) / 2)),
       );
     },
 
@@ -1499,10 +2093,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.requestPickerScope = null;
       this.requestPickerReturnFocus = null;
 
-      if (restoreFocus) this.$nextTick?.(() => {
-        const focus = () => returnFocus?.focus?.();
-        browser.afterPaint ? browser.afterPaint(focus) : focus();
-      });
+      if (restoreFocus)
+        this.$nextTick?.(() => {
+          const focus = () => returnFocus?.focus?.();
+          browser.afterPaint ? browser.afterPaint(focus) : focus();
+        });
     },
 
     moveRequestPicker(direction, listbox) {
@@ -1563,18 +2158,20 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       const compactMenu = menu === 'actions';
       const inspectorMenu = menu === 'header-actions';
 
-      if (!this.barVisible
-        || (!compactMenu && !inspectorMenu)
-        || (compactMenu && this.inspectorOpen)
-        || (inspectorMenu && !this.inspectorOpen)) return;
+      if (
+        !this.barVisible ||
+        (!compactMenu && !inspectorMenu) ||
+        (compactMenu && this.inspectorOpen) ||
+        (inspectorMenu && !this.inspectorOpen)
+      )
+        return;
 
       this.mobileToolbarMenu = menu;
       this.closeRequestPicker(false);
       this.mobileToolbarReturnFocus = returnFocus ?? browser.activeElement?.();
       this.$nextTick?.(() => {
-        const focus = () => this.$root
-          ?.querySelector?.(`[data-ndb-mobile-toolbar-menu="${menu}"] [role="menuitem"]`)
-          ?.focus?.();
+        const focus = () =>
+          this.$root?.querySelector?.(`[data-ndb-mobile-toolbar-menu="${menu}"] [role="menuitem"]`)?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
     },
@@ -1592,10 +2189,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
 
-      if (restoreFocus) this.$nextTick?.(() => {
-        const focus = () => returnFocus?.focus?.();
-        browser.afterPaint ? browser.afterPaint(focus) : focus();
-      });
+      if (restoreFocus)
+        this.$nextTick?.(() => {
+          const focus = () => returnFocus?.focus?.();
+          browser.afterPaint ? browser.afterPaint(focus) : focus();
+        });
     },
 
     openPalette() {
@@ -1603,9 +2201,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
 
       this.paletteReturnFocus = this.requestPickerScope
         ? this.requestPickerReturnFocus
-        : (this.mobileToolbarMenu
+        : this.mobileToolbarMenu
           ? this.mobileToolbarReturnFocus
-          : (this.mobileSectionsOpen ? this.mobileSectionsReturnFocus : browser.activeElement?.()));
+          : this.mobileSectionsOpen
+            ? this.mobileSectionsReturnFocus
+            : browser.activeElement?.();
       this.requestPickerScope = null;
       this.requestPickerReturnFocus = null;
       this.mobileToolbarMenu = null;
@@ -1632,10 +2232,11 @@ export function createNewDebugBar(summary = {}, runtime = null, recentProfiles =
       this.paletteReturnFocus = null;
       this.syncHostLock();
 
-      if (restoreFocus) this.$nextTick?.(() => {
-        const focus = () => returnFocus?.focus?.();
-        browser.afterPaint ? browser.afterPaint(focus) : focus();
-      });
+      if (restoreFocus)
+        this.$nextTick?.(() => {
+          const focus = () => returnFocus?.focus?.();
+          browser.afterPaint ? browser.afterPaint(focus) : focus();
+        });
     },
 
     movePalette(direction) {

@@ -24,6 +24,7 @@ export function runtime(saved = null) {
       return callback;
     },
     cancelSchedule: (timer) => timers.delete(timer),
+    now: () => 13_000,
     runTimers: () => {
       const callbacks = [...timers];
       timers.clear();
@@ -51,7 +52,9 @@ export function toolbarHarness(saved = null) {
   const state = createNewDebugBar(summary, browser);
   const capture = { pointerId: null, releases: [] };
   const toolbar = {
-    setPointerCapture: (pointerId) => { capture.pointerId = pointerId; },
+    setPointerCapture: (pointerId) => {
+      capture.pointerId = pointerId;
+    },
     hasPointerCapture: (pointerId) => capture.pointerId === pointerId,
     releasePointerCapture: (pointerId) => {
       capture.releases.push(pointerId);
@@ -63,7 +66,9 @@ export function toolbarHarness(saved = null) {
       const height = corner ? 56 : 60;
       const baseLeft = state.toolbarPlacement.endsWith('-left')
         ? 12
-        : (state.toolbarPlacement.endsWith('-right') ? 1440 - width - 12 : (1440 - width) / 2);
+        : state.toolbarPlacement.endsWith('-right')
+          ? 1440 - width - 12
+          : (1440 - width) / 2;
       const baseTop = state.toolbarPlacement.startsWith('top') ? 12 : 900 - height - 12;
       const left = baseLeft + state.toolbarDragOffsetX;
       const top = baseTop + state.toolbarDragOffsetY;
@@ -72,7 +77,7 @@ export function toolbarHarness(saved = null) {
     },
   };
   state.$root = {
-    querySelector: (selector) => selector === '[data-ndb-toolbar-shell]' ? toolbar : null,
+    querySelector: (selector) => (selector === '[data-ndb-toolbar-shell]' ? toolbar : null),
     querySelectorAll: () => [],
   };
   state.$nextTick = (callback) => callback();

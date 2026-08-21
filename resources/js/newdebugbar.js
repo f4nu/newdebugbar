@@ -2,6 +2,7 @@ import '../css/newdebugbar.css';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import sql from 'highlight.js/lib/languages/sql';
+import { installLivewireTrace } from './livewire-trace.js';
 import { installProfileDiscoveryBridge, installRequestDiscovery } from './request-discovery.js';
 import { createNewDebugBar } from './state.js';
 
@@ -9,7 +10,8 @@ const php = (language) => ({
   name: 'PHP',
   aliases: ['php'],
   keywords: {
-    keyword: 'abstract and array as break callable case catch class clone const continue declare default do echo else elseif empty enddeclare endfor endforeach endif endswitch endwhile enum eval exit extends final finally fn for foreach from function global goto if implements include include_once instanceof insteadof interface isset list match namespace new or print private protected public readonly require require_once return static switch throw trait try unset use var while xor yield yield from',
+    keyword:
+      'abstract and array as break callable case catch class clone const continue declare default do echo else elseif empty enddeclare endfor endforeach endif endswitch endwhile enum eval exit extends final finally fn for foreach from function global goto if implements include include_once instanceof insteadof interface isset list match namespace new or print private protected public readonly require require_once return static switch throw trait try unset use var while xor yield yield from',
     literal: 'true false null',
   },
   contains: [
@@ -33,7 +35,9 @@ window.newDebugBarHighlight = (root = document) => {
   });
 };
 
-window.newDebugBar = (summary, profileLimit) => createNewDebugBar(summary, null, [], profileLimit);
+const livewireTrace = installLivewireTrace();
+
+window.newDebugBar = (summary, profileLimit) => createNewDebugBar(summary, null, [], profileLimit, livewireTrace);
 
 installProfileDiscoveryBridge();
 installRequestDiscovery();
