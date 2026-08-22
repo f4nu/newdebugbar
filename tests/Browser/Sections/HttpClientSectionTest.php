@@ -9,10 +9,10 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
         ->assertSee('6 requests')
         ->assertSee('4 failed')
         ->assertSee('1 slow')
-        ->assertAttribute('[data-ndb-http-client-filter="attention"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-http-client-filter="all"]', 'aria-pressed', 'true')
         ->assertAttribute('[data-ndb-http-client-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 5)
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-http-client-item=\\"2\\"]")).display === "none"')
+        ->assertScript('document.querySelector("[data-ndb-http-client-filter]").dataset.ndbHttpClientFilter === "all"')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 6)
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-http-client-workspace]');
@@ -35,6 +35,10 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
             })()
             JS)
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item][aria-pressed=true]").length', 1)
+        ->click('[data-ndb-http-client-filter="attention"]')
+        ->assertAttribute('[data-ndb-http-client-filter="attention"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 5)
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-http-client-item=\\"2\\"]")).display === "none"')
         ->click('[data-ndb-http-client-item="5"]')
         ->assertAttribute('[data-ndb-http-client-item="5"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-status-code]").textContent.trim() === "503"')

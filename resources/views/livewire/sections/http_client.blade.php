@@ -3,8 +3,8 @@
     $httpItems = $section['payload']['items'] ?? [];
     $httpSummary = $section['summary'];
     $httpFilters = [
-        'attention' => ['Needs attention', $httpSummary['attention_count'] ?? 0],
         'all' => ['All', $httpSummary['retained_count'] ?? count($httpItems)],
+        'attention' => ['Needs attention', $httpSummary['attention_count'] ?? 0],
     ];
 @endphp
 

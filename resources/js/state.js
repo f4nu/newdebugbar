@@ -262,7 +262,7 @@ export function createNewDebugBar(
     favoriteDrop: null,
     favoriteDropAfter: false,
     httpClientRequests: [],
-    httpClientFilter: 'attention',
+    httpClientFilter: 'all',
     httpClientSearch: '',
     httpClientSort: 'execution',
     httpClientSelected: null,
@@ -1477,7 +1477,7 @@ export function createNewDebugBar(
       this.detailsError = false;
       this.selected = selected;
       this.httpClientRequests = [];
-      this.httpClientFilter = 'attention';
+      this.httpClientFilter = 'all';
       this.httpClientSearch = '';
       this.httpClientSort = 'execution';
       this.httpClientSelected = null;
@@ -2000,13 +2000,11 @@ export function createNewDebugBar(
 
     initializeHttpClient(requests) {
       this.httpClientRequests = Array.isArray(requests) ? requests : [];
-      this.httpClientFilter = this.httpClientRequests.some((request) => request.attention) ? 'attention' : 'all';
+      this.httpClientFilter = 'all';
       this.httpClientSearch = '';
       this.httpClientSort = 'execution';
       this.httpClientDetailTab = 'overview';
-      this.httpClientSelected =
-        this.httpClientRequests.find((request) => this.httpClientFilter === 'all' || request.attention)?.execution ??
-        null;
+      this.httpClientSelected = this.httpClientRequests[0]?.execution ?? null;
       this.$nextTick?.(() => this.applyHttpClientView());
     },
 

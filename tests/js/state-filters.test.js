@@ -4,7 +4,7 @@ import test from 'node:test';
 import { createNewDebugBar } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
-test('HTTP client controls focus attention and keep one request selected', () => {
+test('HTTP client defaults to all and keeps one filtered request selected', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
   const appended = [];
@@ -44,15 +44,24 @@ test('HTTP client controls focus attention and keep one request selected', () =>
     { execution: 2, attention: true, host: 'api.slow.test' },
     { execution: 3, attention: true, host: 'api.error.test' },
   ]);
-  assert.equal(state.httpClientFilter, 'attention');
-  assert.equal(state.httpClientSelected, 2);
-  assert.equal(state.selectedHttpClientRequest.host, 'api.slow.test');
+  assert.equal(state.httpClientFilter, 'all');
+  assert.equal(state.httpClientSelected, 1);
+  assert.equal(state.selectedHttpClientRequest.host, 'api.example.test');
+  assert.equal(first.hidden, false);
+  assert.equal(first.style.display, '');
+  assert.equal(second.hidden, false);
+  assert.equal(second.style.display, '');
+  assert.equal(third.hidden, false);
+  assert.equal(state.visibleHttpClientCount, 3);
+
+  state.setHttpClientFilter('attention');
   assert.equal(first.hidden, true);
   assert.equal(first.style.display, 'none');
   assert.equal(second.hidden, false);
   assert.equal(second.style.display, '');
   assert.equal(third.hidden, false);
   assert.equal(state.visibleHttpClientCount, 2);
+  assert.equal(state.httpClientSelected, 2);
 
   state.setHttpClientFilter('all');
   assert.equal(first.hidden, false);
