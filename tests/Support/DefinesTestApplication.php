@@ -343,9 +343,12 @@ trait DefinesTestApplication
         );
 
         $router->middleware(ProfileRequest::class)->get('/profiled-reported-exception', function () {
+            Http::fake(['api.example.test/*' => Http::response(['ready' => true])]);
+            Http::get('https://api.example.test/v1/status');
+            $component = app('livewire')->mount('host-functional-status', key: 'host-functional-exception');
             app(ProfileManager::class)->recordException(new \RuntimeException('Reported failure.'));
 
-            return response('<!doctype html><html><body>Reported failure</body></html>');
+            return response('<!doctype html><html><body>Reported failure'.$component.'</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-http-client', function () {

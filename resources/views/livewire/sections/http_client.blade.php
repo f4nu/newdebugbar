@@ -8,7 +8,11 @@
     ];
 @endphp
 
-<div data-ndb-http-client x-init="initializeHttpClient(@js($httpItems))" class="ndb:space-y-4">
+<div
+    data-ndb-http-client
+    x-init="initializeHttpClient({{ \Illuminate\Support\Js::encode($httpItems) }})"
+    class="ndb:space-y-4"
+>
     <p
         data-ndb-http-client-summary
         class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-2 ndb:gap-y-1 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"

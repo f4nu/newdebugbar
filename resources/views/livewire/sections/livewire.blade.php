@@ -3,10 +3,12 @@
 
 <div
     data-ndb-livewire
-    x-init="mergeLivewireServer(@js([
-        'components' => $livewirePayload['components'] ?? [],
-        'activity' => $livewirePayload['activity'] ?? [],
-    ]))"
+    x-init="mergeLivewireServer({{
+        \Illuminate\Support\Js::encode([
+            'components' => $livewirePayload['components'] ?? [],
+            'activity' => $livewirePayload['activity'] ?? [],
+        ])
+    }})"
     class="ndb:space-y-4"
 >
     <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between">
