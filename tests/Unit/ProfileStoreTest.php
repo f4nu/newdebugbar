@@ -23,7 +23,29 @@ it('stores and reads an atomic profile', function () {
             'id' => $id,
             'environment' => 'local',
         ])
-        ->and(fileperms($this->profilePath.'/'.$id.'.json') & 0777)->toBe(0600);
+        ->and(fileperms($this->profilePath.'/'.$id.'.json') & 0777)->toBe(0600)
+        ->and($this->files->get($this->profilePath.'/.gitignore'))->toBe("*\n")
+        ->and(fileperms($this->profilePath.'/.gitignore') & 0777)->toBe(0600);
+});
+
+it('adds an ignore rule to an existing profile directory', function () {
+    $this->files->ensureDirectoryExists($this->profilePath);
+
+    $store = new ProfileStore($this->files, $this->profilePath);
+    $store->put(['id' => (string) Str::uuid()]);
+
+    expect($this->files->get($this->profilePath.'/.gitignore'))->toBe("*\n")
+        ->and(fileperms($this->profilePath.'/.gitignore') & 0777)->toBe(0600);
+});
+
+it('preserves an existing profile directory ignore file', function () {
+    $this->files->ensureDirectoryExists($this->profilePath);
+    $this->files->put($this->profilePath.'/.gitignore', "*.json\n");
+
+    $store = new ProfileStore($this->files, $this->profilePath);
+    $store->put(['id' => (string) Str::uuid()]);
+
+    expect($this->files->get($this->profilePath.'/.gitignore'))->toBe("*.json\n");
 });
 
 it('rejects unsafe profile identifiers', function () {

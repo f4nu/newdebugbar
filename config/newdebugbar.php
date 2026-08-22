@@ -102,7 +102,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | "path" chooses the private profile directory. Null uses Laravel's
-    | storage/framework/newdebugbar directory so a normal app needs no setup.
+    | storage/framework/newdebugbar directory and keeps runtime files out of
+    | Git, so a normal app needs no setup.
     | "max_profiles" keeps the latest 20 profiles, enough for a short workflow.
     | "max_age_minutes" also removes profiles after 60 minutes so old local
     | sessions do not keep filling disk space. These settings support longer

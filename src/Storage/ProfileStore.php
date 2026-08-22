@@ -8,7 +8,7 @@ use JsonException;
 use RuntimeException;
 use Throwable;
 
-/** Stores short-lived request profiles as private atomic JSON files. */
+/** Stores short-lived request profiles as private atomic JSON files outside Git. */
 final class ProfileStore
 {
     public const ID_PATTERN = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}';
@@ -27,7 +27,7 @@ final class ProfileStore
     {
         $id = (string) ($profile['id'] ?? '');
         $this->assertValidId($id);
-        $this->files->ensureDirectoryExists($this->path, 0700);
+        $this->ensureStorageDirectory();
 
         try {
             $json = json_encode($profile, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -144,6 +144,24 @@ final class ProfileStore
     private function filename(string $id): string
     {
         return rtrim($this->path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$id.'.json';
+    }
+
+    private function ensureStorageDirectory(): void
+    {
+        $this->files->ensureDirectoryExists($this->path, 0700);
+
+        $ignoreFile = rtrim($this->path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'.gitignore';
+
+        if ($this->files->exists($ignoreFile)) {
+            return;
+        }
+
+        // The broad rule also ignores this generated file, so the package never dirties the host repository.
+        if ($this->files->put($ignoreFile, "*\n", true) === false) {
+            throw new RuntimeException('The debug profile directory could not be prepared.');
+        }
+
+        @chmod($ignoreFile, 0600);
     }
 
     private function assertValidId(string $id): void
