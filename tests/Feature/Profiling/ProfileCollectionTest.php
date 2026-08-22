@@ -125,7 +125,7 @@ it('presents model activity as useful record loads', function () {
         ]);
 });
 
-it('captures outbound HTTP results without private URLs or bodies', function () {
+it('captures bounded redacted outbound HTTP request and response evidence', function () {
     $failedConnection = method_exists(Factory::class, 'failedConnection')
         ? Http::failedConnection('private connection details')
         : fn ($request) => Create::rejectionFor(new ConnectException(
@@ -134,7 +134,11 @@ it('captures outbound HTTP results without private URLs or bodies', function () 
         ));
 
     Http::fake([
-        'api.example.test/*' => Http::response(['private' => 'response-body'], 202),
+        'api.example.test/*' => Http::response(
+            ['private' => 'response-body'],
+            202,
+            ['Set-Cookie' => 'session=private-response-cookie'],
+        ),
         'down.example.test/*' => $failedConnection,
     ]);
 
@@ -151,13 +155,33 @@ it('captures outbound HTTP results without private URLs or bodies', function () 
         ->url->toBe('https://api.example.test/v1/patients?token=%5Bredacted%5D&limit=5')
         ->status->toBe(202)
         ->failed->toBeFalse()
+        ->request->headers->Authorization->toBe('[redacted]')
+        ->request->headers->{'X-Trace'}->toBe(['trace-1'])
+        ->request->body->toBeNull()
+        ->response->headers->{'Set-Cookie'}->toBe('[redacted]')
+        ->response->body->toBe(['private' => 'response-body'])
+        ->stack->not->toBeEmpty()
         ->and($section['payload']['items'][1])
         ->method->toBe('POST')
         ->url->toBe('https://down.example.test/v1/sync?api_key=%5Bredacted%5D')
         ->status->toBeNull()
         ->failed->toBeTrue()
         ->exception_class->toBe(ConnectionException::class)
-        ->and(json_encode($section))->not->toContain('private-token', 'private-key', 'response-body', 'connection details');
+        ->request->headers->Cookie->toBe('[redacted]')
+        ->request->body->toBe([
+            'token' => '[redacted]',
+            'patient' => 'visible-patient',
+        ])
+        ->response->toBeNull()
+        ->and(json_encode($section))->not->toContain(
+            'private-token',
+            'private-key',
+            'private-bearer',
+            'private-cookie',
+            'private-response-cookie',
+            'private-body-token',
+            'connection details',
+        );
 });
 
 it('captures queued dispatches and synchronous execution without job data', function () {

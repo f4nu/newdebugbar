@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
+use NewDebugBar\Analysis\HttpClientAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
@@ -68,6 +69,9 @@ final class NewDebugBarServiceProvider extends ServiceProvider
 
         $this->app->singleton(QueryAnalyzer::class, fn (): QueryAnalyzer => new QueryAnalyzer(
             (float) config('newdebugbar.slow_query_ms', 100),
+        ));
+        $this->app->singleton(HttpClientAnalyzer::class, fn (): HttpClientAnalyzer => new HttpClientAnalyzer(
+            (float) config('newdebugbar.slow_http_request_ms', 250),
         ));
         $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
             queries: $app->make(QueryAnalyzer::class),

@@ -188,6 +188,8 @@ final class EventRegistrar
             $totalTime = $handlerStats['total_time'] ?? null;
             $location = $this->callSites->capture();
             $status = $event->response->status();
+            $requestBody = $event->request->body();
+            $responseBody = $event->response->body();
 
             $this->manager()->record('http_client', [
                 'phase' => 'completed',
@@ -195,15 +197,27 @@ final class EventRegistrar
                 'method' => strtoupper($event->request->method()),
                 'url' => $this->safeUrl->clean($event->request->url()),
                 'status' => $status,
+                'reason' => $event->response->reason(),
                 'duration_ms' => is_numeric($totalTime) ? round((float) $totalTime * 1_000, 2) : null,
                 'failed' => $status >= 400,
-                'callsite' => $location['callsite'],
+                'request' => [
+                    'headers' => $event->request->headers(),
+                    'body' => $this->httpMessageBody($event->request->headers(), $requestBody),
+                    'body_size_bytes' => strlen($requestBody),
+                ],
+                'response' => [
+                    'headers' => $event->response->headers(),
+                    'body' => $this->httpMessageBody($event->response->headers(), $responseBody),
+                    'body_size_bytes' => strlen($responseBody),
+                ],
+                ...$location,
             ]);
         });
 
         $this->listen(ConnectionFailed::class, function (ConnectionFailed $event): void {
             $exception = $event->exception ?? null;
             $location = $this->callSites->capture();
+            $requestBody = $event->request->body();
             $this->manager()->record('http_client', [
                 'phase' => 'failed',
                 'request_id' => spl_object_id($event->request),
@@ -214,7 +228,13 @@ final class EventRegistrar
                 'failed' => true,
                 'exception_class' => $exception instanceof Throwable ? $exception::class : ConnectionException::class,
                 'exception_message' => $exception instanceof Throwable ? $exception->getMessage() : 'Connection failed.',
-                'callsite' => $location['callsite'],
+                'request' => [
+                    'headers' => $event->request->headers(),
+                    'body' => $this->httpMessageBody($event->request->headers(), $requestBody),
+                    'body_size_bytes' => strlen($requestBody),
+                ],
+                'response' => null,
+                ...$location,
             ]);
         });
 
@@ -655,6 +675,50 @@ final class EventRegistrar
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function httpMessageBody(array $headers, string $body): mixed
+    {
+        if ($body === '') {
+            return null;
+        }
+
+        $contentType = '';
+
+        foreach ($headers as $name => $values) {
+            if (strcasecmp((string) $name, 'Content-Type') === 0) {
+                $contentType = strtolower(implode('; ', (array) $values));
+
+                break;
+            }
+        }
+
+        if (str_contains($contentType, 'multipart/form-data')) {
+            return '[multipart body omitted]';
+        }
+
+        if (str_starts_with($contentType, 'image/')
+            || str_starts_with($contentType, 'audio/')
+            || str_starts_with($contentType, 'video/')
+            || str_contains($contentType, 'application/octet-stream')) {
+            return '[binary body omitted]';
+        }
+
+        if (str_contains($contentType, 'json')) {
+            $decoded = json_decode($body, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
+            parse_str($body, $parameters);
+
+            return $parameters;
+        }
+
+        return $body;
     }
 
     /** @param list<mixed> $parameters @return array{key_count: int, key_hashes: list<string>, keys: list<string>, key_policy: string} */

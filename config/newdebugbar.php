@@ -48,13 +48,16 @@ return [
     |
     | "slow_query_ms" marks a query as slow at 100 milliseconds. This catches
     | noticeable database work without warning about ordinary local queries.
-    | "slow_request_ms" creates a slow request finding at 1,000 milliseconds,
-    | which points out a delay a developer can clearly feel in the browser.
-    | Both stay configurable because expected local timings differ by app.
+    | "slow_http_request_ms" marks an outbound HTTP request as slow at 250
+    | milliseconds so remote work that can hold up the page is easy to find.
+    | "slow_request_ms" creates a finding for the full request at 1,000
+    | milliseconds. These stay configurable because local timings differ by app.
     |
     */
 
     'slow_query_ms' => 100,
+
+    'slow_http_request_ms' => 250,
 
     'slow_request_ms' => 1_000,
 

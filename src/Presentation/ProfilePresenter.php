@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Presentation;
 
+use NewDebugBar\Analysis\HttpClientAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
@@ -12,6 +13,7 @@ final class ProfilePresenter
 {
     public function __construct(
         private readonly QueryAnalyzer $queries,
+        private readonly HttpClientAnalyzer $httpClient,
         private readonly ProfileAnalyzer $profiles,
         private readonly SectionAnalyzer $sections,
         private readonly TimelineBuilder $timeline,
@@ -44,6 +46,21 @@ final class ProfilePresenter
             ];
             $profile['sections']['queries']['payload']['items'] = $queryAnalysis['items'];
             $profile['sections']['queries']['payload']['repeated_groups'] = $queryAnalysis['repeated_groups'];
+        }
+
+        if (isset($profile['sections']['http_client'])) {
+            $httpItems = $profile['sections']['http_client']['payload']['items'] ?? [];
+            $httpAnalysis = $this->httpClient->analyze(is_array($httpItems) ? $httpItems : []);
+            $collectorSummary = $profile['sections']['http_client']['summary'] ?? [];
+            $profile['sections']['http_client']['summary'] = [
+                ...$collectorSummary,
+                ...$httpAnalysis['summary'],
+                'count' => $collectorSummary['count'] ?? count($httpAnalysis['items']),
+                'retained_count' => $collectorSummary['retained_count'] ?? count($httpAnalysis['items']),
+                'failed_count' => $collectorSummary['failed_count'] ?? $httpAnalysis['summary']['failed_count'],
+                'duration_ms' => $collectorSummary['duration_ms'] ?? 0,
+            ];
+            $profile['sections']['http_client']['payload']['items'] = $httpAnalysis['items'];
         }
 
         $profile = $this->sections->analyze($profile);
