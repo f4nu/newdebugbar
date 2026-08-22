@@ -2,10 +2,13 @@
 
 namespace NewDebugBar\Tests\Support;
 
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Promise\Create;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSent;
@@ -346,15 +349,80 @@ trait DefinesTestApplication
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-http-client', function () {
-            Http::get('https://api.example.test/v1/patients?token=private-token&limit=5');
+            Http::withToken('private-bearer')
+                ->withHeaders(['X-Trace' => 'trace-1'])
+                ->get('https://api.example.test/v1/patients?token=private-token&limit=5');
 
             try {
-                Http::post('https://down.example.test/v1/sync?api_key=private-key');
+                Http::withHeaders(['Cookie' => 'session=private-cookie'])
+                    ->post('https://down.example.test/v1/sync?api_key=private-key', [
+                        'token' => 'private-body-token',
+                        'patient' => 'visible-patient',
+                    ]);
             } catch (ConnectionException) {
                 // The application handled the failed dependency.
             }
 
             return response('<!doctype html><html><body>HTTP client</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-http-client-rich', function () {
+            $failedConnection = method_exists(Factory::class, 'failedConnection')
+                ? Http::failedConnection('Connection refused')
+                : fn ($request) => Create::rejectionFor(new ConnectException(
+                    'Connection refused',
+                    $request->toPsrRequest(),
+                ));
+
+            Http::fake([
+                'api.recommendations.test/*' => function () {
+                    usleep(275_000);
+
+                    return Http::response(['recommendations' => ['debugging', 'profiling']], 200, [
+                        'X-Upstream-Cache' => 'miss',
+                    ]);
+                },
+                'api.healthy.test/*' => Http::response(null, 204),
+                'api.validation.test/*' => Http::response([
+                    'message' => 'The submitted data was invalid.',
+                    'errors' => ['email' => ['The email must be valid.']],
+                ], 422),
+                'api.rate-limit.test/*' => Http::response(['message' => 'Too many requests.'], 429, [
+                    'Retry-After' => '30',
+                ]),
+                'api.error.test/*' => Http::response(['message' => 'Service unavailable.'], 503),
+                'api.down.test/*' => $failedConnection,
+            ]);
+
+            Http::withHeaders(['X-Debug-Request' => 'recommendations'])
+                ->get('https://api.recommendations.test/v2/personalized/homepage?locale=en');
+            Http::get('https://api.healthy.test/v1/status');
+            Http::patch('https://api.validation.test/v1/team-members/42', [
+                'email' => 'not-an-email',
+            ]);
+            Http::get('https://api.rate-limit.test/v1/downloads/today');
+            Http::delete('https://api.error.test/v1/stale-cache/very-long-resource-identifier');
+
+            try {
+                Http::post('https://api.down.test/v1/webhooks/deliver', [
+                    'event' => 'profile.ready',
+                ]);
+            } catch (ConnectionException) {
+                // The application handled the failed dependency.
+            }
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <title>HTTP client diagnostics</title>
+                    </head>
+                    <body>
+                        <main><h1 data-testid="host-page">HTTP client diagnostics</h1></main>
+                    </body>
+                </html>
+                HTML);
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-queue', function () {

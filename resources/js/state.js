@@ -261,6 +261,13 @@ export function createNewDebugBar(
     favoriteDrag: null,
     favoriteDrop: null,
     favoriteDropAfter: false,
+    httpClientRequests: [],
+    httpClientFilter: 'attention',
+    httpClientSearch: '',
+    httpClientSort: 'execution',
+    httpClientSelected: null,
+    httpClientDetailTab: 'overview',
+    visibleHttpClientCount: summary.section_counts?.http_client ?? 0,
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
@@ -517,6 +524,10 @@ export function createNewDebugBar(
           count: null,
         }
       );
+    },
+
+    get selectedHttpClientRequest() {
+      return this.httpClientRequests.find((request) => request.execution === this.httpClientSelected) ?? null;
     },
 
     get livewireComponents() {
@@ -879,6 +890,7 @@ export function createNewDebugBar(
             this.$refs?.queryResults?.querySelector?.(selector)?.scrollIntoView?.({ block: 'start' });
           }
         }
+        if (this.selected === 'http_client') this.applyHttpClientView();
         if (this.selected === 'views') this.applyViewSort();
         if (this.selected === 'authorization') this.applyAuthorizationFilters();
         if (this.selected === 'timeline') this.applyTimelineFilters();
@@ -1464,6 +1476,13 @@ export function createNewDebugBar(
       this.detailsRequested = false;
       this.detailsError = false;
       this.selected = selected;
+      this.httpClientRequests = [];
+      this.httpClientFilter = 'attention';
+      this.httpClientSearch = '';
+      this.httpClientSort = 'execution';
+      this.httpClientSelected = null;
+      this.httpClientDetailTab = 'overview';
+      this.visibleHttpClientCount = 0;
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
@@ -1977,6 +1996,103 @@ export function createNewDebugBar(
       } catch {
         // Clipboard policies must never break the host page.
       }
+    },
+
+    initializeHttpClient(requests) {
+      this.httpClientRequests = Array.isArray(requests) ? requests : [];
+      this.httpClientFilter = this.httpClientRequests.some((request) => request.attention) ? 'attention' : 'all';
+      this.httpClientSearch = '';
+      this.httpClientSort = 'execution';
+      this.httpClientDetailTab = 'overview';
+      this.httpClientSelected =
+        this.httpClientRequests.find((request) => this.httpClientFilter === 'all' || request.attention)?.execution ??
+        null;
+      this.$nextTick?.(() => this.applyHttpClientView());
+    },
+
+    setHttpClientFilter(filter) {
+      if (!['all', 'attention'].includes(filter)) return;
+
+      this.httpClientFilter = filter;
+      this.applyHttpClientView();
+    },
+
+    setHttpClientSort(sort) {
+      if (!['execution', 'duration'].includes(sort)) return;
+
+      this.httpClientSort = sort;
+      this.applyHttpClientView();
+    },
+
+    selectHttpClientRequest(execution, reveal = false) {
+      if (!this.httpClientRequests.some((request) => request.execution === execution)) return;
+
+      this.httpClientSelected = execution;
+      this.httpClientDetailTab = 'overview';
+
+      if (reveal && (browser.viewportWidth?.() ?? 0) < 1024) {
+        this.$nextTick?.(() => this.$refs?.httpClientDetail?.scrollIntoView?.({ block: 'start' }));
+      }
+    },
+
+    setHttpClientDetailTab(tab) {
+      if (!['overview', 'request', 'response', 'stack'].includes(tab)) return;
+
+      this.httpClientDetailTab = tab;
+    },
+
+    applyHttpClientView() {
+      const list = this.$refs?.httpClientList;
+      const search = this.httpClientSearch.toLowerCase().trim();
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      [...(list?.children ?? [])]
+        .sort((left, right) => {
+          if (this.httpClientSort === 'duration') {
+            return (
+              Number(right.dataset.duration ?? 0) - Number(left.dataset.duration ?? 0) ||
+              Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0)
+            );
+          }
+
+          return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+        })
+        .forEach((item) => {
+          const matches =
+            (this.httpClientFilter === 'all' || item.dataset.attention === 'true') &&
+            (search === '' || item.dataset.search?.includes(search));
+          item.hidden = !matches;
+          if (matches) {
+            item.style.removeProperty('display');
+          } else {
+            item.style.setProperty('display', 'none', 'important');
+          }
+
+          if (matches) {
+            const execution = Number(item.dataset.execution);
+            firstVisible ??= execution;
+            selectedVisible ||= execution === this.httpClientSelected;
+            visible++;
+          }
+
+          list?.appendChild?.(item);
+        });
+
+      this.visibleHttpClientCount = visible;
+
+      if (!selectedVisible) {
+        this.httpClientSelected = firstVisible;
+        this.httpClientDetailTab = 'overview';
+      }
+    },
+
+    formatHttpClientEvidence(value) {
+      if (value === null || value === undefined || value === '') return 'No evidence was captured.';
+      if (typeof value === 'string') return value;
+
+      return JSON.stringify(value, null, 2);
     },
 
     setQueryFilter(filter) {

@@ -65,6 +65,7 @@ it('uses one filter tab treatment across inspector sections', function () {
         'components/query-section.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
+        'livewire/sections/http_client.blade.php',
     ] as $view) {
         $contents = file_get_contents($views.'/'.$view);
 

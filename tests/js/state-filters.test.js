@@ -4,6 +4,112 @@ import test from 'node:test';
 import { createNewDebugBar } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
+test('HTTP client controls focus attention and keep one request selected', () => {
+  const browser = runtime();
+  const state = createNewDebugBar(summary, browser);
+  const appended = [];
+  let detailScrolls = 0;
+  const element = (execution, duration, attention, search) => ({
+    dataset: {
+      execution: String(execution),
+      duration: String(duration),
+      attention: String(attention),
+      search,
+    },
+    hidden: false,
+    style: {
+      display: '',
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+  });
+  const first = element(1, 12, false, 'get api.example.test 200');
+  const second = element(2, 319.53, true, 'get api.slow.test 200');
+  const third = element(3, 68.44, true, 'delete api.error.test 503');
+  state.$refs = {
+    httpClientList: {
+      children: [first, second, third],
+      appendChild: (child) => appended.push(child),
+    },
+    httpClientDetail: { scrollIntoView: () => detailScrolls++ },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.initializeHttpClient([
+    { execution: 1, attention: false, host: 'api.example.test' },
+    { execution: 2, attention: true, host: 'api.slow.test' },
+    { execution: 3, attention: true, host: 'api.error.test' },
+  ]);
+  assert.equal(state.httpClientFilter, 'attention');
+  assert.equal(state.httpClientSelected, 2);
+  assert.equal(state.selectedHttpClientRequest.host, 'api.slow.test');
+  assert.equal(first.hidden, true);
+  assert.equal(first.style.display, 'none');
+  assert.equal(second.hidden, false);
+  assert.equal(second.style.display, '');
+  assert.equal(third.hidden, false);
+  assert.equal(state.visibleHttpClientCount, 2);
+
+  state.setHttpClientFilter('all');
+  assert.equal(first.hidden, false);
+  assert.equal(state.visibleHttpClientCount, 3);
+
+  state.httpClientSearch = '503';
+  state.applyHttpClientView();
+  assert.equal(first.hidden, true);
+  assert.equal(second.hidden, true);
+  assert.equal(third.hidden, false);
+  assert.equal(state.httpClientSelected, 3);
+
+  state.httpClientSearch = '';
+  appended.length = 0;
+  state.setHttpClientSort('duration');
+  assert.deepEqual(appended, [second, third, first]);
+
+  state.httpClientDetailTab = 'response';
+  state.selectHttpClientRequest(1);
+  assert.equal(state.httpClientSelected, 1);
+  assert.equal(state.httpClientDetailTab, 'overview');
+
+  browser.viewportWidth = () => 390;
+  state.selectHttpClientRequest(2, true);
+  assert.equal(detailScrolls, 1);
+
+  state.setHttpClientDetailTab('request');
+  state.setHttpClientDetailTab('invalid');
+  state.setHttpClientFilter('invalid');
+  state.setHttpClientSort('invalid');
+  state.selectHttpClientRequest(99);
+  assert.equal(state.httpClientDetailTab, 'request');
+  assert.equal(state.httpClientFilter, 'all');
+  assert.equal(state.httpClientSort, 'duration');
+  assert.equal(state.httpClientSelected, 2);
+
+  assert.equal(state.formatHttpClientEvidence(null), 'No evidence was captured.');
+  assert.equal(state.formatHttpClientEvidence('raw body'), 'raw body');
+  assert.equal(state.formatHttpClientEvidence({ ready: true }), '{\n  "ready": true\n}');
+});
+
+test('HTTP client defaults to all when no request needs attention', () => {
+  const state = createNewDebugBar(summary, runtime());
+
+  state.initializeHttpClient([{ execution: 4, attention: false }]);
+  assert.equal(state.httpClientFilter, 'all');
+  assert.equal(state.httpClientSelected, 4);
+
+  state.initializeHttpClient('invalid');
+  assert.deepEqual(state.httpClientRequests, []);
+  assert.equal(state.httpClientSelected, null);
+
+  state.$refs = {};
+  state.applyHttpClientView();
+  assert.equal(state.visibleHttpClientCount, 0);
+});
+
 test('query controls filter search and sort captured evidence', () => {
   const state = createNewDebugBar({ ...summary, query_count: 4 }, runtime());
   const appended = [];
@@ -252,4 +358,3 @@ test('log controls filter available levels and messages', () => {
   state.setLogLevel('all');
   assert.equal(state.visibleLogCount, 0);
 });
-
