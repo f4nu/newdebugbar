@@ -27,6 +27,23 @@ it('preserves Laravel original response metadata while injecting HTML', function
         ->and($response->getContent())->toContain('id="newdebugbar"');
 });
 
+it('loads the toolbar state before Livewire starts Alpine', function () {
+    $response = response('<!doctype html><html><body>Application response</body></html>');
+
+    app(BarInjector::class)->inject($response, (string) Str::uuid());
+
+    $content = $response->getContent();
+    $debugBarScript = strpos($content, '/__newdebugbar/assets/newdebugbar.js');
+    $toolbar = strpos($content, 'id="newdebugbar"');
+    $livewireScript = strpos($content, 'data-update-uri=');
+
+    expect($debugBarScript)->toBeInt()
+        ->and($toolbar)->toBeInt()
+        ->and($livewireScript)->toBeInt()
+        ->and($debugBarScript)->toBeLessThan($toolbar)
+        ->and($toolbar)->toBeLessThan($livewireScript);
+});
+
 it('serves its compiled assets through local package routes', function () {
     $response = $this->get('/__newdebugbar/assets/newdebugbar.css')
         ->assertOk()

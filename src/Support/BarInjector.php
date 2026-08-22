@@ -34,8 +34,9 @@ final class BarInjector
         $head = $livewireStyles
             .'<style id="newdebugbar-critical-css" data-navigate-once="true">#newdebugbar [x-cloak]{display:none!important}</style>'
             .'<link rel="stylesheet" href="'.$stylesheet.'" data-navigate-once="true">';
-        $body = $livewireScripts
-            .'<script src="'.$script.'" data-navigate-once="true"></script>'.$component;
+        $body = '<script src="'.$script.'" data-navigate-once="true"></script>'
+            .$component
+            .$livewireScripts;
         if (preg_match('/<\/head\s*>/i', $html) === 1) {
             $html = preg_replace('/<\/head\s*>/i', $head.'$0', $html, 1) ?? $html;
         } elseif (preg_match('/<html(?:\s[^>]*)?>/i', $html) === 1) {
