@@ -6,18 +6,20 @@ readonly SCRIPT_DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PACKAGE_ROOT="$(cd "${SCRIPT_DIRECTORY}/.." && pwd)"
 readonly WORKBENCH_ROOT="${PACKAGE_ROOT}/.workbench"
 readonly APPS_ROOT="${WORKBENCH_ROOT}/real-apps"
+readonly DEPENDENCIES_ROOT="${WORKBENCH_ROOT}/dependencies"
 readonly LOGS_ROOT="${WORKBENCH_ROOT}/logs"
 
-readonly FREEK_REPOSITORY="https://github.com/spatie/freek.dev.git"
-readonly FREEK_REVISION="579faaa057ee855eececa99cbf4a929df2d3f5ef"
-readonly SPATIE_REPOSITORY="https://github.com/spatie/spatie.be.git"
-readonly SPATIE_REVISION="2c9d83613cb11dd7a6276f1bc4f0113265ba195d"
+readonly GRID_REPOSITORY="https://github.com/laravel/websockets-grid-demo.git"
+readonly GRID_REVISION="39a6064852d2f48ae83b30affad6d17226c621b2"
+readonly CHAT_REPOSITORY="https://github.com/laravel/larachat.git"
+readonly CHAT_REVISION="eeda0f959d0a165c113baea5201e9b032bdc3e92"
+readonly BOOTCAMP_REPOSITORY="https://github.com/laravel/bootcamp.laravel.com.git"
+readonly BOOTCAMP_REVISION="0a26c5b565fb0fb93f96a46f9bf6245978707591"
+readonly UNFENCED_REPOSITORY="https://github.com/laravel-labs/unfenced.git"
+readonly UNFENCED_REVISION="e85f9cd9a555d2797600f0a9d3d5abe3193b8161"
 
-readonly DATABASE_HOST="${NEWDEBUGBAR_REAL_APPS_DB_HOST:-127.0.0.1}"
-readonly DATABASE_PORT="${NEWDEBUGBAR_REAL_APPS_DB_PORT:-3306}"
-readonly DATABASE_USER="${NEWDEBUGBAR_REAL_APPS_DB_USER:-root}"
-readonly DATABASE_PASSWORD="${NEWDEBUGBAR_REAL_APPS_DB_PASSWORD:-}"
 readonly SERVER_WORKERS="${NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS:-4}"
+readonly REVERB_PORT="${NEWDEBUGBAR_REAL_APPS_REVERB_PORT:-8171}"
 
 SERVER_PIDS=()
 
@@ -26,14 +28,14 @@ usage() {
 Set up and serve real Laravel applications with this New Debug Bar checkout.
 
 Usage:
-  scripts/real-apps doctor [freek|spatie|all]
-  scripts/real-apps setup [freek|spatie|all]
-  scripts/real-apps serve [freek|spatie|all]
-  scripts/real-apps status [freek|spatie|all]
+  scripts/real-apps doctor [grid|chat|bootcamp|all]
+  scripts/real-apps setup [grid|chat|bootcamp|all]
+  scripts/real-apps serve [grid|chat|bootcamp|all]
+  scripts/real-apps status [grid|chat|bootcamp|all]
   scripts/real-apps help
 
 Commands:
-  doctor  Check the local PHP, Node, Composer, Git, curl, and MySQL runtime.
+  doctor  Check the local PHP, SQLite, Node, Composer, Git, and curl runtime.
   setup   Clone, configure, instrument, migrate, seed, and build each app.
   serve   Run each app with php artisan serve until Ctrl-C is pressed.
   status  Show revisions, package state, local package linkage, and URLs.
@@ -41,16 +43,15 @@ Commands:
 The default target is all. Runtime files live below .workbench and are ignored.
 
 Runtime overrides:
-  NEWDEBUGBAR_REAL_APPS_DB_HOST      Default: 127.0.0.1
-  NEWDEBUGBAR_REAL_APPS_DB_PORT      Default: 3306
-  NEWDEBUGBAR_REAL_APPS_DB_USER      Default: root
-  NEWDEBUGBAR_REAL_APPS_DB_PASSWORD  Default: empty
-  NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS
-                                        Default: 4
+  NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS  Default: 4
+  NEWDEBUGBAR_REAL_APPS_REVERB_PORT     Default: 8171
 
 Applications:
-  freek   http://127.0.0.1:8141
-  spatie  http://127.0.0.1:8142
+  grid      http://127.0.0.1:8161
+  chat      http://127.0.0.1:8162
+  bootcamp  http://127.0.0.1:8163
+
+The grid target also starts Laravel Reverb on 127.0.0.1:8171.
 
 For MCP access, start a fresh task inside the selected directory below
 .workbench/real-apps after setup. The MCP server runs through that app's artisan.
@@ -68,24 +69,27 @@ heading() {
 
 target_label() {
     case "$1" in
-        freek) printf 'freek.dev\n' ;;
-        spatie) printf 'spatie.be\n' ;;
+        grid) printf 'websockets-grid-demo\n' ;;
+        chat) printf 'larachat\n' ;;
+        bootcamp) printf 'bootcamp.laravel.com\n' ;;
         *) fail "Unknown target: $1" ;;
     esac
 }
 
 target_repository() {
     case "$1" in
-        freek) printf '%s\n' "${FREEK_REPOSITORY}" ;;
-        spatie) printf '%s\n' "${SPATIE_REPOSITORY}" ;;
+        grid) printf '%s\n' "${GRID_REPOSITORY}" ;;
+        chat) printf '%s\n' "${CHAT_REPOSITORY}" ;;
+        bootcamp) printf '%s\n' "${BOOTCAMP_REPOSITORY}" ;;
         *) fail "Unknown target: $1" ;;
     esac
 }
 
 target_revision() {
     case "$1" in
-        freek) printf '%s\n' "${FREEK_REVISION}" ;;
-        spatie) printf '%s\n' "${SPATIE_REVISION}" ;;
+        grid) printf '%s\n' "${GRID_REVISION}" ;;
+        chat) printf '%s\n' "${CHAT_REVISION}" ;;
+        bootcamp) printf '%s\n' "${BOOTCAMP_REVISION}" ;;
         *) fail "Unknown target: $1" ;;
     esac
 }
@@ -94,35 +98,20 @@ target_directory() {
     printf '%s/%s\n' "${APPS_ROOT}" "$(target_label "$1")"
 }
 
-target_database() {
-    case "$1" in
-        freek) printf 'newdebugbar_freek_dev\n' ;;
-        spatie) printf 'newdebugbar_spatie_be\n' ;;
-        *) fail "Unknown target: $1" ;;
-    esac
-}
-
 target_port() {
     case "$1" in
-        freek) printf '8141\n' ;;
-        spatie) printf '8142\n' ;;
-        *) fail "Unknown target: $1" ;;
-    esac
-}
-
-target_old_debugbar() {
-    case "$1" in
-        freek) printf 'barryvdh/laravel-debugbar\n' ;;
-        spatie) printf 'fruitcake/laravel-debugbar\n' ;;
+        grid) printf '8161\n' ;;
+        chat) printf '8162\n' ;;
+        bootcamp) printf '8163\n' ;;
         *) fail "Unknown target: $1" ;;
     esac
 }
 
 targets() {
     case "$1" in
-        freek|spatie) printf '%s\n' "$1" ;;
-        all) printf 'freek\nspatie\n' ;;
-        *) fail "Target must be freek, spatie, or all." ;;
+        grid|chat|bootcamp) printf '%s\n' "$1" ;;
+        all) printf 'grid\nchat\nbootcamp\n' ;;
+        *) fail "Target must be grid, chat, bootcamp, or all." ;;
     esac
 }
 
@@ -136,11 +125,7 @@ require_commands() {
 
 check_php() {
     local selection="$1"
-    local minimum_version="8.4.0"
-
-    if [ "${selection}" = "freek" ] || [ "${selection}" = "all" ]; then
-        minimum_version="8.5.0"
-    fi
+    local minimum_version="8.2.0"
 
     php -r 'exit(version_compare(PHP_VERSION, $argv[1], ">=") ? 0 : 1);' "${minimum_version}" \
         || fail "PHP ${minimum_version} or newer is required for ${selection}."
@@ -149,20 +134,15 @@ check_php() {
 <?php
 
 $required = [
-    'bcmath',
     'curl',
     'dom',
-    'exif',
-    'gd',
-    'intl',
     'json',
     'libxml',
     'mbstring',
     'openssl',
     'pcntl',
-    'pdo_mysql',
+    'pdo_sqlite',
     'simplexml',
-    'soap',
     'zip',
 ];
 
@@ -192,40 +172,6 @@ check_server_workers() {
         || fail "NEWDEBUGBAR_REAL_APPS_SERVER_WORKERS must be an integer of at least 2."
 }
 
-with_database_environment() {
-    (
-        export NDB_REAL_APPS_DB_HOST="${DATABASE_HOST}"
-        export NDB_REAL_APPS_DB_PORT="${DATABASE_PORT}"
-        export NDB_REAL_APPS_DB_USER="${DATABASE_USER}"
-        export NDB_REAL_APPS_DB_PASSWORD="${DATABASE_PASSWORD}"
-
-        "$@"
-    )
-}
-
-check_mysql_connection() {
-    with_database_environment php <<'PHP' || fail "MySQL is not reachable with the configured connection."
-<?php
-
-try {
-    $pdo = new PDO(
-        sprintf(
-            'mysql:host=%s;port=%s;charset=utf8mb4',
-            getenv('NDB_REAL_APPS_DB_HOST'),
-            getenv('NDB_REAL_APPS_DB_PORT'),
-        ),
-        getenv('NDB_REAL_APPS_DB_USER'),
-        getenv('NDB_REAL_APPS_DB_PASSWORD'),
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
-    );
-
-    $pdo->query('SELECT 1');
-} catch (Throwable) {
-    exit(1);
-}
-PHP
-}
-
 doctor() {
     local selection="$1"
 
@@ -236,12 +182,11 @@ doctor() {
     check_php "${selection}"
     check_node
     check_server_workers
-    check_mysql_connection
 
     printf 'PHP %s\n' "$(php -r 'echo PHP_VERSION;')"
     printf 'Node %s\n' "$(node --version)"
     printf '%s\n' "$(composer --version --no-ansi 2>/dev/null)"
-    printf 'MySQL connection available at %s:%s\n' "${DATABASE_HOST}" "${DATABASE_PORT}"
+    printf 'SQLite support available\n'
     printf 'PHP development server workers: %s\n' "${SERVER_WORKERS}"
 }
 
@@ -274,32 +219,60 @@ clone_target() {
         || fail "$(target_label "${target}") is not at the pinned revision ${revision}."
 }
 
+prepare_bootcamp_dependency() {
+    local target="$1"
+    local directory current_repository current_revision
+
+    [ "${target}" = "bootcamp" ] || return 0
+
+    directory="${DEPENDENCIES_ROOT}/laravel-unfenced"
+
+    if [ ! -e "${directory}" ]; then
+        heading "Cloning laravel/unfenced"
+        mkdir -p "${DEPENDENCIES_ROOT}"
+        git init --quiet "${directory}"
+        git -C "${directory}" remote add origin "${UNFENCED_REPOSITORY}"
+        git -C "${directory}" fetch --quiet --depth 1 origin "${UNFENCED_REVISION}"
+        git -C "${directory}" checkout --quiet --detach FETCH_HEAD
+        return
+    fi
+
+    [ -d "${directory}/.git" ] || fail "${directory} exists but is not a Git checkout."
+
+    current_repository="$(git -C "${directory}" config --get remote.origin.url || true)"
+    [ "${current_repository}" = "${UNFENCED_REPOSITORY}" ] \
+        || fail "laravel/unfenced has an unexpected origin: ${current_repository}"
+
+    current_revision="$(git -C "${directory}" rev-parse HEAD 2>/dev/null || true)"
+    [ "${current_revision}" = "${UNFENCED_REVISION}" ] \
+        || fail "laravel/unfenced is not at the pinned revision ${UNFENCED_REVISION}."
+}
+
 configure_environment() {
     local target="$1"
-    local directory database port cookie queue_connection="sync"
+    local directory database port cookie broadcast_connection="log"
 
     directory="$(target_directory "${target}")"
-    database="$(target_database "${target}")"
+    database="${directory}/database/database.sqlite"
     port="$(target_port "${target}")"
     cookie="newdebugbar_${target}_session"
 
-    if [ "${target}" = "spatie" ]; then
-        queue_connection="database"
+    if [ "${target}" = "grid" ]; then
+        broadcast_connection="reverb"
     fi
 
+    mkdir -p "${directory}/database"
+    touch "${database}"
     cp "${directory}/.env.example" "${directory}/.env"
     chmod 600 "${directory}/.env"
 
     (
         export NDB_ENV_FILE="${directory}/.env"
         export NDB_ENV_APP_URL="http://127.0.0.1:${port}"
-        export NDB_ENV_DB_HOST="${DATABASE_HOST}"
-        export NDB_ENV_DB_PORT="${DATABASE_PORT}"
         export NDB_ENV_DB_DATABASE="${database}"
-        export NDB_ENV_DB_USER="${DATABASE_USER}"
-        export NDB_ENV_DB_PASSWORD="${DATABASE_PASSWORD}"
         export NDB_ENV_SESSION_COOKIE="${cookie}"
-        export NDB_ENV_QUEUE_CONNECTION="${queue_connection}"
+        export NDB_ENV_BROADCAST_CONNECTION="${broadcast_connection}"
+        export NDB_ENV_REVERB_PORT="${REVERB_PORT}"
 
         php <<'PHP'
 <?php
@@ -312,34 +285,33 @@ $values = [
     'APP_DEBUG' => 'true',
     'APP_URL' => getenv('NDB_ENV_APP_URL'),
     'APP_MAINTENANCE_STORE' => 'file',
-    'DB_CONNECTION' => 'mysql',
-    'DB_HOST' => getenv('NDB_ENV_DB_HOST'),
-    'DB_PORT' => getenv('NDB_ENV_DB_PORT'),
+    'DB_CONNECTION' => 'sqlite',
     'DB_DATABASE' => getenv('NDB_ENV_DB_DATABASE'),
-    'DB_USERNAME' => getenv('NDB_ENV_DB_USER'),
-    'DB_PASSWORD' => getenv('NDB_ENV_DB_PASSWORD'),
-    'BROADCAST_CONNECTION' => 'log',
-    'BROADCAST_DRIVER' => 'log',
+    'BROADCAST_CONNECTION' => getenv('NDB_ENV_BROADCAST_CONNECTION'),
+    'BROADCAST_DRIVER' => getenv('NDB_ENV_BROADCAST_CONNECTION'),
     'CACHE_STORE' => 'file',
     'CACHE_DRIVER' => 'file',
     'SESSION_DRIVER' => 'file',
     'SESSION_COOKIE' => getenv('NDB_ENV_SESSION_COOKIE'),
-    'QUEUE_CONNECTION' => getenv('NDB_ENV_QUEUE_CONNECTION'),
-    'QUEUE_DRIVER' => getenv('NDB_ENV_QUEUE_CONNECTION'),
+    'QUEUE_CONNECTION' => 'sync',
+    'QUEUE_DRIVER' => 'sync',
     'MAIL_MAILER' => 'log',
-    'RESPONSE_CACHE_ENABLED' => 'false',
     'NEWDEBUGBAR_ENABLED' => 'true',
-    'STRIPE_KEY' => '',
-    'STRIPE_SECRET' => '',
-    'GITHUB_TOKEN' => '',
-    'GITHUB_ACCESS_TOKEN' => '',
-    'MAILCOACH_DOMAIN' => '',
-    'MAILCOACH_TOKEN' => '',
     'OPENAI_API_KEY' => '',
     'OPENAI_ORGANIZATION' => '',
-    'REMOTE_HOST' => '',
-    'REMOTE_USER' => '',
-    'REMOTE_PATH' => '',
+    'REVERB_APP_ID' => 'newdebugbar-grid',
+    'REVERB_APP_KEY' => 'newdebugbar-grid-key',
+    'REVERB_APP_SECRET' => 'newdebugbar-grid-secret',
+    'REVERB_HOST' => '127.0.0.1',
+    'REVERB_PORT' => getenv('NDB_ENV_REVERB_PORT'),
+    'REVERB_SCHEME' => 'http',
+    'REVERB_SERVER_HOST' => '127.0.0.1',
+    'REVERB_SERVER_PORT' => getenv('NDB_ENV_REVERB_PORT'),
+    'VITE_REVERB_APP_KEY' => 'newdebugbar-grid-key',
+    'VITE_REVERB_HOST' => '127.0.0.1',
+    'VITE_REVERB_PORT' => getenv('NDB_ENV_REVERB_PORT'),
+    'VITE_REVERB_SCHEME' => 'http',
+    'TORCHLIGHT_TOKEN' => '',
 ];
 
 $encode = static function (string $value): string {
@@ -371,51 +343,6 @@ PHP
     )
 }
 
-create_database() {
-    local database="$1"
-
-    case "${database}" in
-        newdebugbar_freek_dev|newdebugbar_spatie_be) ;;
-        *) fail "Refusing to create an unexpected database: ${database}" ;;
-    esac
-
-    (
-        export NDB_REAL_APPS_DB_HOST="${DATABASE_HOST}"
-        export NDB_REAL_APPS_DB_PORT="${DATABASE_PORT}"
-        export NDB_REAL_APPS_DB_USER="${DATABASE_USER}"
-        export NDB_REAL_APPS_DB_PASSWORD="${DATABASE_PASSWORD}"
-        export NDB_REAL_APPS_DATABASE="${database}"
-
-        php <<'PHP'
-<?php
-
-$database = getenv('NDB_REAL_APPS_DATABASE');
-$allowed = ['newdebugbar_freek_dev', 'newdebugbar_spatie_be'];
-
-if (! in_array($database, $allowed, true)) {
-    fwrite(STDERR, 'Unexpected database name.'.PHP_EOL);
-    exit(1);
-}
-
-$pdo = new PDO(
-    sprintf(
-        'mysql:host=%s;port=%s;charset=utf8mb4',
-        getenv('NDB_REAL_APPS_DB_HOST'),
-        getenv('NDB_REAL_APPS_DB_PORT'),
-    ),
-    getenv('NDB_REAL_APPS_DB_USER'),
-    getenv('NDB_REAL_APPS_DB_PASSWORD'),
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
-);
-
-$pdo->exec(sprintf(
-    'CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
-    $database,
-));
-PHP
-    )
-}
-
 root_requires_package() {
     local directory="$1"
     local section="$2"
@@ -427,11 +354,9 @@ root_requires_package() {
     ' "${directory}/composer.json" "${section}" "${package}"
 }
 
-prepare_host_for_swap() {
+prepare_php_runtime() {
     local target="$1"
     local directory
-
-    [ "${target}" = "spatie" ] || return 0
 
     directory="$(target_directory "${target}")"
 
@@ -441,106 +366,213 @@ prepare_host_for_swap() {
         php <<'PHP'
 <?php
 
-$root = getenv('NDB_HOST_APP');
-$files = [
-    $root.'/config/app.php' => [
-        "        Fruitcake\\LaravelDebugbar\\ServiceProvider::class,".PHP_EOL => '',
-        <<<'OLD'
-    'aliases' => Facade::defaultAliases()->merge([
-        'Debugbar' => Fruitcake\LaravelDebugbar\Facades\Debugbar::class,
-    ])->toArray(),
-OLD.PHP_EOL => "    'aliases' => Facade::defaultAliases()->toArray(),".PHP_EOL,
-    ],
-    $root.'/app/Http/Controllers/PackageHeaderController.php' => [
-        'use Debugbar;'.PHP_EOL.PHP_EOL => '',
-        '        Debugbar::disable();'.PHP_EOL.PHP_EOL => '',
-    ],
-    $root.'/resources/views/layout/default.blade.php' => [
-        '    $usesLivewire = $livewire || $comments;'.PHP_EOL
-            => '    $usesLivewire = app()->isLocal() || $livewire || $comments;'.PHP_EOL,
-    ],
-    $root.'/resources/views/layout/blank.blade.php' => [
-        <<<'OLD'
-@props([
-    'cssEntry' => 'resources/css/front/front.css',
-    'gtmStrategy' => 'delayed',
-    'livewire' => false,
-    'usesAlpineFocus' => false,
-])
-OLD.PHP_EOL => <<<'NEW'
-@props([
-    'cssEntry' => 'resources/css/front/front.css',
-    'gtmStrategy' => 'delayed',
-    'livewire' => false,
-    'usesAlpineFocus' => false,
-])
+$file = getenv('NDB_HOST_APP').'/config/database.php';
+$contents = file_get_contents($file);
+$legacyConstant = 'PDO::MYSQL_ATTR_SSL_CA';
+$modernConstant = 'Pdo\\Mysql::ATTR_SSL_CA';
+$conditionalConstant = '(PHP_VERSION_ID >= 80500 ? '.$modernConstant.' : '.$legacyConstant.')';
+$runtimeConstant = PHP_VERSION_ID >= 80500 ? $modernConstant : $legacyConstant;
 
-@php($livewire = app()->isLocal() || $livewire)
-NEW.PHP_EOL,
-    ],
-];
+$contents = str_replace($conditionalConstant, $runtimeConstant, $contents);
+$contents = str_replace(
+    PHP_VERSION_ID >= 80500 ? $legacyConstant : $modernConstant,
+    $runtimeConstant,
+    $contents,
+);
 
-foreach ($files as $file => $replacements) {
-    $contents = file_get_contents($file);
+file_put_contents($file, $contents);
+PHP
+    )
+}
 
-    foreach ($replacements as $old => $new) {
-        $contents = str_replace($old, $new, $contents);
+prepare_target_dependencies() {
+    local target="$1"
+    local directory
+
+    case "${target}" in
+        chat|bootcamp) ;;
+        *) return 0 ;;
+    esac
+
+    directory="$(target_directory "${target}")"
+
+    (
+        export NDB_HOST_APP="${directory}"
+        export NDB_HOST_TARGET="${target}"
+
+        php <<'PHP'
+<?php
+
+$file = getenv('NDB_HOST_APP').'/composer.json';
+$composer = json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+
+if (getenv('NDB_HOST_TARGET') === 'chat') {
+    $composer['require-dev']['pestphp/pest'] = '^4.4';
+    $composer['require-dev']['pestphp/pest-plugin-laravel'] = '^4.0';
+}
+
+if (getenv('NDB_HOST_TARGET') === 'bootcamp') {
+    $composer['require']['php'] = '^8.2';
+    $composer['require']['graham-campbell/markdown'] = '^16.1';
+    $composer['require']['laravel/framework'] = '^12.0';
+    $composer['require']['laravel/sanctum'] = '^4.3';
+    $composer['require']['laravel/tinker'] = '^2.10';
+    $composer['require']['torchlight/torchlight-commonmark'] = '^0.6';
+    $composer['require']['torchlight/torchlight-laravel'] = '^0.6.2';
+    $composer['require-dev']['laravel/sail'] = '^1.41';
+    $composer['require-dev']['nunomaduro/collision'] = '^8.6';
+    $composer['require-dev']['phpunit/phpunit'] = '^11.5';
+    $composer['require-dev']['spatie/laravel-ignition'] = '^2.12';
+
+    foreach ($composer['repositories'] ?? [] as $index => $repository) {
+        if (($repository['name'] ?? null) === 'unfenced'
+            || str_ends_with((string) ($repository['url'] ?? ''), 'laravel-labs/unfenced.git')) {
+            $composer['repositories'][$index] = [
+                'name' => 'unfenced',
+                'type' => 'path',
+                'url' => '../../dependencies/laravel-unfenced',
+                'options' => [
+                    'symlink' => true,
+                    'versions' => ['laravel/unfenced' => 'dev-main'],
+                ],
+            ];
+        }
     }
 
-    file_put_contents($file, $contents);
+    unset($composer['config']['use-github-api'], $composer['config']['github-protocols']);
 }
 
-$oldConfig = $root.'/config/debugbar.php';
+file_put_contents(
+    $file,
+    json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
+);
+PHP
+    )
+}
 
-if (is_file($oldConfig) && ! unlink($oldConfig)) {
-    fwrite(STDERR, 'Could not remove the old Debugbar config.'.PHP_EOL);
+remove_old_debugbars() {
+    local directory="$1"
+    local old_debugbar
+
+    for old_debugbar in barryvdh/laravel-debugbar fruitcake/laravel-debugbar; do
+        if root_requires_package "${directory}" require-dev "${old_debugbar}"; then
+            composer remove --dev "${old_debugbar}" --no-update --no-interaction
+        elif root_requires_package "${directory}" require "${old_debugbar}"; then
+            composer remove "${old_debugbar}" --no-update --no-interaction
+        fi
+    done
+}
+
+prepare_bootcamp_runtime() {
+    local target="$1"
+    local directory
+
+    [ "${target}" = "bootcamp" ] || return 0
+
+    directory="$(target_directory "${target}")"
+
+    (
+        export NDB_HOST_APP="${directory}"
+
+        php <<'PHP'
+<?php
+
+$appRoot = getenv('NDB_HOST_APP');
+$root = $appRoot.'/vendor/laravel/unfenced/src/Node';
+$files = [
+    $root.'/FencedCodeContainer.php' => '        $this->attributes = $this->parseAttributes($fencedCode);',
+    $root.'/TabbedCode.php' => '        $this->group = $this->generateTabHash($children);',
+];
+
+foreach ($files as $file => $firstStatement) {
+    $contents = file_get_contents($file);
+
+    if (! str_contains($contents, '        parent::__construct();')) {
+        $contents = str_replace(
+            $firstStatement,
+            "        parent::__construct();\n\n".$firstStatement,
+            $contents,
+            $count,
+        );
+
+        if ($count !== 1) {
+            fwrite(STDERR, 'The Unfenced node constructor changed upstream.'.PHP_EOL);
+            exit(1);
+        }
+
+        file_put_contents($file, $contents);
+    }
+}
+
+$localOnlyIntegrations = [
+    $appRoot.'/config/markdown.php' => '        Torchlight\\Commonmark\\V2\\TorchlightExtension::class,'.PHP_EOL,
+    $appRoot.'/app/Http/Kernel.php' => '        \\Torchlight\\Middleware\\RenderTorchlight::class,'.PHP_EOL,
+];
+
+foreach ($localOnlyIntegrations as $file => $line) {
+    $contents = file_get_contents($file);
+
+    if (str_contains($contents, $line)) {
+        file_put_contents($file, str_replace($line, '', $contents, $count));
+
+        if ($count !== 1) {
+            fwrite(STDERR, 'The Torchlight integration changed upstream.'.PHP_EOL);
+            exit(1);
+        }
+    }
+}
+
+$javascript = $appRoot.'/resources/js/app.js';
+$contents = file_get_contents($javascript);
+$contents = str_replace("import Alpine from 'alpinejs';".PHP_EOL, '', $contents);
+$contents = str_replace(
+    PHP_EOL.'window.Alpine = Alpine;'.PHP_EOL.'Alpine.start();'.PHP_EOL,
+    PHP_EOL,
+    $contents,
+);
+
+if (str_contains($contents, 'Alpine.start()')) {
+    fwrite(STDERR, 'The Bootcamp Alpine bootstrap changed upstream.'.PHP_EOL);
     exit(1);
 }
 
-$remaining = file_get_contents($root.'/config/app.php')
-    .file_get_contents($root.'/app/Http/Controllers/PackageHeaderController.php');
-
-if (str_contains($remaining, 'Fruitcake\\LaravelDebugbar') || str_contains($remaining, 'Debugbar::')) {
-    fwrite(STDERR, 'The old Debugbar integration changed upstream and was not fully removed.'.PHP_EOL);
-    exit(1);
-}
-
-$defaultLayout = file_get_contents($root.'/resources/views/layout/default.blade.php');
-$blankLayout = file_get_contents($root.'/resources/views/layout/blank.blade.php');
-
-if (! str_contains($defaultLayout, '$usesLivewire = app()->isLocal() || $livewire || $comments;')
-    || ! str_contains($blankLayout, '@php($livewire = app()->isLocal() || $livewire)')) {
-    fwrite(STDERR, 'The Spatie layouts changed upstream and were not prepared for New Debug Bar.'.PHP_EOL);
-    exit(1);
-}
+file_put_contents($javascript, $contents);
 PHP
     )
 }
 
 swap_debugbar() {
     local target="$1"
-    local directory old_debugbar
+    local directory
 
     directory="$(target_directory "${target}")"
-    old_debugbar="$(target_old_debugbar "${target}")"
 
     heading "Installing New Debug Bar in $(target_label "${target}")"
-    prepare_host_for_swap "${target}"
+    prepare_bootcamp_dependency "${target}"
+    prepare_php_runtime "${target}"
+    prepare_target_dependencies "${target}"
 
     (
         cd "${directory}"
 
         composer show newdebugbar/newdebugbar --no-ansi >/dev/null 2>&1 || true
         composer config repositories.newdebugbar path ../../..
+        remove_old_debugbars "${directory}"
 
-        if [ "${target}" = "spatie" ]; then
-            composer config use-github-api false
+        if [ "${target}" = "chat" ]; then
+            composer update \
+                pestphp/pest \
+                pestphp/pest-plugin-laravel \
+                --with-all-dependencies \
+                --minimal-changes \
+                --no-interaction \
+                --prefer-dist
         fi
 
-        if [ "${target}" = "freek" ] && root_requires_package "${directory}" require-dev "${old_debugbar}"; then
-            composer remove --dev "${old_debugbar}" --no-update --no-interaction
-        elif [ "${target}" = "spatie" ] && root_requires_package "${directory}" require "${old_debugbar}"; then
-            composer remove "${old_debugbar}" --no-update --no-interaction
+        if [ "${target}" = "bootcamp" ]; then
+            composer update \
+                --no-interaction \
+                --prefer-dist
         fi
 
         composer require --dev newdebugbar/newdebugbar:dev-main \
@@ -549,41 +581,8 @@ swap_debugbar() {
             --no-interaction \
             --prefer-dist
     )
-}
 
-create_spatie_jobs_table() {
-    local target="$1"
-
-    [ "${target}" = "spatie" ] || return 0
-
-    (
-        cd "$(target_directory "${target}")"
-
-        php <<'PHP'
-<?php
-
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-require 'vendor/autoload.php';
-
-$app = require 'bootstrap/app.php';
-$app->make(Kernel::class)->bootstrap();
-
-if (! Schema::hasTable('jobs')) {
-    Schema::create('jobs', function (Blueprint $table): void {
-        $table->bigIncrements('id');
-        $table->string('queue')->index();
-        $table->longText('payload');
-        $table->unsignedTinyInteger('attempts');
-        $table->unsignedInteger('reserved_at')->nullable();
-        $table->unsignedInteger('available_at');
-        $table->unsignedInteger('created_at');
-    });
-}
-PHP
-    )
+    prepare_bootcamp_runtime "${target}"
 }
 
 build_target() {
@@ -599,10 +598,18 @@ build_target() {
 
         php artisan key:generate --force --no-interaction
         php artisan optimize:clear --no-interaction
-        php artisan migrate:fresh --force --no-interaction
-        create_spatie_jobs_table "${target}"
-        php artisan db:seed --force --no-interaction
-        php artisan storage:link --no-interaction
+
+        if find database/migrations -type f -name '*.php' -print -quit 2>/dev/null | grep -q .; then
+            php artisan migrate:fresh --force --no-interaction
+        fi
+
+        if [ -f database/seeders/DatabaseSeeder.php ]; then
+            php artisan db:seed --force --no-interaction
+        fi
+
+        if [ -d storage/app/public ] && [ ! -e public/storage ]; then
+            php artisan storage:link --no-interaction
+        fi
 
         PUPPETEER_SKIP_DOWNLOAD=true npm ci --no-audit --no-fund
         npm run build
@@ -614,16 +621,17 @@ verify_target() {
     local directory old_debugbar resolved_package resolved_root
 
     directory="$(target_directory "${target}")"
-    old_debugbar="$(target_old_debugbar "${target}")"
 
     (
         cd "${directory}"
 
         composer show newdebugbar/newdebugbar --no-ansi >/dev/null
 
-        if composer show "${old_debugbar}" --no-ansi >/dev/null 2>&1; then
-            fail "${old_debugbar} is still installed in $(target_label "${target}")."
-        fi
+        for old_debugbar in barryvdh/laravel-debugbar fruitcake/laravel-debugbar; do
+            if composer show "${old_debugbar}" --no-ansi >/dev/null 2>&1; then
+                fail "${old_debugbar} is still installed in $(target_label "${target}")."
+            fi
+        done
 
         resolved_package="$(cd vendor/newdebugbar/newdebugbar && pwd -P)"
         resolved_root="$(cd "${PACKAGE_ROOT}" && pwd -P)"
@@ -644,7 +652,6 @@ setup_target() {
 
     clone_target "${target}"
     configure_environment "${target}"
-    create_database "$(target_database "${target}")"
     swap_debugbar "${target}"
     build_target "${target}"
     verify_target "${target}"
@@ -667,7 +674,6 @@ status_target() {
 
     directory="$(target_directory "${target}")"
     expected_revision="$(target_revision "${target}")"
-    old_debugbar="$(target_old_debugbar "${target}")"
 
     heading "$(target_label "${target}")"
 
@@ -691,10 +697,12 @@ status_target() {
         return 1
     fi
 
-    if (cd "${directory}" && composer show "${old_debugbar}" --no-ansi >/dev/null 2>&1); then
-        printf 'Old Debugbar: still installed\n'
-        return 1
-    fi
+    for old_debugbar in barryvdh/laravel-debugbar fruitcake/laravel-debugbar; do
+        if (cd "${directory}" && composer show "${old_debugbar}" --no-ansi >/dev/null 2>&1); then
+            printf 'Old Debugbar: still installed (%s)\n' "${old_debugbar}"
+            return 1
+        fi
+    done
 
     resolved_package="$(cd "${directory}/vendor/newdebugbar/newdebugbar" && pwd -P)"
     if [ "${resolved_package}" != "$(cd "${PACKAGE_ROOT}" && pwd -P)" ]; then
@@ -760,6 +768,58 @@ wait_for_server() {
     fail "$(target_label "${target}") did not become ready within 60 seconds."
 }
 
+wait_for_port() {
+    local label="$1"
+    local pid="$2"
+    local port="$3"
+    local log_file="$4"
+    local attempt=0
+
+    while [ "${attempt}" -lt 60 ]; do
+        if ! kill -0 "${pid}" >/dev/null 2>&1; then
+            tail -n 30 "${log_file}" >&2 || true
+            fail "${label} exited before it became ready."
+        fi
+
+        if php -r '
+            $socket = @fsockopen("127.0.0.1", (int) $argv[1], $errorCode, $errorMessage, 0.2);
+            exit(is_resource($socket) ? 0 : 1);
+        ' "${port}"; then
+            printf '%s is running on 127.0.0.1:%s\n' "${label}" "${port}"
+            return
+        fi
+
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+
+    tail -n 30 "${log_file}" >&2 || true
+    fail "${label} did not become ready within 60 seconds."
+}
+
+start_grid_reverb() {
+    local target="$1"
+    local directory log_file pid
+
+    [ "${target}" = "grid" ] || return 0
+
+    directory="$(target_directory "${target}")"
+    log_file="${LOGS_ROOT}/${target}-reverb.log"
+    : > "${log_file}"
+
+    (
+        cd "${directory}"
+        exec php artisan reverb:start \
+            --host=127.0.0.1 \
+            --port="${REVERB_PORT}" \
+            --no-interaction
+    ) >"${log_file}" 2>&1 &
+
+    pid=$!
+    SERVER_PIDS+=("${pid}")
+    wait_for_port "Laravel Reverb" "${pid}" "${REVERB_PORT}" "${log_file}"
+}
+
 start_server() {
     local target="$1"
     local directory port log_file pid
@@ -773,6 +833,7 @@ start_server() {
 
     mkdir -p "${LOGS_ROOT}"
     : > "${log_file}"
+    start_grid_reverb "${target}"
 
     (
         cd "${directory}"
@@ -787,7 +848,7 @@ start_server() {
 
 serve() {
     local selection="$1"
-    local target pid
+    local target
 
     require_commands
     check_server_workers
