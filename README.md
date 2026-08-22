@@ -1,5 +1,7 @@
 # New Debug Bar (for Laravel)
 
+![New Debug Bar request inspector open over a Laravel application](.github/readme/newdebugbar-request-inspector.png)
+
 New Debug Bar is a modern debugging tool for Laravel, built for developers and coding agents. It helps you understand each request and find problems without cluttering your local app.
 
 A compact bar at the bottom of the page gives you quick access to database queries, errors, logs, events, jobs, mail, cache use, and more.
@@ -64,3 +66,5 @@ NEWDEBUGBAR_ENABLED=false
 ## License
 
 New Debug Bar uses the Apache License 2.0.
+
+![New Debug Bar showing its request picker and Livewire component inspector](.github/readme/newdebugbar-livewire-inspector.png)
