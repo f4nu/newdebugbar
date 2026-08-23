@@ -10,6 +10,9 @@ final class MailCollector extends AbstractCollector
     /** @var array<int, int> */
     private array $startedAt = [];
 
+    /** @var array<int, array<string, mixed>> */
+    private array $pending = [];
+
     public function __construct(Redactor $redactor, int $maxItems)
     {
         parent::__construct($redactor, $maxItems);
@@ -29,6 +32,7 @@ final class MailCollector extends AbstractCollector
     {
         parent::reset();
         $this->startedAt = [];
+        $this->pending = [];
     }
 
     public function record(array $item): void
@@ -40,14 +44,19 @@ final class MailCollector extends AbstractCollector
         if ($phase === 'sending') {
             if ($messageId > 0) {
                 $this->startedAt[$messageId] = hrtime(true);
+                $this->pending[$messageId] = $item;
             }
 
             return;
         }
 
         $startedAt = $this->startedAt[$messageId] ?? null;
+        $item = [
+            ...$item,
+            ...($this->pending[$messageId] ?? []),
+        ];
         $item['duration_ms'] = $startedAt === null ? 0.0 : round((hrtime(true) - $startedAt) / 1_000_000, 2);
-        unset($this->startedAt[$messageId]);
+        unset($this->startedAt[$messageId], $this->pending[$messageId]);
         $preview = $item['preview'] ?? null;
         unset($item['preview']);
 

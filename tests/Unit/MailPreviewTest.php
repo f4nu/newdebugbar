@@ -10,7 +10,8 @@ it('builds bounded attachment free html text and eml previews', function () {
         ->subject('Preview subject')
         ->text('Plain preview')
         ->html('<h1>HTML preview</h1>')
-        ->attach('private attachment', 'private.txt');
+        ->attach('private attachment', 'private.txt', 'text/plain');
+    $message->getHeaders()->addTextHeader('X-Application-Trace', 'checkout-ready');
 
     $preview = (new MailPreview(maxBodyBytes: 1_000, maxRecipients: 10))->capture($message);
 
@@ -20,6 +21,14 @@ it('builds bounded attachment free html text and eml previews', function () {
         ->text->toBe('Plain preview')
         ->html->toBe('<h1>HTML preview</h1>')
         ->attachments_omitted->toBe(1)
+        ->attachment_metadata_omitted->toBe(0)
+        ->headers->toContain('X-Application-Trace: checkout-ready')
+        ->attachments->toBe([[
+            'name' => 'private.txt',
+            'content_type' => 'text/plain',
+            'disposition' => 'attachment',
+            'content_id' => null,
+        ]])
         ->and($preview['eml'])
         ->toContain('Plain preview', 'HTML preview', 'X-NewDebugBar-Attachments-Omitted: 1')
         ->not->toContain('private attachment', 'private.txt');
@@ -41,6 +50,7 @@ it('bounds the inputs without cutting the serialized mime message', function () 
         ->truncated->toBeTrue()
         ->to->toBe(['first@example.test'])
         ->addresses_omitted->toBe(1)
+        ->attachment_metadata_omitted->toBe(0)
         ->and(strlen($preview['subject']))->toBeLessThanOrEqual(85)
         ->and($preview['text'])->toContain("\n[preview truncated]")
         ->not->toContain('\\n[preview truncated]')

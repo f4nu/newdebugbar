@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Part\DataPart;
 
 /** Builds a bounded, attachment-free local mail preview. */
 final class MailPreview
@@ -23,7 +24,9 @@ final class MailPreview
         [$subject, $subjectTruncated] = $this->bounded($message->getSubject(), min(2_000, $this->maxBodyBytes));
         [$html, $htmlTruncated] = $this->bounded($message->getHtmlBody());
         [$text, $textTruncated] = $this->bounded($message->getTextBody());
+        [$headers, $headersTruncated] = $this->bounded($message->getHeaders()->toString());
         $addressesOmitted = $this->addressesOmitted($message);
+        $attachments = array_slice($message->getAttachments(), 0, $this->maxRecipients);
         $copy = $this->attachmentFreeCopy($message, $subject, $html, $text);
 
         return [
@@ -33,14 +36,32 @@ final class MailPreview
             'cc' => $this->addresses($message->getCc()),
             'bcc' => $this->addresses($message->getBcc()),
             'reply_to' => $this->addresses($message->getReplyTo()),
+            'sender' => $message->getSender()?->toString(),
+            'return_path' => $message->getReturnPath()?->toString(),
+            'date' => $message->getDate()?->format(DATE_ATOM),
+            'priority' => $message->getPriority(),
+            'headers' => $headers,
+            'attachments' => array_map($this->attachment(...), $attachments),
             'html' => $html,
             'text' => $text,
             // The inputs are bounded before serialization so the MIME document
             // stays valid instead of being cut through a header or body part.
             'eml' => $copy->toString(),
-            'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated || $addressesOmitted > 0,
+            'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated || $headersTruncated || $addressesOmitted > 0,
             'attachments_omitted' => count($message->getAttachments()),
+            'attachment_metadata_omitted' => max(0, count($message->getAttachments()) - count($attachments)),
             'addresses_omitted' => $addressesOmitted,
+        ];
+    }
+
+    /** @return array{name: string, content_type: string, disposition: string, content_id: ?string} */
+    private function attachment(DataPart $attachment): array
+    {
+        return [
+            'name' => $attachment->getFilename() ?? $attachment->getName() ?? 'Attachment',
+            'content_type' => $attachment->getContentType(),
+            'disposition' => $attachment->getDisposition() ?? 'attachment',
+            'content_id' => $attachment->hasContentId() ? $attachment->getContentId() : null,
         ];
     }
 

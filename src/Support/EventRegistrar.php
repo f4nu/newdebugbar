@@ -295,25 +295,38 @@ final class EventRegistrar
         });
 
         $this->listen(MessageSending::class, function (MessageSending $event): void {
+            $source = $event->data['__laravel_mailable'] ?? $event->data['__laravel_notification'] ?? null;
+            $location = $this->callSites->capture();
+
             $this->manager()->record('mail', [
                 'phase' => 'sending',
                 'message_id' => spl_object_id($event->message),
+                'source' => is_string($source) ? $source : null,
+                'mailer' => $this->configuredMailDriver(),
+                'transport' => $this->configuredMailTransport(),
+                ...$location,
             ]);
         });
 
         $this->listen(MessageSent::class, function (MessageSent $event): void {
             $message = $event->message;
             $source = $event->data['__laravel_mailable'] ?? $event->data['__laravel_notification'] ?? null;
+            $location = $this->callSites->capture();
 
             $this->manager()->record('mail', [
                 'phase' => 'sent',
                 'message_id' => spl_object_id($message),
+                'status' => 'sent',
                 'source' => is_string($source) ? $source : null,
+                'mailer' => $this->configuredMailDriver(),
+                'transport' => $this->configuredMailTransport(),
+                'transport_message_id' => $event->sent->getMessageId(),
                 'recipient_count' => count($message->getTo()) + count($message->getCc()) + count($message->getBcc()),
                 'attachment_count' => count($message->getAttachments()),
                 'has_html' => $message->getHtmlBody() !== null,
                 'has_text' => $message->getTextBody() !== null,
                 'preview' => $this->mailPreview->capture($message),
+                ...$location,
             ]);
         });
 
@@ -776,6 +789,21 @@ final class EventRegistrar
     private function keyPolicy(): string
     {
         return config('newdebugbar.collection.key_policy', 'full') === 'hash' ? 'hash' : 'full';
+    }
+
+    private function configuredMailDriver(): ?string
+    {
+        $driver = config('mail.default');
+
+        return is_string($driver) && $driver !== '' ? $driver : null;
+    }
+
+    private function configuredMailTransport(): ?string
+    {
+        $driver = $this->configuredMailDriver();
+        $transport = $driver === null ? null : config('mail.mailers.'.$driver.'.transport');
+
+        return is_string($transport) && $transport !== '' ? $transport : null;
     }
 
     private function cacheStoreUsesRedis(?string $store): bool
