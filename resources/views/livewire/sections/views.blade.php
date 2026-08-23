@@ -95,7 +95,7 @@
 
                         <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:border-t ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                             @foreach ($group['items'] as $view)
-                                <article data-ndb-view-render class="ndb:py-4">
+                                <article data-ndb-view-render="{{ $view['render_order'] }}" class="ndb:py-4">
                                     <div
                                         x-data="newDebugBar.viewData($wire, {{ $view['render_order'] }})"
                                         x-id="['view-data-trigger', 'view-data-popover']"

@@ -365,6 +365,10 @@ it('keeps view data out of section html until its exact render asks', function (
     expect($data)
         ->label->toBe('Context view')
         ->private_value->toBe('view-data-value');
+
+    $component->call('loadViewData', 1);
+
+    expect($component->effects)->not->toHaveKey('html');
 });
 
 it('switches to an exact foreground application profile', function () {
