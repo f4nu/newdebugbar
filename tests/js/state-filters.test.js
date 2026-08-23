@@ -119,6 +119,120 @@ test('HTTP client defaults to all when no request needs attention', () => {
   assert.equal(state.visibleHttpClientCount, 0);
 });
 
+test('mail defaults to all and preview while keeping a visible message selected', () => {
+  const browser = runtime();
+  const state = createNewDebugBar(summary, browser);
+  let detailScrolls = 0;
+  let detailResets = 0;
+  const element = (execution, attachments, search) => ({
+    dataset: {
+      execution: String(execution),
+      attachments: String(attachments),
+      search,
+    },
+    hidden: false,
+    style: {
+      display: '',
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+  });
+  const first = element(1, false, 'welcome taylor');
+  const second = element(2, true, 'receipt alex invoice');
+  const third = element(3, false, 'plain text morgan');
+  state.$refs = {
+    mailList: { children: [first, second, third] },
+    mailDetail: {
+      scrollIntoView: () => detailScrolls++,
+      scrollTo: () => detailResets++,
+    },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.initializeMail([
+    {
+      execution: 1,
+      has_html: true,
+      has_text: true,
+      html_url: '/1/html',
+      text_url: '/1/text',
+    },
+    {
+      execution: 2,
+      has_html: true,
+      has_text: true,
+      html_url: '/2/html',
+      text_url: '/2/text',
+    },
+    {
+      execution: 3,
+      has_html: false,
+      has_text: true,
+      html_url: null,
+      text_url: '/3/text',
+    },
+  ]);
+  assert.equal(state.mailFilter, 'all');
+  assert.equal(state.mailSelected, 1);
+  assert.equal(state.mailDetailTab, 'preview');
+  assert.equal(state.mailPreviewFormat, 'html');
+  assert.equal(state.mailPreviewViewport, 'desktop');
+  assert.equal(state.mailPreviewUrl(), '/1/html');
+  assert.equal(state.visibleMailCount, 3);
+
+  state.setMailFilter('attachments');
+  assert.equal(first.hidden, true);
+  assert.equal(second.hidden, false);
+  assert.equal(third.hidden, true);
+  assert.equal(state.mailSelected, 2);
+  assert.equal(state.visibleMailCount, 1);
+
+  state.setMailFilter('all');
+  state.mailSearch = 'plain text';
+  state.applyMailView();
+  assert.equal(state.mailSelected, 3);
+  assert.equal(state.mailPreviewFormat, 'text');
+  assert.equal(state.mailPreviewUrl(), '/3/text');
+
+  state.setMailDetailTab('message');
+  assert.ok(detailResets > 0);
+  state.setMailPreviewViewport('mobile');
+  state.setMailPreviewFormat('html');
+  assert.equal(state.mailDetailTab, 'message');
+  assert.equal(state.mailPreviewViewport, 'mobile');
+  assert.equal(state.mailPreviewFormat, 'text');
+
+  browser.viewportWidth = () => 390;
+  state.selectMailMessage(1, true);
+  assert.equal(detailScrolls, 1);
+  assert.equal(state.mailDetailTab, 'preview');
+  assert.equal(state.mailPreviewFormat, 'html');
+  assert.equal(state.mailPreviewViewport, 'desktop');
+  assert.equal(
+    state.formatMailAddresses(['one@example.test', 'two@example.test']),
+    'one@example.test, two@example.test',
+  );
+  assert.equal(state.formatMailAddresses([]), '—');
+
+  state.setMailFilter('invalid');
+  state.setMailDetailTab('invalid');
+  state.setMailPreviewFormat('invalid');
+  state.setMailPreviewViewport('invalid');
+  state.selectMailMessage(99);
+  assert.equal(state.mailFilter, 'all');
+  assert.equal(state.mailDetailTab, 'preview');
+  assert.equal(state.mailSelected, 1);
+
+  state.initializeMail('invalid');
+  assert.deepEqual(state.mailMessages, []);
+  assert.equal(state.mailSelected, null);
+  assert.equal(state.mailPreviewUrl(), null);
+});
+
 test('query controls filter search and sort captured evidence', () => {
   const state = createNewDebugBar({ ...summary, query_count: 4 }, runtime());
   const appended = [];

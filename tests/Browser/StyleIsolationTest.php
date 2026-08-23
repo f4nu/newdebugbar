@@ -106,5 +106,26 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(keyword).color === 'rgb(196, 181, 253)';
             })()
             JS)
+        ->click('[data-ndb-section="mail"]')
+        ->assertVisible('[data-ndb-section-panel="mail"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const row = document.querySelector('[data-ndb-mail-item]');
+                const frame = document.querySelector('[data-ndb-mail-preview-frame]');
+
+                return getComputedStyle(row).borderLeftWidth === '0px'
+                    && frame.getBoundingClientRect().width > 300
+                    && getComputedStyle(frame).borderLeftWidth === '1px';
+            })()
+            JS)
+        ->click('[data-ndb-mail-detail-tab="message"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const summary = document.querySelector('[data-ndb-mail-headers] summary');
+                const style = getComputedStyle(summary);
+
+                return style.fontSize === '12px' && style.color !== 'rgb(255, 0, 0)';
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

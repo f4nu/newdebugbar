@@ -268,6 +268,14 @@ export function createNewDebugBar(
     httpClientSelected: null,
     httpClientDetailTab: 'overview',
     visibleHttpClientCount: summary.section_counts?.http_client ?? 0,
+    mailMessages: [],
+    mailFilter: 'all',
+    mailSearch: '',
+    mailSelected: null,
+    mailDetailTab: 'preview',
+    mailPreviewFormat: 'html',
+    mailPreviewViewport: 'desktop',
+    visibleMailCount: summary.section_counts?.mail ?? 0,
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
@@ -528,6 +536,10 @@ export function createNewDebugBar(
 
     get selectedHttpClientRequest() {
       return this.httpClientRequests.find((request) => request.execution === this.httpClientSelected) ?? null;
+    },
+
+    get selectedMailMessage() {
+      return this.mailMessages.find((message) => message.execution === this.mailSelected) ?? null;
     },
 
     get livewireComponents() {
@@ -1483,6 +1495,14 @@ export function createNewDebugBar(
       this.httpClientSelected = null;
       this.httpClientDetailTab = 'overview';
       this.visibleHttpClientCount = 0;
+      this.mailMessages = [];
+      this.mailFilter = 'all';
+      this.mailSearch = '';
+      this.mailSelected = null;
+      this.mailDetailTab = 'preview';
+      this.mailPreviewFormat = 'html';
+      this.mailPreviewViewport = 'desktop';
+      this.visibleMailCount = 0;
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
@@ -2091,6 +2111,193 @@ export function createNewDebugBar(
       if (typeof value === 'string') return value;
 
       return JSON.stringify(value, null, 2);
+    },
+
+    initializeMail(messages) {
+      this.mailMessages = Array.isArray(messages) ? messages : [];
+      this.mailFilter = 'all';
+      this.mailSearch = '';
+      this.mailSelected = this.mailMessages[0]?.execution ?? null;
+      this.resetMailDetail();
+      this.$nextTick?.(() => this.applyMailView());
+    },
+
+    setMailFilter(filter) {
+      if (!['all', 'attachments'].includes(filter)) return;
+
+      this.mailFilter = filter;
+      this.applyMailView();
+    },
+
+    selectMailMessage(execution, reveal = false) {
+      if (!this.mailMessages.some((message) => message.execution === execution)) return;
+
+      this.mailSelected = execution;
+      this.resetMailDetail();
+
+      if (reveal && (browser.viewportWidth?.() ?? 0) < 1024) {
+        this.$nextTick?.(() => this.$refs?.mailDetail?.scrollIntoView?.({ block: 'start' }));
+      }
+    },
+
+    setMailDetailTab(tab) {
+      if (!['preview', 'message', 'source'].includes(tab)) return;
+
+      this.mailDetailTab = tab;
+      this.$nextTick?.(() => this.$refs?.mailDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+    },
+
+    setMailPreviewFormat(format) {
+      if (!['html', 'text'].includes(format)) return;
+
+      const message = this.selectedMailMessage;
+      if (format === 'html' && !message?.has_html) return;
+      if (format === 'text' && !message?.has_text) return;
+
+      this.mailPreviewFormat = format;
+    },
+
+    setMailPreviewViewport(viewport) {
+      if (!['desktop', 'mobile'].includes(viewport)) return;
+
+      this.mailPreviewViewport = viewport;
+      this.$nextTick?.(() => {
+        const frame = this.$refs?.mailPreviewFrame;
+        if (!frame) return;
+
+        frame.style.setProperty('height', '20rem', 'important');
+        this.resizeMailPreviewFrame(frame);
+      });
+    },
+
+    connectMailPreviewFrame(frame) {
+      if (typeof HTMLIFrameElement === 'undefined' || !(frame instanceof HTMLIFrameElement)) return;
+
+      frame.__newDebugBarMailPreviewCleanup?.();
+
+      const handlePreviewMessage = (event) => {
+        if (event.source !== frame.contentWindow) return;
+
+        if (event.data?.type === 'newdebugbar:mail-preview-scroll' && Number.isFinite(event.data.deltaY)) {
+          const detail = frame.closest('[data-ndb-mail-detail]');
+          if (!detail) return;
+
+          const multiplier = event.data.deltaMode === 1 ? 16 : event.data.deltaMode === 2 ? detail.clientHeight : 1;
+          detail.scrollBy({ top: event.data.deltaY * multiplier });
+
+          return;
+        }
+
+        if (event.data?.type !== 'newdebugbar:mail-preview-height' || !Number.isFinite(event.data.height)) return;
+
+        const height = Math.min(100_000, Math.max(320, Math.ceil(event.data.height)));
+        frame.style.setProperty('height', `${height}px`, 'important');
+      };
+
+      window.addEventListener('message', handlePreviewMessage);
+      frame.__newDebugBarMailPreviewCleanup = () => {
+        window.removeEventListener('message', handlePreviewMessage);
+        frame.__newDebugBarMailPreviewObserver?.disconnect?.();
+      };
+    },
+
+    resizeMailPreviewFrame(frame) {
+      if (typeof HTMLIFrameElement === 'undefined' || !(frame instanceof HTMLIFrameElement)) return;
+
+      frame.__newDebugBarMailPreviewObserver?.disconnect?.();
+
+      try {
+        const frameDocument = frame.contentDocument;
+        const body = frameDocument?.body;
+        const root = frameDocument?.documentElement;
+
+        if (body && root) {
+          let scheduled = false;
+          const resize = () => {
+            scheduled = false;
+            const height = Math.min(
+              100_000,
+              Math.max(320, body.scrollHeight, body.offsetHeight, root.scrollHeight, root.offsetHeight),
+            );
+
+            if (Math.abs(frame.getBoundingClientRect().height - height) > 1) {
+              frame.style.setProperty('height', `${Math.ceil(height)}px`, 'important');
+            }
+          };
+          const scheduleResize = () => {
+            if (scheduled) return;
+            scheduled = true;
+            browser.nextFrame(resize);
+          };
+
+          if (typeof ResizeObserver === 'function') {
+            const observer = new ResizeObserver(scheduleResize);
+            observer.observe(body);
+            frame.__newDebugBarMailPreviewObserver = observer;
+          }
+
+          scheduleResize();
+        }
+      } catch {
+        // Sandboxed HTML previews report their own height below.
+      }
+
+      frame.contentWindow?.postMessage({ type: 'newdebugbar:measure-mail-preview' }, '*');
+    },
+
+    applyMailView() {
+      const list = this.$refs?.mailList;
+      const search = this.mailSearch.toLowerCase().trim();
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      if (this.mailMessages.length === 0) {
+        this.visibleMailCount = 0;
+        this.mailSelected = null;
+
+        return;
+      }
+
+      [...(list?.children ?? [])].forEach((item) => {
+        const matches =
+          (this.mailFilter === 'all' || item.dataset.attachments === 'true') &&
+          (search === '' || item.dataset.search?.includes(search));
+        item.hidden = !matches;
+        if (matches) {
+          item.style.removeProperty('display');
+          const execution = Number(item.dataset.execution);
+          firstVisible ??= execution;
+          selectedVisible ||= execution === this.mailSelected;
+          visible++;
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
+      });
+
+      this.visibleMailCount = visible;
+
+      if (!selectedVisible) {
+        this.mailSelected = firstVisible;
+        this.resetMailDetail();
+      }
+    },
+
+    resetMailDetail() {
+      this.mailDetailTab = 'preview';
+      this.mailPreviewFormat = this.selectedMailMessage?.has_html ? 'html' : 'text';
+      this.mailPreviewViewport = 'desktop';
+      this.$nextTick?.(() => this.$refs?.mailDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+    },
+
+    mailPreviewUrl(message = this.selectedMailMessage) {
+      if (!message) return null;
+
+      return this.mailPreviewFormat === 'text' ? message.text_url : message.html_url;
+    },
+
+    formatMailAddresses(addresses) {
+      return Array.isArray(addresses) && addresses.length > 0 ? addresses.join(', ') : '—';
     },
 
     setQueryFilter(filter) {

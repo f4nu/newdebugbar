@@ -35,6 +35,7 @@ use NewDebugBar\Tests\Fixtures\HostCounterGroup;
 use NewDebugBar\Tests\Fixtures\HostValidationForm;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledFailingJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledJob;
+use NewDebugBar\Tests\Fixtures\Mail\ProfiledMailable;
 use NewDebugBar\Tests\Fixtures\Models\Client;
 use NewDebugBar\Tests\Fixtures\Models\JobActivity;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
@@ -256,6 +257,10 @@ trait DefinesTestApplication
             foreach (['alpha', 'beta', 'gamma'] as $value) {
                 DB::select('select ? as hostile_value', [$value]);
             }
+            Mail::raw('Hostile style mail body', fn ($message) => $message
+                ->from('sender@example.test')
+                ->to('recipient@example.test')
+                ->subject('Hostile style mail'));
 
             return response(<<<'HTML'
                 <!doctype html>
@@ -277,6 +282,9 @@ trait DefinesTestApplication
                             body { font-family: serif; }
                             button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
+                            iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
+                            summary { color: rgb(255, 0, 0); font-size: 42px; }
+                            [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
                         </style>
                     </head>
                     <body>
@@ -469,6 +477,49 @@ trait DefinesTestApplication
             Event::dispatch(new NotificationFailed($notifiable, $notification, 'slack', ['private' => 'failure data']));
 
             return response('<!doctype html><html><body>Messages</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-mail-rich', function () {
+            Mail::to('taylor@example.test')->send(new ProfiledMailable(
+                subjectLine: 'Payment receipt #NS-1042',
+                heading: 'Payment received',
+                messageCopy: 'Thanks, Taylor. Your workspace subscription is paid and ready for the next billing period.',
+                detailLabel: 'Total paid',
+                detailValue: '$49.00',
+                actionLabel: 'View receipt',
+                attachment: [
+                    'name' => 'receipt-NS-1042.pdf',
+                    'body' => '%PDF-1.4 profiled receipt',
+                    'mime' => 'application/pdf',
+                ],
+            ));
+            Mail::to('alex@example.test')->send(new ProfiledMailable(
+                subjectLine: 'Welcome to Northstar',
+                heading: 'Your workspace is ready',
+                messageCopy: 'Invite your team, connect your first project, and start tracking the work that matters.',
+                detailLabel: 'Workspace',
+                detailValue: 'Acme Studio',
+                actionLabel: 'Open workspace',
+            ));
+            Mail::to('morgan@example.test')->send(new ProfiledMailable(
+                subjectLine: 'Weekly account digest',
+                heading: 'Your week at a glance',
+                messageCopy: 'Three projects shipped, two reviews are waiting, and there were no failed deployments.',
+                detailLabel: 'Reporting period',
+                detailValue: 'August 17–23',
+                includeHtml: false,
+            ));
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <title>Mail diagnostics</title>
+                    </head>
+                    <body><main><h1 data-testid="host-page">Mail diagnostics</h1></main></body>
+                </html>
+                HTML);
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-redis', function () {

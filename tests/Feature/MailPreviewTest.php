@@ -17,26 +17,41 @@ it('stores and serves local previews without attachments by default', function (
         ->cc->toBe(['private-copy@example.test'])
         ->text->toBe('private body')
         ->attachments_omitted->toBe(1)
+        ->attachments->toBe([[
+            'name' => 'private.txt',
+            'content_type' => 'application/octet-stream',
+            'disposition' => 'attachment',
+            'content_id' => null,
+        ]])
         ->and($preview['eml'])->not->toContain('private attachment', 'private.txt');
 
     $profile['sections']['mail']['payload']['items'][0]['preview']['html'] = '<script>window.top.location="https://example.test"</script><h1>Safe preview</h1>';
     app(ProfileStore::class)->put($profile);
 
-    $this->get(route('newdebugbar.mail-preview', [
+    $htmlResponse = $this->get(route('newdebugbar.mail-preview', [
         'profile' => $profileId,
         'index' => 0,
         'format' => 'html',
-    ]))
+    ]));
+    $htmlResponse
         ->assertOk()
-        ->assertHeader('Content-Security-Policy', "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'")
-        ->assertSee('Safe preview');
+        ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+        ->assertSee('Safe preview')
+        ->assertSee('newdebugbar:mail-preview-height', false);
+    expect($htmlResponse->headers->get('Content-Security-Policy'))
+        ->toStartWith("sandbox allow-scripts; default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'nonce-")
+        ->toContain("'; script-src-attr 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'");
 
     $textResponse = $this->get(route('newdebugbar.mail-preview', [
         'profile' => $profileId,
         'index' => 0,
         'format' => 'text',
     ]));
-    $textResponse->assertOk()->assertSeeText('private body');
+    $textResponse
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
+        ->assertSeeText('private body')
+        ->assertSee('newdebugbar:mail-preview-scroll', false);
     expect($textResponse->headers->get('Cache-Control'))->toContain('no-store', 'private');
 
     $this->get(route('newdebugbar.mail-preview', [
@@ -52,7 +67,7 @@ it('stores and serves local previews without attachments by default', function (
     Livewire::test(DebugBar::class, ['profileId' => $profileId])
         ->call('loadDetails')
         ->assertSee('Download .eml')
-        ->assertSee('Open text preview');
+        ->assertSee('Open preview');
 });
 
 it('rejects profile identifiers that storage cannot read', function () {

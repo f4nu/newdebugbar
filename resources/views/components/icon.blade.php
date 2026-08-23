@@ -1,7 +1,16 @@
-@props(['name'])
+@props(['name', 'size' => '5'])
+
+@php
+    $sizeClass = match ((string) $size) {
+        '3' => 'ndb:size-3',
+        '3.5' => 'ndb:size-3.5',
+        '4' => 'ndb:size-4',
+        default => 'ndb:size-5',
+    };
+@endphp
 
 <svg
-    {{ $attributes->class('ndb:size-5 ndb:shrink-0') }}
+    {{ $attributes->class($sizeClass.' ndb:shrink-0') }}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -87,6 +96,14 @@
         @case ('copy')
             <rect x="8" y="8" width="11" height="11" rx="2"
             /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+            @break
+        @case ('monitor')
+            <rect x="2" y="3" width="20" height="14" rx="2"
+            /><path d="M8 21h8M12 17v4" />
+            @break
+        @case ('smartphone')
+            <rect x="5" y="2" width="14" height="20" rx="2"
+            /><path d="M12 18h.01" />
             @break
         @default
             <rect x="4" y="4" width="16" height="16" rx="4"
