@@ -10,6 +10,7 @@ use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\ChannelManager;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Queue\Events\JobQueued;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Livewire;
 use NewDebugBar\Debug;
@@ -44,6 +46,7 @@ use NewDebugBar\Tests\Fixtures\Models\StudioJob;
 use NewDebugBar\Tests\Fixtures\Models\User;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
+use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotificationChannel;
 use NewDebugBar\Tests\Fixtures\Redis\ProfiledRedisConnection;
 
 trait DefinesTestApplication
@@ -482,6 +485,37 @@ trait DefinesTestApplication
             Event::dispatch(new NotificationFailed($notifiable, $notification, 'slack', ['private' => 'failure data']));
 
             return response('<!doctype html><html><body>Messages</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-notifications-rich', function () {
+            app(ChannelManager::class)->extend(
+                'profiled-sms',
+                fn (): ProfiledNotificationChannel => new ProfiledNotificationChannel(fails: true),
+            );
+            app(ChannelManager::class)->extend(
+                'profiled-push',
+                fn (): ProfiledNotificationChannel => new ProfiledNotificationChannel,
+            );
+
+            $notifiable = new ProfiledNotifiable('elise@example.test');
+
+            try {
+                Notification::sendNow($notifiable, new ProfiledNotification(
+                    privateValue: 'Kyoto autumn',
+                    channels: ['mail', 'profiled-sms'],
+                    subjectLine: 'Your Kyoto journey is ready to review',
+                ));
+            } catch (\RuntimeException) {
+                // The application handled the simulated provider failure.
+            }
+
+            Notification::sendNow($notifiable, new ProfiledNotification(
+                privateValue: 'Kyoto departure reminder',
+                channels: ['profiled-push'],
+                subjectLine: 'Your Kyoto departure is coming up',
+            ));
+
+            return response('<!doctype html><html><body>Notification delivery diagnostics</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-mail-rich', function () {

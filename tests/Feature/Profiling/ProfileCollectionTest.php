@@ -241,19 +241,66 @@ it('captures mail previews and notification shape by default', function () {
         ->preview->attachments->toHaveCount(1)
         ->and($notifications['summary'])
         ->count->toBe(2)
+        ->notification_count->toBe(1)
+        ->failed_notification_count->toBe(1)
         ->sent_count->toBe(1)
         ->failed_count->toBe(1)
+        ->duration_ms->toBeGreaterThanOrEqual(0)
         ->and($notifications['payload']['items'][0])
         ->status->toBe('sent')
         ->channel->toBe('mail')
+        ->response->toBe(['private response'])
+        ->notification_data->privateValue->toBe('private notification data')
+        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
+        ->notification_source->file->toBe('tests/Fixtures/Notifications/ProfiledNotification.php')
         ->and($notifications['payload']['items'][1])
         ->status->toBe('failed')
         ->channel->toBe('slack')
+        ->failure_data->toBe(['private' => 'failure data'])
+        ->group_id->toBe($notifications['payload']['items'][0]['group_id'])
         ->and(json_encode([$mail, $notifications]))->not->toContain(
             'private attachment',
-            'private notification data',
-            'failure data',
         );
+});
+
+it('groups notification channel attempts and keeps delivery evidence', function () {
+    $response = $this->get('/profiled-notifications-rich', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $mail = $profile['sections']['mail'];
+    $notifications = $profile['sections']['notifications'];
+    $items = $notifications['payload']['items'];
+
+    expect($notifications['summary'])
+        ->count->toBe(3)
+        ->notification_count->toBe(2)
+        ->failed_notification_count->toBe(1)
+        ->sent_count->toBe(2)
+        ->failed_count->toBe(1)
+        ->duration_ms->toBeGreaterThan(0)
+        ->and($items)->toHaveCount(3)
+        ->and($items[0])
+        ->status->toBe('sent')
+        ->channel->toBe('mail')
+        ->queued->toBeTrue()
+        ->notifiable_id->toBe(1042)
+        ->mail_message_id->toBe($mail['payload']['items'][0]['transport_message_id'])
+        ->notification_data->privateValue->toBe('Kyoto autumn')
+        ->notification_source->file->toBe('tests/Fixtures/Notifications/ProfiledNotification.php')
+        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
+        ->and($items[1])
+        ->status->toBe('failed')
+        ->channel->toBe('profiled-sms')
+        ->exception_class->toBe(RuntimeException::class)
+        ->exception_message->toBe('Traveler phone number is not verified.')
+        ->group_id->toBe($items[0]['group_id'])
+        ->and($items[2])
+        ->status->toBe('sent')
+        ->channel->toBe('profiled-push')
+        ->response->toBe([
+            'provider' => 'Profiled Push',
+            'message_id' => 'push-1042',
+        ])
+        ->group_id->not->toBe($items[0]['group_id']);
 });
 
 it('captures direct Redis commands and removes cache command duplicates', function () {
