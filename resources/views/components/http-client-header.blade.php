@@ -27,31 +27,45 @@
     </x-slot:aside>
 
     <x-slot:identity data-ndb-http-client-identity>
-        <dl class="ndb:space-y-2">
+        <dl>
             <div class="ndb:grid ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:items-baseline ndb:gap-2">
                 <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Request</dt>
-                <dd class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-2">
-                    <span
-                        class="ndb:shrink-0 ndb:rounded-md ndb:bg-white/90 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:text-zinc-700 ndb:ring-1 ndb:ring-inset ndb:ring-zinc-200/80 ndb:dark:bg-zinc-950/60 ndb:dark:text-zinc-200 ndb:dark:ring-zinc-700"
-                        x-text="selectedHttpClientRequest.method"
-                    ></span>
-                    <code
-                        :title="selectedHttpClientRequest.url"
-                        class="ndb:block ndb:min-w-0 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                        x-text="
-                            selectedHttpClientRequest.path +
-                            (selectedHttpClientRequest.query ? '?' + selectedHttpClientRequest.query : '')
-                        "
-                    ></code>
+                <dd class="ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2">
+                    <span class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-2">
+                        <span
+                            class="ndb:flex ndb:w-12 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-white/90 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-700 ndb:ring-1 ndb:ring-inset ndb:ring-zinc-200/80 ndb:dark:bg-zinc-950/60 ndb:dark:text-zinc-200 ndb:dark:ring-zinc-700"
+                            x-text="selectedHttpClientRequest.method"
+                        ></span>
+                        <code
+                            :title="selectedHttpClientRequest.url"
+                            class="ndb:block ndb:min-w-0 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                            x-text="
+                                selectedHttpClientRequest.path +
+                                (selectedHttpClientRequest.query ? '?' + selectedHttpClientRequest.query : '')
+                            "
+                        ></code>
+                    </span>
+                    <span data-ndb-http-client-actions class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-1">
+                        <button
+                            type="button"
+                            data-ndb-http-client-copy-curl
+                            @click="copyText(selectedHttpClientRequest.curl)"
+                            class="ndb:inline-flex ndb:min-h-9 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
+                        >
+                            <x-newdebugbar::icon name="code" class="ndb:size-3.5" />
+                            Copy safe cURL
+                        </button>
+                        <button
+                            type="button"
+                            data-ndb-http-client-copy-url
+                            @click="copyText(selectedHttpClientRequest.url)"
+                            class="ndb:inline-flex ndb:min-h-9 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
+                        >
+                            <x-newdebugbar::icon name="copy" class="ndb:size-3.5" />
+                            Copy URL
+                        </button>
+                    </span>
                 </dd>
-            </div>
-
-            <div class="ndb:grid ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:items-start ndb:gap-2">
-                <dt class="ndb:pt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Result</dt>
-                <dd
-                    class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                    x-text="selectedHttpClientRequest.meaning"
-                ></dd>
             </div>
         </dl>
     </x-slot:identity>
@@ -59,14 +73,7 @@
     <x-slot:metadata data-ndb-http-client-metadata>
         <div>
             <dt class="ndb:sr-only">Runtime</dt>
-            <dd
-                class="ndb:font-semibold ndb:tabular-nums"
-                x-text="
-                    selectedHttpClientRequest.duration_ms === null
-                        ? 'No duration'
-                        : selectedHttpClientRequest.duration_ms + ' ms'
-                "
-            ></dd>
+            <dd class="ndb:font-semibold ndb:tabular-nums" x-text="selectedHttpClientRequest.duration_label"></dd>
         </div>
         <div x-show.important="selectedHttpClientRequest.slow">
             <dt class="ndb:sr-only">Performance</dt>

@@ -4,16 +4,17 @@ import test from 'node:test';
 import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
-test('HTTP client defaults to all and keeps one filtered request selected', () => {
+test('HTTP client filters failures and slow requests while keeping one selected', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
   const appended = [];
   let detailResets = 0;
-  const element = (execution, duration, attention, search) => ({
+  const element = (execution, duration, failed, slow, search) => ({
     dataset: {
       ndbExecution: String(execution),
       ndbDuration: String(duration),
-      ndbAttention: String(attention),
+      ndbFailed: String(failed),
+      ndbSlow: String(slow),
       ndbSearch: search,
     },
     hidden: false,
@@ -27,9 +28,9 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
       },
     },
   });
-  const first = element(1, 12, false, 'get api.example.test 200');
-  const second = element(2, 319.53, true, 'get api.slow.test 200');
-  const third = element(3, 68.44, true, 'delete api.error.test 503');
+  const first = element(1, 12, false, false, 'get api.example.test 200');
+  const second = element(2, 319.53, false, true, 'get api.slow.test 200');
+  const third = element(3, 68.44, true, false, 'delete api.error.test 503');
   state.$refs = {
     httpClientList: {
       children: [first, second, third],
@@ -40,9 +41,9 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
   state.$nextTick = (callback) => callback();
 
   state.initializeHttpClient([
-    { execution: 1, attention: false, host: 'api.example.test' },
-    { execution: 2, attention: true, host: 'api.slow.test' },
-    { execution: 3, attention: true, host: 'api.error.test' },
+    { execution: 1, failed: false, slow: false, host: 'api.example.test' },
+    { execution: 2, failed: false, slow: true, host: 'api.slow.test' },
+    { execution: 3, failed: true, slow: false, host: 'api.error.test' },
   ]);
   assert.equal(state.httpClientFilter, 'all');
   assert.equal(state.httpClientSelected, 1);
@@ -55,13 +56,20 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
   assert.equal(third.hidden, false);
   assert.equal(state.visibleHttpClientCount, 3);
 
-  state.setHttpClientFilter('attention');
+  state.setHttpClientFilter('failed');
   assert.equal(first.hidden, true);
   assert.equal(first.style.display, 'none');
-  assert.equal(second.hidden, false);
-  assert.equal(second.style.display, '');
+  assert.equal(second.hidden, true);
+  assert.equal(second.style.display, 'none');
   assert.equal(third.hidden, false);
-  assert.equal(state.visibleHttpClientCount, 2);
+  assert.equal(state.visibleHttpClientCount, 1);
+  assert.equal(state.httpClientSelected, 3);
+
+  state.setHttpClientFilter('slow');
+  assert.equal(first.hidden, true);
+  assert.equal(second.hidden, false);
+  assert.equal(third.hidden, true);
+  assert.equal(state.visibleHttpClientCount, 1);
   assert.equal(state.httpClientSelected, 2);
 
   state.setHttpClientFilter('all');
@@ -91,6 +99,9 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
 
   state.setHttpClientDetailTab('request');
   assert.equal(detailResets, 1);
+  state.setHttpClientDetailTab('source');
+  assert.equal(state.httpClientDetailTab, 'source');
+  state.setHttpClientDetailTab('request');
   state.setHttpClientDetailTab('invalid');
   state.setHttpClientFilter('invalid');
   state.setHttpClientSort('invalid');
@@ -105,10 +116,10 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
   assert.equal(state.formatHttpClientEvidence({ ready: true }), '{\n  "ready": true\n}');
 });
 
-test('HTTP client defaults to all when no request needs attention', () => {
+test('HTTP client defaults to all when no request failed or ran slowly', () => {
   const state = createNewDebugBar(summary, runtime());
 
-  state.initializeHttpClient([{ execution: 4, attention: false }]);
+  state.initializeHttpClient([{ execution: 4, failed: false, slow: false }]);
   assert.equal(state.httpClientFilter, 'all');
   assert.equal(state.httpClientSelected, 4);
 

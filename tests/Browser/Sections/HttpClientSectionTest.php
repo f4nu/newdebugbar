@@ -7,9 +7,8 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
         ->click('[data-ndb-select-section="http_client"]')
         ->waitForText('6 requests')
         ->assertSee('6 requests')
-        ->assertSee('4 failed')
-        ->assertSee('1 slow')
-        ->assertValue('[data-ndb-http-client-filter]', 'all')
+        ->assertSee('cumulative')
+        ->assertAttribute('[data-ndb-http-client-filter="all"]', 'aria-pressed', 'true')
         ->assertAttribute('[data-ndb-http-client-detail-tab="overview"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 6)
         ->assertScript(<<<'JS'
@@ -24,17 +23,24 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                 const listBox = list.getBoundingClientRect();
                 const detailBox = detail.getBoundingClientRect();
                 const selected = document.querySelector('[data-ndb-http-client-item][aria-pressed="true"]');
-                const tabs = [...document.querySelectorAll('[data-ndb-http-client] [data-ndb-filter-tabs]')];
+                const tabGroups = [...document.querySelectorAll('[data-ndb-http-client] [data-ndb-filter-tabs]')];
+                const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
                 const summary = document.querySelector('[data-ndb-http-client-summary]');
                 const summaryCount = document.querySelector('[data-ndb-http-client-summary-count]');
                 const summaryRuntime = document.querySelector('[data-ndb-http-client-summary-runtime]');
-                const filter = document.querySelector('[data-ndb-http-client-filter]');
+                const filters = document.querySelector('[data-ndb-filter-tabs][aria-label="Filter outbound HTTP requests"]');
                 const header = detail.querySelector('header');
                 const primary = header.querySelector('[data-ndb-inspector-detail-header-primary]');
                 const host = header.querySelector('[data-ndb-http-client-detail-host]');
                 const status = header.querySelector('[data-ndb-http-client-detail-status]');
                 const identity = header.querySelector('[data-ndb-http-client-identity]');
                 const metadata = header.querySelector('[data-ndb-http-client-metadata]');
+                const actions = header.querySelector('[data-ndb-http-client-actions]');
+                const methods = [...document.querySelectorAll('[data-ndb-http-client-method]')];
+                const outcomes = [...document.querySelectorAll('[data-ndb-http-client-list-outcome]')];
+                const firstMethod = methods[0].getBoundingClientRect();
+                const firstHost = document.querySelector('[data-ndb-http-client-item="1"] [data-ndb-http-client-host]').getBoundingClientRect();
+                const firstOutcome = outcomes[0].getBoundingClientRect();
 
                 return getComputedStyle(workspace).display === 'grid'
                     && workspaceBox.height > 500
@@ -44,33 +50,50 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                     && detailBox.width > listBox.width * 1.6
                     && selected.dataset.ndbHttpClientItem === '1'
                     && getComputedStyle(selected).borderLeftWidth === '0px'
-                    && summary.parentElement.contains(filter)
-                    && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
+                    && summary.parentElement.contains(filters)
+                    && filters.getBoundingClientRect().top > summary.getBoundingClientRect().top
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
-                    && filter.options[0].value === 'all'
-                    && tabs.length === 1
+                    && filters.firstElementChild.dataset.ndbHttpClientFilter === 'all'
+                    && tabGroups.length === 2
+                    && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
                     && host.closest('[data-ndb-inspector-detail-header-primary]') === primary
                     && status.closest('[data-ndb-inspector-detail-header-primary]') === primary
                     && identity.textContent.includes('Request')
-                    && identity.textContent.includes('Result')
+                    && !identity.textContent.includes('Result')
+                    && actions.querySelectorAll('button').length === 2
+                    && detail.querySelector('footer') === null
                     && metadata.children.length === 3
                     && metadata.querySelectorAll('svg').length === 0
                     && metadata.scrollWidth <= metadata.clientWidth + 1
+                    && methods.length === 6
+                    && new Set(methods.map((method) => Math.round(method.getBoundingClientRect().width))).size === 1
+                    && methods.every((method) => Math.round(method.getBoundingClientRect().width) === 48)
+                    && methods.every((method) => getComputedStyle(method).backgroundColor !== 'rgba(0, 0, 0, 0)')
+                    && outcomes.every((outcome) => getComputedStyle(outcome).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && outcomes.every((outcome) => getComputedStyle(outcome).borderWidth === '0px')
+                    && Math.abs(firstMethod.top - firstHost.top) <= 3
+                    && Math.abs(firstMethod.top - firstOutcome.top) <= 3
                     && getComputedStyle(detail).overflowY === 'auto'
                     && detail.tabIndex === 0
                     && !document.querySelector('[data-ndb-http-client]').textContent.includes('•');
             })()
             JS)
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item][aria-pressed=true]").length', 1)
-        ->select('[data-ndb-http-client-filter]', 'attention')
-        ->assertValue('[data-ndb-http-client-filter]', 'attention')
-        ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 5)
+        ->click('[data-ndb-http-client-filter="failed"]')
+        ->assertAttribute('[data-ndb-http-client-filter="failed"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 4)
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-http-client-item=\\"1\\"]")).display === "none"')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-http-client-item=\\"2\\"]")).display === "none"')
+        ->click('[data-ndb-http-client-filter="slow"]')
+        ->assertAttribute('[data-ndb-http-client-filter="slow"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 1)
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-http-client-item=\\"1\\"]")).display !== "none"')
+        ->click('[data-ndb-http-client-filter="failed"]')
         ->click('[data-ndb-http-client-item="5"]')
         ->assertAttribute('[data-ndb-http-client-item="5"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-status-code]").textContent.trim() === "503"')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-status]").textContent.includes("Service Unavailable")')
-        ->assertSee('The upstream service could not complete this request.')
+        ->assertSee('Service unavailable.')
         ->assertSee('Confirm endpoint health, timeout, and retry behavior.')
         ->click('[data-ndb-http-client-detail-tab="request"]')
         ->assertAttribute('[data-ndb-http-client-detail-tab="request"]', 'aria-pressed', 'true')
@@ -79,13 +102,13 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
         ->click('[data-ndb-http-client-detail-tab="response"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="response"]')
         ->assertSee('Service unavailable.')
-        ->click('[data-ndb-http-client-detail-tab="stack"]')
-        ->assertVisible('[data-ndb-http-client-detail-panel="stack"]')
+        ->click('[data-ndb-http-client-detail-tab="source"]')
+        ->assertVisible('[data-ndb-http-client-detail-panel="source"]')
         ->assertSee('tests/Support/DefinesTestApplication.php')
         ->click('[data-ndb-http-client-copy-curl]')
         ->click('[data-ndb-http-client-copy-url]')
-        ->select('[data-ndb-http-client-filter]', 'all')
-        ->assertValue('[data-ndb-http-client-filter]', 'all')
+        ->click('[data-ndb-http-client-filter="all"]')
+        ->assertAttribute('[data-ndb-http-client-filter="all"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 6)
         ->select('[data-ndb-http-client-sort]', 'duration')
         ->assertValue('[data-ndb-http-client-sort]', 'duration')
@@ -154,7 +177,7 @@ it('drills into outbound HTTP request details on mobile in dark mode', function 
                 const workspace = document.querySelector('[data-ndb-http-client-workspace]');
                 const list = workspace.firstElementChild;
                 const back = document.querySelector('[data-ndb-http-client-detail-back]');
-                const actions = [...detail.querySelectorAll('footer button')];
+                const actions = [...detail.querySelectorAll('[data-ndb-http-client-actions] button')];
                 const metadata = document.querySelector('[data-ndb-http-client-metadata]');
                 const tabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
                 const labels = tabs.map((tab) => tab.querySelector('span'));
@@ -172,7 +195,8 @@ it('drills into outbound HTTP request details on mobile in dark mode', function 
                     && tabs.length === 4
                     && icons.every((icon) => icon && icon.getClientRects().length > 0)
                     && labels.every((label) => getComputedStyle(label).display === 'none')
-                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Overview|Request|Response|Stack'
+                    && tabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
+                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Overview|Request|Response|Source'
                     && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)

@@ -2310,7 +2310,7 @@ export function createNewDebugBar(
     },
 
     setHttpClientFilter(filter) {
-      if (!['all', 'attention'].includes(filter)) return;
+      if (!['all', 'failed', 'slow'].includes(filter)) return;
 
       this.httpClientFilter = filter;
       this.applyHttpClientView();
@@ -2332,7 +2332,7 @@ export function createNewDebugBar(
     },
 
     setHttpClientDetailTab(tab) {
-      if (!['overview', 'request', 'response', 'stack'].includes(tab)) return;
+      if (!['overview', 'request', 'response', 'source'].includes(tab)) return;
 
       this.httpClientDetailTab = tab;
       this.$nextTick?.(() => this.$refs?.httpClientDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
@@ -2357,8 +2357,12 @@ export function createNewDebugBar(
           return Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
         })
         .forEach((item) => {
+          const matchesFilter =
+            this.httpClientFilter === 'all' ||
+            (this.httpClientFilter === 'failed' && item.dataset.ndbFailed === 'true') ||
+            (this.httpClientFilter === 'slow' && item.dataset.ndbSlow === 'true');
           const matches =
-            (this.httpClientFilter === 'all' || item.dataset.ndbAttention === 'true') &&
+            matchesFilter &&
             (search === '' || item.dataset.ndbSearch?.includes(search));
           item.hidden = !matches;
           if (matches) {
