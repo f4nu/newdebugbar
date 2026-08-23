@@ -10,8 +10,10 @@ use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
+use Illuminate\Mail\SendQueuedMailable;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Redis\Events\CommandExecuted;
 use Illuminate\Redis\Events\CommandFailed;
@@ -33,6 +35,7 @@ use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 use NewDebugBar\Tests\Fixtures\HostCounter;
 use NewDebugBar\Tests\Fixtures\HostCounterGroup;
 use NewDebugBar\Tests\Fixtures\HostValidationForm;
+use NewDebugBar\Tests\Fixtures\Jobs\ProfiledAfterResponseMailJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledFailingJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledJob;
 use NewDebugBar\Tests\Fixtures\Mail\ProfiledMailable;
@@ -466,6 +469,51 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>Queue</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-queued-communications', function () {
+            $mailable = (new ProfiledMailable(
+                subjectLine: 'Private queued subject',
+                heading: 'Private queued heading',
+                messageCopy: 'Private queued body',
+            ))->to('private-recipient@example.test');
+            $notification = new ProfiledNotification('private queued notification');
+            $notifiables = collect([new ProfiledNotifiable('private-notifiable@example.test')]);
+
+            Event::dispatch($this->queuedEvent(
+                'mail-job-1',
+                new SendQueuedMailable($mailable),
+                queue: 'mail-delayed',
+                delay: 30,
+            ));
+            Event::dispatch($this->queuedEvent(
+                'notification-job-1',
+                new SendQueuedNotifications($notifiables, $notification, ['mail']),
+                queue: 'notifications',
+                delay: 0,
+            ));
+
+            return response('<!doctype html><html><body>Queued communications</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-after-response', function () {
+            $deferred = static function (): void {
+                usleep(80_000);
+                DB::select('select 24 as deferred_mail');
+                Mail::raw('Deferred body', fn ($message) => $message
+                    ->to('deferred@example.test')
+                    ->subject('Deferred mail'));
+            };
+
+            if (function_exists('defer')) {
+                defer($deferred);
+            } else {
+                app()->terminating($deferred);
+            }
+
+            Bus::dispatchAfterResponse(new ProfiledAfterResponseMailJob);
+
+            return response('<!doctype html><html><head><title>After response</title></head><body><main>Original response</main></body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-messages', function () {
             Mail::raw('private body', function ($message): void {
                 $message
@@ -558,13 +606,20 @@ trait DefinesTestApplication
         );
     }
 
-    private function queuedEvent(string $id, ProfiledJob $job): JobQueued
+    private function queuedEvent(string $id, object $job, string $queue = 'emails', int $delay = 5): JobQueued
     {
-        $job->onQueue('emails')->delay(5);
+        if (method_exists($job, 'onQueue')) {
+            $job->onQueue($queue);
+        }
+
+        if (method_exists($job, 'delay')) {
+            $job->delay($delay);
+        }
+
         $payload = json_encode(['private' => 'queued payload'], JSON_THROW_ON_ERROR);
 
         if (property_exists(JobQueued::class, 'queue')) {
-            return new JobQueued('redis', 'emails', $id, $job, $payload, 5);
+            return new JobQueued('redis', $queue, $id, $job, $payload, $delay);
         }
 
         return new JobQueued('redis', $id, $job, $payload);

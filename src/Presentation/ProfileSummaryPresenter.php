@@ -30,6 +30,11 @@ final class ProfileSummaryPresenter
             'recorded_time' => $this->recordedTime($profile['recorded_at'] ?? null),
             'environment' => $profile['environment'] ?? null,
             'profile_type' => $profile['profile_type'] ?? 'http',
+            'completion_state' => $profile['completion_state'] ?? 'complete',
+            'background_pending' => (bool) ($profile['background_activity']['pending'] ?? false),
+            'background_activity_count' => (int) ($profile['background_activity']['count'] ?? 0),
+            'related_profile_ids' => $profile['background_activity']['related_profile_ids'] ?? [],
+            'origin_profile_id' => $profile['background_activity']['origin_profile_id'] ?? null,
             'request_type' => $requestType,
             'activity' => $this->activity($request, $requestType),
             'method' => $request['summary']['method'] ?? null,
@@ -117,6 +122,13 @@ final class ProfileSummaryPresenter
             $path = $request['payload']['path'] ?? null;
 
             return is_string($path) && $path !== '' ? 'Downloaded '.basename($path) : 'File download';
+        }
+
+        if ($requestType === 'queue') {
+            $context = is_array($request['payload']['context'] ?? null) ? $request['payload']['context'] : [];
+            $subject = $context['communication_class'] ?? $request['payload']['name'] ?? null;
+
+            return is_string($subject) && $subject !== '' ? class_basename($subject) : 'Queue worker';
         }
 
         return null;

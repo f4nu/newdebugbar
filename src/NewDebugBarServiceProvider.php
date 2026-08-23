@@ -37,6 +37,7 @@ use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Presentation\ProfileSummaryPresenter;
+use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
@@ -45,6 +46,7 @@ use NewDebugBar\Support\LivewireRegistrar;
 use NewDebugBar\Support\MailPreview;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\QueryExplainer;
+use NewDebugBar\Support\QueuedCommunicationInspector;
 use NewDebugBar\Support\Redactor;
 use NewDebugBar\Support\RequestContext;
 use NewDebugBar\Support\RuntimeContext;
@@ -148,6 +150,20 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             maxProfiles: (int) config('newdebugbar.storage.max_profiles', 20),
             maxAgeMinutes: (int) config('newdebugbar.storage.max_age_minutes', 60),
         ));
+        $this->app->singleton(BackgroundActivityStore::class, function ($app): BackgroundActivityStore {
+            $profilePath = config('newdebugbar.storage.path') ?: storage_path('framework/newdebugbar');
+            $maxProfiles = (int) config('newdebugbar.storage.max_profiles', 20);
+
+            return new BackgroundActivityStore(
+                files: $app->make(Filesystem::class),
+                path: rtrim($profilePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'background',
+                maxActivities: max(20, $maxProfiles * 5),
+                maxAgeMinutes: (int) config('newdebugbar.storage.max_age_minutes', 60),
+            );
+        });
+        $this->app->singleton(QueuedCommunicationInspector::class, fn (): QueuedCommunicationInspector => new QueuedCommunicationInspector(
+            maxItems: (int) config('newdebugbar.collection.max_items_per_array', 100),
+        ));
         $this->app->singleton(McpProfilePresenter::class, fn ($app): McpProfilePresenter => new McpProfilePresenter(
             store: $app->make(ProfileStore::class),
             profiles: $app->make(ProfilePresenter::class),
@@ -176,9 +192,10 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app,
             $this->app->make(CallSiteResolver::class),
             $this->app->make(SafeUrl::class),
-            $this->app->make(RuntimeProfiler::class),
             $this->app->make(Redactor::class),
             $this->app->make(MailPreview::class),
+            $this->app->make(QueuedCommunicationInspector::class),
+            $this->app->make(BackgroundActivityStore::class),
         ))->register();
         (new LivewireRegistrar(
             $this->app,

@@ -95,6 +95,20 @@ it('stores successful and failed queue worker jobs as separate profiles', functi
         ->and(json_encode($profiles))->not->toContain('private successful payload', 'private failed payload', 'private failure message');
 });
 
+it('resolves the profiler from the worker scope after Laravel forgets scoped instances', function () {
+    $bootProfiler = app(RuntimeProfiler::class);
+
+    app()->forgetScopedInstances();
+    Bus::dispatchSync(new ProfiledJob('private scoped payload'));
+
+    $profile = collect(app(ProfileStore::class)->recent())
+        ->first(fn (array $candidate): bool => ($candidate['profile_type'] ?? null) === 'queue');
+
+    expect(app(RuntimeProfiler::class))->not->toBe($bootProfiler)
+        ->and($profile)->toBeArray()
+        ->and($profile['sections']['queue']['summary']['executed_count'])->toBe(1);
+});
+
 it('does not wrap long running commands in one unbounded profile', function (string $command) {
     $definition = new InputDefinition([new InputArgument('command', InputArgument::REQUIRED)]);
     $input = new ArrayInput(['command' => $command], $definition);

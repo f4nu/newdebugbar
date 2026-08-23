@@ -11,11 +11,17 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Redis\Events\CommandFailed;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Presentation\ProfilePresenter;
+use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Tests\Fixtures\Mail\ProfiledMailable;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
+use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
+use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
 
 it('captures a local web request and its Laravel activity', function () {
     $route = app('router')->getRoutes()->match(request()->create('/profiled'));
@@ -188,6 +194,8 @@ it('captures queued dispatches and synchronous execution without job data', func
     $response = $this->get('/profiled-queue', ['Accept' => 'text/html'])->assertOk();
     $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $section = $profile['sections']['queue'];
+    $presented = app(ProfilePresenter::class)->present($profile);
+    $activityStatuses = collect($presented['background_activity']['items'])->pluck('status')->all();
 
     expect($section['summary'])
         ->count->toBe(3)
@@ -208,7 +216,59 @@ it('captures queued dispatches and synchronous execution without job data', func
         ->and($section['payload']['items'][2])
         ->kind->toBe('failed')
         ->exception_class->toBe(RuntimeException::class)
+        ->and($activityStatuses)->toBe(['delayed'])
         ->and(json_encode($section))->not->toContain('private queued value', 'queued payload', 'private sync value', 'private failed value', 'private failure message');
+});
+
+it('shows queued communication facts and refreshes their correlated outcome', function () {
+    $response = $this->get('/profiled-queued-communications', ['Accept' => 'text/html'])->assertOk();
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $initial = app(ProfilePresenter::class)->present($stored);
+    $summary = app(ProfileSummaryPresenter::class)->present($initial);
+    $queuedMail = $initial['sections']['mail']['payload']['items'][0];
+    $queuedNotification = $initial['sections']['notifications']['payload']['items'][0];
+
+    expect($summary)
+        ->background_pending->toBeTrue()
+        ->background_activity_count->toBe(2)
+        ->and($queuedMail)
+        ->status->toBe('delayed')
+        ->source->toBe(ProfiledMailable::class)
+        ->connection->toBe('redis')
+        ->queue->toBe('mail-delayed')
+        ->delay_seconds->toBe(30)
+        ->recipient_count->toBe(1)
+        ->and($queuedNotification)
+        ->status->toBe('queued')
+        ->notification->toBe(ProfiledNotification::class)
+        ->channel->toBe('mail')
+        ->notifiable_types->toBe([ProfiledNotifiable::class])
+        ->notifiable_count->toBe(1)
+        ->and(json_encode($initial))->not->toContain(
+            'Private queued subject',
+            'Private queued heading',
+            'Private queued body',
+            'private queued notification',
+            'private-recipient@example.test',
+            'private-notifiable@example.test',
+        );
+
+    $workerProfileId = (string) Str::uuid();
+    app(BackgroundActivityStore::class)->recordOutcome(
+        $queuedMail['correlation_key'],
+        'sent',
+        $workerProfileId,
+        1,
+    );
+    $refreshed = app(ProfilePresenter::class)->present($stored);
+    $refreshedSummary = app(ProfileSummaryPresenter::class)->present($refreshed);
+
+    expect($refreshed['sections']['mail']['payload']['items'][0])
+        ->status->toBe('sent')
+        ->worker_profile_id->toBe($workerProfileId)
+        ->attempts->toHaveCount(1)
+        ->and($refreshedSummary['related_profile_ids'])->toContain($workerProfileId)
+        ->and($refreshedSummary['background_pending'])->toBeTrue();
 });
 
 it('captures mail previews and notification shape by default', function () {

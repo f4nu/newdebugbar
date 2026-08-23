@@ -43,6 +43,7 @@ use Illuminate\Routing\Events\ResponsePrepared;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Events\Routing;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Storage\BackgroundActivityStore;
 use ReflectionFunction;
 use ReflectionMethod;
 use Throwable;
@@ -50,6 +51,12 @@ use Throwable;
 /** Routes Laravel runtime events into their matching request collectors. */
 final class EventRegistrar
 {
+    /** @var array<int, array<string, mixed>> */
+    private array $activeJobContexts = [];
+
+    /** @var list<int> */
+    private array $activeJobOrder = [];
+
     /** @var list<class-string> */
     private const EXCLUDED_GENERAL_EVENTS = [
         QueryExecuted::class,
@@ -91,9 +98,10 @@ final class EventRegistrar
         private readonly Container $container,
         private readonly CallSiteResolver $callSites,
         private readonly SafeUrl $safeUrl,
-        private readonly RuntimeProfiler $runtime,
         private readonly Redactor $redactor,
         private readonly MailPreview $mailPreview,
+        private readonly QueuedCommunicationInspector $communications,
+        private readonly BackgroundActivityStore $background,
     ) {}
 
     public function register(): void
@@ -118,7 +126,7 @@ final class EventRegistrar
                 return;
             }
 
-            $this->runtime->start(
+            $this->runtime()->start(
                 $event->command === 'test' ? 'test' : 'artisan',
                 $event->command,
                 [
@@ -131,7 +139,7 @@ final class EventRegistrar
 
         $this->listen(CommandFinished::class, function (CommandFinished $event): void {
             if (! $this->isLongRunningCommand($event->command)) {
-                $this->runtime->finish($event->exitCode, 'command:'.spl_object_id($event->input));
+                $this->runtime()->finish($event->exitCode, 'command:'.spl_object_id($event->input));
             }
         });
 
@@ -241,24 +249,100 @@ final class EventRegistrar
         $this->listen(JobQueued::class, function (JobQueued $event): void {
             $jobQueue = is_object($event->job) ? ($event->job->queue ?? null) : null;
             $jobDelay = is_object($event->job) ? ($event->job->delay ?? null) : null;
+            $queue = $event->queue ?? $jobQueue;
+            $delay = $this->jobDelaySeconds($event->delay ?? $jobDelay);
+            $communication = $this->communications->inspect($event->job) ?? [];
+            $job = (string) ($communication['communication_class'] ?? $this->jobName($event->job));
+            $correlationKey = $this->background->key($event->connectionName, $queue, $event->id);
+            $status = $delay !== null && $delay > 0 ? 'delayed' : 'queued';
+            $facts = [
+                'origin_profile_id' => $this->manager()->currentProfileId(),
+                'job_id' => $event->id,
+                'job' => $job,
+                'connection' => $event->connectionName,
+                'queue' => $queue,
+                'delay_seconds' => $delay,
+                ...$communication,
+            ];
 
             $this->manager()->record('queue', [
                 'kind' => 'queued',
-                'job' => $this->jobName($event->job),
+                'status' => $status,
+                'job' => $job,
                 'connection' => $event->connectionName,
-                'queue' => $event->queue ?? $jobQueue,
+                'queue' => $queue,
                 'job_id' => $event->id,
-                'delay_seconds' => is_numeric($event->delay ?? $jobDelay) ? (int) ($event->delay ?? $jobDelay) : null,
+                'delay_seconds' => $delay,
+                'correlation_key' => $correlationKey,
+                ...$communication,
                 'duration_ms' => 0.0,
             ]);
+
+            if (($communication['communication_type'] ?? null) === 'mail') {
+                $this->manager()->record('mail', [
+                    'phase' => 'queued',
+                    'status' => $status,
+                    'source' => $communication['communication_class'],
+                    'recipient_count' => $communication['recipient_count'] ?? 0,
+                    'attachment_count' => 0,
+                    'connection' => $event->connectionName,
+                    'queue' => $queue,
+                    'job_id' => $event->id,
+                    'delay_seconds' => $delay,
+                    'correlation_key' => $correlationKey,
+                ]);
+            }
+
+            if (($communication['communication_type'] ?? null) === 'notification') {
+                $channels = $communication['channels'] ?? [];
+
+                foreach ($channels === [] ? [null] : $channels as $channel) {
+                    $this->manager()->record('notifications', [
+                        'status' => $status,
+                        'notification' => $communication['communication_class'],
+                        'channel' => $channel,
+                        'notifiable_type' => $communication['notifiable_types'][0] ?? null,
+                        'notifiable_types' => $communication['notifiable_types'] ?? [],
+                        'notifiable_count' => $communication['notifiable_count'] ?? 0,
+                        'connection' => $event->connectionName,
+                        'queue' => $queue,
+                        'job_id' => $event->id,
+                        'delay_seconds' => $delay,
+                        'correlation_key' => $correlationKey,
+                    ]);
+                }
+            }
+
+            $this->background->recordDispatch($facts);
         });
 
         $this->listen(JobProcessing::class, function (JobProcessing $event): void {
-            $this->runtime->start('queue', $event->job->resolveName(), [
+            $attempt = $event->job->attempts();
+            $activity = $this->background->markProcessing(
+                $event->connectionName,
+                $event->job->getQueue(),
+                $event->job->getJobId(),
+                $attempt,
+            );
+            $context = [
                 'connection' => $event->connectionName,
                 'queue' => $event->job->getQueue(),
-                'attempt' => $event->job->attempts(),
-            ], 'queue:'.spl_object_id($event->job));
+                'job_id' => $event->job->getJobId() ?: null,
+                'attempt' => $attempt,
+                'correlation_key' => $activity['key'] ?? null,
+                'origin_profile_id' => $activity['origin_profile_id'] ?? null,
+                'communication_type' => $activity['communication_type'] ?? null,
+                'communication_class' => $activity['communication_class'] ?? null,
+                'channels' => $activity['channels'] ?? [],
+                'notifiable_types' => $activity['notifiable_types'] ?? [],
+            ];
+            $this->rememberJobContext($event->job, $context);
+            $this->runtime()->start(
+                'queue',
+                $event->job->resolveName(),
+                $context,
+                'queue:'.spl_object_id($event->job),
+            );
             $this->manager()->record('queue', [
                 'phase' => 'processing',
                 'execution_id' => spl_object_id($event->job),
@@ -266,32 +350,65 @@ final class EventRegistrar
         });
 
         $this->listen(JobProcessed::class, function (JobProcessed $event): void {
+            $context = $this->jobContext($event->job);
+            $this->forgetJobContext($event->job);
+            $released = method_exists($event->job, 'isReleased') && $event->job->isReleased();
+            $status = $released
+                ? 'waiting'
+                : (($context['communication_type'] ?? null) === null ? 'completed' : 'sent');
             $this->manager()->record('queue', [
                 'phase' => 'processed',
                 'execution_id' => spl_object_id($event->job),
-                'kind' => 'executed',
+                'kind' => $released ? 'released' : 'executed',
+                'status' => $status,
                 'job' => $event->job->resolveName(),
                 'connection' => $event->connectionName,
                 'queue' => $event->job->getQueue(),
                 'job_id' => $event->job->getJobId() ?: null,
                 'attempt' => $event->job->attempts(),
+                ...$this->correlationContext($context),
             ]);
-            $this->runtime->finish(0, 'queue:'.spl_object_id($event->job));
+            $profileId = $this->runtime()->finish(0, 'queue:'.spl_object_id($event->job));
+            $profileId ??= is_string($context['origin_profile_id'] ?? null)
+                ? $context['origin_profile_id']
+                : null;
+            $this->background->recordOutcome(
+                is_string($context['correlation_key'] ?? null) ? $context['correlation_key'] : null,
+                $status,
+                $profileId,
+                $event->job->attempts(),
+            );
         });
 
         $this->listen(JobExceptionOccurred::class, function (JobExceptionOccurred $event): void {
+            $context = $this->jobContext($event->job);
+            $this->forgetJobContext($event->job);
+            $failed = method_exists($event->job, 'hasFailed') && $event->job->hasFailed();
             $this->manager()->record('queue', [
                 'phase' => 'failed',
                 'execution_id' => spl_object_id($event->job),
                 'kind' => 'failed',
+                'status' => $failed ? 'failed' : 'waiting',
                 'job' => $event->job->resolveName(),
                 'connection' => $event->connectionName,
                 'queue' => $event->job->getQueue(),
                 'job_id' => $event->job->getJobId() ?: null,
                 'attempt' => $event->job->attempts(),
                 'exception_class' => $event->exception::class,
+                'will_retry' => ! $failed,
+                ...$this->correlationContext($context),
             ]);
-            $this->runtime->fail($event->exception, 'queue:'.spl_object_id($event->job));
+            $profileId = $this->runtime()->fail($event->exception, 'queue:'.spl_object_id($event->job));
+            $profileId ??= is_string($context['origin_profile_id'] ?? null)
+                ? $context['origin_profile_id']
+                : null;
+            $this->background->recordOutcome(
+                is_string($context['correlation_key'] ?? null) ? $context['correlation_key'] : null,
+                $failed ? 'failed' : 'waiting',
+                $profileId,
+                $event->job->attempts(),
+                $event->exception::class,
+            );
         });
 
         $this->listen(MessageSending::class, function (MessageSending $event): void {
@@ -304,6 +421,7 @@ final class EventRegistrar
                 'source' => is_string($source) ? $source : null,
                 'mailer' => $this->configuredMailDriver(),
                 'transport' => $this->configuredMailTransport(),
+                ...$this->correlationContext($this->currentJobContext()),
                 ...$location,
             ]);
         });
@@ -326,6 +444,7 @@ final class EventRegistrar
                 'has_html' => $message->getHtmlBody() !== null,
                 'has_text' => $message->getTextBody() !== null,
                 'preview' => $this->mailPreview->capture($message),
+                ...$this->correlationContext($this->currentJobContext()),
                 ...$location,
             ]);
         });
@@ -336,6 +455,7 @@ final class EventRegistrar
                 'notification' => $event->notification::class,
                 'channel' => (string) $event->channel,
                 'notifiable_type' => is_object($event->notifiable) ? $event->notifiable::class : get_debug_type($event->notifiable),
+                ...$this->correlationContext($this->currentJobContext()),
             ]);
         });
 
@@ -345,6 +465,7 @@ final class EventRegistrar
                 'notification' => $event->notification::class,
                 'channel' => (string) $event->channel,
                 'notifiable_type' => is_object($event->notifiable) ? $event->notifiable::class : get_debug_type($event->notifiable),
+                ...$this->correlationContext($this->currentJobContext()),
             ]);
         });
 
@@ -541,6 +662,81 @@ final class EventRegistrar
     private function manager(): ProfileManager
     {
         return $this->container->make(ProfileManager::class);
+    }
+
+    private function runtime(): RuntimeProfiler
+    {
+        return $this->container->make(RuntimeProfiler::class);
+    }
+
+    /** @param array<string, mixed> $context */
+    private function rememberJobContext(object $job, array $context): void
+    {
+        $id = spl_object_id($job);
+        $this->activeJobContexts[$id] = $context;
+        $this->activeJobOrder = array_values(array_filter(
+            $this->activeJobOrder,
+            static fn (int $activeId): bool => $activeId !== $id,
+        ));
+        $this->activeJobOrder[] = $id;
+    }
+
+    /** @return array<string, mixed> */
+    private function jobContext(object $job): array
+    {
+        $context = $this->manager()->runtimeProfileContext();
+
+        return $context !== [] ? $context : ($this->activeJobContexts[spl_object_id($job)] ?? []);
+    }
+
+    /** @return array<string, mixed> */
+    private function currentJobContext(): array
+    {
+        $context = $this->manager()->runtimeProfileContext();
+
+        if ($context !== []) {
+            return $context;
+        }
+
+        $id = $this->activeJobOrder[array_key_last($this->activeJobOrder)] ?? null;
+
+        return is_int($id) ? ($this->activeJobContexts[$id] ?? []) : [];
+    }
+
+    private function forgetJobContext(object $job): void
+    {
+        $id = spl_object_id($job);
+        unset($this->activeJobContexts[$id]);
+        $this->activeJobOrder = array_values(array_filter(
+            $this->activeJobOrder,
+            static fn (int $activeId): bool => $activeId !== $id,
+        ));
+    }
+
+    /** @param array<string, mixed> $context @return array<string, mixed> */
+    private function correlationContext(array $context): array
+    {
+        return array_intersect_key($context, array_flip([
+            'correlation_key',
+            'origin_profile_id',
+            'communication_type',
+            'communication_class',
+            'channels',
+            'notifiable_types',
+        ]));
+    }
+
+    private function jobDelaySeconds(mixed $delay): ?int
+    {
+        if (is_numeric($delay)) {
+            return max(0, (int) $delay);
+        }
+
+        if ($delay instanceof \DateTimeInterface) {
+            return max(0, $delay->getTimestamp() - now()->getTimestamp());
+        }
+
+        return null;
     }
 
     private function shouldIgnoreGeneralEvent(string $name): bool

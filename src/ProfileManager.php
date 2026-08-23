@@ -31,6 +31,14 @@ final class ProfileManager
 
     private int $startedAt = 0;
 
+    private int $responseHandledAt = 0;
+
+    private ?float $responseDurationMs = null;
+
+    private bool $afterResponse = false;
+
+    private bool $afterResponseActivity = false;
+
     private string $profileType = 'http';
 
     private string $primarySectionLabel = 'Request';
@@ -105,9 +113,17 @@ final class ProfileManager
         }
 
         if (isset($this->collectors[$collector])) {
+            $timing = ['at_ms' => $this->elapsedMilliseconds()];
+
+            if ($this->afterResponse) {
+                $this->afterResponseActivity = true;
+                $timing['lifecycle'] = 'after_response';
+                $timing['after_response_ms'] = $this->afterResponseMilliseconds();
+            }
+
             $this->collectors[$collector]->record([
                 ...$item,
-                'at_ms' => $this->elapsedMilliseconds(),
+                ...$timing,
             ]);
         }
     }
@@ -116,43 +132,48 @@ final class ProfileManager
     public function finish(Request $request, ?Response $response = null): array
     {
         try {
-            $route = $request->route();
-            $middleware = is_object($route) ? app('router')->gatherRouteMiddleware($route) : [];
-            $authentication = $this->requestContext?->authentication($request, $middleware) ?? [];
-            $session = $this->requestContext?->session($request) ?? [];
-            $validation = $this->collectors['validation'] ?? null;
+            $this->completeRequest($request, $response);
+            $this->responseDurationMs ??= $this->elapsedMilliseconds();
 
-            if ($validation instanceof ValidationCollector) {
-                if ($validation->hasFailures()) {
-                    $validation->attachResponseStatus($response?->getStatusCode() ?? 500);
-                } else {
-                    $this->recordSessionValidationErrors($request);
-                }
-            }
-
-            $this->request = [
-                ...$this->request,
-                'route' => is_object($route) && method_exists($route, 'getName') ? $route->getName() : null,
-                'action' => is_object($route) && method_exists($route, 'getActionName') ? $route->getActionName() : null,
-                'parameters' => is_object($route) && method_exists($route, 'parameters')
-                    ? $this->redactor->clean($this->normalizeRouteParameters($route->parameters()))
-                    : [],
-                'middleware' => $middleware,
-                'status' => $response?->getStatusCode() ?? 500,
-                'request_type' => $this->requestType($request, $response),
-                'content_type' => $response?->headers->get('Content-Type'),
-                'request_size_bytes' => $this->requestSize($request),
-                'response_size_bytes' => $this->responseSize($response),
-                'session_present' => (bool) ($session['present'] ?? $this->hasStartedSession($request)),
-                'authenticated' => (bool) ($authentication['authenticated'] ?? $this->isAuthenticated($request)),
-                'authentication' => $authentication,
-                'session' => $session,
-                'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
-            ];
-
-            return $this->buildProfile();
+            return $this->buildProfile('complete');
         } finally {
             $this->collecting = false;
+        }
+    }
+
+    /** @return array<string, mixed> */
+    public function checkpoint(Request $request, ?Response $response = null): array
+    {
+        $this->completeRequest($request, $response);
+        $this->responseHandledAt = hrtime(true);
+        $this->responseDurationMs = $this->elapsedMilliseconds();
+        $this->collecting = false;
+
+        return $this->buildProfile('terminating');
+    }
+
+    public function resumeAfterResponse(): void
+    {
+        if ($this->responseHandledAt === 0 || $this->profileType !== 'http') {
+            return;
+        }
+
+        $this->afterResponse = true;
+        $this->collecting = true;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function finishAfterResponse(): ?array
+    {
+        if ($this->responseHandledAt === 0 || $this->profileType !== 'http') {
+            return null;
+        }
+
+        try {
+            return $this->buildProfile('complete');
+        } finally {
+            $this->collecting = false;
+            $this->afterResponse = false;
         }
     }
 
@@ -176,7 +197,7 @@ final class ProfileManager
                 'response_headers' => [],
             ];
 
-            return $this->buildProfile();
+            return $this->buildProfile('complete');
         } finally {
             $this->collecting = false;
         }
@@ -185,6 +206,20 @@ final class ProfileManager
     public function discard(): void
     {
         $this->collecting = false;
+        $this->afterResponse = false;
+    }
+
+    public function currentProfileId(): ?string
+    {
+        return $this->profileId !== '' ? $this->profileId : null;
+    }
+
+    /** @return array<string, mixed> */
+    public function runtimeProfileContext(): array
+    {
+        $context = $this->request['context'] ?? [];
+
+        return $this->profileType === 'queue' && is_array($context) ? $context : [];
     }
 
     public function recordException(Throwable $exception): void
@@ -298,6 +333,10 @@ final class ProfileManager
         $this->primarySectionLabel = $primarySectionLabel;
         $this->profileId = (string) Str::uuid();
         $this->startedAt = hrtime(true);
+        $this->responseHandledAt = 0;
+        $this->responseDurationMs = null;
+        $this->afterResponse = false;
+        $this->afterResponseActivity = false;
         $this->request = [];
         $this->recordedValidationExceptions = [];
         $this->collecting = true;
@@ -344,13 +383,18 @@ final class ProfileManager
     }
 
     /** @return array<string, mixed> */
-    private function buildProfile(): array
+    private function buildProfile(string $completionState): array
     {
-        $duration = ($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000;
+        $duration = $this->responseDurationMs
+            ?? (($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000);
         $metrics = [
             'duration_ms' => round($duration, 2),
             'peak_memory_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
         ];
+
+        if ($this->afterResponseActivity && $this->responseHandledAt > 0) {
+            $metrics['after_response_duration_ms'] = round((hrtime(true) - $this->responseHandledAt) / 1_000_000, 2);
+        }
         $sections = [
             'overview' => [
                 'label' => 'Overview',
@@ -381,6 +425,7 @@ final class ProfileManager
             'id' => $this->profileId !== '' ? $this->profileId : (string) Str::uuid(),
             'recorded_at' => now()->toIso8601String(),
             'profile_type' => $this->profileType,
+            'completion_state' => $completionState,
             'environment' => app()->environment(),
             'metrics' => $metrics,
             'sections' => $sections,
@@ -464,6 +509,48 @@ final class ProfileManager
     private function elapsedMilliseconds(): float
     {
         return round(($this->startedAt > 0 ? hrtime(true) - $this->startedAt : 0) / 1_000_000, 3);
+    }
+
+    private function afterResponseMilliseconds(): float
+    {
+        return round(($this->responseHandledAt > 0 ? hrtime(true) - $this->responseHandledAt : 0) / 1_000_000, 3);
+    }
+
+    private function completeRequest(Request $request, ?Response $response): void
+    {
+        $route = $request->route();
+        $middleware = is_object($route) ? app('router')->gatherRouteMiddleware($route) : [];
+        $authentication = $this->requestContext?->authentication($request, $middleware) ?? [];
+        $session = $this->requestContext?->session($request) ?? [];
+        $validation = $this->collectors['validation'] ?? null;
+
+        if ($validation instanceof ValidationCollector) {
+            if ($validation->hasFailures()) {
+                $validation->attachResponseStatus($response?->getStatusCode() ?? 500);
+            } else {
+                $this->recordSessionValidationErrors($request);
+            }
+        }
+
+        $this->request = [
+            ...$this->request,
+            'route' => is_object($route) && method_exists($route, 'getName') ? $route->getName() : null,
+            'action' => is_object($route) && method_exists($route, 'getActionName') ? $route->getActionName() : null,
+            'parameters' => is_object($route) && method_exists($route, 'parameters')
+                ? $this->redactor->clean($this->normalizeRouteParameters($route->parameters()))
+                : [],
+            'middleware' => $middleware,
+            'status' => $response?->getStatusCode() ?? 500,
+            'request_type' => $this->requestType($request, $response),
+            'content_type' => $response?->headers->get('Content-Type'),
+            'request_size_bytes' => $this->requestSize($request),
+            'response_size_bytes' => $this->responseSize($response),
+            'session_present' => (bool) ($session['present'] ?? $this->hasStartedSession($request)),
+            'authenticated' => (bool) ($authentication['authenticated'] ?? $this->isAuthenticated($request)),
+            'authentication' => $authentication,
+            'session' => $session,
+            'response_headers' => $this->redactor->clean($response?->headers->all() ?? []),
+        ];
     }
 
     private function requestType(Request $request, ?Response $response): string

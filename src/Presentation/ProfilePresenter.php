@@ -17,6 +17,7 @@ final class ProfilePresenter
         private readonly ProfileAnalyzer $profiles,
         private readonly SectionAnalyzer $sections,
         private readonly TimelineBuilder $timeline,
+        private readonly BackgroundActivityPresenter $background,
     ) {}
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */
@@ -25,6 +26,8 @@ final class ProfilePresenter
         if ($profile === []) {
             return [];
         }
+
+        $profile = $this->background->present($profile);
 
         $queryItems = $profile['sections']['queries']['payload']['items'] ?? [];
         $queryAnalysis = $this->queries->analyze(
