@@ -476,6 +476,63 @@ test('stale section responses cannot resync panels for a newer profile', async (
   assert.equal(state.selected, 'overview');
 });
 
+test('section changes fade the current panel and delay loading feedback for slow responses', async () => {
+  const browser = runtime();
+  const state = createNewDebugBar(summary, browser);
+  const panels = [
+    { dataset: { ndbSectionPanel: 'overview' }, hidden: false },
+    { dataset: { ndbSectionPanel: 'queries' }, hidden: true },
+  ];
+  let resolveSection;
+
+  state.$root = {
+    querySelectorAll: (selector) => (selector === '[data-ndb-section-panel]' ? panels : []),
+  };
+  state.$nextTick = (callback) => callback();
+  state.$wire = {
+    loadSection: () =>
+      new Promise((resolve) => {
+        resolveSection = resolve;
+      }),
+  };
+  state.inspectorOpen = true;
+  state.loadedSection = 'overview';
+
+  state.selectSection('queries');
+
+  assert.equal(state.sectionLoading, true);
+  assert.equal(state.sectionLoadingIndicator, false);
+  assert.equal(state.sectionTransitioning, true);
+  assert.equal(panels[0].hidden, false);
+  assert.equal(panels[1].hidden, true);
+
+  browser.runTimers();
+
+  assert.equal(state.sectionLoadingIndicator, true);
+
+  resolveSection();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(state.loadedSection, 'queries');
+  assert.equal(state.sectionLoading, false);
+  assert.equal(state.sectionLoadingIndicator, false);
+  assert.equal(state.sectionLoadingTimer, null);
+  assert.equal(state.sectionTransitioning, false);
+  assert.equal(panels[0].hidden, true);
+  assert.equal(panels[1].hidden, false);
+
+  state.$wire = { loadSection: async () => {} };
+  state.selectSection('logs');
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(state.loadedSection, 'logs');
+  assert.equal(state.sectionLoadingIndicator, false);
+  assert.equal(state.sectionTransitioning, false);
+  assert.equal(browser.timers.size, 0);
+});
+
 test('section selection falls back safely and a failed section can retry', async () => {
   const state = createNewDebugBar(summary, runtime());
   let attempts = 0;

@@ -193,89 +193,87 @@
                 </header>
 
                 <div
-                    x-cloak
-                    x-show.important="sectionLoading"
-                    data-ndb-section-loading
-                    class="ndb:min-h-64 ndb:flex-col ndb:gap-4 ndb:p-4 ndb:sm:p-6 ndb:flex"
+                    data-ndb-section-stage
+                    :aria-busy="sectionLoading ? 'true' : 'false'"
+                    :class="['mail', 'notifications'].includes(selected)
+                        ? 'ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
+                        : ''"
+                    class="ndb:relative ndb:min-h-64"
                 >
-                    <div class="ndb:grid ndb:w-full ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/55 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
-                        <div class="ndb:px-3 ndb:py-3">
-                            <p class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                Status
-                            </p>
-                            <p class="ndb:mt-1 ndb:text-sm ndb:font-bold" x-text="summary.status"></p>
-                        </div>
-                        <div class="ndb:px-3 ndb:py-3">
-                            <p class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                Duration
-                            </p>
-                            <p
-                                class="ndb:mt-1 ndb:text-sm ndb:font-bold ndb:tabular-nums"
-                                x-text="summary.duration_ms + ' ms'"
-                            ></p>
-                        </div>
-                        <div class="ndb:px-3 ndb:py-3">
-                            <p class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                Queries
-                            </p>
-                            <p
-                                class="ndb:mt-1 ndb:text-sm ndb:font-bold ndb:tabular-nums"
-                                x-text="summary.query_count"
-                            ></p>
+                    <div
+                        x-cloak
+                        x-show.important="sectionLoadingIndicator"
+                        x-transition:enter="ndb:transition-opacity ndb:duration-150 ndb:ease-out ndb:motion-reduce:transition-none"
+                        x-transition:enter-start="ndb:opacity-0"
+                        x-transition:enter-end="ndb:opacity-100"
+                        x-transition:leave="ndb:transition-opacity ndb:duration-100 ndb:ease-in ndb:motion-reduce:transition-none"
+                        x-transition:leave-start="ndb:opacity-100"
+                        x-transition:leave-end="ndb:opacity-0"
+                        data-ndb-section-loading
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        class="ndb:absolute ndb:inset-0 ndb:z-10 ndb:flex ndb:min-h-64 ndb:items-start ndb:justify-center ndb:bg-white/85 ndb:p-4 ndb:backdrop-blur-[1px] ndb:dark:bg-zinc-950/85 ndb:sm:p-6"
+                    >
+                        <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/90 ndb:px-4 ndb:py-3 ndb:shadow-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/90">
+                            <span
+                                class="ndb-loading-pulse ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-indigo-50 ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
+                                ><x-newdebugbar::icon name="clock" class="ndb:size-4" /></span
+                            ><span class="ndb:text-sm ndb:font-semibold"
+                                >Loading <span x-text="selectedSection.label.toLowerCase()"></span>…</span>
                         </div>
                     </div>
-                    <div class="ndb:flex ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:bg-white/45 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30">
-                        <span
-                            class="ndb-loading-pulse ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-indigo-50 ndb:text-indigo-600 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
-                            ><x-newdebugbar::icon name="clock" class="ndb:size-4" /></span
-                        ><span
-                            ><span class="ndb:block ndb:text-sm ndb:font-semibold"
-                                >Loading <span x-text="selectedSection.label.toLowerCase()"></span>…</span
-                            ><span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-zinc-400"
-                                >The request summary is ready. This section will appear next.</span
-                            ></span>
+
+                    <div
+                        data-ndb-section-content
+                        :class="(sectionTransitioning ? 'ndb:opacity-0' : 'ndb:opacity-100') +
+                        (['mail', 'notifications'].includes(selected)
+                            ? ' ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
+                            : '')"
+                        class="ndb:transition-opacity ndb:duration-150 ndb:ease-out ndb:motion-reduce:transition-none"
+                    >
+                        <div
+                            x-cloak
+                            x-show.important="sectionError"
+                            role="alert"
+                            class="ndb:m-4 ndb:rounded-xl ndb:border ndb:border-red-200 ndb:bg-red-50/70 ndb:p-4 ndb:dark:border-red-950 ndb:dark:bg-red-950/25 ndb:sm:m-6"
+                        >
+                            <p class="ndb:text-sm ndb:font-bold ndb:text-red-800 ndb:dark:text-red-200">
+                                Collector details could not be loaded.
+                            </p>
+                            <p class="ndb:mt-1 ndb:text-xs ndb:text-red-700/80 ndb:dark:text-red-300/80">
+                                The request summary is still available. Retry or reload the page to capture a new
+                                request.
+                            </p>
+                            <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
+                                <button
+                                    type="button"
+                                    @click="requestSection(selected, true)"
+                                    class="ndb:rounded-lg ndb:bg-red-700 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-red-500 ndb:dark:bg-red-300 ndb:dark:text-red-950"
+                                >
+                                    Retry section</button
+                                ><button
+                                    type="button"
+                                    @click="window.location.reload()"
+                                    class="ndb:rounded-lg ndb:border ndb:border-red-300 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-red-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-red-500 ndb:dark:border-red-900 ndb:dark:text-red-200"
+                                >
+                                    Reload page
+                                </button>
+                            </div>
+                        </div>
+
+                        @island(name: 'section-details', skip: true, always: true)
+                            @placeholder
+                                <span data-ndb-section-placeholder hidden></span>
+                            @endplaceholder
+
+                            @php($profile = $this->profile)
+                            @php($sectionKey = $selectedSection)
+                            @php($section = $profile['sections'][$sectionKey] ?? null)
+                            @include('newdebugbar::livewire.section-panel')
+                        @endisland
                     </div>
                 </div>
-
-                <div
-                    x-cloak
-                    x-show.important="sectionError"
-                    role="alert"
-                    class="ndb:m-4 ndb:rounded-xl ndb:border ndb:border-red-200 ndb:bg-red-50/70 ndb:p-4 ndb:dark:border-red-950 ndb:dark:bg-red-950/25 ndb:sm:m-6"
-                >
-                    <p class="ndb:text-sm ndb:font-bold ndb:text-red-800 ndb:dark:text-red-200">
-                        Collector details could not be loaded.
-                    </p>
-                    <p class="ndb:mt-1 ndb:text-xs ndb:text-red-700/80 ndb:dark:text-red-300/80">
-                        The request summary is still available. Retry or reload the page to capture a new request.
-                    </p>
-                    <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:gap-2">
-                        <button
-                            type="button"
-                            @click="requestSection(selected, true)"
-                            class="ndb:rounded-lg ndb:bg-red-700 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-red-500 ndb:dark:bg-red-300 ndb:dark:text-red-950"
-                        >
-                            Retry section</button
-                        ><button
-                            type="button"
-                            @click="window.location.reload()"
-                            class="ndb:rounded-lg ndb:border ndb:border-red-300 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-red-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-red-500 ndb:dark:border-red-900 ndb:dark:text-red-200"
-                        >
-                            Reload page
-                        </button>
-                    </div>
-                </div>
-
-                @island(name: 'section-details', skip: true, always: true)
-                    @placeholder
-                        <span data-ndb-section-placeholder hidden></span>
-                    @endplaceholder
-
-                    @php($profile = $this->profile)
-                    @php($sectionKey = $selectedSection)
-                    @php($section = $profile['sections'][$sectionKey] ?? null)
-                    @include('newdebugbar::livewire.section-panel')
-                @endisland
             </div>
         </div>
     </aside>

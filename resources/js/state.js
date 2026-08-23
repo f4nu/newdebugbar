@@ -274,6 +274,9 @@ export function createNewDebugBar(
     loadedSection: null,
     requestedSection: null,
     sectionLoading: false,
+    sectionLoadingIndicator: false,
+    sectionLoadingTimer: null,
+    sectionTransitioning: false,
     sectionError: false,
     sectionRequestVersion: 0,
     activityPollAttempts: 0,
@@ -442,9 +445,11 @@ export function createNewDebugBar(
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       browser.cancelSchedule?.(this.toolbarClickTimer);
       browser.cancelSchedule?.(this.activityPollTimer);
+      browser.cancelSchedule?.(this.sectionLoadingTimer);
       this.toolbarSnapTimer = null;
       this.toolbarClickTimer = null;
       this.activityPollTimer = null;
+      this.sectionLoadingTimer = null;
       this.activityRefreshPending = false;
       browser.unlockHost?.(this.$root);
     },
@@ -1045,10 +1050,17 @@ export function createNewDebugBar(
 
     syncSectionPanels() {
       const panels = this.$root?.querySelectorAll?.('[data-ndb-section-panel]') ?? [];
+      const visibleSection = this.sectionLoading ? this.loadedSection : this.selected;
 
       panels.forEach((panel) => {
-        panel.hidden = panel.dataset.ndbSectionPanel !== this.selected || this.sectionLoading;
+        panel.hidden = panel.dataset.ndbSectionPanel !== visibleSection;
       });
+    },
+
+    clearSectionLoadingIndicator() {
+      browser.cancelSchedule?.(this.sectionLoadingTimer);
+      this.sectionLoadingTimer = null;
+      this.sectionLoadingIndicator = false;
     },
 
     syncSectionHeading() {
@@ -1415,12 +1427,30 @@ export function createNewDebugBar(
       const requestVersion = ++this.sectionRequestVersion;
       this.requestedSection = target;
       this.sectionLoading = true;
+      this.sectionTransitioning = true;
       this.sectionError = false;
+      this.clearSectionLoadingIndicator();
+      this.sectionLoadingTimer =
+        browser.schedule?.(() => {
+          this.sectionLoadingTimer = null;
+
+          if (
+            requestVersion === this.sectionRequestVersion &&
+            profileId === this.summary.id &&
+            this.requestedSection === target &&
+            this.sectionLoading
+          ) {
+            this.sectionLoadingIndicator = true;
+          }
+        }, 200) ?? null;
       this.syncSectionPanels();
 
       if (typeof action !== 'function') {
         this.sectionLoading = false;
+        this.sectionTransitioning = false;
         this.sectionError = true;
+        this.clearSectionLoadingIndicator();
+        this.syncSectionPanels();
 
         return;
       }
@@ -1435,7 +1465,9 @@ export function createNewDebugBar(
 
           this.requestedSection = null;
           this.sectionLoading = false;
+          this.sectionTransitioning = false;
           this.sectionError = true;
+          this.clearSectionLoadingIndicator();
           this.syncSectionPanels();
         });
     },
@@ -1447,7 +1479,9 @@ export function createNewDebugBar(
       this.requestedSection = null;
       this.sectionLoading = false;
       this.sectionError = false;
+      this.clearSectionLoadingIndicator();
       this.$nextTick?.(() => {
+        this.sectionTransitioning = false;
         this.syncSectionPanels();
         this.applyQueryView();
         this.applyViewSort();
@@ -1718,6 +1752,8 @@ export function createNewDebugBar(
       this.loadedSection = null;
       this.requestedSection = null;
       this.sectionLoading = false;
+      this.clearSectionLoadingIndicator();
+      this.sectionTransitioning = false;
       this.sectionError = false;
       this.selected = selected;
       this.httpClientRequests = [];
