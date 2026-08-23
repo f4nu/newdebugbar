@@ -27,3 +27,12 @@
 - Keep framework internals, raw data, hashes, and repeated facts out of the main view.
 - A finding should explain the problem, why it matters, where it came from, and what to do next.
 - Do not show two findings for the same cause.
+
+## Host-page isolation
+
+- Treat the host page as an untrusted global namespace.
+- Namespace every package-owned browser identifier: use `data-ndb-*` attributes, `ndb-*` semantic classes, `ndb:` Tailwind utilities, `--ndb-*` CSS variables, and identifiers beginning with `newdebugbar` for IDs, events, and storage keys.
+- Never place generic state hooks such as `data-theme`, `data-mode`, or `data-state` on injected package elements.
+- Scope authored CSS selectors beneath `#newdebugbar` or behind an `ndb`-prefixed class. Namespace package-defined global identifiers such as keyframes.
+- Theme selectors must depend only on the package root's `data-ndb-theme` state. Host attributes and classes must never activate a New Debug Bar theme.
+- When adding a browser identifier or global CSS rule, extend the hostile-host browser test with a realistic conflicting selector.
