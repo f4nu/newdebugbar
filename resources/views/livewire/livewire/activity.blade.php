@@ -1,11 +1,5 @@
-<div
-    data-ndb-livewire-activity
-    class="ndb:min-h-[31rem] ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:sm:grid ndb:sm:grid-cols-[minmax(17rem,0.85fr)_minmax(0,1.35fr)] ndb:sm:items-start ndb:sm:overflow-visible ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/30"
->
-    <div
-        :class="livewireDetailOpen ? 'ndb:hidden ndb:sm:block' : 'ndb:block'"
-        class="ndb:min-w-0 ndb:border-zinc-200/90 ndb:sm:border-r ndb:dark:border-zinc-800"
-    >
+<x-newdebugbar::livewire-split-view data-ndb-livewire-activity>
+    <x-slot:list>
         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/65 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/45">
             <div>
                 <h3 class="ndb:text-xs ndb:font-bold">Activity</h3>
@@ -67,7 +61,7 @@
         <div x-show.important="filteredLivewireActivity.length === 0" class="ndb:p-4">
             <x-newdebugbar::empty-state label="No Livewire activity matches this view." />
         </div>
-    </div>
+    </x-slot:list>
 
     @include('newdebugbar::livewire.livewire.activity-detail')
-</div>
+</x-newdebugbar::livewire-split-view>

@@ -1,11 +1,5 @@
-<div
-    data-ndb-livewire-components
-    class="ndb:min-h-[31rem] ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:sm:grid ndb:sm:grid-cols-[minmax(15rem,0.7fr)_minmax(0,1.5fr)] ndb:sm:items-start ndb:sm:overflow-visible ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/30"
->
-    <div
-        :class="livewireDetailOpen ? 'ndb:hidden ndb:sm:block' : 'ndb:block'"
-        class="ndb:min-w-0 ndb:border-zinc-200/90 ndb:sm:border-r ndb:dark:border-zinc-800"
-    >
+<x-newdebugbar::livewire-split-view data-ndb-livewire-components>
+    <x-slot:list>
         <div class="ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/65 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/45">
             <h3 class="ndb:text-xs ndb:font-bold">Mounted components</h3>
             <p class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
@@ -88,7 +82,7 @@
         <div x-show.important="filteredLivewireComponents.length === 0" class="ndb:p-4">
             <x-newdebugbar::empty-state label="No mounted components match this search." />
         </div>
-    </div>
+    </x-slot:list>
 
     <div
         :class="livewireDetailOpen ? 'ndb:block' : 'ndb:hidden ndb:sm:block'"
@@ -323,4 +317,4 @@
             </div>
         </div>
     </div>
-</div>
+</x-newdebugbar::livewire-split-view>

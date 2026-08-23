@@ -35,6 +35,41 @@ it('renders each activity as a timeline row with a centered dot', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('uses the component split dimensions for both Livewire tabs', function () {
+    $page = visit('/profiled-livewire')
+        ->resize(1024, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::selectSectionViaPalette($page, 'livewire');
+
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const split = document.querySelector('[data-ndb-livewire-activity]');
+                const list = split.firstElementChild.getBoundingClientRect();
+
+                window.__ndbLivewireSplitWidth = {
+                    list: list.width,
+                    total: split.getBoundingClientRect().width,
+                };
+
+                return list.width > 0;
+            })()
+            JS)
+        ->click('[data-ndb-livewire-tab="components"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const split = document.querySelector('[data-ndb-livewire-components]');
+                const list = split.firstElementChild.getBoundingClientRect();
+                const total = split.getBoundingClientRect().width;
+
+                return Math.abs(list.width - window.__ndbLivewireSplitWidth.list) <= 0.75
+                    && Math.abs(total - window.__ndbLivewireSplitWidth.total) <= 0.75;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
 it('collapses component branches with an aligned plus and minus control', function () {
     $page = visit('/profiled-livewire-nested')
         ->resize(1024, 900)
