@@ -26,10 +26,12 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\ProfileManager;
+use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationEvent;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 use NewDebugBar\Tests\Fixtures\HostCounter;
@@ -264,6 +266,38 @@ trait DefinesTestApplication
                 ->from('sender@example.test')
                 ->to('recipient@example.test')
                 ->subject('Hostile style mail'));
+            $queuedMailable = (new ProfiledMailable(
+                subjectLine: 'Hostile queued mail',
+                heading: 'Hostile queued heading',
+                messageCopy: 'Hostile queued body',
+            ))->to('queued@example.test');
+            $queuedNotification = new ProfiledNotification('hostile queued notification');
+            Event::dispatch($this->queuedEvent(
+                'hostile-mail-job',
+                new SendQueuedMailable($queuedMailable),
+                queue: 'hostile-mail',
+                delay: 0,
+            ));
+            Event::dispatch($this->queuedEvent(
+                'hostile-notification-job',
+                new SendQueuedNotifications(
+                    collect([new ProfiledNotifiable('queued@example.test')]),
+                    $queuedNotification,
+                    ['mail'],
+                ),
+                queue: 'hostile-notifications',
+                delay: 0,
+            ));
+            Event::dispatch($this->queuedEvent(
+                'hostile-pending-job',
+                new ProfiledJob('hostile pending payload'),
+                queue: 'hostile-pending',
+                delay: 60,
+            ));
+            $workerId = (string) Str::uuid();
+            $background = app(BackgroundActivityStore::class);
+            $background->recordOutcome($background->key('redis', 'hostile-mail', 'hostile-mail-job'), 'sent', $workerId, 1);
+            $background->recordOutcome($background->key('redis', 'hostile-notifications', 'hostile-notification-job'), 'sent', $workerId, 1);
 
             return response(<<<'HTML'
                 <!doctype html>
@@ -292,6 +326,9 @@ trait DefinesTestApplication
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-mail-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                         </style>
                     </head>
                     <body>

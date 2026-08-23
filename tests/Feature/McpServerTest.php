@@ -9,6 +9,8 @@ use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
 use NewDebugBar\Mcp\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Tools\ListDebugProfiles;
 use NewDebugBar\Presentation\McpProfilePresenter;
+use NewDebugBar\Presentation\ProfilePresenter;
+use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Support\McpResponse;
 
@@ -88,6 +90,57 @@ it('lists and filters bounded profile summaries', function () {
         ->path->toBe('/failed-html')
         ->status->toBe(422)
         ->warning->toBeTrue();
+});
+
+it('exposes queued communication facts and correlated worker outcomes through MCP', function () {
+    $originId = $this->get('/profiled-queued-communications', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+    $stored = app(ProfileStore::class)->get($originId);
+    $presented = app(ProfilePresenter::class)->present($stored);
+    $mailItem = $presented['sections']['mail']['payload']['items'][0];
+    $notificationItem = $presented['sections']['notifications']['payload']['items'][0];
+
+    $profiles = McpResponse::structuredContent(NewDebugBarServer::tool(ListDebugProfiles::class, [
+        'limit' => 10,
+    ])->assertOk());
+    $originSummary = collect($profiles['data']['profiles'])->firstWhere('id', $originId);
+    $mail = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $originId,
+        'section' => 'mail',
+    ])->assertOk());
+    $notifications = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $originId,
+        'section' => 'notifications',
+    ])->assertOk());
+
+    expect($originSummary)
+        ->background_pending->toBeTrue()
+        ->background_activity_count->toBe(2)
+        ->related_profile_ids->toBe([])
+        ->and($mail['data']['payload']['items'][0])
+        ->status->toBe('delayed')
+        ->source->toBe($mailItem['source'])
+        ->connection->toBe('redis')
+        ->queue->toBe('mail-delayed')
+        ->delay_seconds->toBe(30)
+        ->correlation_key->toBe($mailItem['correlation_key'])
+        ->and($notifications['data']['payload']['items'][0])
+        ->status->toBe('queued')
+        ->notification->toBe($notificationItem['notification'])
+        ->channel->toBe('mail')
+        ->correlation_key->toBe($notificationItem['correlation_key']);
+
+    $workerId = (string) Str::uuid();
+    app(BackgroundActivityStore::class)->recordOutcome($mailItem['correlation_key'], 'sent', $workerId, 1);
+    app(BackgroundActivityStore::class)->recordOutcome($notificationItem['correlation_key'], 'failed', $workerId, 1, RuntimeException::class);
+
+    $refreshed = app(McpProfilePresenter::class)->list([], 10);
+    $refreshedOrigin = collect($refreshed['data']['profiles'])->firstWhere('id', $originId);
+
+    expect($refreshedOrigin)
+        ->background_pending->toBeFalse()
+        ->related_profile_ids->toBe([$workerId]);
 });
 
 it('exposes every recorded context section through the bounded section tool', function () {

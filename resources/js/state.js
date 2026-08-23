@@ -2,6 +2,8 @@ const STORAGE_KEY = 'newdebugbar.preferences.v1';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOOLBAR_PLACEMENTS = ['top-left', 'top', 'top-right', 'bottom-left', 'bottom', 'bottom-right'];
 const TOOLBAR_CORNER_PLACEMENTS = TOOLBAR_PLACEMENTS.filter((placement) => placement.includes('-'));
+const ACTIVITY_POLL_LIMIT = 30;
+const ACTIVITY_POLL_INTERVAL = 1000;
 const toolbarHorizontalPlacement = (placement) => {
   if (placement.endsWith('-left')) return 'left';
   if (placement.endsWith('-right')) return 'right';
@@ -224,9 +226,13 @@ export function createNewDebugBar(
     profileLimit: requestLimit,
     pendingProfileIds: [],
     requestSelectionPending: null,
+    relatedProfileSelection: null,
     detailsRequested: false,
     detailsError: false,
     detailRequestVersion: 0,
+    activityPollAttempts: 0,
+    activityPollTimer: null,
+    activityRefreshPending: false,
     selected: 'overview',
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
@@ -377,8 +383,11 @@ export function createNewDebugBar(
       this.toolbarSnapVersion += 1;
       browser.cancelSchedule?.(this.toolbarSnapTimer);
       browser.cancelSchedule?.(this.toolbarClickTimer);
+      browser.cancelSchedule?.(this.activityPollTimer);
       this.toolbarSnapTimer = null;
       this.toolbarClickTimer = null;
+      this.activityPollTimer = null;
+      this.activityRefreshPending = false;
       browser.unlockHost?.(this.$root);
     },
 
@@ -1308,6 +1317,7 @@ export function createNewDebugBar(
       this.mobileSectionsReturnFocus = null;
       this.selectSection(section);
       this.inspectorOpen = true;
+      this.scheduleActivityRefresh(true);
       this.syncHostLock();
       this.$nextTick?.(() => {
         const focus = () =>
@@ -1359,6 +1369,7 @@ export function createNewDebugBar(
 
       const returnFocus = this.inspectorReturnFocus;
       this.inspectorOpen = false;
+      this.cancelActivityRefresh();
       this.inspectorReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
@@ -1378,6 +1389,7 @@ export function createNewDebugBar(
       const activeElement = browser.activeElement?.();
       this.barVisible = false;
       this.inspectorOpen = false;
+      this.cancelActivityRefresh();
       this.inspectorReturnFocus = null;
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
@@ -1425,6 +1437,90 @@ export function createNewDebugBar(
       this.rememberProfile(summary);
     },
 
+    hasPendingActivity(summary = this.summary) {
+      return summary?.completion_state === 'terminating' || summary?.background_pending === true;
+    },
+
+    cancelActivityRefresh(reset = false) {
+      browser.cancelSchedule?.(this.activityPollTimer);
+      this.activityPollTimer = null;
+
+      if (reset) this.activityPollAttempts = 0;
+    },
+
+    scheduleActivityRefresh(reset = false) {
+      if (reset) this.cancelActivityRefresh(true);
+      if (
+        !this.inspectorOpen ||
+        !this.hasPendingActivity() ||
+        this.activityRefreshPending ||
+        this.activityPollTimer !== null ||
+        this.activityPollAttempts >= ACTIVITY_POLL_LIMIT
+      )
+        return;
+
+      this.activityPollTimer =
+        browser.schedule?.(() => {
+          this.activityPollTimer = null;
+          this.refreshBackgroundActivity();
+        }, ACTIVITY_POLL_INTERVAL) ?? null;
+    },
+
+    refreshBackgroundActivity(reset = false) {
+      if (reset) this.cancelActivityRefresh(true);
+      if (!this.inspectorOpen || this.activityRefreshPending) return;
+
+      const action = this.$wire?.refreshRelatedActivity;
+      if (typeof action !== 'function') return;
+      if (!reset && (!this.hasPendingActivity() || this.activityPollAttempts >= ACTIVITY_POLL_LIMIT)) return;
+
+      const profileId = this.summary.id;
+      this.activityPollAttempts++;
+      this.activityRefreshPending = true;
+
+      Promise.resolve(action.call(this.$wire))
+        .then(() => {
+          if (profileId !== this.summary.id) return;
+
+          this.activityRefreshPending = false;
+          this.scheduleActivityRefresh();
+        })
+        .catch(() => {
+          this.activityRefreshPending = false;
+          this.cancelActivityRefresh();
+        });
+    },
+
+    receiveActivityRefresh(summary, relatedProfiles = []) {
+      if (!PROFILE_PATTERN.test(summary?.id ?? '') || summary.id !== this.summary.id) return;
+
+      this.summary = { ...this.summary, ...summary };
+      this.rememberProfile(this.summary);
+      (Array.isArray(relatedProfiles) ? relatedProfiles : []).forEach((profile) => this.receiveProfile(profile));
+      this.activityRefreshPending = false;
+
+      if (this.hasPendingActivity()) this.scheduleActivityRefresh();
+      else this.cancelActivityRefresh();
+    },
+
+    openRelatedProfile(profileId, section = 'overview') {
+      if (!PROFILE_PATTERN.test(profileId ?? '')) return;
+
+      if (profileId === this.summary.id) {
+        this.selectSection(section);
+
+        return;
+      }
+
+      const action = this.$wire?.switchProfile;
+      if (typeof action !== 'function') return;
+
+      this.relatedProfileSelection = { id: profileId, section };
+      Promise.resolve(action.call(this.$wire, profileId)).catch(() => {
+        if (this.relatedProfileSelection?.id === profileId) this.relatedProfileSelection = null;
+      });
+    },
+
     requestTitle(profile) {
       return profile?.activity || profile?.path || 'Request';
     },
@@ -1433,12 +1529,15 @@ export function createNewDebugBar(
       return (
         {
           ajax: 'Ajax',
+          artisan: 'Command',
           cli: 'CLI',
           download: 'Download',
           full_page: 'Page',
           json: 'JSON',
+          queue: 'Worker',
           redirect: 'Redirect',
           stream: 'Stream',
+          test: 'Test',
         }[type] ?? 'Request'
       );
     },
@@ -1472,15 +1571,23 @@ export function createNewDebugBar(
       if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
 
       const selectedFromPicker = this.requestSelectionPending === summary.id;
-      const requestedSection = selectedFromPicker ? 'request' : this.selected;
+      const selectedFromRelation = this.relatedProfileSelection?.id === summary.id;
+      const requestedSection = selectedFromPicker
+        ? 'request'
+        : selectedFromRelation
+          ? this.relatedProfileSelection.section
+          : this.selected;
       const selected = (summary.sections ?? []).some((section) => section.key === requestedSection)
         ? requestedSection
         : 'overview';
+      this.cancelActivityRefresh(true);
+      this.activityRefreshPending = false;
       this.detailRequestVersion++;
       this.summary = summary ?? {};
       this.requestSelectionPending = null;
+      this.relatedProfileSelection = null;
       this.pendingProfileIds = this.pendingProfileIds.filter((id) => id !== summary.id);
-      if (selectedFromPicker) {
+      if (selectedFromPicker || selectedFromRelation) {
         this.rememberProfile(summary);
       } else {
         this.currentRequestId = summary.id;
@@ -1513,7 +1620,7 @@ export function createNewDebugBar(
       this.authorizationFilter = 'all';
       this.eventSource = 'application';
       this.eventSearch = '';
-      if (this.inspectorOpen || selectedFromPicker) {
+      if (this.inspectorOpen || selectedFromPicker || selectedFromRelation) {
         this.openInspector(selected);
       } else {
         this.$nextTick?.(() => this.syncSectionPanels());

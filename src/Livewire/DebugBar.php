@@ -83,6 +83,41 @@ final class DebugBar extends Component
         $this->dispatch('newdebugbar-content-updated');
     }
 
+    public function refreshRelatedActivity(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+        ProfileSummaryPresenter $summaries,
+    ): void {
+        $stored = $store->get($this->profileId);
+        abort_if($stored === null, 404);
+
+        $profile = $presenter->present($stored);
+        $this->summary = $this->makeSummary($profile, $summaries);
+        $relatedProfiles = [];
+
+        foreach (array_slice((array) ($this->summary['related_profile_ids'] ?? []), 0, $this->profileLimit) as $profileId) {
+            if (! is_string($profileId) || ! $this->validProfileId($profileId)) {
+                continue;
+            }
+
+            $related = $store->get($profileId);
+
+            if ($related !== null) {
+                $relatedProfiles[] = $summaries->present($presenter->present($related));
+            }
+        }
+
+        $this->dispatch(
+            'newdebugbar-profile-refreshed',
+            summary: $this->summary,
+            relatedProfiles: $relatedProfiles,
+        );
+
+        if ($this->detailsLoaded) {
+            $this->dispatch('newdebugbar-content-updated');
+        }
+    }
+
     #[Renderless]
     public function explainQuery(
         int $execution,

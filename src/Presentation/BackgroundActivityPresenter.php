@@ -40,6 +40,10 @@ final class BackgroundActivityPresenter
         }
 
         foreach (['queue', 'mail', 'notifications'] as $section) {
+            if (! isset($profile['sections'][$section]) || ! is_array($profile['sections'][$section])) {
+                continue;
+            }
+
             $items = $profile['sections'][$section]['payload']['items'] ?? [];
 
             if (! is_array($items)) {
@@ -58,9 +62,13 @@ final class BackgroundActivityPresenter
                         return $item;
                     }
 
+                    $isOrigin = ($activity['origin_profile_id'] ?? null) === $profileId;
+
                     return [
                         ...$item,
-                        'status' => $activity['status'] ?? ($item['status'] ?? null),
+                        'status' => $isOrigin
+                            ? ($activity['status'] ?? ($item['status'] ?? null))
+                            : ($item['status'] ?? ($activity['status'] ?? null)),
                         'origin_profile_id' => $activity['origin_profile_id'] ?? null,
                         'worker_profile_id' => $activity['worker_profile_id'] ?? null,
                         'activity_attempt' => $activity['attempt'] ?? null,
@@ -70,7 +78,7 @@ final class BackgroundActivityPresenter
                         'channels' => $activity['channels'] ?? ($item['channels'] ?? []),
                         'notifiable_types' => $activity['notifiable_types'] ?? ($item['notifiable_types'] ?? []),
                         'notifiable_count' => $activity['notifiable_count'] ?? ($item['notifiable_count'] ?? 0),
-                        'is_origin' => ($activity['origin_profile_id'] ?? null) === $profileId,
+                        'is_origin' => $isOrigin,
                     ];
                 },
                 $items,

@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use NewDebugBar\Livewire\DebugBar;
+use NewDebugBar\Presentation\ProfilePresenter;
+use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 
 it('loads full profile details only after the inspector asks', function () {
@@ -282,6 +284,48 @@ it('announces later requests without changing the selected profile', function ()
                 && $params['summary']['id'] === $nextId
                 && $params['summary']['path'] === '/profiled-next';
         });
+});
+
+it('refreshes bounded background activity and announces completed worker profiles', function () {
+    $originId = $this->get('/profiled-queued-communications', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+    $store = app(ProfileStore::class);
+    $origin = $store->get($originId);
+    $presented = app(ProfilePresenter::class)->present($origin);
+    $correlationKeys = collect($presented['background_activity']['items'])->pluck('key')->all();
+    $workerId = (string) Str::uuid();
+    $worker = $origin;
+    $worker['id'] = $workerId;
+    $worker['profile_type'] = 'queue';
+    $worker['sections']['request']['label'] = 'Runtime';
+    $worker['sections']['request']['summary'] = ['method' => 'CLI', 'status' => 0, 'exit_code' => 0];
+    $worker['sections']['request']['payload'] = [
+        'path' => 'queue:SendQueuedMailable',
+        'runtime_type' => 'queue',
+        'name' => 'SendQueuedMailable',
+        'context' => ['correlation_key' => $correlationKeys[0], 'origin_profile_id' => $originId],
+    ];
+    $store->put($worker);
+
+    $component = Livewire::test(DebugBar::class, ['profileId' => $originId])
+        ->assertSet('summary.background_pending', true)
+        ->call('loadDetails');
+
+    app(BackgroundActivityStore::class)->recordOutcome($correlationKeys[0], 'sent', $workerId, 1);
+    app(BackgroundActivityStore::class)->recordOutcome($correlationKeys[1], 'failed', $workerId, 1, RuntimeException::class);
+
+    $component
+        ->call('refreshRelatedActivity')
+        ->assertSet('summary.background_pending', false)
+        ->assertSet('summary.related_profile_ids', [$workerId])
+        ->assertDispatched('newdebugbar-profile-refreshed', function (string $name, array $params) use ($workerId): bool {
+            return $name === 'newdebugbar-profile-refreshed'
+                && $params['summary']['background_pending'] === false
+                && $params['relatedProfiles'][0]['id'] === $workerId
+                && $params['relatedProfiles'][0]['request_type'] === 'queue';
+        })
+        ->assertDispatched('newdebugbar-content-updated');
 });
 
 it('rejects unavailable request summaries', function () {

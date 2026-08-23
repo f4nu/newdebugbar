@@ -155,5 +155,54 @@ it('keeps host styles and package styles isolated', function () {
                 return style.fontSize === '12px' && style.color !== 'rgb(255, 0, 0)';
             })()
             JS)
+        ->click('[data-ndb-mail-item="2"]')
+        ->assertVisible('[data-ndb-mail-related-profile]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const status = document.querySelector('[data-ndb-mail-status]');
+                const related = document.querySelector('[data-ndb-mail-related-profile]');
+
+                return Number.parseFloat(getComputedStyle(status).fontSize) === 11
+                    && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
+                    && related.getBoundingClientRect().height === 36
+                    && getComputedStyle(related).borderRadius === '8px';
+            })()
+            JS)
+        ->click('[data-ndb-mail-actions-trigger]')
+        ->assertVisible('[data-ndb-mail-open-related]')
+        ->assertScript("document.querySelector('[data-ndb-mail-open-related]').getBoundingClientRect().height < 91")
+        ->keys('[data-ndb-mail-actions-trigger]', 'Escape')
+        ->click('[data-ndb-section="queue"]')
+        ->assertVisible('[data-ndb-section-panel="queue"]')
+        ->assertVisible('[data-ndb-background-refresh]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const item = document.querySelector('[data-ndb-queue-item]');
+                const badge = item.querySelector('span');
+                const refresh = document.querySelector('[data-ndb-background-refresh]');
+                const link = document.querySelector('[data-ndb-queue-profile-link]');
+
+                return getComputedStyle(item).borderLeftWidth !== '20px'
+                    && Number.parseFloat(getComputedStyle(badge).fontSize) === 11
+                    && getComputedStyle(item).backgroundColor !== 'rgb(255, 0, 0)'
+                    && refresh.getBoundingClientRect().height < 91
+                    && link.getBoundingClientRect().height < 91;
+            })()
+            JS)
+        ->click('[data-ndb-section="notifications"]')
+        ->assertVisible('[data-ndb-section-panel="notifications"]')
+        ->assertVisible('[data-ndb-notification-profile-link]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const item = document.querySelector('[data-ndb-notification-item]');
+                const badge = item.querySelector('span');
+                const link = document.querySelector('[data-ndb-notification-profile-link]');
+
+                return getComputedStyle(item).borderLeftWidth !== '20px'
+                    && Number.parseFloat(getComputedStyle(badge).fontSize) === 11
+                    && getComputedStyle(item).backgroundColor !== 'rgb(255, 0, 0)'
+                    && link.getBoundingClientRect().height < 91;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

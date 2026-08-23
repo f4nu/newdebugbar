@@ -17,11 +17,29 @@
             $source = is_string($item['source'] ?? null) ? $item['source'] : null;
             $mailer = is_string($item['mailer'] ?? null) && $item['mailer'] !== '' ? $item['mailer'] : null;
             $transport = is_string($item['transport'] ?? null) && $item['transport'] !== '' ? $item['transport'] : null;
+            $status = (string) ($item['status'] ?? 'sent');
+            $statusLabel = [
+                'queued' => 'Queued',
+                'delayed' => 'Delayed',
+                'processing' => 'Processing',
+                'sent' => 'Sent',
+                'failed' => 'Failed',
+                'waiting' => 'Waiting for worker',
+            ][$status] ?? ucfirst($status);
+            $statusClass = [
+                'queued' => 'ndb:bg-sky-100 ndb:text-sky-700 ndb:dark:bg-sky-950 ndb:dark:text-sky-300',
+                'delayed' => 'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
+                'processing' => 'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300',
+                'sent' => 'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300',
+                'failed' => 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300',
+                'waiting' => 'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
+            ][$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300';
             $subject = is_string($preview['subject'] ?? null) && $preview['subject'] !== ''
                 ? $preview['subject']
-                : '(No subject)';
+                : ($source === null ? '(No subject)' : class_basename($source));
             $hasHtml = is_string($preview['html'] ?? null);
             $hasText = is_string($preview['text'] ?? null);
+            $hasPreview = $hasHtml || $hasText;
             $execution = $index + 1;
             $callsiteLabel = $callsite === null ? 'Source unavailable' : $callsite['file'].':'.$callsite['line'];
             $callsiteShortLabel = $callsite === null
@@ -32,6 +50,15 @@
             if ($mailer !== null && $transport !== null && $mailer !== $transport) {
                 $deliveryLabel = $mailer.' via '.$transport;
             }
+
+            if ($mailer === null && $transport === null && ($item['connection'] ?? null) !== null) {
+                $deliveryLabel = $item['connection'].' · '.(($item['queue'] ?? null) ?: 'default queue');
+            }
+
+            $isOrigin = (bool) ($item['is_origin'] ?? false);
+            $relatedProfileId = $isOrigin ? ($item['worker_profile_id'] ?? null) : ($item['origin_profile_id'] ?? null);
+            $relatedProfileId = is_string($relatedProfileId) && $relatedProfileId !== $profileId ? $relatedProfileId : null;
+            $relatedSection = $isOrigin && $status === 'sent' ? 'mail' : 'queue';
 
             return [
                 'execution' => $execution,
@@ -45,13 +72,28 @@
                 'return_path' => is_string($preview['return_path'] ?? null) ? $preview['return_path'] : null,
                 'date' => is_string($preview['date'] ?? null) ? $preview['date'] : null,
                 'priority' => (int) ($preview['priority'] ?? 3),
-                'primary_recipient' => $to[0] ?? $cc[0] ?? $bcc[0] ?? 'No recipient captured',
-                'status' => $item['status'] ?? 'sent',
+                'primary_recipient' => $to[0] ?? $cc[0] ?? $bcc[0]
+                    ?? (($item['recipient_count'] ?? 0) > 0
+                        ? $item['recipient_count'].' '.\Illuminate\Support\Str::plural('recipient', $item['recipient_count'])
+                        : 'Recipient resolved by worker'),
+                'status' => $status,
+                'status_label' => $statusLabel,
+                'status_class' => $statusClass,
                 'duration_ms' => (float) ($item['duration_ms'] ?? 0),
                 'mailer' => $mailer,
                 'transport' => $transport,
                 'delivery_label' => $deliveryLabel,
                 'transport_message_id' => $item['transport_message_id'] ?? null,
+                'connection' => $item['connection'] ?? null,
+                'queue' => $item['queue'] ?? null,
+                'job_id' => $item['job_id'] ?? null,
+                'delay_seconds' => $item['delay_seconds'] ?? null,
+                'lifecycle' => $item['lifecycle'] ?? null,
+                'related_profile_id' => $relatedProfileId,
+                'related_section' => $relatedSection,
+                'related_label' => $isOrigin
+                    ? ($relatedSection === 'mail' ? 'Open worker preview' : 'Open failed worker')
+                    : 'Open request',
                 'source' => $source,
                 'source_label' => $source === null ? 'Mail message' : \Illuminate\Support\Str::afterLast($source, '\\'),
                 'callsite' => $callsite,
@@ -73,7 +115,9 @@
                 'text_url' => $hasText
                     ? route('newdebugbar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'text'])
                     : null,
-                'eml_url' => route('newdebugbar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'eml']),
+                'eml_url' => $hasPreview
+                    ? route('newdebugbar.mail-preview', ['profile' => $profileId, 'index' => $index, 'format' => 'eml'])
+                    : null,
                 'search' => mb_strtolower(implode(' ', array_filter([
                     $subject,
                     ...$from,
@@ -123,7 +167,9 @@
                                 {{ number_format((float) ($mailSummary['duration_ms'] ?? 0), 2) }} ms total
                             </span>
                             @if (($mailSummary['dropped_count'] ?? 0) > 0)
-                                <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300">
+                                <span
+                                    class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300"
+                                >
                                     {{ number_format((int) $mailSummary['dropped_count']) }} not retained
                                 </span>
                             @endif
@@ -186,8 +232,13 @@
                             class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-3 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span class="ndb:min-w-0">
-                                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $message['subject'] }}</span>
-                                <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                <span
+                                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
+                                    >{{ $message['subject'] }}</span
+                                >
+                                <span
+                                    class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >
                                     To {{ $message['primary_recipient'] }}
                                 </span>
                                 <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400">
@@ -195,11 +246,28 @@
                                 </span>
                             </span>
                             <span class="ndb:text-right">
-                                <span class="ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    {{ number_format($message['duration_ms'], 2) }} ms
+                                <span
+                                    class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $message['status_class'] }}"
+                                >
+                                    {{ $message['status_label'] }}
                                 </span>
+                                @if ($message['status'] === 'sent')
+                                    <span
+                                        class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                    >
+                                        {{ number_format($message['duration_ms'], 2) }} ms
+                                    </span>
+                                @elseif (($message['delay_seconds'] ?? null) > 0)
+                                    <span
+                                        class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                                    >
+                                        {{ $message['delay_seconds'] }} s delay
+                                    </span>
+                                @endif
                                 @if ($message['attachment_count'] > 0)
-                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
+                                    <span
+                                        class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                                    >
                                         {{ $message['attachment_count'] }} {{ \Illuminate\Support\Str::plural('file', $message['attachment_count']) }}
                                     </span>
                                 @endif
@@ -237,9 +305,18 @@
                         <header class="ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800">
                             <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:justify-between ndb:gap-3">
                                 <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
-                                    <span class="ndb:rounded-md ndb:bg-emerald-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300">
-                                        Sent
+                                    <span
+                                        data-ndb-mail-status
+                                        :class="selectedMailMessage.status_class"
+                                        class="ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
+                                        x-text="selectedMailMessage.status_label"
+                                    >
                                     </span>
+                                    <span
+                                        x-show="selectedMailMessage.lifecycle === 'after_response'"
+                                        class="ndb:rounded-md ndb:bg-indigo-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
+                                        >After response</span
+                                    >
                                     <span
                                         data-ndb-mail-attachment-badge
                                         x-show="selectedMailMessage.attachment_count > 0"
@@ -262,7 +339,9 @@
                             <x-newdebugbar::mail-metadata />
                         </header>
 
-                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
+                        <div
+                            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800"
+                        >
                             <x-newdebugbar::filter-tabs label="Mail detail" class="ndb:min-w-0">
                                 @foreach (['preview' => ['Preview', 'eye'], 'message' => ['Message', 'mail'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
                                     <x-newdebugbar::filter-tab
@@ -323,8 +402,8 @@
                                         @change="setMailPreviewFormat($event.target.value)"
                                         class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                                     >
-                                        <option value="html" :disabled="! selectedMailMessage.has_html">HTML</option>
-                                        <option value="text" :disabled="! selectedMailMessage.has_text">Text</option>
+                                        <option value="html" :disabled="!selectedMailMessage.has_html">HTML</option>
+                                        <option value="text" :disabled="!selectedMailMessage.has_text">Text</option>
                                     </select>
                                     <x-newdebugbar::icon
                                         name="chevron-down"
@@ -364,9 +443,47 @@
                                         ></iframe>
                                     </div>
                                 </template>
-                                <template x-if="! selectedMailMessage.has_html && ! selectedMailMessage.has_text">
-                                    <div class="ndb:m-auto ndb:w-full">
-                                        <x-newdebugbar::empty-state label="No HTML or text body was captured." />
+                                <template x-if="!selectedMailMessage.has_html && !selectedMailMessage.has_text">
+                                    <div
+                                        class="ndb:m-auto ndb:flex ndb:min-h-80 ndb:w-full ndb:flex-col ndb:items-center ndb:justify-center ndb:rounded-lg ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:bg-white/55 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/45"
+                                    >
+                                        <span
+                                            class="ndb:grid ndb:size-9 ndb:place-items-center ndb:rounded-xl ndb:bg-zinc-100 ndb:text-zinc-400 ndb:dark:bg-zinc-800"
+                                        >
+                                            <x-newdebugbar::icon name="mail" size="4" />
+                                        </span>
+                                        <p
+                                            class="ndb:mt-3 ndb:text-xs ndb:font-bold"
+                                            x-text="
+                                                selectedMailMessage.status === 'failed'
+                                                    ? 'The worker failed before a preview was created.'
+                                                    : 'The preview is created when the worker sends this message.'
+                                            "
+                                        ></p>
+                                        <p
+                                            x-show="
+                                                ['queued', 'delayed', 'processing', 'waiting'].includes(
+                                                    selectedMailMessage.status,
+                                                )
+                                            "
+                                            class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                            x-text="selectedMailMessage.status_label"
+                                        ></p>
+                                        <button
+                                            x-show="selectedMailMessage.related_profile_id"
+                                            type="button"
+                                            data-ndb-mail-related-profile
+                                            @click="
+                                                openRelatedProfile(
+                                                    selectedMailMessage.related_profile_id,
+                                                    selectedMailMessage.related_section,
+                                                )
+                                            "
+                                            class="ndb:mt-4 ndb:inline-flex ndb:h-9 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                        >
+                                            <span x-text="selectedMailMessage.related_label"></span>
+                                            <x-newdebugbar::icon name="external-link" size="3.5" />
+                                        </button>
                                     </div>
                                 </template>
                             </div>
@@ -378,6 +495,6 @@
             </section>
         </div>
     @else
-        <x-newdebugbar::empty-state label="No mail was sent." />
+        <x-newdebugbar::empty-state label="No mail was sent or queued." />
     @endif
 </div>
