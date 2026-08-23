@@ -36,6 +36,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Queue\Events\JobQueueing;
+use Illuminate\Queue\Jobs\SyncJob;
 use Illuminate\Redis\Events\CommandExecuted;
 use Illuminate\Redis\Events\CommandFailed;
 use Illuminate\Routing\Events\PreparingResponse;
@@ -385,7 +386,8 @@ final class EventRegistrar
         $this->listen(JobExceptionOccurred::class, function (JobExceptionOccurred $event): void {
             $context = $this->jobContext($event->job);
             $this->forgetJobContext($event->job);
-            $failed = method_exists($event->job, 'hasFailed') && $event->job->hasFailed();
+            $failed = $event->job instanceof SyncJob
+                || (method_exists($event->job, 'hasFailed') && $event->job->hasFailed());
             $this->manager()->record('queue', [
                 'phase' => 'failed',
                 'execution_id' => spl_object_id($event->job),

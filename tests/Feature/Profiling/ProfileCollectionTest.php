@@ -216,6 +216,7 @@ it('captures queued dispatches and synchronous execution without job data', func
         ->duration_ms->toBeGreaterThanOrEqual(0)
         ->and($section['payload']['items'][2])
         ->kind->toBe('failed')
+        ->status->toBe('failed')
         ->exception_class->toBe(RuntimeException::class)
         ->and($activityStatuses)->toBe(['delayed'])
         ->and(json_encode($section))->not->toContain('private queued value', 'queued payload', 'private sync value', 'private failed value', 'private failure message');
