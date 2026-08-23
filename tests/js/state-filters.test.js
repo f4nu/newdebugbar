@@ -202,7 +202,7 @@ test('mail defaults to all and preview while keeping a visible message selected'
   state.setMailPreviewViewport('mobile');
   state.setMailPreviewFormat('html');
   assert.equal(state.mailDetailTab, 'message');
-  assert.equal(state.mailPreviewViewport, 'mobile');
+  assert.equal(state.mailPreviewViewport, 'desktop');
   assert.equal(state.mailPreviewFormat, 'text');
 
   state.selectMailMessage(1);

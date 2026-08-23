@@ -2266,6 +2266,7 @@ export function createNewDebugBar(
 
     setMailPreviewViewport(viewport) {
       if (!['desktop', 'mobile'].includes(viewport)) return;
+      if (this.mailPreviewFormat === 'text') return;
 
       this.mailPreviewViewport = viewport;
       this.$nextTick?.(() => {

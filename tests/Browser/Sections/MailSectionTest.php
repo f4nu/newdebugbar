@@ -130,8 +130,25 @@ it('selects and inspects mail with a real in-panel preview', function () {
             JS)
         ->select('[data-ndb-mail-preview-format]', 'text')
         ->assertValue('[data-ndb-mail-preview-format]', 'text')
+        ->assertButtonDisabled('[data-ndb-mail-preview-viewport="desktop"]')
+        ->assertButtonDisabled('[data-ndb-mail-preview-viewport="mobile"]')
+        ->assertAttribute('[data-ndb-mail-preview-viewport-control]', 'aria-disabled', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const desktop = document.querySelector('[data-ndb-mail-preview-viewport="desktop"]');
+                const mobile = document.querySelector('[data-ndb-mail-preview-viewport="mobile"]');
+
+                mobile.click();
+
+                return desktop.getAttribute('aria-pressed') === 'true'
+                    && mobile.getAttribute('aria-pressed') === 'false';
+            })()
+            JS)
         ->assertScript('document.querySelector("[data-ndb-mail-preview-frame]").getAttribute("src").endsWith("/0/text")')
         ->select('[data-ndb-mail-preview-format]', 'html')
+        ->assertButtonEnabled('[data-ndb-mail-preview-viewport="desktop"]')
+        ->assertButtonEnabled('[data-ndb-mail-preview-viewport="mobile"]')
+        ->assertScript('document.querySelector("[data-ndb-mail-preview-viewport-control]").getAttribute("aria-disabled") === null')
         ->select('[data-ndb-mail-filter]', 'attachments')
         ->assertValue('[data-ndb-mail-filter]', 'attachments')
         ->assertScript('document.querySelectorAll("[data-ndb-mail-item]:not([hidden])").length', 1)

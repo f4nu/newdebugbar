@@ -353,6 +353,7 @@
                                 <div
                                     role="group"
                                     aria-label="Mail preview width"
+                                    :aria-disabled="mailPreviewFormat === 'text'"
                                     data-ndb-mail-preview-viewport-control
                                     class="ndb:inline-flex ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-zinc-100/80 ndb:p-0.5 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                                 >
@@ -361,13 +362,14 @@
                                             type="button"
                                             data-ndb-mail-preview-viewport="{{ $viewport }}"
                                             @click="setMailPreviewViewport({{ \Illuminate\Support\Js::from($viewport) }})"
+                                            :disabled="mailPreviewFormat === 'text'"
                                             :aria-pressed="mailPreviewViewport === {{ \Illuminate\Support\Js::from($viewport) }}"
                                             :class="mailPreviewViewport === {{ \Illuminate\Support\Js::from($viewport) }}
                         ? 'ndb:bg-white ndb:text-indigo-600 ndb:shadow-sm ndb:dark:bg-zinc-800 ndb:dark:text-indigo-300'
                         : 'ndb:text-zinc-400 ndb:hover:text-zinc-700 ndb:dark:hover:text-zinc-200'"
                                             aria-label="{{ $label }}"
                                             title="{{ $label }}"
-                                            class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-md ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                                            class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-md ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:pointer-events-none ndb:disabled:opacity-40"
                                         >
                                             <x-newdebugbar::icon name="{{ $icon }}" size="3" />
                                         </button>
