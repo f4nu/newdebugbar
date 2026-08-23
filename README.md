@@ -66,5 +66,3 @@ NEWDEBUGBAR_ENABLED=false
 ## License
 
 New Debug Bar uses the Apache License 2.0.
-
-![New Debug Bar showing its request picker and Livewire component inspector](.github/readme/newdebugbar-livewire-inspector.png)
