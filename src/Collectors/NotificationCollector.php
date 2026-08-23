@@ -88,8 +88,11 @@ final class NotificationCollector extends AbstractCollector
 
     public function summary(): array
     {
+        $summary = parent::summary();
+
         return [
-            ...parent::summary(),
+            ...$summary,
+            'delivery_count' => $summary['count'],
             'notification_count' => count($this->notificationGroups),
             'failed_notification_count' => count($this->failedGroups),
             'sent_count' => (int) ($this->totals['sent_count'] ?? 0),

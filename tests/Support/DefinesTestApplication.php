@@ -264,6 +264,12 @@ trait DefinesTestApplication
                 ->from('sender@example.test')
                 ->to('recipient@example.test')
                 ->subject('Hostile style mail'));
+            Event::dispatch(new NotificationSent(
+                new ProfiledNotifiable('recipient@example.test'),
+                new ProfiledNotification('Hostile style notification'),
+                'mail',
+                ['message_id' => 'hostile-notification'],
+            ));
 
             return response(<<<'HTML'
                 <!doctype html>
@@ -292,6 +298,7 @@ trait DefinesTestApplication
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                         </style>
                     </head>
                     <body>

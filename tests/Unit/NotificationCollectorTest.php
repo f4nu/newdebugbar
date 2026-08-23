@@ -44,6 +44,7 @@ it('pairs delivery phases and groups channel attempts by notification', function
     expect($collector->summary())
         ->count->toBe(2)
         ->notification_count->toBe(1)
+        ->delivery_count->toBe(2)
         ->failed_notification_count->toBe(1)
         ->sent_count->toBe(1)
         ->failed_count->toBe(1)
@@ -84,6 +85,7 @@ it('counts dropped deliveries and their logical notifications', function () {
         'retained_count' => 1,
         'dropped_count' => 1,
         'truncated' => true,
+        'delivery_count' => 2,
         'notification_count' => 2,
         'failed_notification_count' => 1,
         'sent_count' => 1,

@@ -54,6 +54,12 @@
     margin: 0;
 }
 
+#newdebugbar :where(dl, dd, dt) {
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
 #newdebugbar :where(pre, code) {
     background: transparent;
     color: inherit;

@@ -277,6 +277,14 @@ export function createNewDebugBar(
     mailPreviewFormat: 'html',
     mailPreviewViewport: 'desktop',
     visibleMailCount: summary.section_counts?.mail ?? 0,
+    notificationGroups: [],
+    notificationFilter: 'all',
+    notificationSearch: '',
+    notificationSelected: null,
+    notificationDetailOpen: false,
+    notificationDetailTab: 'delivery',
+    notificationChannel: null,
+    visibleNotificationCount: summary.section_counts?.notifications ?? 0,
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
@@ -541,6 +549,18 @@ export function createNewDebugBar(
 
     get selectedMailMessage() {
       return this.mailMessages.find((message) => message.execution === this.mailSelected) ?? null;
+    },
+
+    get selectedNotification() {
+      return (
+        this.notificationGroups.find((notification) => notification.execution === this.notificationSelected) ?? null
+      );
+    },
+
+    get selectedNotificationDelivery() {
+      const deliveries = this.selectedNotification?.deliveries ?? [];
+
+      return deliveries.find((delivery) => delivery.channel === this.notificationChannel) ?? deliveries[0] ?? null;
     },
 
     get livewireComponents() {
@@ -904,6 +924,7 @@ export function createNewDebugBar(
           }
         }
         if (this.selected === 'http_client') this.applyHttpClientView();
+        if (this.selected === 'notifications') this.applyNotificationView();
         if (this.selected === 'views') this.applyViewSort();
         if (this.selected === 'authorization') this.applyAuthorizationFilters();
         if (this.selected === 'timeline') this.applyTimelineFilters();
@@ -1342,6 +1363,7 @@ export function createNewDebugBar(
             this.applyTimelineFilters();
             this.applyEventFilters();
             this.applyLogFilters();
+            this.applyNotificationView();
             this.syncHostLock();
             browser.highlight?.();
           });
@@ -1505,6 +1527,14 @@ export function createNewDebugBar(
       this.mailPreviewFormat = 'html';
       this.mailPreviewViewport = 'desktop';
       this.visibleMailCount = 0;
+      this.notificationGroups = [];
+      this.notificationFilter = 'all';
+      this.notificationSearch = '';
+      this.notificationSelected = null;
+      this.notificationDetailOpen = false;
+      this.notificationDetailTab = 'delivery';
+      this.notificationChannel = null;
+      this.visibleNotificationCount = 0;
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
@@ -2298,6 +2328,117 @@ export function createNewDebugBar(
 
     formatMailAddresses(addresses) {
       return Array.isArray(addresses) && addresses.length > 0 ? addresses.join(', ') : '—';
+    },
+
+    initializeNotifications(notifications) {
+      this.notificationGroups = Array.isArray(notifications) ? notifications : [];
+      this.notificationFilter = 'all';
+      this.notificationSearch = '';
+      this.notificationSelected = this.notificationGroups[0]?.execution ?? null;
+      this.notificationDetailOpen = false;
+      this.resetNotificationDetail();
+      this.$nextTick?.(() => this.applyNotificationView());
+    },
+
+    setNotificationFilter(filter) {
+      if (!['all', 'attention', 'sent'].includes(filter)) return;
+
+      this.notificationFilter = filter;
+      this.applyNotificationView();
+    },
+
+    selectNotification(execution) {
+      if (!this.notificationGroups.some((notification) => notification.execution === execution)) return;
+
+      this.notificationSelected = execution;
+      this.notificationDetailOpen = true;
+      this.resetNotificationDetail();
+    },
+
+    setNotificationDetailTab(tab) {
+      if (!['delivery', 'data', 'source'].includes(tab)) return;
+
+      this.notificationDetailTab = tab;
+      this.$nextTick?.(() =>
+        this.$refs?.notificationDetail?.scrollTo?.({
+          top: 0,
+          behavior: 'instant',
+        }),
+      );
+    },
+
+    setNotificationChannel(channel) {
+      if (!this.selectedNotification?.deliveries?.some((delivery) => delivery.channel === channel)) return;
+
+      this.notificationChannel = channel;
+    },
+
+    applyNotificationView() {
+      const list = this.$refs?.notificationList;
+      const search = this.notificationSearch.toLowerCase().trim();
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      if (this.notificationGroups.length === 0) {
+        this.visibleNotificationCount = 0;
+        this.notificationSelected = null;
+
+        return;
+      }
+
+      [...(list?.children ?? [])].forEach((item) => {
+        const status = item.dataset.ndbStatus;
+        const matchesFilter =
+          this.notificationFilter === 'all' ||
+          (this.notificationFilter === 'attention' && status !== 'sent') ||
+          (this.notificationFilter === 'sent' && status === 'sent');
+        const matches = matchesFilter && (search === '' || item.dataset.ndbSearch?.includes(search));
+        item.hidden = !matches;
+        if (matches) {
+          item.style.removeProperty('display');
+          const execution = Number(item.dataset.ndbExecution);
+          firstVisible ??= execution;
+          selectedVisible ||= execution === this.notificationSelected;
+          visible++;
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
+      });
+
+      this.visibleNotificationCount = visible;
+
+      if (!selectedVisible) {
+        this.notificationSelected = firstVisible;
+        this.resetNotificationDetail();
+      }
+    },
+
+    resetNotificationDetail() {
+      this.notificationDetailTab = 'delivery';
+      this.notificationChannel = this.selectedNotification?.deliveries?.[0]?.channel ?? null;
+      this.$nextTick?.(() =>
+        this.$refs?.notificationDetail?.scrollTo?.({
+          top: 0,
+          behavior: 'instant',
+        }),
+      );
+    },
+
+    formatNotificationEvidence(value, empty = 'No data was captured.') {
+      if (value === null || value === undefined || value === '') return empty;
+      if (typeof value === 'string') return value;
+
+      return JSON.stringify(value, null, 2);
+    },
+
+    openNotificationMail(messageId) {
+      const message = this.mailMessages.find((mail) => mail.transport_message_id === messageId);
+      if (!message) return;
+
+      this.selectSection('mail');
+      this.selectMailMessage(message.execution);
+      this.$nextTick?.(() => this.$refs?.mailDetail?.focus?.());
     },
 
     setQueryFilter(filter) {

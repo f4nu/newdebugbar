@@ -671,6 +671,7 @@ final class EventRegistrar
             'failure_data' => $data,
             'exception_class' => $exception instanceof Throwable ? $exception::class : null,
             'exception_message' => $exception instanceof Throwable ? $exception->getMessage() : null,
+            'exception_location' => $exception instanceof Throwable ? $this->callSites->fromThrowable($exception) : null,
         ];
     }
 

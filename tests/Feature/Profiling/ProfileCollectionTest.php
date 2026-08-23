@@ -272,6 +272,7 @@ it('groups notification channel attempts and keeps delivery evidence', function 
 
     expect($notifications['summary'])
         ->count->toBe(3)
+        ->delivery_count->toBe(3)
         ->notification_count->toBe(2)
         ->failed_notification_count->toBe(1)
         ->sent_count->toBe(2)
@@ -292,6 +293,7 @@ it('groups notification channel attempts and keeps delivery evidence', function 
         ->channel->toBe('profiled-sms')
         ->exception_class->toBe(RuntimeException::class)
         ->exception_message->toBe('Traveler phone number is not verified.')
+        ->exception_location->file->toBe('tests/Fixtures/Notifications/ProfiledNotificationChannel.php')
         ->group_id->toBe($items[0]['group_id'])
         ->and($items[2])
         ->status->toBe('sent')

@@ -171,7 +171,7 @@
                 data-ndb-inspector-content
                 x-ref="content"
                 :inert="mobileSectionsOpen"
-                :class="selected === 'mail' ? 'ndb:lg:flex ndb:lg:flex-col' : ''"
+                :class="['mail', 'notifications'].includes(selected) ? 'ndb:lg:flex ndb:lg:flex-col' : ''"
                 class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
             >
                 <header data-ndb-section-header class="ndb:px-4 ndb:pt-4 ndb:sm:px-6 ndb:sm:pt-6">
@@ -269,7 +269,7 @@
                         wire:key="profile-details-{{ $profileId }}"
                         wire:loading.remove
                         wire:target="loadDetails"
-                        :class="selected === 'mail' ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
+                        :class="['mail', 'notifications'].includes(selected) ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
                         class="ndb:p-4 ndb:sm:p-6"
                     >
                         @foreach ($profile['sections'] as $sectionKey => $section)
@@ -278,20 +278,30 @@
                                 @if ($sectionKey !== 'overview') hidden @endif
                                 wire:key="section-{{ $sectionKey }}"
                                 @class([
-                                    'ndb:space-y-4' => $sectionKey !== 'mail',
-                                    'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => $sectionKey === 'mail',
+                                    'ndb:space-y-4' => ! in_array($sectionKey, ['mail', 'notifications'], true),
+                                    'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => in_array($sectionKey, ['mail', 'notifications'], true),
                                 ])
                             >
                                 @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))
                                 @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? [])))
                                 @php($collectionTotal = (int) ($section['summary']['count'] ?? ($collectionRetained + $collectionDropped)))
-                                @if ($sectionKey !== 'overview' && $collectionDropped > 0)
+                                @if (! in_array($sectionKey, ['overview', 'notifications'], true) && $collectionDropped > 0)
                                     <div
                                         data-ndb-collection-status="{{ $sectionKey }}"
                                         role="status"
                                         class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
                                     >
                                         Showing {{ number_format($collectionRetained) }} of {{ number_format($collectionTotal) }} {{ strtolower($section['label']) }}.
+                                    </div>
+                                @endif
+                                @if ($sectionKey === 'notifications' && $collectionDropped > 0)
+                                    <div
+                                        data-ndb-collection-status="notifications"
+                                        role="status"
+                                        class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
+                                    >
+                                        Showing {{ number_format($collectionRetained) }} of {{ number_format((int) ($section['summary']['delivery_count'] ?? $collectionTotal)) }} channel
+                                        attempts.
                                     </div>
                                 @endif
                                 @if ($sectionKey === 'queries' && (int) ($section['summary']['transaction_dropped_count'] ?? 0) > 0)

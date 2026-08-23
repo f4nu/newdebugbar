@@ -155,5 +155,33 @@ it('keeps host styles and package styles isolated', function () {
                 return style.fontSize === '12px' && style.color !== 'rgb(255, 0, 0)';
             })()
             JS)
+        ->click('[data-ndb-section="notifications"]')
+        ->assertVisible('[data-ndb-section-panel="notifications"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-notifications]');
+                const row = document.querySelector('[data-ndb-notification-item]');
+                const detail = document.querySelector('[data-ndb-notification-detail]');
+                const metadata = document.querySelector('[data-ndb-notification-metadata]');
+                const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
+                const backIcon = document.querySelector('[data-ndb-notification-detail-back] svg');
+                const tabs = [...document.querySelectorAll('[data-ndb-notification-detail-tab]')];
+                const tabIcons = [...document.querySelectorAll('[data-ndb-notification-detail-tab-icon]')];
+
+                return root.getAttribute('data-notifications') === null
+                    && getComputedStyle(root).borderLeftWidth === '0px'
+                    && getComputedStyle(row).borderLeftWidth === '0px'
+                    && row.getBoundingClientRect().height < 91
+                    && getComputedStyle(detail).borderLeftWidth === '0px'
+                    && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
+                    && metadataTerms.every((term) => getComputedStyle(term).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)')
+                    && Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 11
+                    && Number.parseFloat(getComputedStyle(backIcon).width) === 14
+                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91)
+                    && tabIcons.length === 3
+                    && tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14);
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
