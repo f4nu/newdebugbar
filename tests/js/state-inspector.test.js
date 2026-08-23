@@ -63,8 +63,9 @@ test('the request action reuses an open inspector and opens a closed one', () =>
     ],
   }, browser);
   state.$root = { querySelectorAll: () => [] };
+  state.$wire = { loadSection: async () => {} };
   state.$nextTick = (callback) => callback();
-  state.detailsRequested = true;
+  state.loadedSection = 'overview';
   state.inspectorOpen = true;
 
   state.openRequestSection();
@@ -187,7 +188,7 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
   const browser = runtime();
   browser.activeElement = () => active;
   const state = createNewDebugBar(summary, browser);
-  state.$wire = { loadDetails: async () => {} };
+  state.$wire = { loadSection: async () => {} };
   state.$refs = { paletteSearch };
   state.$root = {
     querySelector: (selector) => selector.includes('data-ndb-mobile-toolbar-menu') ? menuItem : shrink,

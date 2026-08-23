@@ -9,8 +9,8 @@ test('the command palette jumps to sections and changes settings', async () => {
   const browser = runtime();
   browser.highlight = () => highlighted++;
   const state = createNewDebugBar(summary, browser);
-  let detailsLoaded = 0;
-  state.$wire = { loadDetails: async () => detailsLoaded++ };
+  let sectionsLoaded = 0;
+  state.$wire = { loadSection: async () => sectionsLoaded++ };
   state.$nextTick = (callback) => callback();
   const opener = { focus() {} };
   state.paletteOpen = true;
@@ -20,7 +20,7 @@ test('the command palette jumps to sections and changes settings', async () => {
   await Promise.resolve();
   assert.equal(state.inspectorOpen, true);
   assert.equal(state.selected, 'queries');
-  assert.equal(detailsLoaded, 1);
+  assert.equal(sectionsLoaded, 1);
   assert.equal(highlighted, 2);
   assert.equal(state.inspectorReturnFocus, opener);
   assert.equal(state.paletteReturnFocus, null);
@@ -99,4 +99,3 @@ test('the palette filters, wraps, restores focus, and handles layered shortcuts'
   state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
   assert.equal(state.inspectorOpen, false);
 });
-

@@ -30,7 +30,7 @@ it('offers runnable SQL and runs manual SQLite explain with the default bindings
         ->rows->not->toBeEmpty();
 
     Livewire::test(DebugBar::class, ['profileId' => $id])
-        ->call('loadDetails')
+        ->call('loadSection', 'queries')
         ->call('explainQuery', 1)
         ->assertSet('queryExplains.1.driver', 'sqlite')
         ->assertSet('queryExplainErrors', [])

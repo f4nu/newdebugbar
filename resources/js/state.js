@@ -231,9 +231,11 @@ export function createNewDebugBar(
     pendingProfileIds: [],
     requestSelectionPending: null,
     relatedProfileSelection: null,
-    detailsRequested: false,
-    detailsError: false,
-    detailRequestVersion: 0,
+    loadedSection: null,
+    requestedSection: null,
+    sectionLoading: false,
+    sectionError: false,
+    sectionRequestVersion: 0,
     activityPollAttempts: 0,
     activityPollTimer: null,
     activityRefreshPending: false,
@@ -920,7 +922,9 @@ export function createNewDebugBar(
 
     selectSection(section, filter = null, focusHeading = false) {
       const focusContentHeading = focusHeading || this.mobileSectionsOpen;
-      this.selected = this.sectionKeys.includes(section) ? section : 'overview';
+      const nextSection = this.sectionKeys.includes(section) ? section : 'overview';
+      const needsSection = this.inspectorOpen && (this.loadedSection !== nextSection || this.sectionError);
+      this.selected = nextSection;
       if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) this.queryFilter = 'attention';
       if (this.selected === 'authorization' && ['all', 'allowed', 'denied'].includes(filter))
         this.authorizationFilter = filter;
@@ -949,6 +953,8 @@ export function createNewDebugBar(
         if (focusContentHeading) this.$refs?.sectionHeading?.focus?.();
         browser.highlight?.();
       });
+
+      if (needsSection) this.requestSection(this.selected);
     },
 
     navigateToSection(section, filter = null) {
@@ -1000,7 +1006,7 @@ export function createNewDebugBar(
       const panels = this.$root?.querySelectorAll?.('[data-ndb-section-panel]') ?? [];
 
       panels.forEach((panel) => {
-        panel.hidden = panel.dataset.ndbSectionPanel !== this.selected;
+        panel.hidden = panel.dataset.ndbSectionPanel !== this.selected || this.sectionLoading;
       });
     },
 
@@ -1343,8 +1349,8 @@ export function createNewDebugBar(
       this.closeRequestPicker(false);
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
-      this.selectSection(section);
       this.inspectorOpen = true;
+      this.selectSection(section);
       this.scheduleActivityRefresh(true);
       this.syncHostLock();
       this.$nextTick?.(() => {
@@ -1354,43 +1360,64 @@ export function createNewDebugBar(
             ?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
-
-      if (!this.detailsRequested) {
-        this.requestDetails();
-      }
     },
 
-    requestDetails() {
-      if (this.detailsRequested) return;
+    requestSection(section = this.selected, force = false) {
+      const target = this.sectionKeys.includes(section) ? section : 'overview';
+      if (!force && this.loadedSection === target) return;
+      if (!force && this.sectionLoading && this.requestedSection === target) return;
 
+      const island = this.$wire?.$island;
+      const scopedWire = typeof island === 'function' ? island.call(this.$wire, 'section-details') : this.$wire;
+      const action = scopedWire?.loadSection;
       const profileId = this.summary.id;
-      const requestVersion = ++this.detailRequestVersion;
-      this.detailsRequested = true;
-      this.detailsError = false;
+      const requestVersion = ++this.sectionRequestVersion;
+      this.requestedSection = target;
+      this.sectionLoading = true;
+      this.sectionError = false;
+      this.syncSectionPanels();
 
-      Promise.resolve(this.$wire?.loadDetails())
+      if (typeof action !== 'function') {
+        this.sectionLoading = false;
+        this.sectionError = true;
+
+        return;
+      }
+
+      Promise.resolve(action.call(scopedWire, target))
         .then(() => {
-          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.id) return;
-
-          this.$nextTick?.(() => {
-            this.syncSectionPanels();
-            this.applyQueryView();
-            this.applyViewSort();
-            this.applyAuthorizationFilters();
-            this.applyTimelineFilters();
-            this.applyEventFilters();
-            this.applyLogFilters();
-            this.applyNotificationView();
-            this.syncHostLock();
-            browser.highlight?.();
-          });
+          if (requestVersion !== this.sectionRequestVersion || profileId !== this.summary.id) return;
+          if (this.loadedSection !== target) this.receiveSection(target);
         })
         .catch(() => {
-          if (requestVersion !== this.detailRequestVersion || profileId !== this.summary.id) return;
+          if (requestVersion !== this.sectionRequestVersion || profileId !== this.summary.id) return;
 
-          this.detailsRequested = false;
-          this.detailsError = true;
+          this.requestedSection = null;
+          this.sectionLoading = false;
+          this.sectionError = true;
+          this.syncSectionPanels();
         });
+    },
+
+    receiveSection(section) {
+      if (!this.sectionKeys.includes(section) || section !== this.selected) return;
+
+      this.loadedSection = section;
+      this.requestedSection = null;
+      this.sectionLoading = false;
+      this.sectionError = false;
+      this.$nextTick?.(() => {
+        this.syncSectionPanels();
+        this.applyQueryView();
+        this.applyViewSort();
+        this.applyAuthorizationFilters();
+        this.applyTimelineFilters();
+        this.applyEventFilters();
+        this.applyLogFilters();
+        this.applyNotificationView();
+        this.syncHostLock();
+        browser.highlight?.();
+      });
     },
 
     closeInspector() {
@@ -1611,7 +1638,7 @@ export function createNewDebugBar(
         : 'overview';
       this.cancelActivityRefresh(true);
       this.activityRefreshPending = false;
-      this.detailRequestVersion++;
+      this.sectionRequestVersion++;
       this.summary = summary ?? {};
       this.requestSelectionPending = null;
       this.relatedProfileSelection = null;
@@ -1622,8 +1649,10 @@ export function createNewDebugBar(
         this.currentRequestId = summary.id;
         this.recentProfiles = [summary];
       }
-      this.detailsRequested = false;
-      this.detailsError = false;
+      this.loadedSection = null;
+      this.requestedSection = null;
+      this.sectionLoading = false;
+      this.sectionError = false;
       this.selected = selected;
       this.httpClientRequests = [];
       this.httpClientFilter = 'all';

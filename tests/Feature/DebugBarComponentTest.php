@@ -8,18 +8,22 @@ use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 
-it('loads full profile details only after the inspector asks', function () {
+it('loads only the selected profile section after the inspector asks', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
 
     $file = File::files(config('newdebugbar.storage.path'))[0];
     $profile = json_decode(File::get($file->getPathname()), true, flags: JSON_THROW_ON_ERROR);
 
     $component = Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
-        ->assertSet('detailsLoaded', false)
-        ->call('loadDetails')
-        ->assertSet('detailsLoaded', true)
+        ->assertSet('sectionLoaded', false)
+        ->assertDontSeeHtml('data-ndb-section-panel="request"')
+        ->call('loadSection', 'request')
+        ->assertSet('sectionLoaded', true)
+        ->assertSet('selectedSection', 'request')
+        ->assertDispatched('newdebugbar-section-loaded', section: 'request')
         ->assertDispatched('newdebugbar-content-updated')
-        ->assertSee('Profiled request completed')
+        ->assertSeeHtml('data-ndb-section-panel="request"')
+        ->assertDontSeeHtml('data-ndb-section-panel="queries"')
         ->assertSeeHtml('data-ndb-section-description');
 });
 
@@ -38,13 +42,17 @@ it('locks server-owned profile state', function () {
         ->toThrow(Exception::class);
 
     expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
-        ->set('detailsLoaded', true))
+        ->set('sectionLoaded', true))
+        ->toThrow(Exception::class);
+
+    expect(fn () => Livewire::test(DebugBar::class, ['profileId' => $profile['id']])
+        ->set('selectedSection', 'queries'))
         ->toThrow(Exception::class);
 });
 
 it('returns not found when deferred profile details have expired', function () {
     Livewire::test(DebugBar::class, ['profileId' => '00000000-0000-4000-8000-000000000000'])
-        ->call('loadDetails')
+        ->call('loadSection', 'overview')
         ->assertNotFound();
 });
 
@@ -95,7 +103,10 @@ it('summarizes warnings, slow queries, and duplicate sql', function () {
         ->assertSet('summary.slow_query_count', 1)
         ->assertSet('summary.repeated_pattern_count', 1)
         ->assertSet('summary.exception_count', 1)
-        ->assertSet('detailsLoaded', true)
+        ->assertSet('sectionLoaded', false)
+        ->assertDontSeeHtml('data-ndb-section-panel="exceptions"')
+        ->call('loadSection', 'exceptions')
+        ->assertSet('sectionLoaded', true)
         ->assertSet('profile.findings.0.summary', 'The request returned HTTP 500.');
 });
 
@@ -160,10 +171,11 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
                 && $sections['timeline']['attention'] === true
                 && $sections['timeline']['incomplete'] === true;
         })
-        ->call('loadDetails')
+        ->call('loadSection', 'views')
         ->assertDontSeeHtml('data-ndb-findings')
         ->assertSeeHtml('data-ndb-collection-status="views"')
         ->assertSee('Showing 0 of 2 views.')
+        ->call('loadSection', 'timeline')
         ->assertSeeHtml('data-ndb-timeline-incomplete');
 
     expect(preg_replace('/\s+/', ' ', $component->html()))
@@ -209,7 +221,7 @@ it('marks secondary query transaction omissions as truncated', function () {
                 && $queries['attention'] === true
                 && $queries['truncated'] === true;
         })
-        ->call('loadDetails')
+        ->call('loadSection', 'queries')
         ->assertSeeHtml('data-ndb-collection-status="query-transactions"');
 
     expect(preg_replace('/\s+/', ' ', $component->html()))
@@ -238,7 +250,7 @@ it('uses the shared presenter for deferred query details and findings', function
     ]);
 
     Livewire::test(DebugBar::class, ['profileId' => $id])
-        ->call('loadDetails')
+        ->call('loadSection', 'queries')
         ->assertSet('profile.sections.queries.summary.repeated_pattern_count', 1)
         ->assertSet('profile.sections.queries.payload.items.0.repeated_count', 2)
         ->assertSet('profile.findings.0.rule_id', 'query.repeated');
@@ -253,12 +265,13 @@ it('switches to an exact foreground application profile', function () {
         ->headers->get('X-NewDebugBar-Profile');
 
     Livewire::test(DebugBar::class, ['profileId' => $firstId])
-        ->call('loadDetails')
-        ->assertSet('detailsLoaded', true)
+        ->call('loadSection', 'request')
+        ->assertSet('sectionLoaded', true)
         ->call('switchProfile', $nextId)
         ->assertSet('profileId', $nextId)
         ->assertSet('summary.path', '/profiled-next')
-        ->assertSet('detailsLoaded', false)
+        ->assertSet('sectionLoaded', false)
+        ->assertSet('selectedSection', 'overview')
         ->assertDispatched('newdebugbar-profile-switched');
 });
 
@@ -310,7 +323,7 @@ it('refreshes bounded background activity and announces completed worker profile
 
     $component = Livewire::test(DebugBar::class, ['profileId' => $originId])
         ->assertSet('summary.background_pending', true)
-        ->call('loadDetails');
+        ->call('loadSection', 'queue');
 
     app(BackgroundActivityStore::class)->recordOutcome($correlationKeys[0], 'sent', $workerId, 1);
     app(BackgroundActivityStore::class)->recordOutcome($correlationKeys[1], 'failed', $workerId, 1, RuntimeException::class);
@@ -325,7 +338,7 @@ it('refreshes bounded background activity and announces completed worker profile
                 && $params['relatedProfiles'][0]['id'] === $workerId
                 && $params['relatedProfiles'][0]['request_type'] === 'queue';
         })
-        ->assertDispatched('newdebugbar-content-updated');
+        ->assertNotDispatched('newdebugbar-content-updated');
 });
 
 it('rejects unavailable request summaries', function () {

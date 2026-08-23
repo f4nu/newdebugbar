@@ -65,7 +65,7 @@ it('stores and serves local previews without attachments by default', function (
         ->assertDontSee('private attachment');
 
     Livewire::test(DebugBar::class, ['profileId' => $profileId])
-        ->call('loadDetails')
+        ->call('loadSection', 'mail')
         ->assertSee('Download .EML')
         ->assertSee('Open preview');
 });

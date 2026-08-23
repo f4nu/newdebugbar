@@ -78,7 +78,7 @@ it('captures validation field and rule names with the rendered redirect status',
         ->and($profile['sections']['exceptions']['summary']['count'])->toBe(0);
 
     Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-NewDebugBar-Profile')])
-        ->call('loadDetails')
+        ->call('loadSection', 'validation')
         ->assertSee('2 fields failed validation')
         ->assertSee('signup bag')
         ->assertSee('Validation 422')
@@ -114,7 +114,7 @@ it('carries redirected validation messages into the next profiled page', functio
         ->and($profile['sections']['validation']['summary']['count'])->toBe(1);
 
     Livewire::test(DebugBar::class, ['profileId' => $response->headers->get('X-NewDebugBar-Profile')])
-        ->call('loadDetails')
+        ->call('loadSection', 'validation')
         ->assertSee('Carried from the previous request.')
         ->assertSee('The email has already been taken.')
         ->assertSee('Failed rules and source code are not available on this request.');

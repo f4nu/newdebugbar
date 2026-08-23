@@ -13,7 +13,7 @@ use NewDebugBar\Presentation\ProfileSummaryPresenter;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\QueryExplainer;
 
-/** Loads a request summary first and defers full inspector data. */
+/** Loads a request summary first and renders one inspector section at a time. */
 final class DebugBar extends Component
 {
     /** @var array<string, string> */
@@ -47,7 +47,10 @@ final class DebugBar extends Component
     public array $summary = [];
 
     #[Locked]
-    public bool $detailsLoaded = false;
+    public bool $sectionLoaded = false;
+
+    #[Locked]
+    public string $selectedSection = 'overview';
 
     #[Locked]
     public int $profileLimit = 20;
@@ -70,19 +73,26 @@ final class DebugBar extends Component
         $this->profileLimit = $store->maxProfiles();
         $profile = $presenter->present($store->get($profileId) ?? []);
         $this->summary = $this->makeSummary($profile, $summaries);
-        $this->detailsLoaded = (int) ($this->summary['status'] ?? 0) >= 400
-            || (int) ($this->summary['exception_count'] ?? 0) > 0;
     }
 
-    public function loadDetails(
+    public function loadSection(
+        string $section,
         ProfileStore $store,
+        ProfilePresenter $presenter,
     ): void {
-        abort_if($store->get($this->profileId) === null, 404);
+        $stored = $store->get($this->profileId);
+        abort_if($stored === null, 404);
 
-        $this->detailsLoaded = true;
+        $profile = $presenter->present($stored);
+        abort_unless(array_key_exists($section, (array) ($profile['sections'] ?? [])), 422);
+
+        $this->selectedSection = $section;
+        $this->sectionLoaded = true;
+        $this->dispatch('newdebugbar-section-loaded', section: $section);
         $this->dispatch('newdebugbar-content-updated');
     }
 
+    #[Renderless]
     public function refreshRelatedActivity(
         ProfileStore $store,
         ProfilePresenter $presenter,
@@ -113,9 +123,6 @@ final class DebugBar extends Component
             relatedProfiles: $relatedProfiles,
         );
 
-        if ($this->detailsLoaded) {
-            $this->dispatch('newdebugbar-content-updated');
-        }
     }
 
     #[Renderless]
@@ -147,6 +154,7 @@ final class DebugBar extends Component
         );
     }
 
+    #[Renderless]
     public function switchProfile(
         string $profileId,
         ProfileStore $store,
@@ -185,7 +193,8 @@ final class DebugBar extends Component
 
         $this->profileId = $profileId;
         $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
-        $this->detailsLoaded = false;
+        $this->sectionLoaded = false;
+        $this->selectedSection = 'overview';
         $this->queryExplains = [];
         $this->queryExplainErrors = [];
         $this->dispatch('newdebugbar-profile-switched', summary: $this->summary);
@@ -195,7 +204,7 @@ final class DebugBar extends Component
     #[Computed]
     public function profile(): array
     {
-        if (! $this->detailsLoaded) {
+        if (! $this->sectionLoaded) {
             return [];
         }
 

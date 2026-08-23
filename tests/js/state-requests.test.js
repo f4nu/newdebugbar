@@ -24,12 +24,12 @@ test('malformed startup inputs use safe request defaults', () => {
 
 test('a new application profile keeps a matching section and resets stale section state', async () => {
   const state = createNewDebugBar(summary, runtime());
-  let detailsLoaded = 0;
-  state.$wire = { loadDetails: async () => detailsLoaded++ };
+  let sectionsLoaded = 0;
+  state.$wire = { loadSection: async () => sectionsLoaded++ };
   state.$nextTick = (callback) => callback();
   state.selected = 'logs';
   state.inspectorOpen = true;
-  state.detailsRequested = true;
+  state.loadedSection = 'logs';
   state.viewSort = 'count';
   state.viewSortDirection = 'desc';
   state.eventSource = 'framework';
@@ -44,12 +44,12 @@ test('a new application profile keeps a matching section and resets stale sectio
 
   assert.equal(state.summary.path, '/api/jobs');
   assert.equal(state.selected, 'logs');
-  assert.equal(state.detailsRequested, true);
+  assert.equal(state.loadedSection, 'logs');
   assert.equal(state.viewSort, 'name');
   assert.equal(state.viewSortDirection, 'asc');
   assert.equal(state.eventSource, 'application');
   assert.equal(state.eventSearch, '');
-  assert.equal(detailsLoaded, 1);
+  assert.equal(sectionsLoaded, 1);
 
   state.inspectorOpen = false;
   state.selected = 'missing';
@@ -217,7 +217,7 @@ test('background refresh is useful-only, bounded, and preserves related navigati
   state.$nextTick = (callback) => callback();
   state.$root = { querySelector: () => null, querySelectorAll: () => [] };
   state.$wire = {
-    loadDetails: async () => {},
+    loadSection: async () => {},
     refreshRelatedActivity: async () => refreshes++,
     switchProfile: async (id) => {
       switched = id;
@@ -304,7 +304,7 @@ test('the request picker manages focus, keyboard movement, and profile selection
   state.$nextTick = (callback) => callback();
   state.$root = { querySelector: () => switcher };
   state.$wire = {
-    loadDetails: async () => {},
+    loadSection: async () => {},
     switchProfile: async (id) => switches.push(id),
   };
 
@@ -407,13 +407,13 @@ test('request discovery and selection failures clear their pending state', async
   assert.equal(state.requestSelectionPending, otherId);
 });
 
-test('stale detail responses cannot resync panels for a newer profile', async () => {
+test('stale section responses cannot resync panels for a newer profile', async () => {
   const pending = [];
   const state = createNewDebugBar({ ...summary, id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' }, runtime());
   let synced = 0;
   state.syncSectionPanels = () => synced++;
   state.$wire = {
-    loadDetails: () => new Promise((resolve) => pending.push(resolve)),
+    loadSection: () => new Promise((resolve) => pending.push(resolve)),
   };
   state.$nextTick = (callback) => callback();
   state.inspectorOpen = true;
@@ -432,11 +432,11 @@ test('stale detail responses cannot resync panels for a newer profile', async ()
   assert.equal(state.selected, 'overview');
 });
 
-test('section selection falls back safely and profile details retry after failure', async () => {
+test('section selection falls back safely and a failed section can retry', async () => {
   const state = createNewDebugBar(summary, runtime());
   let attempts = 0;
   state.$wire = {
-    loadDetails: () => {
+    loadSection: () => {
       attempts++;
       return attempts === 1 ? Promise.reject(new Error('expired')) : Promise.resolve();
     },
@@ -448,14 +448,14 @@ test('section selection falls back safely and profile details retry after failur
 
   state.openInspector('queries');
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(state.detailsRequested, false);
+  assert.equal(state.sectionLoading, false);
+  assert.equal(state.sectionError, true);
 
-  state.openInspector('logs');
-  await new Promise((resolve) => setImmediate(resolve));
   state.openInspector('queries');
   await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(attempts, 2);
-  assert.equal(state.detailsRequested, true);
+  assert.equal(state.sectionError, false);
+  assert.equal(state.loadedSection, 'queries');
   assert.equal(state.selected, 'queries');
 });

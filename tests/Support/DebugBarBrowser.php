@@ -113,17 +113,11 @@ final class DebugBarBrowser
 
                 const check = () => {
                     const root = document.getElementById('newdebugbar');
-                    const elements = Array.from(root?.querySelectorAll('*') ?? []);
-                    const details = elements.find((element) =>
-                        element.getAttribute('wire:key')?.startsWith('profile-details-'),
-                    );
-                    const loading = elements.find((element) =>
-                        element.getAttribute('wire:target') === 'loadDetails'
-                            && element.hasAttribute('wire:loading.flex'),
-                    );
-                    const loadingFinished = loading === undefined || getComputedStyle(loading).display === 'none';
+                    const details = root?.querySelector('[data-ndb-loaded-section]');
+                    const loading = root?.querySelector('[data-ndb-section-loading]');
+                    const loadingFinished = loading === null || getComputedStyle(loading).display === 'none';
 
-                    if (details !== undefined && loadingFinished) {
+                    if (details !== null && details !== undefined && loadingFinished) {
                         if (details === stableDetails) stableFrames += 1;
                         else {
                             stableDetails = details;

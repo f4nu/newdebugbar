@@ -215,7 +215,7 @@ it('excludes debug toolbar updates from profiling and storage', function () {
         'components' => [[
             'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
             'updates' => [],
-            'calls' => [['method' => 'loadDetails', 'params' => []]],
+            'calls' => [['method' => 'loadSection', 'params' => ['request']]],
         ]],
     ], ['X-Livewire' => '1']);
 
