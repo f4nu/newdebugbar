@@ -6,7 +6,7 @@
     id="newdebugbar"
     wire:ignore.self
     x-data="newDebugBar(@js($summary), @js($profileLimit))"
-    :data-theme="resolvedTheme"
+    :data-ndb-theme="resolvedTheme"
     @keydown.window="handleShortcut($event)"
     @newdebugbar-content-updated.window="
         $nextTick(() => {

@@ -2,6 +2,25 @@
 
 it('keeps host styles and package styles isolated', function () {
     visit('/hostile-styles')
+        ->assertScript("document.documentElement.getAttribute('data-theme') === 'dark'")
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
+        ->assertMissing('#newdebugbar[data-theme]')
+        ->assertScript("getComputedStyle(document.getElementById('newdebugbar')).backgroundColor === 'rgba(0, 0, 0, 0)'")
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.getElementById('newdebugbar');
+                const probe = document.createElement('span');
+
+                probe.style.color = 'var(--ndb-color-zinc-900)';
+                root.append(probe);
+
+                const usesLightTheme = getComputedStyle(root).color === getComputedStyle(probe).color;
+
+                probe.remove();
+
+                return usesLightTheme;
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const style = getComputedStyle(document.querySelector('[data-testid="host-button"]'));
@@ -41,7 +60,22 @@ it('keeps host styles and package styles isolated', function () {
             })()
             JS)
         ->refresh()
-        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.getElementById('newdebugbar');
+                const probe = document.createElement('span');
+
+                probe.style.color = 'var(--ndb-color-zinc-100)';
+                root.append(probe);
+
+                const usesDarkTheme = getComputedStyle(root).color === getComputedStyle(probe).color;
+
+                probe.remove();
+
+                return usesDarkTheme;
+            })()
+            JS)
         ->click('[data-ndb-toolbar="request"]')
         ->assertVisible('[data-ndb-section-panel="request"]')
         ->assertScript(<<<'JS'

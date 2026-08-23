@@ -15,7 +15,7 @@ it('shows Livewire validation messages rules and source on desktop and mobile', 
 
                 return state.laterRequestCount === 1
                     && state.recentProfiles.some((profile) => /^\/livewire-[0-9a-f]{8}\/update$/i.test(profile.path))
-                    && document.getElementById('newdebugbar').dataset.theme === 'light';
+                    && document.getElementById('newdebugbar').dataset.ndbTheme === 'light';
             })()
             JS)
         ->click('[data-ndb-request-picker-trigger="toolbar"]')
@@ -68,7 +68,7 @@ it('shows Livewire validation messages rules and source on desktop and mobile', 
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 state.setTheme('dark');
 
-                return document.getElementById('newdebugbar').dataset.theme === 'dark';
+                return document.getElementById('newdebugbar').dataset.ndbTheme === 'dark';
             })()
             JS)
         ->resize(390, 844)

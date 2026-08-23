@@ -120,7 +120,7 @@ it('collects background requests in the split button without changing the host p
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 state.setTheme('dark');
 
-                return document.getElementById('newdebugbar').dataset.theme === 'dark';
+                return document.getElementById('newdebugbar').dataset.ndbTheme === 'dark';
             })()
             JS)
         ->click('[data-ndb-request-picker-trigger="toolbar"]')
@@ -192,7 +192,7 @@ it('collects background requests in the split button without changing the host p
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 state.setTheme('light');
 
-                return document.getElementById('newdebugbar').dataset.theme === 'light';
+                return document.getElementById('newdebugbar').dataset.ndbTheme === 'light';
             })()
             JS)
         ->hover('#newdebugbar-request-list-toolbar [data-ndb-request-group="later"] [data-ndb-request-option]:first-of-type')

@@ -8,11 +8,11 @@ it('opens every compact toolbar destination and shrinks cleanly', function () {
         ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
         ->assertMissing('[data-ndb-toolbar-status-meaning]')
         ->assertVisible('[data-ndb-toolbar-action="theme"]')
-        ->assertAttribute('#newdebugbar', 'data-theme', 'light')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
         ->click('[data-ndb-toolbar-action="theme"]')
-        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->click('[data-ndb-toolbar-action="theme"]')
-        ->assertAttribute('#newdebugbar', 'data-theme', 'light')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
         ->assertScript(<<<'JS'
             (() => {
                 const theme = document.querySelector('[data-ndb-toolbar-action="theme"]');

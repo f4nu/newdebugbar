@@ -101,7 +101,7 @@ it('stacks the request list and detail cleanly on mobile in dark mode', function
         ->click('[data-ndb-header-mobile-action="sections"]')
         ->click('[data-ndb-select-section="http_client"]')
         ->waitForText('Needs attention')
-        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->assertScript(<<<'JS'
             (() => {
                 const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');

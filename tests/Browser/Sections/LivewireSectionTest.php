@@ -135,7 +135,7 @@ it('keeps the property editor usable in a narrow dark inspector', function () {
         JS;
 
     $page
-        ->assertAttribute('#newdebugbar', 'data-theme', 'dark')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->click('[data-ndb-livewire-activity-list] button')
         ->assertScript($assertMobileBackInset)
         ->click('[data-ndb-livewire-detail-back="activity"]')

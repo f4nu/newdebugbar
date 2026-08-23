@@ -139,7 +139,7 @@ it('keeps repeated SQL on one shared syntax-highlighted surface in :dataset mode
             })()
             JS)
         ->refresh()
-        ->assertAttribute('#newdebugbar', 'data-theme', $theme)
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', $theme)
         ->click('[data-ndb-toolbar="queries"]')
         ->assertScript(<<<'JS'
             (() => {

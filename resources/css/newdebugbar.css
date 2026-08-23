@@ -10,7 +10,7 @@
     --container-8xl: 96rem;
 }
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where([data-ndb-theme="dark"], [data-ndb-theme="dark"] *));
 
 #newdebugbar,
 #newdebugbar *,
@@ -21,6 +21,7 @@
 
 #newdebugbar {
     --ndb-accent: #4f46e5;
+    background: transparent;
     color: #18181b;
     font-family: "Outfit Variable", Outfit, ui-sans-serif, system-ui, sans-serif;
     font-size: 14px;
@@ -44,7 +45,7 @@
     }
 }
 
-#newdebugbar[data-theme="dark"] {
+#newdebugbar[data-ndb-theme="dark"] {
     --ndb-accent: #818cf8;
     color: #f4f4f5;
 }
@@ -152,28 +153,28 @@
     font-style: italic;
 }
 
-#newdebugbar[data-theme="dark"] .ndb-code {
+#newdebugbar[data-ndb-theme="dark"] .ndb-code {
     background: #09090b;
     color: #d4d4d8;
 }
 
-#newdebugbar[data-theme="dark"] :is(.hljs-keyword, .hljs-literal, .hljs-selector-tag) {
+#newdebugbar[data-ndb-theme="dark"] :is(.hljs-keyword, .hljs-literal, .hljs-selector-tag) {
     color: #c4b5fd;
 }
 
-#newdebugbar[data-theme="dark"] :is(.hljs-string, .hljs-attr, .hljs-template-variable) {
+#newdebugbar[data-ndb-theme="dark"] :is(.hljs-string, .hljs-attr, .hljs-template-variable) {
     color: #86efac;
 }
 
-#newdebugbar[data-theme="dark"] :is(.hljs-number, .hljs-built_in, .hljs-type) {
+#newdebugbar[data-ndb-theme="dark"] :is(.hljs-number, .hljs-built_in, .hljs-type) {
     color: #fcd34d;
 }
 
-#newdebugbar[data-theme="dark"] :is(.hljs-title, .hljs-property, .hljs-variable) {
+#newdebugbar[data-ndb-theme="dark"] :is(.hljs-title, .hljs-property, .hljs-variable) {
     color: #7dd3fc;
 }
 
-#newdebugbar[data-theme="dark"] [data-ndb-view-data] .hljs-attr {
+#newdebugbar[data-ndb-theme="dark"] [data-ndb-view-data] .hljs-attr {
     color: #7dd3fc;
 }
 
@@ -185,7 +186,7 @@
     background: linear-gradient(110deg, rgba(219, 234, 254, 0.96), rgba(224, 231, 255, 0.92)) !important;
 }
 
-#newdebugbar[data-theme="dark"] .ndb-section-active {
+#newdebugbar[data-ndb-theme="dark"] .ndb-section-active {
     background: linear-gradient(110deg, rgba(30, 58, 138, 0.58), rgba(49, 46, 129, 0.52)) !important;
 }
 
@@ -197,11 +198,11 @@
     color: rgba(30, 64, 175, 0.62) !important;
 }
 
-#newdebugbar[data-theme="dark"] .ndb-section-active :is(.ndb-section-label, .ndb-section-star-outline) {
+#newdebugbar[data-ndb-theme="dark"] .ndb-section-active :is(.ndb-section-label, .ndb-section-star-outline) {
     color: #dbeafe !important;
 }
 
-#newdebugbar[data-theme="dark"] .ndb-section-active .ndb-section-count {
+#newdebugbar[data-ndb-theme="dark"] .ndb-section-active .ndb-section-count {
     color: rgba(191, 219, 254, 0.7) !important;
 }
 
@@ -301,7 +302,7 @@
     scrollbar-width: thin;
 }
 
-#newdebugbar[data-theme="dark"] .ndb-scrollbar {
+#newdebugbar[data-ndb-theme="dark"] .ndb-scrollbar {
     scrollbar-color: #3f3f46 transparent;
 }
 
@@ -317,7 +318,7 @@
     background-clip: padding-box;
 }
 
-#newdebugbar[data-theme="dark"] .ndb-scrollbar::-webkit-scrollbar-thumb {
+#newdebugbar[data-ndb-theme="dark"] .ndb-scrollbar::-webkit-scrollbar-thumb {
     background: #3f3f46;
     background-clip: padding-box;
 }

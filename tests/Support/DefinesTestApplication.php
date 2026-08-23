@@ -259,9 +259,21 @@ trait DefinesTestApplication
 
             return response(<<<'HTML'
                 <!doctype html>
-                <html>
+                <html data-theme="dark">
                     <head>
                         <style>
+                            @layer base {
+                                :root, [data-theme] {
+                                    background-color: var(--root-bg);
+                                    color: var(--color-base-content);
+                                }
+
+                                :where(:root, [data-theme]) {
+                                    --root-bg: rgb(255, 255, 255);
+                                    --color-base-content: rgb(0, 0, 0);
+                                }
+                            }
+
                             body { font-family: serif; }
                             button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
