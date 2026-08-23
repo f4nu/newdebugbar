@@ -143,10 +143,7 @@
     class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
 >
     @if ($mailItems !== [])
-        <div
-            data-ndb-mail-workspace
-            class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:lg:grid ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.68fr)] ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/35"
-        >
+        <x-newdebugbar::inspector-workspace data-ndb-mail-workspace>
             <div
                 :class="mailDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
                 class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
@@ -275,15 +272,11 @@
                 :class="mailDetailOpen ? 'ndb:flex' : 'ndb:hidden ndb:lg:flex'"
                 class="ndb-scrollbar ndb:min-h-[32rem] ndb:min-w-0 ndb:flex-col ndb:scroll-mt-20 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:min-h-0 ndb:lg:overflow-y-auto"
             >
-                <button
-                    type="button"
+                <x-newdebugbar::inspector-detail-back
                     data-ndb-mail-detail-back
                     @click="mailDetailOpen = false"
-                    class="ndb:m-2 ndb:inline-flex ndb:w-fit ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:p-2 ndb:text-xs ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:hidden ndb:dark:text-indigo-300"
-                >
-                    <x-newdebugbar::icon name="chevron-down" size="3.5" class="ndb:rotate-90" />
-                    Messages
-                </button>
+                    label="Messages"
+                />
 
                 <template x-if="selectedMailMessage">
                     <div class="ndb:flex ndb:flex-col">
@@ -439,7 +432,7 @@
                     </div>
                 </template>
             </section>
-        </div>
+        </x-newdebugbar::inspector-workspace>
     @else
         <x-newdebugbar::empty-state label="No mail was sent or queued." />
     @endif

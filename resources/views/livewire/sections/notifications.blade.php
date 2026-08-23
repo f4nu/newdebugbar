@@ -324,10 +324,7 @@
     </script>
 
     @if ($notificationGroups !== [])
-        <div
-            data-ndb-notification-workspace
-            class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:lg:grid ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.68fr)] ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/35"
-        >
+        <x-newdebugbar::inspector-workspace data-ndb-notification-workspace>
             <div
                 :class="notificationDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
                 class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
@@ -465,7 +462,7 @@
             </div>
 
             <x-newdebugbar::notification-detail />
-        </div>
+        </x-newdebugbar::inspector-workspace>
     @else
         <x-newdebugbar::empty-state label="No notifications were sent." />
     @endif
