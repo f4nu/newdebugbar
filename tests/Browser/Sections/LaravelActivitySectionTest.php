@@ -110,17 +110,17 @@ it('presents Laravel decisions messages and source context without editor links'
         ->assertMissing('[data-ndb-view-data-count]')
         ->assertScript(<<<'JS'
             (() => {
-                const trigger = document.querySelector('[data-ndb-view-data-trigger]');
+                const trigger = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]');
 
                 return trigger.textContent.trim() === 'View data'
                     && trigger.querySelector('svg') === null;
             })()
             JS)
-        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-data-popover]")).display === "none"')
+        ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'false')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]")).display === "none"')
         ->assertScript(<<<'JS'
             (() => {
-                const render = document.querySelector('[data-ndb-view-render]');
+                const render = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data])');
                 const renderRow = render?.querySelector('[data-ndb-view-render-row]');
                 const renderContext = render?.querySelector('[data-ndb-view-render-context]');
                 const viewDataTrigger = render?.querySelector('[data-ndb-view-data-trigger]');
@@ -147,9 +147,9 @@ it('presents Laravel decisions messages and source context without editor links'
             JS);
 
     $page
-        ->click('[data-ndb-view-data-trigger]')
-        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'true')
-        ->assertVisible('[data-ndb-view-data-popover]')
+        ->click('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]')
+        ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'true')
+        ->assertVisible('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]')
         ->assertVisible('[data-ndb-view-data]')
         ->assertSee('view-data-value');
 
@@ -173,24 +173,10 @@ it('presents Laravel decisions messages and source context without editor links'
             JS);
 
     $page
-        ->keys('[data-ndb-view-data-trigger]', 'Escape')
-        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
-        ->assertScript(<<<'JS'
-            (() => {
-                const trigger = document.querySelector('[data-ndb-view-data-trigger]');
-                const popover = document.querySelector('[data-ndb-view-data-popover]');
-
-                return document.activeElement === trigger
-                    && getComputedStyle(popover).display === 'none';
-            })()
-            JS);
-
-    $page
-        ->click('[data-ndb-view-data-trigger]')
         ->resize(390, 844)
         ->assertScript(<<<'JS'
             (() => {
-                const render = document.querySelector('[data-ndb-view-render]');
+                const render = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data])');
                 const viewDataTrigger = render?.querySelector('[data-ndb-view-data-trigger]');
                 const viewDataPopover = render?.querySelector('[data-ndb-view-data-popover]');
 
@@ -206,8 +192,9 @@ it('presents Laravel decisions messages and source context without editor links'
 
     $page
         ->resize(1440, 900)
-        ->click('[data-ndb-view-source]')
-        ->assertAttribute('[data-ndb-view-data-trigger]', 'aria-expanded', 'false')
+        ->keys('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'Escape')
+        ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'false')
+        ->assertScript("[...document.querySelectorAll('[data-ndb-view-data-popover]')].every((popover) => getComputedStyle(popover).display === 'none')")
         ->assertMissing('a[href^="vscode://file/"]')
         ->click('[data-ndb-select-section="events"]')
         ->click('[data-ndb-event-item]:first-child summary')

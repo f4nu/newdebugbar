@@ -3011,6 +3011,9 @@ export function createNewDebugBar(
       }
 
       if (event.key === 'Escape') {
+        const viewDataOwner = event.target?.closest?.('[data-ndb-view-render]');
+        if (viewDataOwner?.querySelector?.('[data-ndb-view-data-trigger][aria-expanded="true"]')) return;
+
         if (this.paletteOpen) this.closePalette();
         else if (this.requestPickerScope) this.closeRequestPicker();
         else if (this.mobileToolbarMenu) this.closeMobileToolbarMenu();

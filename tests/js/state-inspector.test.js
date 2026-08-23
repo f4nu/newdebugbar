@@ -38,6 +38,19 @@ test('consumed escape events do not close the inspector', () => {
   });
 
   assert.equal(state.inspectorOpen, true);
+
+  state.handleShortcut({
+    defaultPrevented: false,
+    metaKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    key: 'Escape',
+    target: {
+      closest: () => ({ querySelector: () => ({}) }),
+    },
+  });
+
+  assert.equal(state.inspectorOpen, true);
 });
 
 test('the request action reuses an open inspector and opens a closed one', () => {

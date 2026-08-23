@@ -100,10 +100,12 @@
                                     <div
                                         x-data="{ viewDataOpen: false }"
                                         x-id="['view-data-trigger', 'view-data-popover']"
-                                        @keydown.escape.stop="
+                                        @keydown.escape.stop.prevent="
                                             if (viewDataOpen) {
                                                 viewDataOpen = false;
-                                                $nextTick(() => $refs.viewDataButton.focus());
+                                                $event.currentTarget
+                                                    .querySelector('[data-ndb-view-data-trigger]')
+                                                    ?.focus();
                                             }
                                         "
                                         class="ndb:relative"

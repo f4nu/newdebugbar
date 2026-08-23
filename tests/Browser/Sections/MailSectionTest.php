@@ -102,7 +102,8 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const actions = document.querySelector('[data-ndb-mail-actions]');
                 const menu = document.querySelector('[data-ndb-mail-actions-menu]');
                 const surface = menu.querySelector('[data-ndb-popover-surface]');
-                const items = [...menu.querySelectorAll('[role="menuitem"]')];
+                const items = [...menu.querySelectorAll('[role="menuitem"]')]
+                    .filter((item) => getComputedStyle(item).display !== 'none');
                 const preview = menu.querySelector('[data-ndb-mail-open-preview]');
                 const download = menu.querySelector('[data-ndb-mail-download]');
 
