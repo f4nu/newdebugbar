@@ -17,9 +17,10 @@ it('groups notification attempts in a full-height delivery inspector', function 
             (() => {
                 const root = document.querySelector('[data-ndb-notifications]');
                 const payload = root.querySelector('[data-ndb-notification-payload]');
-                const notifications = JSON.parse(payload.textContent);
+                const notifications = JSON.parse(atob(payload.textContent));
 
                 return !root.getAttribute('x-init').includes('ProfiledNotification')
+                    && /^[A-Za-z0-9+/=]+$/.test(payload.textContent)
                     && notifications.length === 2
                     && notifications[0].notification.includes('\\ProfiledNotification');
             })()

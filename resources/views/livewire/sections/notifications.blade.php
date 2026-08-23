@@ -148,10 +148,10 @@
 
 <div
     data-ndb-notifications
-    x-init="initializeNotifications(JSON.parse($el.querySelector('[data-ndb-notification-payload]').textContent))"
+    x-init="initializeNotifications(JSON.parse(atob($el.querySelector('[data-ndb-notification-payload]').textContent)))"
     class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
 >
-    <script type="application/json" data-ndb-notification-payload>{!! \Illuminate\Support\Js::encode($notificationGroups) !!}</script>
+    <script type="application/json" data-ndb-notification-payload>{{ base64_encode(\Illuminate\Support\Js::encode($notificationGroups)) }}</script>
 
     @if ($notificationGroups !== [])
         <div
