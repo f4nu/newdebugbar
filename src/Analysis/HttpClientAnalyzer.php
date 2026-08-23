@@ -33,6 +33,7 @@ final class HttpClientAnalyzer
             $slow = $duration !== null && $duration >= $this->slowRequestMs;
             $reason = trim((string) ($request['reason'] ?? ''));
             $method = strtoupper((string) ($request['method'] ?? 'HTTP'));
+            $durationLabel = $this->durationLabel($duration);
 
             $items[] = [
                 ...$request,
@@ -47,6 +48,12 @@ final class HttpClientAnalyzer
                 'slow' => $slow,
                 'attention' => $failed || $slow,
                 'status_label' => $this->statusLabel($status, $reason, $failed),
+                'duration_label' => $durationLabel,
+                'timing_summary' => $this->timingSummary($durationLabel, $slow),
+                'response_summary' => $this->responseSummary(
+                    $request['response'] ?? null,
+                    $request['exception_message'] ?? null,
+                ),
                 'meaning' => $this->meaning($status, $failed, $slow),
                 'what_happened' => $this->whatHappened($host, $status, $reason, $failed, $slow, $duration),
                 'why_it_matters' => $this->whyItMatters($status, $failed, $slow),
@@ -85,6 +92,61 @@ final class HttpClientAnalyzer
         }
 
         return $failed ? 'Connection error' : 'No response';
+    }
+
+    private function durationLabel(?float $duration): string
+    {
+        if ($duration === null) {
+            return 'Timing unavailable';
+        }
+
+        if ($duration === 0.0) {
+            return '<0.01 ms';
+        }
+
+        return $this->number($duration).' ms';
+    }
+
+    private function timingSummary(string $durationLabel, bool $slow): string
+    {
+        if (! $slow) {
+            return $durationLabel;
+        }
+
+        return sprintf(
+            '%s, above the %s ms threshold',
+            $durationLabel,
+            $this->number($this->slowRequestMs),
+        );
+    }
+
+    private function responseSummary(mixed $response, mixed $exceptionMessage): string
+    {
+        if (is_scalar($exceptionMessage) && trim((string) $exceptionMessage) !== '') {
+            return trim((string) $exceptionMessage);
+        }
+
+        if (! is_array($response)) {
+            return 'No response was captured.';
+        }
+
+        $body = $response['body'] ?? null;
+
+        if (is_array($body)) {
+            foreach (['message', 'error', 'detail', 'reason'] as $key) {
+                if (is_scalar($body[$key] ?? null) && trim((string) $body[$key]) !== '') {
+                    return trim((string) $body[$key]);
+                }
+            }
+
+            return $body === [] ? 'The response body was empty.' : 'A response body was captured.';
+        }
+
+        if (is_scalar($body) && trim((string) $body) !== '') {
+            return trim((string) $body);
+        }
+
+        return 'No response body was returned.';
     }
 
     private function whatHappened(
