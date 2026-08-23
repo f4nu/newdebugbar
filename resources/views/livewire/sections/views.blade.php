@@ -99,6 +99,7 @@
                                     <div
                                         x-data="newDebugBar.viewData($wire, {{ $view['render_order'] }})"
                                         x-id="['view-data-trigger', 'view-data-popover']"
+                                        @click.outside="viewDataOpen = false"
                                         @keydown.escape.stop.prevent="
                                             if (viewDataOpen) {
                                                 viewDataOpen = false;
@@ -135,7 +136,7 @@
                                                 :id="$id('view-data-trigger')"
                                                 :aria-controls="$id('view-data-popover')"
                                                 :aria-expanded="viewDataOpen"
-                                                @click="
+                                                @click.stop="
                                                     viewDataOpen = ! viewDataOpen;
                                                     if (viewDataOpen) loadViewData();
                                                 "
@@ -154,7 +155,6 @@
                                             x-transition:leave="ndb:transition ndb:duration-100 ndb:ease-in ndb:motion-reduce:transition-none"
                                             x-transition:leave-start="ndb:translate-y-0 ndb:scale-100 ndb:opacity-100"
                                             x-transition:leave-end="ndb:translate-y-1 ndb:scale-95 ndb:opacity-0"
-                                            @click.outside="viewDataOpen = false"
                                             data-ndb-view-data-popover
                                             ::id="$id('view-data-popover')"
                                             ::aria-labelledby="$id(
