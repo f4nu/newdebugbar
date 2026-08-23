@@ -8,13 +8,13 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
   const appended = [];
-  let detailScrolls = 0;
+  let detailResets = 0;
   const element = (execution, duration, attention, search) => ({
     dataset: {
-      execution: String(execution),
-      duration: String(duration),
-      attention: String(attention),
-      search,
+      ndbExecution: String(execution),
+      ndbDuration: String(duration),
+      ndbAttention: String(attention),
+      ndbSearch: search,
     },
     hidden: false,
     style: {
@@ -35,7 +35,7 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
       children: [first, second, third],
       appendChild: (child) => appended.push(child),
     },
-    httpClientDetail: { scrollIntoView: () => detailScrolls++ },
+    httpClientDetail: { scrollTo: () => detailResets++ },
   };
   state.$nextTick = (callback) => callback();
 
@@ -46,6 +46,7 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
   ]);
   assert.equal(state.httpClientFilter, 'all');
   assert.equal(state.httpClientSelected, 1);
+  assert.equal(state.httpClientDetailOpen, false);
   assert.equal(state.selectedHttpClientRequest.host, 'api.example.test');
   assert.equal(first.hidden, false);
   assert.equal(first.style.display, '');
@@ -82,13 +83,14 @@ test('HTTP client defaults to all and keeps one filtered request selected', () =
   state.httpClientDetailTab = 'response';
   state.selectHttpClientRequest(1);
   assert.equal(state.httpClientSelected, 1);
+  assert.equal(state.httpClientDetailOpen, true);
   assert.equal(state.httpClientDetailTab, 'overview');
 
-  browser.viewportWidth = () => 390;
-  state.selectHttpClientRequest(2, true);
-  assert.equal(detailScrolls, 1);
+  state.selectHttpClientRequest(2);
+  assert.equal(state.httpClientSelected, 2);
 
   state.setHttpClientDetailTab('request');
+  assert.equal(detailResets, 1);
   state.setHttpClientDetailTab('invalid');
   state.setHttpClientFilter('invalid');
   state.setHttpClientSort('invalid');
@@ -113,6 +115,7 @@ test('HTTP client defaults to all when no request needs attention', () => {
   state.initializeHttpClient('invalid');
   assert.deepEqual(state.httpClientRequests, []);
   assert.equal(state.httpClientSelected, null);
+  assert.equal(state.httpClientDetailOpen, false);
 
   state.$refs = {};
   state.applyHttpClientView();

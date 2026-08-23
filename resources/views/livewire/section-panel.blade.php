@@ -5,14 +5,14 @@
         wire:key="profile-section-{{ $profileId }}-{{ $sectionKey }}"
         x-cloak
         x-show.important="loadedSection === @js($sectionKey) || requestedSection === @js($sectionKey)"
-        :class="['mail', 'notifications'].includes(selected) ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
+        :class="['http_client', 'mail', 'notifications'].includes(selected) ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
         class="ndb:p-4 ndb:sm:p-6"
     >
         <section
             data-ndb-section-panel="{{ $sectionKey }}"
             @class([
-                'ndb:space-y-4' => ! in_array($sectionKey, ['mail', 'notifications'], true),
-                'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => in_array($sectionKey, ['mail', 'notifications'], true),
+                'ndb:space-y-4' => ! in_array($sectionKey, ['http_client', 'mail', 'notifications'], true),
+                'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => in_array($sectionKey, ['http_client', 'mail', 'notifications'], true),
             ])
         >
             @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))

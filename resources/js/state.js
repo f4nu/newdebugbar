@@ -321,6 +321,7 @@ export function createNewDebugBar(
     httpClientSearch: '',
     httpClientSort: 'execution',
     httpClientSelected: null,
+    httpClientDetailOpen: false,
     httpClientDetailTab: 'overview',
     visibleHttpClientCount: summary.section_counts?.http_client ?? 0,
     mailMessages: [],
@@ -1761,6 +1762,7 @@ export function createNewDebugBar(
       this.httpClientSearch = '';
       this.httpClientSort = 'execution';
       this.httpClientSelected = null;
+      this.httpClientDetailOpen = false;
       this.httpClientDetailTab = 'overview';
       this.visibleHttpClientCount = 0;
       this.mailMessages = [];
@@ -2301,6 +2303,7 @@ export function createNewDebugBar(
       this.httpClientFilter = 'all';
       this.httpClientSearch = '';
       this.httpClientSort = 'execution';
+      this.httpClientDetailOpen = false;
       this.httpClientDetailTab = 'overview';
       this.httpClientSelected = this.httpClientRequests[0]?.execution ?? null;
       this.$nextTick?.(() => this.applyHttpClientView());
@@ -2320,21 +2323,19 @@ export function createNewDebugBar(
       this.applyHttpClientView();
     },
 
-    selectHttpClientRequest(execution, reveal = false) {
+    selectHttpClientRequest(execution) {
       if (!this.httpClientRequests.some((request) => request.execution === execution)) return;
 
       this.httpClientSelected = execution;
+      this.httpClientDetailOpen = true;
       this.httpClientDetailTab = 'overview';
-
-      if (reveal && (browser.viewportWidth?.() ?? 0) < 1024) {
-        this.$nextTick?.(() => this.$refs?.httpClientDetail?.scrollIntoView?.({ block: 'start' }));
-      }
     },
 
     setHttpClientDetailTab(tab) {
       if (!['overview', 'request', 'response', 'stack'].includes(tab)) return;
 
       this.httpClientDetailTab = tab;
+      this.$nextTick?.(() => this.$refs?.httpClientDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
     },
 
     applyHttpClientView() {
@@ -2348,17 +2349,17 @@ export function createNewDebugBar(
         .sort((left, right) => {
           if (this.httpClientSort === 'duration') {
             return (
-              Number(right.dataset.duration ?? 0) - Number(left.dataset.duration ?? 0) ||
-              Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0)
+              Number(right.dataset.ndbDuration ?? 0) - Number(left.dataset.ndbDuration ?? 0) ||
+              Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0)
             );
           }
 
-          return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+          return Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
         })
         .forEach((item) => {
           const matches =
-            (this.httpClientFilter === 'all' || item.dataset.attention === 'true') &&
-            (search === '' || item.dataset.search?.includes(search));
+            (this.httpClientFilter === 'all' || item.dataset.ndbAttention === 'true') &&
+            (search === '' || item.dataset.ndbSearch?.includes(search));
           item.hidden = !matches;
           if (matches) {
             item.style.removeProperty('display');
@@ -2367,7 +2368,7 @@ export function createNewDebugBar(
           }
 
           if (matches) {
-            const execution = Number(item.dataset.execution);
+            const execution = Number(item.dataset.ndbExecution);
             firstVisible ??= execution;
             selectedVisible ||= execution === this.httpClientSelected;
             visible++;
