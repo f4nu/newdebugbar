@@ -15,12 +15,23 @@
             $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
             $stack = array_values(is_array($item['stack'] ?? null) ? $item['stack'] : []);
             $source = is_string($item['source'] ?? null) ? $item['source'] : null;
+            $mailer = is_string($item['mailer'] ?? null) && $item['mailer'] !== '' ? $item['mailer'] : null;
+            $transport = is_string($item['transport'] ?? null) && $item['transport'] !== '' ? $item['transport'] : null;
             $subject = is_string($preview['subject'] ?? null) && $preview['subject'] !== ''
                 ? $preview['subject']
                 : '(No subject)';
             $hasHtml = is_string($preview['html'] ?? null);
             $hasText = is_string($preview['text'] ?? null);
             $execution = $index + 1;
+            $callsiteLabel = $callsite === null ? 'Source unavailable' : $callsite['file'].':'.$callsite['line'];
+            $callsiteShortLabel = $callsite === null
+                ? 'Unavailable'
+                : basename(str_replace('\\', '/', $callsite['file'])).':'.$callsite['line'];
+            $deliveryLabel = $mailer ?? $transport ?? 'Unavailable';
+
+            if ($mailer !== null && $transport !== null && $mailer !== $transport) {
+                $deliveryLabel = $mailer.' via '.$transport;
+            }
 
             return [
                 'execution' => $execution,
@@ -37,13 +48,15 @@
                 'primary_recipient' => $to[0] ?? $cc[0] ?? $bcc[0] ?? 'No recipient captured',
                 'status' => $item['status'] ?? 'sent',
                 'duration_ms' => (float) ($item['duration_ms'] ?? 0),
-                'mailer' => $item['mailer'] ?? null,
-                'transport' => $item['transport'] ?? null,
+                'mailer' => $mailer,
+                'transport' => $transport,
+                'delivery_label' => $deliveryLabel,
                 'transport_message_id' => $item['transport_message_id'] ?? null,
                 'source' => $source,
                 'source_label' => $source === null ? 'Mail message' : \Illuminate\Support\Str::afterLast($source, '\\'),
                 'callsite' => $callsite,
-                'callsite_label' => $callsite === null ? 'Source unavailable' : $callsite['file'].':'.$callsite['line'],
+                'callsite_label' => $callsiteLabel,
+                'callsite_short_label' => $callsiteShortLabel,
                 'stack' => $stack,
                 'headers' => is_string($preview['headers'] ?? null) ? $preview['headers'] : '',
                 'attachments' => $attachments,
@@ -225,49 +238,14 @@
                                         "
                                     ></span>
                                 </div>
-                                <div class="ndb:flex ndb:shrink-0 ndb:flex-wrap ndb:justify-end ndb:gap-2">
-                                    <a
-                                        data-ndb-mail-open-preview
-                                        :href="mailPreviewUrl()"
-                                        x-show="selectedMailMessage.has_html || selectedMailMessage.has_text"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-2.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white"
-                                    >Open preview</a>
-                                    <a
-                                        data-ndb-mail-download
-                                        :href="selectedMailMessage.eml_url"
-                                        class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:px-2.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:hover:bg-zinc-100 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-800 ndb:dark:hover:text-white"
-                                    >Download .eml</a>
-                                </div>
+                                <x-newdebugbar::mail-actions />
                             </div>
                             <h3
                                 data-ndb-mail-detail-subject
                                 class="ndb:mt-3 ndb:text-base ndb:font-bold ndb:leading-6"
                                 x-text="selectedMailMessage.subject"
                             ></h3>
-                            <p class="ndb:mt-1 ndb:truncate ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                <span x-text="formatMailAddresses(selectedMailMessage.from)"></span>
-                                <span aria-hidden="true"> → </span>
-                                <span x-text="formatMailAddresses(selectedMailMessage.to)"></span>
-                            </p>
-                            <p class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-2 ndb:gap-y-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-                                <span
-                                    class="ndb:tabular-nums"
-                                    x-text="selectedMailMessage.duration_ms.toFixed(2) + ' ms'"
-                                ></span>
-                                <span
-                                    x-text="
-                                        selectedMailMessage.mailer
-                                            ? 'Default mailer: ' + selectedMailMessage.mailer
-                                            : 'Default mailer unavailable'
-                                    "
-                                ></span>
-                                <code
-                                    class="ndb:truncate ndb:font-mono"
-                                    x-text="selectedMailMessage.callsite_label"
-                                ></code>
-                            </p>
+                            <x-newdebugbar::mail-metadata />
                         </header>
 
                         <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">

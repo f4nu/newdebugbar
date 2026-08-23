@@ -11,6 +11,9 @@ it('selects and inspects mail with a real in-panel preview', function () {
         ->assertAttribute('[data-ndb-mail-detail-tab="preview"]', 'aria-pressed', 'true')
         ->assertValue('[data-ndb-mail-preview-format]', 'html')
         ->assertAttribute('[data-ndb-mail-preview-viewport="desktop"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-mail-actions-trigger]', 'aria-haspopup', 'menu')
+        ->assertAttribute('[data-ndb-mail-actions-trigger]', 'aria-label', 'Mail actions')
+        ->assertAttribute('[data-ndb-mail-actions-trigger]', 'aria-expanded', 'false')
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-mail-workspace]');
@@ -36,6 +39,13 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const summaryRuntime = document.querySelector('[data-ndb-mail-summary-runtime]');
                 const filter = document.querySelector('[data-ndb-mail-filter]');
                 const header = detail.querySelector('header');
+                const actions = header.querySelector('[data-ndb-mail-actions]');
+                const metadata = header.querySelector('[data-ndb-mail-metadata]');
+                const [addresses, technicalFacts] = metadata.children;
+                const metadataFacts = [...technicalFacts.children];
+                const addressGroups = [...addresses.children];
+                const addressWidths = addressGroups.map((group) => group.getBoundingClientRect().width);
+                const metadataFactWidths = metadataFacts.map((fact) => fact.getBoundingClientRect().width);
                 const headerTop = header.getBoundingClientRect().top;
 
                 detail.scrollTop = 96;
@@ -56,6 +66,19 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && formatControl.getBoundingClientRect().left > viewportControl.getBoundingClientRect().right
                     && tabs[0].parentElement === previewControls.parentElement
                     && attachmentBadge.closest('header') === header
+                    && actions.open === false
+                    && metadataFacts.length === 3
+                    && metadata.textContent.includes('Sent')
+                    && metadata.textContent.includes('Delivery')
+                    && metadata.textContent.includes('Source')
+                    && metadata.querySelectorAll('svg').length === 3
+                    && header.querySelector('[data-ndb-mail-actions-trigger]').textContent.trim() === ''
+                    && metadata.scrollWidth <= metadata.clientWidth + 1
+                    && /^To\s/.test(addressGroups[0].textContent.trim())
+                    && /^From\s/.test(addressGroups[1].textContent.trim())
+                    && ! addresses.textContent.includes('→')
+                    && Math.abs(addressWidths[0] - addressWidths[1]) <= 1
+                    && Math.max(...metadataFactWidths) - Math.min(...metadataFactWidths) <= 1
                     && summary.parentElement.contains(filter)
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
@@ -69,6 +92,39 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && frame.getBoundingClientRect().width > 500
                     && frame.clientHeight > 320
                     && !document.querySelector('[data-ndb-mail]').textContent.includes('•');
+            })()
+            JS)
+        ->click('[data-ndb-mail-actions-trigger]')
+        ->assertAttribute('[data-ndb-mail-actions-trigger]', 'aria-expanded', 'true')
+        ->assertVisible('[data-ndb-mail-actions-menu]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const actions = document.querySelector('[data-ndb-mail-actions]');
+                const menu = document.querySelector('[data-ndb-mail-actions-menu]');
+                const surface = menu.querySelector('[data-ndb-popover-surface]');
+                const items = [...menu.querySelectorAll('[role="menuitem"]')];
+                const preview = menu.querySelector('[data-ndb-mail-open-preview]');
+                const download = menu.querySelector('[data-ndb-mail-download]');
+
+                return actions.open
+                    && menu.getAttribute('role') === 'menu'
+                    && items.length === 2
+                    && items.every((item) => Number.parseFloat(getComputedStyle(item).minHeight) >= 44)
+                    && items.every((item) => item.querySelector('svg'))
+                    && Number.parseFloat(getComputedStyle(surface).borderRadius) === 16
+                    && preview.getAttribute('href').endsWith('/0/html')
+                    && preview.getAttribute('target') === '_blank'
+                    && download.getAttribute('href').endsWith('/0/eml');
+            })()
+            JS)
+        ->keys('[data-ndb-mail-actions-trigger]', 'Escape')
+        ->assertAttribute('[data-ndb-mail-actions-trigger]', 'aria-expanded', 'false')
+        ->assertScript(<<<'JS'
+            (() => {
+                const actions = document.querySelector('[data-ndb-mail-actions]');
+                const trigger = document.querySelector('[data-ndb-mail-actions-trigger]');
+
+                return actions.open === false && document.activeElement === trigger;
             })()
             JS)
         ->select('[data-ndb-mail-preview-format]', 'text')
@@ -156,11 +212,26 @@ it('stacks mail list and preview cleanly on mobile in dark mode', function () {
                 const detail = document.querySelector('[data-ndb-mail-detail]');
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
+                const metadata = document.querySelector('[data-ndb-mail-metadata]');
+                const technicalFacts = metadata.lastElementChild;
 
                 return detail.getBoundingClientRect().top >= content.getBoundingClientRect().top
                     && frame.getBoundingClientRect().width <= detail.getBoundingClientRect().width
+                    && metadata.scrollWidth <= metadata.clientWidth + 1
+                    && getComputedStyle(technicalFacts).gridTemplateColumns.split(' ').length === 3
                     && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)
+        ->click('[data-ndb-mail-actions-trigger]')
+        ->assertVisible('[data-ndb-mail-actions-menu]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const menu = document.querySelector('[data-ndb-mail-actions-menu]');
+                const rect = menu.getBoundingClientRect();
+
+                return rect.left >= 0 && rect.right <= window.innerWidth;
+            })()
+            JS)
+        ->keys('[data-ndb-mail-actions-trigger]', 'Escape')
         ->assertNoJavaScriptErrors();
 });

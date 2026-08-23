@@ -281,6 +281,9 @@ trait DefinesTestApplication
 
                             body { font-family: serif; }
                             button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            a { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
+                            details { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
+                            dl, dt, dd { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }

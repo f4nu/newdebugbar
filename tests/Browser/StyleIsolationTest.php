@@ -112,12 +112,32 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const row = document.querySelector('[data-ndb-mail-item]');
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
+                const actions = document.querySelector('[data-ndb-mail-actions]');
+                const metadata = document.querySelector('[data-ndb-mail-metadata]');
+                const metadataLabel = metadata.querySelector('dt');
 
                 return getComputedStyle(row).borderLeftWidth === '0px'
                     && frame.getBoundingClientRect().width > 300
-                    && getComputedStyle(frame).borderLeftWidth === '1px';
+                    && getComputedStyle(frame).borderLeftWidth === '1px'
+                    && getComputedStyle(actions).borderLeftWidth === '0px'
+                    && getComputedStyle(actions).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(metadataLabel).fontSize) === 11
+                    && getComputedStyle(metadataLabel).color !== 'rgb(0, 128, 0)';
             })()
             JS)
+        ->click('[data-ndb-mail-actions-trigger]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const links = [...document.querySelectorAll('[data-ndb-mail-actions-menu] a')];
+
+                return links.length === 2
+                    && links.every((link) => link.getBoundingClientRect().height < 91)
+                    && links.every((link) => getComputedStyle(link).backgroundColor !== 'rgb(255, 0, 255)')
+                    && links.every((link) => getComputedStyle(link).textDecorationLine === 'none');
+            })()
+            JS)
+        ->keys('[data-ndb-mail-actions-trigger]', 'Escape')
         ->click('[data-ndb-mail-detail-tab="message"]')
         ->assertScript(<<<'JS'
             (() => {

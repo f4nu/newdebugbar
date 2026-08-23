@@ -51,6 +51,7 @@ it('uses one popover surface for toolbar and inspector menus', function () {
         'components/mobile-toolbar-popover.blade.php',
         'components/query-actions.blade.php',
         'components/request-switcher.blade.php',
+        'components/mail-actions.blade.php',
         'livewire/sections/views.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))

@@ -97,6 +97,14 @@
             <rect x="8" y="8" width="11" height="11" rx="2"
             /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
             @break
+        @case ('external-link')
+            <path d="M14 4h6v6M20 4l-9 9" />
+            <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+            @break
+        @case ('download')
+            <path d="M12 3v12M7 10l5 5 5-5" />
+            <path d="M4 19h16" />
+            @break
         @case ('monitor')
             <rect x="2" y="3" width="20" height="14" rx="2"
             /><path d="M8 21h8M12 17v4" />

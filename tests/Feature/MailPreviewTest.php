@@ -66,7 +66,7 @@ it('stores and serves local previews without attachments by default', function (
 
     Livewire::test(DebugBar::class, ['profileId' => $profileId])
         ->call('loadDetails')
-        ->assertSee('Download .eml')
+        ->assertSee('Download .EML')
         ->assertSee('Open preview');
 });
 
