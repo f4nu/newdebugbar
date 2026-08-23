@@ -15,6 +15,17 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->assertVisible('[data-ndb-notification-view-mail]')
         ->assertScript(<<<'JS'
             (() => {
+                const root = document.querySelector('[data-ndb-notifications]');
+                const payload = root.querySelector('[data-ndb-notification-payload]');
+                const notifications = JSON.parse(payload.textContent);
+
+                return !root.getAttribute('x-init').includes('ProfiledNotification')
+                    && notifications.length === 2
+                    && notifications[0].notification.includes('\\ProfiledNotification');
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const workspace = document.querySelector('[data-ndb-notification-workspace]');
                 const [list, detail] = workspace.children;
                 const content = document.querySelector('[data-ndb-inspector-content]');
