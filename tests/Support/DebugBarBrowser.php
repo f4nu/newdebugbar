@@ -113,11 +113,22 @@ final class DebugBarBrowser
 
                 const check = () => {
                     const root = document.getElementById('newdebugbar');
-                    const details = root?.querySelector('[data-ndb-loaded-section]');
+                    const selected = root?.querySelector('[data-ndb-select-section][aria-current="page"]')
+                        ?.dataset.ndbSelectSection;
+                    const details = selected === undefined
+                        ? null
+                        : root.querySelector(`[data-ndb-loaded-section="${CSS.escape(selected)}"]`);
+                    const stage = root?.querySelector('[data-ndb-section-stage]');
+                    const content = root?.querySelector('[data-ndb-section-content]');
                     const loading = root?.querySelector('[data-ndb-section-loading]');
                     const loadingFinished = loading === null || getComputedStyle(loading).display === 'none';
+                    const requestFinished = stage?.getAttribute('aria-busy') === 'false';
+                    const transitionFinished = content !== null && Number(getComputedStyle(content).opacity) === 1;
+                    const detailsVisible = details !== null
+                        && details.hidden === false
+                        && getComputedStyle(details).display !== 'none';
 
-                    if (details !== null && details !== undefined && loadingFinished) {
+                    if (detailsVisible && loadingFinished && requestFinished && transitionFinished) {
                         if (details === stableDetails) stableFrames += 1;
                         else {
                             stableDetails = details;
