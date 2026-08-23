@@ -24,9 +24,16 @@
 - Keep the bar visually quiet until something needs attention. It should feel at home on the page while a developer works.
 - Help developers answer: What happened? What is wrong? Why? Where? What should I check next?
 - Show the request, errors, query count, and duration first.
-- Keep framework internals, raw data, hashes, and repeated facts out of the main view.
-- A finding should explain the problem, why it matters, where it came from, and what to do next.
-- Do not show two findings for the same cause.
+- Preserve useful diagnostics, but simplify dense views through hierarchy and progressive disclosure instead of removing information.
+- Keep primary views focused. Move framework internals, raw data, hashes, and supporting evidence into deeper detail views.
+- Reuse established components and interaction patterns, while letting each section's data model determine its content and controls.
+- Give stateful controls deliberate defaults. Do not make developers configure a view before it becomes useful.
+- Prefer explicit labels over ambiguous symbols. Selection, loading, and content changes must not shift surrounding layout.
+- Give each view one clear vertical scroll owner, and make the full parent height chain support it.
+- Adapt the interaction structure to the viewport instead of squeezing desktop layouts onto smaller screens.
+- A finding should explain the problem, why it matters, where it came from, and what to check next.
+- Do not show multiple findings or records for the same logical cause or operation.
+- Verify interface changes with realistic populated profiles across short and tall desktop sizes, mobile sizes, light and dark themes, varied content lengths, multiple records, failures, and refresh/reopen flows.
 
 ## Host-page isolation
 

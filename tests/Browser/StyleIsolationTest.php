@@ -194,14 +194,33 @@ it('keeps host styles and package styles isolated', function () {
         ->assertVisible('[data-ndb-notification-profile-link]')
         ->assertScript(<<<'JS'
             (() => {
-                const item = document.querySelector('[data-ndb-notification-item]');
-                const badge = item.querySelector('span');
+                const root = document.querySelector('[data-ndb-notifications]');
+                const row = document.querySelector('[data-ndb-notification-item]');
+                const detail = document.querySelector('[data-ndb-notification-detail]');
+                const metadata = document.querySelector('[data-ndb-notification-metadata]');
+                const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
+                const status = document.querySelector('[data-ndb-notification-status]');
                 const link = document.querySelector('[data-ndb-notification-profile-link]');
+                const backIcon = document.querySelector('[data-ndb-notification-detail-back] svg');
+                const tabs = [...document.querySelectorAll('[data-ndb-notification-detail-tab]')];
+                const tabIcons = [...document.querySelectorAll('[data-ndb-notification-detail-tab-icon]')];
 
-                return getComputedStyle(item).borderLeftWidth !== '20px'
-                    && Number.parseFloat(getComputedStyle(badge).fontSize) === 11
-                    && getComputedStyle(item).backgroundColor !== 'rgb(255, 0, 0)'
-                    && link.getBoundingClientRect().height < 91;
+                return root.getAttribute('data-notifications') === null
+                    && getComputedStyle(root).borderLeftWidth === '0px'
+                    && getComputedStyle(row).borderLeftWidth === '0px'
+                    && row.getBoundingClientRect().height < 91
+                    && getComputedStyle(detail).borderLeftWidth === '0px'
+                    && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
+                    && metadataTerms.every((term) => getComputedStyle(term).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)')
+                    && Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 11
+                    && Number.parseFloat(getComputedStyle(status).fontSize) === 11
+                    && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
+                    && link.getBoundingClientRect().height < 91
+                    && Number.parseFloat(getComputedStyle(backIcon).width) === 14
+                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91)
+                    && tabIcons.length === 3
+                    && tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14);
             })()
             JS)
         ->assertNoJavaScriptErrors();

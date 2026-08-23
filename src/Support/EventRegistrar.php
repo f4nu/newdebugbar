@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use Closure;
 use Illuminate\Auth\Access\Events\GateEvaluated;
+use Illuminate\Bus\Queueable;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\CacheHit;
@@ -15,6 +16,7 @@ use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
@@ -28,6 +30,8 @@ use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Mail\SentMessage;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
@@ -45,6 +49,7 @@ use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Events\Routing;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\BackgroundActivityStore;
+use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
 use Throwable;
@@ -52,6 +57,25 @@ use Throwable;
 /** Routes Laravel runtime events into their matching request collectors. */
 final class EventRegistrar
 {
+    private const MAX_PENDING_NOTIFICATION_DESTINATIONS = 500;
+
+    /** @var list<string> */
+    private const FRAMEWORK_NOTIFICATION_PROPERTIES = [
+        'afterCommit',
+        'chainCatchCallbacks',
+        'chainConnection',
+        'chainQueue',
+        'chained',
+        'connection',
+        'debounceOwner',
+        'deduplicator',
+        'delay',
+        'messageGroup',
+        'middleware',
+        'queue',
+        'uniqueLockOwner',
+    ];
+
     /** @var array<int, array<string, mixed>> */
     private array $activeJobContexts = [];
 
@@ -93,6 +117,9 @@ final class EventRegistrar
         PreparingResponse::class,
         ResponsePrepared::class,
     ];
+
+    /** @var array<string, mixed> */
+    private array $notificationDestinations = [];
 
     public function __construct(
         private readonly Dispatcher $events,
@@ -453,23 +480,53 @@ final class EventRegistrar
             ]);
         });
 
-        $this->listen(NotificationSent::class, function (NotificationSent $event): void {
+        $this->listen(NotificationSending::class, function (NotificationSending $event): void {
+            $location = $this->callSites->capture();
+
             $this->manager()->record('notifications', [
+                'phase' => 'sending',
+                ...$this->notificationDeliveryMetadata(
+                    $event->notifiable,
+                    $event->notification,
+                    (string) $event->channel,
+                ),
+                ...$location,
+            ]);
+        });
+
+        $this->listen(NotificationSent::class, function (NotificationSent $event): void {
+            $location = $this->callSites->capture();
+
+            $this->manager()->record('notifications', [
+                'phase' => 'sent',
                 'status' => 'sent',
-                'notification' => $event->notification::class,
-                'channel' => (string) $event->channel,
-                'notifiable_type' => is_object($event->notifiable) ? $event->notifiable::class : get_debug_type($event->notifiable),
+                ...$this->notificationDeliveryMetadata(
+                    $event->notifiable,
+                    $event->notification,
+                    (string) $event->channel,
+                    terminal: true,
+                ),
+                ...$this->notificationResponse($event->response),
                 ...$this->correlationContext($this->currentJobContext()),
+                ...$location,
             ]);
         });
 
         $this->listen(NotificationFailed::class, function (NotificationFailed $event): void {
+            $location = $this->callSites->capture();
+
             $this->manager()->record('notifications', [
+                'phase' => 'failed',
                 'status' => 'failed',
-                'notification' => $event->notification::class,
-                'channel' => (string) $event->channel,
-                'notifiable_type' => is_object($event->notifiable) ? $event->notifiable::class : get_debug_type($event->notifiable),
+                ...$this->notificationDeliveryMetadata(
+                    $event->notifiable,
+                    $event->notification,
+                    (string) $event->channel,
+                    terminal: true,
+                ),
+                ...$this->notificationFailure($event->data),
                 ...$this->correlationContext($this->currentJobContext()),
+                ...$location,
             ]);
         });
 
@@ -626,6 +683,262 @@ final class EventRegistrar
         $key = $model->getKeyName();
 
         return array_key_exists($key, $attributes) ? $attributes[$key] : null;
+    }
+
+    /** @return array<string, mixed> */
+    private function notificationDeliveryMetadata(
+        mixed $notifiable,
+        object $notification,
+        string $channel,
+        bool $terminal = false,
+    ): array {
+        $notificationId = isset($notification->id) && is_scalar($notification->id)
+            ? (string) $notification->id
+            : null;
+        $notificationObjectId = spl_object_id($notification);
+        $notifiableObjectId = is_object($notifiable) ? spl_object_id($notifiable) : 0;
+        $notifiableType = is_object($notifiable) ? $notifiable::class : get_debug_type($notifiable);
+        $notifiableId = $this->notificationNotifiableId($notifiable);
+        $groupIdentity = implode('|', [
+            $notification::class,
+            $notificationId === null ? 'object:'.$notificationObjectId : 'id:'.$notificationId,
+            $notifiableType,
+            $notifiableId === null ? 'object:'.$notifiableObjectId : 'id:'.(string) $notifiableId,
+        ]);
+        $groupId = substr(hash('sha256', $groupIdentity), 0, 24);
+        $attemptId = $groupId.'|'.$channel;
+
+        return [
+            'attempt_id' => $attemptId,
+            'group_id' => $groupId,
+            'notification_id' => $notificationId,
+            'notification_object_id' => $notificationObjectId,
+            'notification' => $notification::class,
+            'notification_source' => $this->notificationClassLocation($notification),
+            'notification_data' => $this->notificationPublicData($notification),
+            'locale' => isset($notification->locale) && is_string($notification->locale)
+                ? $notification->locale
+                : null,
+            'queueable' => $notification instanceof ShouldQueue,
+            'queue_connection' => isset($notification->connection) && is_scalar($notification->connection)
+                ? (string) $notification->connection
+                : null,
+            'queue_name' => isset($notification->queue) && is_scalar($notification->queue)
+                ? (string) $notification->queue
+                : null,
+            'channel' => $channel,
+            'notifiable_type' => $notifiableType,
+            'notifiable_id' => $notifiableId,
+            'notifiable_name' => $this->notificationNotifiableName($notifiable),
+            'notifiable_object_id' => $notifiableObjectId,
+            'destination' => $this->notificationDestinationForAttempt(
+                $attemptId,
+                $notifiable,
+                $notification,
+                $channel,
+                $terminal,
+            ),
+            'routes' => $notifiable instanceof AnonymousNotifiable ? $notifiable->routes : [],
+        ];
+    }
+
+    private function notificationNotifiableId(mixed $notifiable): mixed
+    {
+        if (! is_object($notifiable) || ! method_exists($notifiable, 'getKey')) {
+            return null;
+        }
+
+        try {
+            $key = $notifiable->getKey();
+
+            return is_scalar($key) ? $key : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function notificationNotifiableName(mixed $notifiable): ?string
+    {
+        if (! is_object($notifiable)) {
+            return null;
+        }
+
+        $values = $notifiable instanceof Model
+            ? $notifiable->getAttributes()
+            : get_object_vars($notifiable);
+
+        foreach (['name', 'full_name', 'display_name'] as $attribute) {
+            $value = $values[$attribute] ?? null;
+
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return null;
+    }
+
+    private function notificationDestinationForAttempt(
+        string $attemptId,
+        mixed $notifiable,
+        object $notification,
+        string $channel,
+        bool $terminal,
+    ): mixed {
+        $destination = array_key_exists($attemptId, $this->notificationDestinations)
+            ? $this->notificationDestinations[$attemptId]
+            : $this->notificationDestination($notifiable, $notification, $channel);
+
+        if ($terminal) {
+            unset($this->notificationDestinations[$attemptId]);
+
+            return $destination;
+        }
+
+        if (count($this->notificationDestinations) >= self::MAX_PENDING_NOTIFICATION_DESTINATIONS) {
+            array_shift($this->notificationDestinations);
+        }
+
+        $this->notificationDestinations[$attemptId] = $destination;
+
+        return $destination;
+    }
+
+    private function notificationDestination(mixed $notifiable, object $notification, string $channel): mixed
+    {
+        if (! is_object($notifiable)) {
+            return null;
+        }
+
+        if ($channel === 'database') {
+            return [
+                'type' => $notifiable::class,
+                'id' => $this->notificationNotifiableId($notifiable),
+                'name' => $this->notificationNotifiableName($notifiable),
+            ];
+        }
+
+        if (! method_exists($notifiable, 'routeNotificationFor')) {
+            return null;
+        }
+
+        try {
+            $destination = $notifiable instanceof AnonymousNotifiable
+                ? $notifiable->routeNotificationFor($channel)
+                : $notifiable->routeNotificationFor($channel, $notification);
+
+            return $this->normalizeNotificationDataValue($destination);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function notificationPublicData(object $notification): array
+    {
+        $data = get_object_vars($notification);
+        $frameworkProperties = ['id', 'locale'];
+
+        if (in_array(Queueable::class, class_uses_recursive($notification), true)) {
+            $frameworkProperties = [...$frameworkProperties, ...self::FRAMEWORK_NOTIFICATION_PROPERTIES];
+        }
+
+        foreach ($frameworkProperties as $property) {
+            unset($data[$property]);
+        }
+
+        foreach ($data as $key => $value) {
+            $data[$key] = $this->normalizeNotificationDataValue($value);
+        }
+
+        return $data;
+    }
+
+    private function normalizeNotificationDataValue(mixed $value, int $depth = 0): mixed
+    {
+        if ($value instanceof Model) {
+            return [
+                'type' => $value::class,
+                'id' => $this->modelKey($value),
+            ];
+        }
+
+        if ($depth >= 5 || ! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->normalizeNotificationDataValue($item, $depth + 1);
+        }
+
+        return $value;
+    }
+
+    /** @return array<string, mixed> */
+    private function notificationResponse(mixed $response): array
+    {
+        if ($response instanceof SentMessage) {
+            try {
+                $messageId = $response->getMessageId();
+            } catch (Throwable) {
+                $messageId = null;
+            }
+
+            return [
+                'response_type' => $response::class,
+                'response' => $messageId === null ? null : ['message_id' => $messageId],
+                'mail_message_id' => is_string($messageId) ? $messageId : null,
+            ];
+        }
+
+        if ($response instanceof Model) {
+            return [
+                'response_type' => $response::class,
+                'response' => [
+                    'type' => $response::class,
+                    'id' => $this->modelKey($response),
+                    'attributes' => $response->getAttributes(),
+                ],
+                'mail_message_id' => null,
+            ];
+        }
+
+        return [
+            'response_type' => $response === null ? null : get_debug_type($response),
+            'response' => $this->normalizeNotificationDataValue($response),
+            'mail_message_id' => null,
+        ];
+    }
+
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    private function notificationFailure(array $data): array
+    {
+        $exception = $data['exception'] ?? null;
+        unset($data['exception']);
+
+        foreach ($data as $key => $value) {
+            $data[$key] = $this->normalizeNotificationDataValue($value);
+        }
+
+        return [
+            'failure_data' => $data,
+            'exception_class' => $exception instanceof Throwable ? $exception::class : null,
+            'exception_message' => $exception instanceof Throwable ? $exception->getMessage() : null,
+            'exception_location' => $exception instanceof Throwable ? $this->callSites->fromThrowable($exception) : null,
+        ];
+    }
+
+    /** @return array{file: string, line: int}|null */
+    private function notificationClassLocation(object $notification): ?array
+    {
+        try {
+            $reflection = new ReflectionClass($notification);
+            $file = $reflection->getFileName();
+
+            return is_string($file) ? $this->callSites->location($file, $reflection->getStartLine()) : null;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /** @param array<array-key, mixed> $data @return array<array-key, mixed> */

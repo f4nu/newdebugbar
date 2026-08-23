@@ -1,5 +1,22 @@
 <?php
 
+it('shows delayed mail without rendering it before a worker runs', function () {
+    visit('/profiled-queued-communications')
+        ->resize(1200, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="mail"]')
+        ->waitForText('ProfiledMailable')
+        ->assertSee('Delayed')
+        ->assertSee('30 s delay')
+        ->assertSee('The preview is created when the worker sends this message.')
+        ->assertAttribute('[data-ndb-mail-item="1"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelector("[data-ndb-mail-preview-frame]") === null')
+        ->assertScript(
+            'getComputedStyle(document.querySelector("[data-ndb-mail-related-profile]")).display === "none"',
+        )
+        ->assertNoJavaScriptErrors();
+});
+
 it('selects and inspects mail with a real in-panel preview', function () {
     visit('/profiled-mail-rich')
         ->resize(1440, 1200)
@@ -7,6 +24,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
         ->click('[data-ndb-select-section="mail"]')
         ->waitForText('Payment receipt #NS-1042')
         ->assertSee('3 messages')
+        ->assertSee('+5 more')
         ->assertValue('[data-ndb-mail-filter]', 'all')
         ->assertAttribute('[data-ndb-mail-detail-tab="preview"]', 'aria-pressed', 'true')
         ->assertValue('[data-ndb-mail-preview-format]', 'html')
@@ -40,12 +58,13 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const filter = document.querySelector('[data-ndb-mail-filter]');
                 const header = detail.querySelector('header');
                 const actions = header.querySelector('[data-ndb-mail-actions]');
+                const primary = header.querySelector('[data-ndb-inspector-detail-header-primary]');
+                const subject = header.querySelector('[data-ndb-mail-detail-subject]');
+                const status = header.querySelector('[data-ndb-mail-status]');
+                const identity = header.querySelector('[data-ndb-mail-recipient]');
                 const metadata = header.querySelector('[data-ndb-mail-metadata]');
-                const [addresses, technicalFacts] = metadata.children;
-                const metadataFacts = [...technicalFacts.children];
-                const addressGroups = [...addresses.children];
-                const addressWidths = addressGroups.map((group) => group.getBoundingClientRect().width);
-                const metadataFactWidths = metadataFacts.map((fact) => fact.getBoundingClientRect().width);
+                const metadataFacts = [...metadata.children];
+                const addressGroups = [...identity.querySelector('dl').children];
                 const headerTop = header.getBoundingClientRect().top;
 
                 detail.scrollTop = 96;
@@ -67,18 +86,24 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && tabs[0].parentElement === previewControls.parentElement
                     && attachmentBadge.closest('header') === header
                     && actions.open === false
-                    && metadataFacts.length === 3
-                    && metadata.textContent.includes('Sent')
+                    && subject.closest('[data-ndb-inspector-detail-header-primary]') === primary
+                    && status.closest('[data-ndb-inspector-detail-header-primary]') === primary
+                    && metadataFacts.length === 4
+                    && header.textContent.includes('Sent')
+                    && metadata.textContent.includes('Attachments')
+                    && metadata.textContent.includes('Runtime')
                     && metadata.textContent.includes('Delivery')
                     && metadata.textContent.includes('Source')
-                    && metadata.querySelectorAll('svg').length === 3
+                    && metadata.querySelectorAll('svg').length === 0
                     && header.querySelector('[data-ndb-mail-actions-trigger]').textContent.trim() === ''
+                    && identity.textContent.includes('Recipients')
+                    && identity.textContent.includes('Sender')
+                    && identity.textContent.includes('+5 more')
+                    && identity.scrollWidth <= identity.clientWidth + 1
                     && metadata.scrollWidth <= metadata.clientWidth + 1
-                    && /^To\s/.test(addressGroups[0].textContent.trim())
-                    && /^From\s/.test(addressGroups[1].textContent.trim())
-                    && ! addresses.textContent.includes('→')
-                    && Math.abs(addressWidths[0] - addressWidths[1]) <= 1
-                    && Math.max(...metadataFactWidths) - Math.min(...metadataFactWidths) <= 1
+                    && /^Recipients\s/.test(addressGroups[0].textContent.trim())
+                    && /^Sender\s/.test(addressGroups[1].textContent.trim())
+                    && ! identity.textContent.includes('→')
                     && summary.parentElement.contains(filter)
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
@@ -234,7 +259,8 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
                 const metadata = document.querySelector('[data-ndb-mail-metadata]');
-                const technicalFacts = metadata.lastElementChild;
+                const identity = document.querySelector('[data-ndb-mail-recipient]');
+                const primary = document.querySelector('[data-ndb-inspector-detail-header-primary]');
                 const workspace = document.querySelector('[data-ndb-mail-workspace]');
                 const list = workspace.firstElementChild;
                 const back = document.querySelector('[data-ndb-mail-detail-back]');
@@ -247,8 +273,10 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                     && detail.getBoundingClientRect().top >= content.getBoundingClientRect().top
                     && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
                     && frame.getBoundingClientRect().width <= detail.getBoundingClientRect().width
+                    && primary.scrollWidth <= primary.clientWidth + 1
+                    && identity.scrollWidth <= identity.clientWidth + 1
                     && metadata.scrollWidth <= metadata.clientWidth + 1
-                    && getComputedStyle(technicalFacts).gridTemplateColumns.split(' ').length === 3
+                    && [...metadata.children].filter((fact) => getComputedStyle(fact).display !== 'none').length === 3
                     && back.getClientRects().length > 0
                     && back.textContent.trim() === 'Messages'
                     && tabs.length === 3

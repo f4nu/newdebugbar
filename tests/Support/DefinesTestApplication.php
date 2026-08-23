@@ -11,6 +11,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Mail\SendQueuedMailable;
+use Illuminate\Notifications\ChannelManager;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\SendQueuedNotifications;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -49,6 +51,7 @@ use NewDebugBar\Tests\Fixtures\Models\StudioJob;
 use NewDebugBar\Tests\Fixtures\Models\User;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
+use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotificationChannel;
 use NewDebugBar\Tests\Fixtures\Redis\ProfiledRedisConnection;
 
 trait DefinesTestApplication
@@ -298,6 +301,12 @@ trait DefinesTestApplication
             $background = app(BackgroundActivityStore::class);
             $background->recordOutcome($background->key('redis', 'hostile-mail', 'hostile-mail-job'), 'sent', $workerId, 1);
             $background->recordOutcome($background->key('redis', 'hostile-notifications', 'hostile-notification-job'), 'sent', $workerId, 1);
+            Event::dispatch(new NotificationSent(
+                new ProfiledNotifiable('recipient@example.test'),
+                new ProfiledNotification('Hostile style notification'),
+                'mail',
+                ['message_id' => 'hostile-notification'],
+            ));
 
             return response(<<<'HTML'
                 <!doctype html>
@@ -329,6 +338,7 @@ trait DefinesTestApplication
                             [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-mail-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                         </style>
                     </head>
                     <body>
@@ -573,8 +583,93 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>Messages</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-notifications-rich', function () {
+            app(ChannelManager::class)->extend(
+                'profiled-sms',
+                fn (): ProfiledNotificationChannel => new ProfiledNotificationChannel(fails: true),
+            );
+            app(ChannelManager::class)->extend(
+                'profiled-push',
+                fn (): ProfiledNotificationChannel => new ProfiledNotificationChannel,
+            );
+
+            $notifiable = new ProfiledNotifiable('elise@example.test');
+
+            try {
+                Notification::sendNow($notifiable, new ProfiledNotification(
+                    privateValue: 'Kyoto autumn',
+                    channels: ['mail', 'profiled-sms'],
+                    subjectLine: 'Your Kyoto journey is ready to review',
+                ));
+            } catch (\RuntimeException) {
+                // The application handled the simulated provider failure.
+            }
+
+            Notification::sendNow($notifiable, new ProfiledNotification(
+                privateValue: 'Kyoto departure reminder',
+                channels: ['profiled-push'],
+                subjectLine: 'Your Kyoto departure is coming up',
+            ));
+
+            return response('<!doctype html><html><body>Notification delivery diagnostics</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-notifications-many-recipients', function () {
+            app(ChannelManager::class)->extend(
+                'profiled-push',
+                fn (): ProfiledNotificationChannel => new ProfiledNotificationChannel,
+            );
+
+            Notification::sendNow(
+                new ProfiledNotifiable([
+                    'elise@example.test' => 'Elise Martin',
+                    'theo@example.test' => 'Theo Laurent',
+                    'mara@example.test' => 'Mara Bell',
+                    'sora@example.test' => 'Sora Tanaka',
+                    'nina@example.test' => 'Nina Dubois',
+                    'arthur@example.test' => 'Arthur Moreau',
+                    'camille@example.test' => 'Camille Bernard',
+                    'yuki@example.test' => 'Yuki Nakamura',
+                ], id: 2048, name: 'Kyoto review team'),
+                new ProfiledNotification(
+                    privateValue: 'Kyoto review team digest',
+                    subjectLine: 'Kyoto review team digest',
+                ),
+            );
+
+            $travelers = collect([
+                ['Mara Bell', 2101],
+                ['Alexander Montgomery-Sinclair', 2102],
+                ['Sora Tanaka', 2103],
+                ['Nina Dubois', 2104],
+                ['Arthur Moreau', 2105],
+                ['Camille Bernard', 2106],
+                ['Yuki Nakamura', 2107],
+                ['Noah Williams', 2108],
+            ])->map(fn (array $traveler): ProfiledNotifiable => new ProfiledNotifiable(
+                privateAddress: mb_strtolower(str_replace([' ', '-'], ['', ''], $traveler[0])).'@example.test',
+                id: $traveler[1],
+                name: $traveler[0],
+            ))->all();
+
+            Notification::sendNow($travelers, new ProfiledNotification(
+                privateValue: 'Kyoto traveler reminder',
+                channels: ['profiled-push'],
+                subjectLine: 'Your Kyoto departure is coming up',
+            ));
+
+            return response('<!doctype html><html><body>Many notification recipients</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-mail-rich', function () {
-            Mail::to('taylor@example.test')->send(new ProfiledMailable(
+            Mail::to([
+                ['email' => 'taylor@example.test', 'name' => 'Taylor Reed'],
+                ['email' => 'alexandra.montgomery@example.test', 'name' => 'Alexandra Montgomery'],
+                ['email' => 'mara@example.test', 'name' => 'Mara Bell'],
+                ['email' => 'sora@example.test', 'name' => 'Sora Tanaka'],
+                ['email' => 'nina@example.test', 'name' => 'Nina Dubois'],
+                ['email' => 'arthur@example.test', 'name' => 'Arthur Moreau'],
+            ])->send(new ProfiledMailable(
                 subjectLine: 'Payment receipt #NS-1042',
                 heading: 'Payment received',
                 messageCopy: 'Thanks, Taylor. Your workspace subscription is paid and ready for the next billing period.',

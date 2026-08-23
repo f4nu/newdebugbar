@@ -287,41 +287,7 @@
 
                 <template x-if="selectedMailMessage">
                     <div class="ndb:flex ndb:flex-col">
-                        <header class="ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800">
-                            <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:justify-between ndb:gap-3">
-                                <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
-                                    <span
-                                        data-ndb-mail-status
-                                        :class="selectedMailMessage.status_class"
-                                        class="ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
-                                        x-text="selectedMailMessage.status_label"
-                                    >
-                                    </span>
-                                    <span
-                                        x-show="selectedMailMessage.lifecycle === 'after_response'"
-                                        class="ndb:rounded-md ndb:bg-indigo-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
-                                    >After response</span>
-                                    <span
-                                        data-ndb-mail-attachment-badge
-                                        x-show="selectedMailMessage.attachment_count > 0"
-                                        class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400"
-                                        x-text="
-                                            selectedMailMessage.attachment_count +
-                                            (selectedMailMessage.attachment_count === 1
-                                                ? ' attachment'
-                                                : ' attachments')
-                                        "
-                                    ></span>
-                                </div>
-                                <x-newdebugbar::mail-actions />
-                            </div>
-                            <h3
-                                data-ndb-mail-detail-subject
-                                class="ndb:mt-3 ndb:text-base ndb:font-bold ndb:leading-6"
-                                x-text="selectedMailMessage.subject"
-                            ></h3>
-                            <x-newdebugbar::mail-metadata />
-                        </header>
+                        <x-newdebugbar::mail-header />
 
                         <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
                             <x-newdebugbar::filter-tabs label="Mail detail" class="ndb:min-w-0">
@@ -450,7 +416,7 @@
                                             x-text="selectedMailMessage.status_label"
                                         ></p>
                                         <button
-                                            x-show="selectedMailMessage.related_profile_id"
+                                            x-show.important="selectedMailMessage.related_profile_id"
                                             type="button"
                                             data-ndb-mail-related-profile
                                             @click="

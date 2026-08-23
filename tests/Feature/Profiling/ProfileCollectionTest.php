@@ -303,18 +303,96 @@ it('captures mail previews and notification shape by default', function () {
         ->preview->attachments->toHaveCount(1)
         ->and($notifications['summary'])
         ->count->toBe(2)
+        ->notification_count->toBe(1)
+        ->failed_notification_count->toBe(1)
         ->sent_count->toBe(1)
         ->failed_count->toBe(1)
+        ->duration_ms->toBeGreaterThanOrEqual(0)
         ->and($notifications['payload']['items'][0])
         ->status->toBe('sent')
         ->channel->toBe('mail')
+        ->response->toBe(['private response'])
+        ->notification_data->privateValue->toBe('private notification data')
+        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
+        ->notification_source->file->toBe('tests/Fixtures/Notifications/ProfiledNotification.php')
         ->and($notifications['payload']['items'][1])
         ->status->toBe('failed')
         ->channel->toBe('slack')
+        ->failure_data->toBe(['private' => 'failure data'])
+        ->group_id->toBe($notifications['payload']['items'][0]['group_id'])
         ->and(json_encode([$mail, $notifications]))->not->toContain(
             'private attachment',
-            'private notification data',
-            'failure data',
+        );
+});
+
+it('groups notification channel attempts and keeps delivery evidence', function () {
+    $response = $this->get('/profiled-notifications-rich', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $mail = $profile['sections']['mail'];
+    $notifications = $profile['sections']['notifications'];
+    $items = $notifications['payload']['items'];
+
+    expect($notifications['summary'])
+        ->count->toBe(3)
+        ->delivery_count->toBe(3)
+        ->notification_count->toBe(2)
+        ->failed_notification_count->toBe(1)
+        ->sent_count->toBe(2)
+        ->failed_count->toBe(1)
+        ->duration_ms->toBeGreaterThan(0)
+        ->and($items)->toHaveCount(3)
+        ->and($items[0])
+        ->status->toBe('sent')
+        ->channel->toBe('mail')
+        ->queueable->toBeTrue()
+        ->notifiable_id->toBe(1042)
+        ->notifiable_name->toBe('Elise Martin')
+        ->destination->toBe('elise@example.test')
+        ->mail_message_id->toBe($mail['payload']['items'][0]['transport_message_id'])
+        ->notification_data->privateValue->toBe('Kyoto autumn')
+        ->notification_data->not->toHaveKeys([
+            'connection',
+            'queue',
+            'delay',
+            'afterCommit',
+            'middleware',
+            'chained',
+        ])
+        ->notification_source->file->toBe('tests/Fixtures/Notifications/ProfiledNotification.php')
+        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
+        ->and($items[1])
+        ->status->toBe('failed')
+        ->channel->toBe('profiled-sms')
+        ->destination->toBe('+32 470 12 34 56')
+        ->exception_class->toBe(RuntimeException::class)
+        ->exception_message->toBe('Traveler phone number is not verified.')
+        ->exception_location->file->toBe('tests/Fixtures/Notifications/ProfiledNotificationChannel.php')
+        ->group_id->toBe($items[0]['group_id'])
+        ->and($items[2])
+        ->status->toBe('sent')
+        ->channel->toBe('profiled-push')
+        ->destination->toBe('device:journey-1042')
+        ->response->toBe([
+            'provider' => 'Profiled Push',
+            'message_id' => 'push-1042',
+        ])
+        ->group_id->not->toBe($items[0]['group_id']);
+});
+
+it('captures crowded named mail recipients for compact inspection', function () {
+    $response = $this->get('/profiled-mail-rich', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $recipients = $profile['sections']['mail']['payload']['items'][0]['preview']['to'];
+
+    expect($recipients)
+        ->toHaveCount(6)
+        ->and(implode(' ', $recipients))->toContain(
+            'Taylor Reed',
+            'taylor@example.test',
+            'Alexandra Montgomery',
+            'alexandra.montgomery@example.test',
+            'Arthur Moreau',
+            'arthur@example.test',
         );
 });
 
