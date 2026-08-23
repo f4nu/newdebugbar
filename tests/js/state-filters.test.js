@@ -122,7 +122,6 @@ test('HTTP client defaults to all when no request needs attention', () => {
 test('mail defaults to all and preview while keeping a visible message selected', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
-  let detailScrolls = 0;
   let detailResets = 0;
   const element = (execution, attachments, search) => ({
     dataset: {
@@ -147,7 +146,6 @@ test('mail defaults to all and preview while keeping a visible message selected'
   state.$refs = {
     mailList: { children: [first, second, third] },
     mailDetail: {
-      scrollIntoView: () => detailScrolls++,
       scrollTo: () => detailResets++,
     },
   };
@@ -178,6 +176,7 @@ test('mail defaults to all and preview while keeping a visible message selected'
   ]);
   assert.equal(state.mailFilter, 'all');
   assert.equal(state.mailSelected, 1);
+  assert.equal(state.mailDetailOpen, false);
   assert.equal(state.mailDetailTab, 'preview');
   assert.equal(state.mailPreviewFormat, 'html');
   assert.equal(state.mailPreviewViewport, 'desktop');
@@ -206,9 +205,8 @@ test('mail defaults to all and preview while keeping a visible message selected'
   assert.equal(state.mailPreviewViewport, 'mobile');
   assert.equal(state.mailPreviewFormat, 'text');
 
-  browser.viewportWidth = () => 390;
-  state.selectMailMessage(1, true);
-  assert.equal(detailScrolls, 1);
+  state.selectMailMessage(1);
+  assert.equal(state.mailDetailOpen, true);
   assert.equal(state.mailDetailTab, 'preview');
   assert.equal(state.mailPreviewFormat, 'html');
   assert.equal(state.mailPreviewViewport, 'desktop');
@@ -230,6 +228,7 @@ test('mail defaults to all and preview while keeping a visible message selected'
   state.initializeMail('invalid');
   assert.deepEqual(state.mailMessages, []);
   assert.equal(state.mailSelected, null);
+  assert.equal(state.mailDetailOpen, false);
   assert.equal(state.mailPreviewUrl(), null);
 });
 

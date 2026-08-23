@@ -272,6 +272,7 @@ export function createNewDebugBar(
     mailFilter: 'all',
     mailSearch: '',
     mailSelected: null,
+    mailDetailOpen: false,
     mailDetailTab: 'preview',
     mailPreviewFormat: 'html',
     mailPreviewViewport: 'desktop',
@@ -1499,6 +1500,7 @@ export function createNewDebugBar(
       this.mailFilter = 'all';
       this.mailSearch = '';
       this.mailSelected = null;
+      this.mailDetailOpen = false;
       this.mailDetailTab = 'preview';
       this.mailPreviewFormat = 'html';
       this.mailPreviewViewport = 'desktop';
@@ -2118,6 +2120,7 @@ export function createNewDebugBar(
       this.mailFilter = 'all';
       this.mailSearch = '';
       this.mailSelected = this.mailMessages[0]?.execution ?? null;
+      this.mailDetailOpen = false;
       this.resetMailDetail();
       this.$nextTick?.(() => this.applyMailView());
     },
@@ -2129,15 +2132,12 @@ export function createNewDebugBar(
       this.applyMailView();
     },
 
-    selectMailMessage(execution, reveal = false) {
+    selectMailMessage(execution) {
       if (!this.mailMessages.some((message) => message.execution === execution)) return;
 
       this.mailSelected = execution;
+      this.mailDetailOpen = true;
       this.resetMailDetail();
-
-      if (reveal && (browser.viewportWidth?.() ?? 0) < 1024) {
-        this.$nextTick?.(() => this.$refs?.mailDetail?.scrollIntoView?.({ block: 'start' }));
-      }
     },
 
     setMailDetailTab(tab) {

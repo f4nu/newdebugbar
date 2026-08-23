@@ -24,6 +24,14 @@
             <circle cx="11" cy="11" r="7"
             /><path d="m20 20-4-4" />
             @break
+        @case ('eye')
+            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+            /><circle cx="12" cy="12" r="2.5" />
+            @break
+        @case ('mail')
+            <rect x="3" y="5" width="18" height="14" rx="2"
+            /><path d="m3 7 9 6 9-6" />
+            @break
         @case ('activity')
             <path d="M3 12h4l2.5-7 5 14 2.5-7H21" />
             @break

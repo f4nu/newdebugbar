@@ -165,7 +165,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('stacks mail list and preview cleanly on mobile in dark mode', function () {
+it('drills into mail details with compact icon tabs on mobile', function () {
     $preferences = json_encode([
         'theme' => 'dark',
         'favorites' => [],
@@ -200,7 +200,10 @@ it('stacks mail list and preview cleanly on mobile in dark mode', function () {
                 return dialog.scrollWidth <= dialog.clientWidth + 1
                     && workspace.scrollWidth <= workspace.clientWidth + 1
                     && getComputedStyle(workspace).display !== 'grid'
-                    && detailBox.top >= listBox.bottom - 1
+                    && getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && listBox.width > 0
+                    && detailBox.width === 0
                     && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px');
             })()
             JS)
@@ -214,14 +217,32 @@ it('stacks mail list and preview cleanly on mobile in dark mode', function () {
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
                 const metadata = document.querySelector('[data-ndb-mail-metadata]');
                 const technicalFacts = metadata.lastElementChild;
+                const workspace = document.querySelector('[data-ndb-mail-workspace]');
+                const list = workspace.firstElementChild;
+                const back = document.querySelector('[data-ndb-mail-detail-back]');
+                const tabs = [...document.querySelectorAll('[data-ndb-mail-detail-tab]')];
+                const labels = tabs.map((tab) => tab.querySelector('span'));
+                const icons = tabs.map((tab) => tab.querySelector('[data-ndb-mail-detail-tab-icon]'));
 
-                return detail.getBoundingClientRect().top >= content.getBoundingClientRect().top
+                return getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && detail.getBoundingClientRect().top >= content.getBoundingClientRect().top
+                    && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
                     && frame.getBoundingClientRect().width <= detail.getBoundingClientRect().width
                     && metadata.scrollWidth <= metadata.clientWidth + 1
                     && getComputedStyle(technicalFacts).gridTemplateColumns.split(' ').length === 3
+                    && back.getClientRects().length > 0
+                    && back.textContent.trim() === 'Messages'
+                    && tabs.length === 3
+                    && icons.every((icon) => icon && icon.getClientRects().length > 0)
+                    && labels.every((label) => getComputedStyle(label).display === 'none')
+                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Preview|Message|Source'
                     && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)
+        ->click('[data-ndb-mail-detail-tab="message"]')
+        ->assertVisible('[data-ndb-mail-detail-panel="message"]')
+        ->click('[data-ndb-mail-detail-tab="preview"]')
         ->click('[data-ndb-mail-actions-trigger]')
         ->assertVisible('[data-ndb-mail-actions-menu]')
         ->assertScript(<<<'JS'
@@ -233,5 +254,17 @@ it('stacks mail list and preview cleanly on mobile in dark mode', function () {
             })()
             JS)
         ->keys('[data-ndb-mail-actions-trigger]', 'Escape')
+        ->click('[data-ndb-mail-detail-back]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-mail-workspace]');
+                const [list, detail] = workspace.children;
+                const selected = document.querySelector('[data-ndb-mail-item="2"]');
+
+                return getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && selected.getAttribute('aria-pressed') === 'true';
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

@@ -24,11 +24,14 @@ it('keeps host styles and package styles isolated', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const style = getComputedStyle(document.querySelector('[data-testid="host-button"]'));
+                const icon = document.querySelector('[data-testid="host-icon-button"] svg').getBoundingClientRect();
 
                 return style.backgroundColor === 'rgb(255, 0, 0)'
                     && style.borderRadius === '0px'
                     && style.color === 'rgb(0, 128, 0)'
-                    && style.height === '91px';
+                    && style.height === '91px'
+                    && icon.width === 64
+                    && icon.height === 64;
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -115,6 +118,8 @@ it('keeps host styles and package styles isolated', function () {
                 const actions = document.querySelector('[data-ndb-mail-actions]');
                 const metadata = document.querySelector('[data-ndb-mail-metadata]');
                 const metadataLabel = metadata.querySelector('dt');
+                const backIcon = document.querySelector('[data-ndb-mail-detail-back] svg');
+                const tabIcons = [...document.querySelectorAll('[data-ndb-mail-detail-tab-icon]')];
 
                 return getComputedStyle(row).borderLeftWidth === '0px'
                     && frame.getBoundingClientRect().width > 300
@@ -123,7 +128,10 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(actions).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
                     && Number.parseFloat(getComputedStyle(metadataLabel).fontSize) === 11
-                    && getComputedStyle(metadataLabel).color !== 'rgb(0, 128, 0)';
+                    && getComputedStyle(metadataLabel).color !== 'rgb(0, 128, 0)'
+                    && Number.parseFloat(getComputedStyle(backIcon).width) === 14
+                    && tabIcons.length === 3
+                    && tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14);
             })()
             JS)
         ->click('[data-ndb-mail-actions-trigger]')

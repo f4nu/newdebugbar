@@ -281,6 +281,7 @@ trait DefinesTestApplication
 
                             body { font-family: serif; }
                             button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            button svg { width: 64px; height: 64px; }
                             a { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
                             details { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
                             dl, dt, dd { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
@@ -292,6 +293,7 @@ trait DefinesTestApplication
                     </head>
                     <body>
                         <button data-testid="host-button">Host button</button>
+                        <button data-testid="host-icon-button"><svg aria-hidden="true"></svg></button>
                         <code data-testid="host-code">Host code</code>
                     </body>
                 </html>
