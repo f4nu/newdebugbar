@@ -111,9 +111,11 @@ it('presents view data in an accessible popover', function () {
 
     DebugBarBrowser::waitForDetails($page);
 
-    $page
-        ->click('[data-ndb-select-section="views"]')
-        ->assertScript(<<<'JS'
+    $page->click('[data-ndb-select-section="views"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page->assertScript(<<<'JS'
             (() => {
                 const summary = document.querySelector('[data-ndb-view-group] > summary');
                 summary.focus();
@@ -165,7 +167,15 @@ it('presents view data in an accessible popover', function () {
             })()
             JS);
 
-    $page->click('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-trigger]');
+    DebugBarBrowser::waitForVisibleElement(
+        $page,
+        '[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-trigger]',
+    );
+
+    $page->keys(
+        '[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-trigger]',
+        'Enter',
+    );
 
     DebugBarBrowser::waitForVisibleElement(
         $page,

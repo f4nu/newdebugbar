@@ -1,5 +1,7 @@
 <?php
 
+use NewDebugBar\Tests\Support\DebugBarBrowser;
+
 it('shows delayed mail without rendering it before a worker runs', function () {
     visit('/profiled-queued-communications')
         ->resize(1200, 900)
@@ -18,7 +20,7 @@ it('shows delayed mail without rendering it before a worker runs', function () {
 });
 
 it('selects and inspects mail with a real in-panel preview', function () {
-    visit('/profiled-mail-rich')
+    $page = visit('/profiled-mail-rich')
         ->resize(1440, 1200)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="mail"]')
@@ -232,7 +234,7 @@ it('drills into mail details with compact icon tabs on mobile', function () {
         'favorites' => [],
     ], JSON_THROW_ON_ERROR);
 
-    visit('/profiled-mail-rich')
+    $page = visit('/profiled-mail-rich')
         ->resize(390, 844)
         ->assertScript(<<<JS
             (() => {
@@ -327,7 +329,11 @@ it('drills into mail details with compact icon tabs on mobile', function () {
         ->click('[data-ndb-mail-detail-tab="message"]')
         ->assertVisible('[data-ndb-mail-detail-panel="message"]')
         ->click('[data-ndb-mail-detail-tab="preview"]')
-        ->click('[data-ndb-mail-actions-trigger]')
+        ->keys('[data-ndb-mail-actions-trigger]', 'Enter');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-mail-actions-menu]');
+
+    $page
         ->assertVisible('[data-ndb-mail-actions-menu]')
         ->assertScript(<<<'JS'
             (() => {
