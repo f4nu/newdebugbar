@@ -103,7 +103,16 @@ it('presents Laravel decisions messages and source context without editor links'
 
     $page
         ->click('[data-ndb-select-section="views"]')
-        ->click('[data-ndb-view-group] > summary')
+        ->assertScript(<<<'JS'
+            (() => {
+                const summary = document.querySelector('[data-ndb-view-group] > summary');
+                summary.focus();
+
+                return document.activeElement === summary;
+            })()
+            JS)
+        ->keys('[data-ndb-view-group] > summary', 'Enter')
+        ->assertAttribute('[data-ndb-view-group]', 'open', '')
         ->assertSee('tests/Fixtures/views/context.blade.php')
         ->assertScript('!document.querySelector("[data-ndb-view-source]").textContent.replace(/\\s+/g, " ").includes(" :")')
         ->assertPresent('[data-ndb-view-data]')

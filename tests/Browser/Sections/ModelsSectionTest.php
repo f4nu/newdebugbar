@@ -98,7 +98,17 @@ it('puts model changes before repeated retrievals', function () {
                     && first.querySelector('[data-ndb-model-name]').textContent.trim() === 'Client';
             })()
             JS)
-        ->click('[data-ndb-model-group]:first-of-type > summary')
+        ->assertScript(<<<'JS'
+            (() => {
+                const summary = document.querySelector('[data-ndb-model-group]:first-of-type > summary');
+                summary.focus();
+
+                return document.activeElement === summary;
+            })()
+            JS)
+        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
+        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->assertVisible('[data-ndb-model-group]:first-of-type [data-ndb-model-changes]')
         ->assertSee('Model changes')
         ->assertSee('1 updated')
         ->assertNoJavaScriptErrors();

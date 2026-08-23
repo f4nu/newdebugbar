@@ -594,15 +594,31 @@ trait DefinesTestApplication
             );
 
             $notifiable = new ProfiledNotifiable('elise@example.test');
+            $notification = new ProfiledNotification(
+                privateValue: 'Kyoto autumn',
+                channels: ['mail', 'profiled-sms'],
+                subjectLine: 'Your Kyoto journey is ready to review',
+            );
+            $notification->id = (string) Str::uuid();
+            $failureWasDispatched = false;
+
+            Event::listen(NotificationFailed::class, function (NotificationFailed $event) use ($notification, &$failureWasDispatched): void {
+                if (($event->notification->id ?? null) === $notification->id && $event->channel === 'profiled-sms') {
+                    $failureWasDispatched = true;
+                }
+            });
 
             try {
-                Notification::sendNow($notifiable, new ProfiledNotification(
-                    privateValue: 'Kyoto autumn',
-                    channels: ['mail', 'profiled-sms'],
-                    subjectLine: 'Your Kyoto journey is ready to review',
-                ));
-            } catch (\RuntimeException) {
-                // The application handled the simulated provider failure.
+                Notification::sendNow($notifiable, $notification);
+            } catch (\RuntimeException $exception) {
+                if (! $failureWasDispatched) {
+                    Event::dispatch(new NotificationFailed(
+                        $notifiable,
+                        $notification,
+                        'profiled-sms',
+                        ['exception' => $exception],
+                    ));
+                }
             }
 
             Notification::sendNow($notifiable, new ProfiledNotification(
