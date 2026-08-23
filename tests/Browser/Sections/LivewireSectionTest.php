@@ -201,6 +201,54 @@ it('keeps the property editor usable in a narrow dark inspector', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('auto-sizes string edits and applies them with platform shortcuts', function () {
+    $page = visit('/profiled-livewire-validation')
+        ->resize(1024, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::selectSectionViaPalette($page, 'livewire');
+
+    $editor = '[data-ndb-livewire-property-path="email"] [data-ndb-livewire-edit-key]';
+    $control = '[data-ndb-livewire-edit-control]';
+
+    $page
+        ->click('[data-ndb-livewire-tab="components"]')
+        ->click($editor)
+        ->assertScript(<<<'JS'
+            (() => {
+                const control = document.querySelector('[data-ndb-livewire-edit-control]');
+
+                window.__ndbLivewireTextareaHeight = control.getBoundingClientRect().height;
+
+                return control.tagName === 'TEXTAREA'
+                    && getComputedStyle(control).fieldSizing === 'content';
+            })()
+            JS)
+        ->assertAttribute('[data-ndb-livewire-edit-apply]', 'aria-keyshortcuts', 'Meta+Enter Control+Enter')
+        ->type($control, "First line\nSecond line\nThird line\nFourth line\nFifth line")
+        ->assertScript(<<<'JS'
+            document.querySelector('[data-ndb-livewire-edit-control]').getBoundingClientRect().height
+                > window.__ndbLivewireTextareaHeight + 20
+            JS)
+        ->type($control, 'mac@example.test')
+        ->keys($control, 'Meta+Enter')
+        ->assertMissing('[data-ndb-livewire-property-popover]')
+        ->click($editor)
+        ->assertScript(<<<'JS'
+            document.querySelector('[data-ndb-livewire-edit-control]').value === 'mac@example.test'
+            JS)
+        ->type($control, 'windows@example.test')
+        ->keys($control, 'Control+Enter')
+        ->assertMissing('[data-ndb-livewire-property-popover]')
+        ->click($editor)
+        ->assertScript(<<<'JS'
+            document.querySelector('[data-ndb-livewire-edit-control]').value === 'windows@example.test'
+            JS)
+        ->keys($control, 'Escape')
+        ->assertMissing('[data-ndb-livewire-property-popover]')
+        ->assertNoJavaScriptErrors();
+});
+
 it('opens and applies a component property edit from its popover', function () {
     $page = visit('/profiled-livewire')
         ->resize(1024, 900)

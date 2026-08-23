@@ -38,6 +38,12 @@
                     })
                 "
                 @keydown.escape.stop.prevent="cancelLivewireDraft(row, true)"
+                @keydown.meta.enter.stop.prevent="
+                    applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))
+                "
+                @keydown.ctrl.enter.stop.prevent="
+                    applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))
+                "
                 @click.outside="
                     if (livewireDrafts[livewireDraftKey(row)]?.status !== 'updating') {
                         cancelLivewireDraft(row);
@@ -115,17 +121,25 @@
                         </button>
                     </template>
 
-                    <template x-if="livewireDrafts[livewireDraftKey(row)]?.type !== 'Boolean'">
+                    <template x-if="['Integer', 'Float'].includes(livewireDrafts[livewireDraftKey(row)]?.type)">
                         <input
                             data-ndb-livewire-edit-control
                             x-model="livewireDrafts[livewireDraftKey(row)].value"
-                            :type="['Integer', 'Float'].includes(livewireDrafts[livewireDraftKey(row)]?.type)
-                                ? 'number'
-                                : 'text'"
+                            type="number"
                             :step="livewireDrafts[livewireDraftKey(row)]?.type === 'Float' ? 'any' : '1'"
                             :aria-label="`New value for ${row.path}`"
                             class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:text-xs ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                         />
+                    </template>
+
+                    <template x-if="livewireDrafts[livewireDraftKey(row)]?.type === 'String'">
+                        <textarea
+                            data-ndb-livewire-edit-control
+                            x-model="livewireDrafts[livewireDraftKey(row)].value"
+                            rows="3"
+                            :aria-label="`New value for ${row.path}`"
+                            class="ndb:field-sizing-content ndb:max-h-[min(20rem,50vh)] ndb:min-h-20 ndb:w-full ndb:resize-y ndb:overflow-y-auto ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:px-3 ndb:py-2.5 ndb:text-xs ndb:leading-5 ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
+                        ></textarea>
                     </template>
 
                     <p
@@ -136,30 +150,35 @@
                     ></p>
                 </div>
 
-                <div class="ndb:flex ndb:justify-end ndb:gap-2 ndb:border-t ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-950/30">
-                    <button
-                        data-ndb-livewire-edit-cancel
-                        type="button"
-                        @click="cancelLivewireDraft(row, true)"
-                        class="ndb:h-9 ndb:rounded-lg ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        data-ndb-livewire-edit-apply
-                        type="button"
-                        @click="applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))"
-                        :disabled="livewireDrafts[livewireDraftKey(row)]?.status === 'updating'"
-                        class="ndb:h-9 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50 ndb:dark:bg-indigo-500"
-                    >
-                        <span
-                            x-text="
-                                livewireDrafts[livewireDraftKey(row)]?.status === 'updating'
-                                    ? 'Applying…'
-                                    : 'Apply to component'
-                            "
-                        ></span>
-                    </button>
+                <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-t ndb:border-zinc-200/80 ndb:bg-zinc-50/70 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-700/80 ndb:dark:bg-zinc-950/30">
+                    <kbd aria-hidden="true" class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                        >⌘/Ctrl + Enter</kbd>
+                    <div class="ndb:flex ndb:shrink-0 ndb:gap-2">
+                        <button
+                            data-ndb-livewire-edit-cancel
+                            type="button"
+                            @click="cancelLivewireDraft(row, true)"
+                            class="ndb:h-9 ndb:rounded-lg ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            data-ndb-livewire-edit-apply
+                            type="button"
+                            aria-keyshortcuts="Meta+Enter Control+Enter"
+                            @click="applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))"
+                            :disabled="livewireDrafts[livewireDraftKey(row)]?.status === 'updating'"
+                            class="ndb:h-9 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50 ndb:dark:bg-indigo-500"
+                        >
+                            <span
+                                x-text="
+                                    livewireDrafts[livewireDraftKey(row)]?.status === 'updating'
+                                        ? 'Applying…'
+                                        : 'Apply to component'
+                                "
+                            ></span>
+                        </button>
+                    </div>
                 </div>
             </x-newdebugbar::popover-surface>
         </template>
