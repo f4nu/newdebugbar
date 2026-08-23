@@ -51,6 +51,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const formatControl = document.querySelector('[data-ndb-mail-preview-format]');
                 const previewControls = document.querySelector('[data-ndb-mail-preview-controls]');
                 const previewSurface = document.querySelector('[data-ndb-mail-preview-surface]');
+                const previewCanvas = document.querySelector('[data-ndb-mail-preview-canvas]');
                 const attachmentBadge = document.querySelector('[data-ndb-mail-attachment-badge]');
                 const summary = document.querySelector('[data-ndb-mail-summary]');
                 const summaryCount = document.querySelector('[data-ndb-mail-summary-count]');
@@ -66,9 +67,10 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const metadataFacts = [...metadata.children];
                 const addressGroups = [...identity.querySelector('dl').children];
                 const headerTop = header.getBoundingClientRect().top;
+                const availableScroll = Math.max(0, detail.scrollHeight - detail.clientHeight);
 
                 detail.scrollTop = 96;
-                const headerScrolled = header.getBoundingClientRect().top < headerTop - 80;
+                const headerScrollDistance = headerTop - header.getBoundingClientRect().top;
                 detail.scrollTop = 0;
 
                 return getComputedStyle(workspace).display === 'grid'
@@ -107,13 +109,16 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && summary.parentElement.contains(filter)
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
-                    && detail.scrollHeight > detail.clientHeight
+                    && detail.scrollHeight >= detail.clientHeight
                     && getComputedStyle(detail).overflowY === 'auto'
                     && detail.tabIndex === 0
                     && getComputedStyle(previewSurface).overflowY === 'visible'
-                    && headerScrolled
+                    && Math.abs(headerScrollDistance - Math.min(96, availableScroll)) <= 1
                     && frame.getAttribute('sandbox') === 'allow-scripts'
                     && frame.getAttribute('src').endsWith('/0/html')
+                    && frame.offsetWidth === 1024
+                    && frame.getBoundingClientRect().width <= previewCanvas.clientWidth + 1
+                    && Math.abs(frame.getBoundingClientRect().height - previewCanvas.getBoundingClientRect().height) <= 1
                     && frame.getBoundingClientRect().width > 500
                     && frame.clientHeight > 320
                     && !document.querySelector('[data-ndb-mail]').textContent.includes('•');
@@ -191,6 +196,19 @@ it('selects and inspects mail with a real in-panel preview', function () {
         ->click('[data-ndb-mail-preview-viewport="mobile"]')
         ->assertAttribute('[data-ndb-mail-preview-viewport="mobile"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-mail-preview-canvas]").getBoundingClientRect().width <= 376')
+        ->select('[data-ndb-mail-preview-format]', 'text')
+        ->assertScript(<<<'JS'
+            (() => {
+                const canvas = document.querySelector('[data-ndb-mail-preview-canvas]');
+                const frame = document.querySelector('[data-ndb-mail-preview-frame]');
+
+                return canvas.getBoundingClientRect().width > 500
+                    && frame.offsetWidth === canvas.clientWidth;
+            })()
+            JS)
+        ->select('[data-ndb-mail-preview-format]', 'html')
+        ->assertAttribute('[data-ndb-mail-preview-viewport="mobile"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelector("[data-ndb-mail-preview-canvas]").getBoundingClientRect().width <= 376')
         ->click('[data-ndb-mail-detail-tab="message"]')
         ->assertAttribute('[data-ndb-mail-detail-tab="message"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-mail-detail-panel="message"]')
@@ -258,6 +276,7 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                 const detail = document.querySelector('[data-ndb-mail-detail]');
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
+                const previewCanvas = document.querySelector('[data-ndb-mail-preview-canvas]');
                 const metadata = document.querySelector('[data-ndb-mail-metadata]');
                 const identity = document.querySelector('[data-ndb-mail-recipient]');
                 const primary = document.querySelector('[data-ndb-inspector-detail-header-primary]');
@@ -272,7 +291,10 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                     && getComputedStyle(detail).display === 'flex'
                     && detail.getBoundingClientRect().top >= content.getBoundingClientRect().top
                     && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
+                    && frame.offsetWidth === 1024
                     && frame.getBoundingClientRect().width <= detail.getBoundingClientRect().width
+                    && frame.getBoundingClientRect().width <= previewCanvas.clientWidth + 1
+                    && Math.abs(frame.getBoundingClientRect().height - previewCanvas.getBoundingClientRect().height) <= 1
                     && primary.scrollWidth <= primary.clientWidth + 1
                     && identity.scrollWidth <= identity.clientWidth + 1
                     && metadata.scrollWidth <= metadata.clientWidth + 1
@@ -286,6 +308,22 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                     && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)
+        ->click('[data-ndb-mail-preview-viewport="mobile"]')
+        ->assertAttribute('[data-ndb-mail-preview-viewport="mobile"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const frame = document.querySelector('[data-ndb-mail-preview-frame]');
+                const canvas = document.querySelector('[data-ndb-mail-preview-canvas]');
+
+                return frame.offsetWidth === 375
+                    && frame.getBoundingClientRect().width <= canvas.clientWidth + 1
+                    && Math.abs(frame.getBoundingClientRect().height - canvas.getBoundingClientRect().height) <= 1
+                    && canvas.getBoundingClientRect().width <= 376;
+            })()
+            JS)
+        ->click('[data-ndb-mail-preview-viewport="desktop"]')
+        ->assertAttribute('[data-ndb-mail-preview-viewport="desktop"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelector("[data-ndb-mail-preview-frame]").offsetWidth === 1024')
         ->click('[data-ndb-mail-detail-tab="message"]')
         ->assertVisible('[data-ndb-mail-detail-panel="message"]')
         ->click('[data-ndb-mail-detail-tab="preview"]')

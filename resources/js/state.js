@@ -4,6 +4,10 @@ const TOOLBAR_PLACEMENTS = ['top-left', 'top', 'top-right', 'bottom-left', 'bott
 const TOOLBAR_CORNER_PLACEMENTS = TOOLBAR_PLACEMENTS.filter((placement) => placement.includes('-'));
 const ACTIVITY_POLL_LIMIT = 30;
 const ACTIVITY_POLL_INTERVAL = 1000;
+const MAIL_PREVIEW_WIDTHS = {
+  desktop: 1024,
+  mobile: 375,
+};
 const toolbarHorizontalPlacement = (placement) => {
   if (placement.endsWith('-left')) return 'left';
   if (placement.endsWith('-right')) return 'right';
@@ -282,6 +286,7 @@ export function createNewDebugBar(
     mailDetailTab: 'preview',
     mailPreviewFormat: 'html',
     mailPreviewViewport: 'desktop',
+    mailPreviewFrameCleanup: null,
     visibleMailCount: summary.section_counts?.mail ?? 0,
     notificationGroups: [],
     notificationFilter: 'all',
@@ -376,6 +381,8 @@ export function createNewDebugBar(
     },
 
     destroy() {
+      this.mailPreviewFrameCleanup?.();
+      this.mailPreviewFrameCleanup = null;
       this.colorScheme?.removeEventListener?.('change', this.colorSchemeListener);
       this.colorScheme = null;
       this.colorSchemeListener = null;
@@ -2292,6 +2299,13 @@ export function createNewDebugBar(
       if (format === 'text' && !message?.has_text) return;
 
       this.mailPreviewFormat = format;
+      this.$nextTick?.(() => {
+        const frame = this.$refs?.mailPreviewFrame;
+        if (!frame) return;
+
+        frame.style.setProperty('height', '20rem', 'important');
+        this.resizeMailPreviewFrame(frame);
+      });
     },
 
     setMailPreviewViewport(viewport) {
@@ -2311,7 +2325,21 @@ export function createNewDebugBar(
     connectMailPreviewFrame(frame) {
       if (typeof HTMLIFrameElement === 'undefined' || !(frame instanceof HTMLIFrameElement)) return;
 
+      this.mailPreviewFrameCleanup?.();
       frame.__newDebugBarMailPreviewCleanup?.();
+
+      const canvas = frame.closest('[data-ndb-mail-preview-canvas]');
+      let connected = true;
+      let layoutScheduled = false;
+      const scheduleLayout = () => {
+        if (!connected || layoutScheduled) return;
+
+        layoutScheduled = true;
+        browser.nextFrame(() => {
+          layoutScheduled = false;
+          if (connected) this.layoutMailPreviewFrame(frame);
+        });
+      };
 
       const handlePreviewMessage = (event) => {
         if (event.source !== frame.contentWindow) return;
@@ -2330,13 +2358,45 @@ export function createNewDebugBar(
 
         const height = Math.min(100_000, Math.max(320, Math.ceil(event.data.height)));
         frame.style.setProperty('height', `${height}px`, 'important');
+        this.layoutMailPreviewFrame(frame);
       };
 
       window.addEventListener('message', handlePreviewMessage);
-      frame.__newDebugBarMailPreviewCleanup = () => {
+      if (canvas && typeof ResizeObserver === 'function') {
+        const observer = new ResizeObserver(scheduleLayout);
+        observer.observe(canvas);
+        frame.__newDebugBarMailPreviewCanvasObserver = observer;
+      }
+
+      const cleanup = () => {
+        connected = false;
         window.removeEventListener('message', handlePreviewMessage);
         frame.__newDebugBarMailPreviewObserver?.disconnect?.();
+        frame.__newDebugBarMailPreviewCanvasObserver?.disconnect?.();
       };
+      frame.__newDebugBarMailPreviewCleanup = cleanup;
+      this.mailPreviewFrameCleanup = cleanup;
+      scheduleLayout();
+    },
+
+    layoutMailPreviewFrame(frame) {
+      if (typeof HTMLIFrameElement === 'undefined' || !(frame instanceof HTMLIFrameElement)) return;
+
+      const canvas = frame.closest('[data-ndb-mail-preview-canvas]');
+      const availableWidth = canvas?.clientWidth ?? 0;
+      if (!canvas || availableWidth <= 0) return;
+
+      const fixedWidth = this.mailPreviewFormat === 'html' ? MAIL_PREVIEW_WIDTHS[this.mailPreviewViewport] : null;
+      const frameWidth = fixedWidth ?? availableWidth;
+      const scale = fixedWidth ? Math.min(1, availableWidth / fixedWidth) : 1;
+
+      frame.style.setProperty('width', `${frameWidth}px`, 'important');
+      frame.style.setProperty('transform', `translateX(-50%) scale(${scale})`, 'important');
+
+      const frameHeight = frame.offsetHeight;
+      if (frameHeight > 0) {
+        canvas.style.setProperty('height', `${Math.ceil(frameHeight * scale)}px`, 'important');
+      }
     },
 
     resizeMailPreviewFrame(frame) {
@@ -2358,9 +2418,11 @@ export function createNewDebugBar(
               Math.max(320, body.scrollHeight, body.offsetHeight, root.scrollHeight, root.offsetHeight),
             );
 
-            if (Math.abs(frame.getBoundingClientRect().height - height) > 1) {
+            const currentHeight = Number.parseFloat(frame.style.height);
+            if (!Number.isFinite(currentHeight) || Math.abs(currentHeight - height) > 1) {
               frame.style.setProperty('height', `${Math.ceil(height)}px`, 'important');
             }
+            this.layoutMailPreviewFrame(frame);
           };
           const scheduleResize = () => {
             if (scheduled) return;
@@ -2380,6 +2442,7 @@ export function createNewDebugBar(
         // Sandboxed HTML previews report their own height below.
       }
 
+      this.layoutMailPreviewFrame(frame);
       frame.contentWindow?.postMessage({ type: 'newdebugbar:measure-mail-preview' }, '*');
     },
 

@@ -232,6 +232,218 @@ test('mail defaults to all and preview while keeping a visible message selected'
   assert.equal(state.mailPreviewUrl(), null);
 });
 
+test('mail preview keeps desktop and mobile viewport widths inside a narrow canvas', () => {
+  const OriginalFrame = globalThis.HTMLIFrameElement;
+
+  class PreviewFrame {}
+
+  globalThis.HTMLIFrameElement = PreviewFrame;
+
+  try {
+    const state = createNewDebugBar(summary, runtime());
+    const canvas = {
+      clientWidth: 320,
+      style: {
+        setProperty(property, value, priority = '') {
+          this[property] = value;
+          this[`${property}Priority`] = priority;
+        },
+      },
+    };
+    const frame = new PreviewFrame();
+    frame.style = {
+      height: '640px',
+      setProperty(property, value) {
+        this[property] = value;
+      },
+    };
+    frame.closest = (selector) => (selector === '[data-ndb-mail-preview-canvas]' ? canvas : null);
+    frame.contentDocument = null;
+    frame.contentWindow = { postMessage() {} };
+    Object.defineProperty(frame, 'offsetHeight', {
+      get: () => (frame.style.height === '20rem' ? 320 : Number.parseFloat(frame.style.height)),
+    });
+
+    state.mailMessages = [{ execution: 1, has_html: true, has_text: true }];
+    state.mailSelected = 1;
+    state.$refs = { mailPreviewFrame: frame };
+    state.$nextTick = (callback) => callback();
+
+    state.layoutMailPreviewFrame(frame);
+    assert.equal(frame.style.width, '1024px');
+    assert.equal(frame.style.transform, 'translateX(-50%) scale(0.3125)');
+    assert.equal(canvas.style.height, '200px');
+    assert.equal(canvas.style.heightPriority, 'important');
+
+    state.setMailPreviewViewport('mobile');
+    assert.equal(frame.style.width, '375px');
+    assert.equal(frame.style.transform, 'translateX(-50%) scale(0.8533333333333334)');
+    assert.equal(canvas.style.height, '274px');
+
+    state.setMailPreviewFormat('text');
+    assert.equal(frame.style.width, '320px');
+    assert.equal(frame.style.transform, 'translateX(-50%) scale(1)');
+    assert.equal(canvas.style.height, '320px');
+
+    canvas.clientWidth = 1200;
+    frame.style.height = '640px';
+    state.mailPreviewFormat = 'html';
+    state.mailPreviewViewport = 'desktop';
+    state.layoutMailPreviewFrame(frame);
+    assert.equal(frame.style.transform, 'translateX(-50%) scale(1)');
+    assert.equal(canvas.style.height, '640px');
+
+    canvas.clientWidth = 0;
+    frame.style.width = 'unchanged';
+    state.layoutMailPreviewFrame(frame);
+    assert.equal(frame.style.width, 'unchanged');
+
+    frame.closest = () => null;
+    state.layoutMailPreviewFrame(frame);
+    state.layoutMailPreviewFrame({});
+  } finally {
+    if (OriginalFrame === undefined) delete globalThis.HTMLIFrameElement;
+    else globalThis.HTMLIFrameElement = OriginalFrame;
+  }
+});
+
+test('mail preview follows canvas resizes and cleans up its observer', () => {
+  const OriginalFrame = globalThis.HTMLIFrameElement;
+  const OriginalObserver = globalThis.ResizeObserver;
+  const OriginalWindow = globalThis.window;
+  const listeners = new Map();
+  const observers = [];
+
+  class PreviewFrame {}
+  class PreviewResizeObserver {
+    constructor(callback) {
+      this.callback = callback;
+      this.disconnected = false;
+      observers.push(this);
+    }
+
+    observe(target) {
+      this.target = target;
+    }
+
+    disconnect() {
+      this.disconnected = true;
+    }
+  }
+
+  globalThis.HTMLIFrameElement = PreviewFrame;
+  globalThis.ResizeObserver = PreviewResizeObserver;
+  globalThis.window = {
+    addEventListener: (type, listener) => listeners.set(type, listener),
+    removeEventListener: (type, listener) => {
+      if (listeners.get(type) === listener) listeners.delete(type);
+    },
+  };
+
+  try {
+    const state = createNewDebugBar(summary, runtime());
+    const scrolls = [];
+    let detailAvailable = true;
+    let previousStateCleanup = 0;
+    let previousFrameCleanup = 0;
+    let bodyObserverCleanup = 0;
+    const canvas = {
+      clientWidth: 640,
+      style: {
+        setProperty(property, value, priority = '') {
+          this[property] = value;
+          this[`${property}Priority`] = priority;
+        },
+      },
+    };
+    const detail = {
+      clientHeight: 500,
+      scrollBy: ({ top }) => scrolls.push(top),
+    };
+    const frame = new PreviewFrame();
+    frame.style = {
+      height: '320px',
+      setProperty(property, value) {
+        this[property] = value;
+      },
+    };
+    frame.closest = (selector) => {
+      if (selector === '[data-ndb-mail-preview-canvas]') return canvas;
+      if (selector === '[data-ndb-mail-detail]' && detailAvailable) return detail;
+
+      return null;
+    };
+    frame.contentWindow = {};
+    frame.__newDebugBarMailPreviewCleanup = () => previousFrameCleanup++;
+    Object.defineProperty(frame, 'offsetHeight', {
+      get: () => Number.parseFloat(frame.style.height),
+    });
+    state.mailPreviewFrameCleanup = () => previousStateCleanup++;
+
+    state.connectMailPreviewFrame({});
+    state.connectMailPreviewFrame(frame);
+    assert.equal(previousStateCleanup, 1);
+    assert.equal(previousFrameCleanup, 1);
+    assert.equal(frame.style.width, '1024px');
+    assert.equal(frame.style.transform, 'translateX(-50%) scale(0.625)');
+    assert.equal(canvas.style.heightPriority, 'important');
+    assert.equal(observers[0].target, canvas);
+
+    canvas.clientWidth = 320;
+    observers[0].callback();
+    assert.equal(frame.style.transform, 'translateX(-50%) scale(0.3125)');
+
+    const handleMessage = listeners.get('message');
+    handleMessage({ source: {}, data: { type: 'newdebugbar:mail-preview-height', height: 700 } });
+    handleMessage({ source: frame.contentWindow, data: undefined });
+    handleMessage({
+      source: frame.contentWindow,
+      data: { type: 'newdebugbar:mail-preview-height', height: Number.POSITIVE_INFINITY },
+    });
+    handleMessage({
+      source: frame.contentWindow,
+      data: { type: 'newdebugbar:mail-preview-scroll', deltaY: 2, deltaMode: 1 },
+    });
+    handleMessage({
+      source: frame.contentWindow,
+      data: { type: 'newdebugbar:mail-preview-scroll', deltaY: 0.5, deltaMode: 2 },
+    });
+    handleMessage({
+      source: frame.contentWindow,
+      data: { type: 'newdebugbar:mail-preview-scroll', deltaY: 3, deltaMode: 0 },
+    });
+    assert.deepEqual(scrolls, [32, 250, 3]);
+
+    detailAvailable = false;
+    handleMessage({
+      source: frame.contentWindow,
+      data: { type: 'newdebugbar:mail-preview-scroll', deltaY: 10, deltaMode: 0 },
+    });
+    assert.deepEqual(scrolls, [32, 250, 3]);
+
+    handleMessage({
+      source: frame.contentWindow,
+      data: { type: 'newdebugbar:mail-preview-height', height: 480 },
+    });
+    assert.equal(frame.style.height, '480px');
+    assert.equal(canvas.style.height, '150px');
+
+    frame.__newDebugBarMailPreviewObserver = { disconnect: () => bodyObserverCleanup++ };
+    state.destroy();
+    observers[0].callback();
+    assert.equal(bodyObserverCleanup, 1);
+    assert.equal(observers[0].disconnected, true);
+    assert.equal(listeners.has('message'), false);
+  } finally {
+    if (OriginalFrame === undefined) delete globalThis.HTMLIFrameElement;
+    else globalThis.HTMLIFrameElement = OriginalFrame;
+    if (OriginalObserver === undefined) delete globalThis.ResizeObserver;
+    else globalThis.ResizeObserver = OriginalObserver;
+    if (OriginalWindow === undefined) delete globalThis.window;
+    else globalThis.window = OriginalWindow;
+  }
+});
+
 test('notifications default to all and group channel delivery diagnostics', () => {
   const browser = runtime();
   const state = createNewDebugBar(

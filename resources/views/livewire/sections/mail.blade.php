@@ -375,10 +375,10 @@
                                 <template x-if="selectedMailMessage.has_html || selectedMailMessage.has_text">
                                     <div
                                         data-ndb-mail-preview-canvas
-                                        :class="mailPreviewViewport === 'mobile'
+                                        :class="mailPreviewFormat === 'html' && mailPreviewViewport === 'mobile'
                                             ? 'ndb:max-w-[23.4375rem]'
                                             : 'ndb:max-w-none'"
-                                        class="ndb:mx-auto ndb:min-h-80 ndb:w-full ndb:flex-1 ndb:transition-[max-width]"
+                                        class="ndb:relative ndb:mx-auto ndb:h-80 ndb:w-full ndb:flex-1 ndb:overflow-hidden ndb:transition-[max-width]"
                                     >
                                         <iframe
                                             x-ref="mailPreviewFrame"
@@ -389,7 +389,7 @@
                                             @load="resizeMailPreviewFrame($event.currentTarget)"
                                             sandbox="allow-scripts"
                                             referrerpolicy="no-referrer"
-                                            class="ndb:h-80 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-sm"
+                                            class="ndb:absolute ndb:top-0 ndb:left-1/2 ndb:block ndb:h-80 ndb:w-full ndb:max-w-none ndb:origin-top ndb:box-border ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-sm"
                                         ></iframe>
                                     </div>
                                 </template>
