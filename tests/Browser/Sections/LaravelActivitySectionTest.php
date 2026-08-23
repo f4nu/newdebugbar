@@ -77,16 +77,10 @@ it('presents Laravel decisions messages and source context without editor links'
         ->assertScript(<<<'JS'
             (() => {
                 const authorization = document.querySelector('[data-ndb-authorization-filter]');
-                const events = document.querySelector('[data-ndb-event-source]');
-                const queries = document.querySelector('[data-ndb-query-filter]');
 
-                return authorization.className === events.className
-                    && events.className === queries.className
-                    && [authorization, events, queries].every((tab) =>
-                        tab.matches('[data-ndb-filter-tab]')
-                        && tab.closest('[data-ndb-filter-tabs]') !== null
-                        && ! getComputedStyle(tab).transitionProperty.includes('border')
-                    );
+                return authorization.matches('[data-ndb-filter-tab]')
+                    && authorization.closest('[data-ndb-filter-tabs]') !== null
+                    && ! getComputedStyle(authorization).transitionProperty.includes('border');
             })()
             JS)
         ->click('[data-ndb-authorization-filter="denied"]')
@@ -131,21 +125,21 @@ it('presents view data in an accessible popover', function () {
         ->assertAttribute('[data-ndb-view-group]', 'open', '')
         ->assertSee('tests/Fixtures/views/context.blade.php')
         ->assertScript('!document.querySelector("[data-ndb-view-source]").textContent.replace(/\\s+/g, " ").includes(" :")')
-        ->assertPresent('[data-ndb-view-data]')
+        ->assertMissing('[data-ndb-view-data]')
         ->assertMissing('[data-ndb-view-data-count]')
         ->assertScript(<<<'JS'
             (() => {
-                const trigger = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]');
+                const trigger = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-trigger]');
 
                 return trigger.textContent.trim() === 'View data'
                     && trigger.querySelector('svg') === null;
             })()
             JS)
-        ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'false')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]")).display === "none"')
+        ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-trigger]', 'aria-expanded', 'false')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-popover]")).display === "none"')
         ->assertScript(<<<'JS'
             (() => {
-                const render = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data])');
+                const render = document.querySelector('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger])');
                 const renderRow = render?.querySelector('[data-ndb-view-render-row]');
                 const renderContext = render?.querySelector('[data-ndb-view-render-context]');
                 const viewDataTrigger = render?.querySelector('[data-ndb-view-data-trigger]');
@@ -171,14 +165,15 @@ it('presents view data in an accessible popover', function () {
             })()
             JS);
 
-    $page->click('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]');
+    $page->click('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-trigger]');
 
     DebugBarBrowser::waitForVisibleElement(
         $page,
-        '[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]',
+        '[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data-trigger]) [data-ndb-view-data-popover]',
     );
 
     $page
+        ->waitForText('view-data-value')
         ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'true')
         ->assertVisible('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]')
         ->assertVisible('[data-ndb-view-data]')

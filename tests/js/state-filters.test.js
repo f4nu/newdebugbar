@@ -161,6 +161,7 @@ test('mail defaults to all and preview while keeping a visible message selected'
     },
     {
       execution: 2,
+      transport_message_id: null,
       has_html: true,
       has_text: true,
       html_url: '/2/html',
@@ -561,6 +562,19 @@ test('notifications default to all and group channel delivery diagnostics', () =
   assert.equal(state.mailSelected, 7);
   assert.equal(state.mailDetailOpen, true);
   assert.equal(mailFocuses, 1);
+
+  state.mailMessages = [];
+  state.openNotificationMail('mail-8');
+  assert.equal(state.selected, 'mail');
+  assert.equal(state.pendingMailMessageId, 'mail-8');
+  state.initializeMail([
+    { execution: 8, transport_message_id: 'mail-8', has_html: true },
+    { execution: 9, transport_message_id: 'mail-9', has_html: true },
+  ]);
+  assert.equal(state.pendingMailMessageId, null);
+  assert.equal(state.mailSelected, 8);
+  assert.equal(state.mailDetailOpen, true);
+  assert.equal(mailFocuses, 2);
 
   state.initializeNotifications('invalid');
   assert.deepEqual(state.notificationGroups, []);

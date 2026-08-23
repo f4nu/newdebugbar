@@ -1,5 +1,7 @@
 <?php
 
+use NewDebugBar\Tests\Support\DebugBarBrowser;
+
 it('keeps a queued notification pending until its worker runs', function () {
     visit('/profiled-queued-communications')
         ->resize(1200, 900)
@@ -19,7 +21,7 @@ it('keeps a queued notification pending until its worker runs', function () {
 });
 
 it('groups notification attempts in a full-height delivery inspector', function () {
-    visit('/profiled-notifications-rich')
+    $page = visit('/profiled-notifications-rich')
         ->resize(1440, 1200)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="notifications"]')
@@ -118,7 +120,11 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->assertSee('tests/Fixtures/Notifications/ProfiledNotification.php')
         ->assertSee('tests/Support/DefinesTestApplication.php')
         ->click('[data-ndb-notification-detail-tab="delivery"]')
-        ->click('[data-ndb-notification-view-mail]')
+        ->click('[data-ndb-notification-view-mail]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
         ->assertVisible('[data-ndb-section-panel="mail"]')
         ->assertSee('Your Kyoto journey is ready to review')
         ->assertAttribute('[data-ndb-mail-item="1"]', 'aria-pressed', 'true')

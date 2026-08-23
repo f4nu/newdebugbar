@@ -226,7 +226,8 @@ export function createViewDataState(wire, renderOrder, highlight = () => {}) {
           this.viewData = data ?? {};
           this.viewDataLoaded = true;
           this.viewDataLoading = false;
-          highlight();
+          if (typeof this.$nextTick === 'function') this.$nextTick(highlight);
+          else highlight();
         })
         .catch(() => {
           this.viewDataLoading = false;
@@ -320,6 +321,7 @@ export function createNewDebugBar(
     httpClientDetailTab: 'overview',
     visibleHttpClientCount: summary.section_counts?.http_client ?? 0,
     mailMessages: [],
+    pendingMailMessageId: null,
     mailFilter: 'all',
     mailSearch: '',
     mailSelected: null,
@@ -1718,6 +1720,7 @@ export function createNewDebugBar(
       this.httpClientDetailTab = 'overview';
       this.visibleHttpClientCount = 0;
       this.mailMessages = [];
+      this.pendingMailMessageId = null;
       this.mailFilter = 'all';
       this.mailSearch = '';
       this.mailSelected = null;
@@ -2346,12 +2349,20 @@ export function createNewDebugBar(
 
     initializeMail(messages) {
       this.mailMessages = Array.isArray(messages) ? messages : [];
+      const requestedMessage =
+        this.pendingMailMessageId === null
+          ? undefined
+          : this.mailMessages.find((message) => message.transport_message_id === this.pendingMailMessageId);
       this.mailFilter = 'all';
       this.mailSearch = '';
-      this.mailSelected = this.mailMessages[0]?.execution ?? null;
-      this.mailDetailOpen = false;
+      this.mailSelected = requestedMessage?.execution ?? this.mailMessages[0]?.execution ?? null;
+      this.mailDetailOpen = requestedMessage !== undefined;
+      this.pendingMailMessageId = null;
       this.resetMailDetail();
-      this.$nextTick?.(() => this.applyMailView());
+      this.$nextTick?.(() => {
+        this.applyMailView();
+        if (requestedMessage !== undefined) this.$refs?.mailDetail?.focus?.();
+      });
     },
 
     setMailFilter(filter) {
@@ -2545,7 +2556,13 @@ export function createNewDebugBar(
         return;
       }
 
-      [...(list?.children ?? [])].forEach((item) => {
+      if (!list) {
+        this.visibleMailCount = this.mailMessages.length;
+
+        return;
+      }
+
+      [...list.children].forEach((item) => {
         const matches =
           (this.mailFilter === 'all' || item.dataset.attachments === 'true') &&
           (search === '' || item.dataset.search?.includes(search));
@@ -2690,11 +2707,15 @@ export function createNewDebugBar(
 
     openNotificationMail(messageId) {
       const message = this.mailMessages.find((mail) => mail.transport_message_id === messageId);
-      if (!message) return;
+      this.pendingMailMessageId = messageId;
 
       this.selectSection('mail');
-      this.selectMailMessage(message.execution);
-      this.$nextTick?.(() => this.$refs?.mailDetail?.focus?.());
+
+      if (message) {
+        this.pendingMailMessageId = null;
+        this.selectMailMessage(message.execution);
+        this.$nextTick?.(() => this.$refs?.mailDetail?.focus?.());
+      }
     },
 
     setQueryFilter(filter) {
