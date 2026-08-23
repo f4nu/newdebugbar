@@ -525,8 +525,62 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>Notification delivery diagnostics</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-notifications-many-recipients', function () {
+            app(ChannelManager::class)->extend(
+                'profiled-push',
+                fn (): ProfiledNotificationChannel => new ProfiledNotificationChannel,
+            );
+
+            Notification::sendNow(
+                new ProfiledNotifiable([
+                    'elise@example.test' => 'Elise Martin',
+                    'theo@example.test' => 'Theo Laurent',
+                    'mara@example.test' => 'Mara Bell',
+                    'sora@example.test' => 'Sora Tanaka',
+                    'nina@example.test' => 'Nina Dubois',
+                    'arthur@example.test' => 'Arthur Moreau',
+                    'camille@example.test' => 'Camille Bernard',
+                    'yuki@example.test' => 'Yuki Nakamura',
+                ], id: 2048, name: 'Kyoto review team'),
+                new ProfiledNotification(
+                    privateValue: 'Kyoto review team digest',
+                    subjectLine: 'Kyoto review team digest',
+                ),
+            );
+
+            $travelers = collect([
+                ['Mara Bell', 2101],
+                ['Alexander Montgomery-Sinclair', 2102],
+                ['Sora Tanaka', 2103],
+                ['Nina Dubois', 2104],
+                ['Arthur Moreau', 2105],
+                ['Camille Bernard', 2106],
+                ['Yuki Nakamura', 2107],
+                ['Noah Williams', 2108],
+            ])->map(fn (array $traveler): ProfiledNotifiable => new ProfiledNotifiable(
+                privateAddress: mb_strtolower(str_replace([' ', '-'], ['', ''], $traveler[0])).'@example.test',
+                id: $traveler[1],
+                name: $traveler[0],
+            ))->all();
+
+            Notification::sendNow($travelers, new ProfiledNotification(
+                privateValue: 'Kyoto traveler reminder',
+                channels: ['profiled-push'],
+                subjectLine: 'Your Kyoto departure is coming up',
+            ));
+
+            return response('<!doctype html><html><body>Many notification recipients</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-mail-rich', function () {
-            Mail::to('taylor@example.test')->send(new ProfiledMailable(
+            Mail::to([
+                ['email' => 'taylor@example.test', 'name' => 'Taylor Reed'],
+                ['email' => 'alexandra.montgomery@example.test', 'name' => 'Alexandra Montgomery'],
+                ['email' => 'mara@example.test', 'name' => 'Mara Bell'],
+                ['email' => 'sora@example.test', 'name' => 'Sora Tanaka'],
+                ['email' => 'nina@example.test', 'name' => 'Nina Dubois'],
+                ['email' => 'arthur@example.test', 'name' => 'Arthur Moreau'],
+            ])->send(new ProfiledMailable(
                 subjectLine: 'Payment receipt #NS-1042',
                 heading: 'Payment received',
                 messageCopy: 'Thanks, Taylor. Your workspace subscription is paid and ready for the next billing period.',

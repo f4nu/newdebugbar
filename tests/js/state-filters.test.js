@@ -325,10 +325,10 @@ test('notifications default to all and group channel delivery diagnostics', () =
   state.notificationSearch = '';
   state.setNotificationFilter('all');
   state.selectNotification(1);
-  state.setNotificationDetailTab('data');
+  state.setNotificationDetailTab('payload');
   state.setNotificationChannel('profiled-sms');
   assert.equal(state.notificationDetailOpen, true);
-  assert.equal(state.notificationDetailTab, 'data');
+  assert.equal(state.notificationDetailTab, 'payload');
   assert.equal(state.selectedNotificationDelivery.channel, 'profiled-sms');
   assert.ok(notificationScrolls > 0);
 
@@ -337,7 +337,7 @@ test('notifications default to all and group channel delivery diagnostics', () =
   state.setNotificationChannel('invalid');
   state.selectNotification(99);
   assert.equal(state.notificationFilter, 'all');
-  assert.equal(state.notificationDetailTab, 'data');
+  assert.equal(state.notificationDetailTab, 'payload');
   assert.equal(state.notificationChannel, 'profiled-sms');
   assert.equal(state.notificationSelected, 1);
   assert.equal(state.formatNotificationEvidence(null), 'No data was captured.');

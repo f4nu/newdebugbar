@@ -8,21 +8,29 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->waitForText('ProfiledNotification')
         ->assertSee('2 notifications')
         ->assertScript('document.querySelector("[data-ndb-select-section=notifications]").textContent.trim().endsWith("2")')
-        ->assertSee('Partially sent')
+        ->assertSee('Needs attention')
+        ->assertSee('Elise Martin')
+        ->assertSee('elise@example.test')
+        ->assertSee('+32 470 12 34 56')
+        ->assertSee('Sent to channel')
         ->assertSee('Traveler phone number is not verified.')
         ->assertValue('[data-ndb-notification-filter]', 'all')
         ->assertAttribute('[data-ndb-notification-detail-tab="delivery"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-notification-view-mail]')
+        ->assertScript(
+            'document.querySelector("[data-ndb-notification-view-mail]").closest("[data-ndb-notification-delivery]").textContent.includes("Mail")',
+        )
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-notifications]');
                 const payload = root.querySelector('[data-ndb-notification-payload]');
-                const notifications = JSON.parse(atob(payload.textContent));
+                const payloadContent = payload.textContent.trim();
+                const notifications = JSON.parse(atob(payloadContent));
 
                 return !root.getAttribute('x-init').includes('ProfiledNotification')
-                    && /^[A-Za-z0-9+/=]+$/.test(payload.textContent)
+                    && /^[A-Za-z0-9+/=]+$/.test(payloadContent)
                     && notifications.length === 2
-                    && notifications[0].notification.includes('\\ProfiledNotification');
+                    && notifications.some(({ notification }) => notification.endsWith('\\ProfiledNotification'));
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -42,10 +50,12 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const summaryRuntime = document.querySelector('[data-ndb-notification-summary-runtime]');
                 const filter = document.querySelector('[data-ndb-notification-filter]');
                 const metadata = document.querySelector('[data-ndb-notification-metadata]');
-                const metadataFacts = [...metadata.lastElementChild.children];
-                const factWidths = metadataFacts.map((fact) => fact.getBoundingClientRect().width);
+                const metadataFacts = [...metadata.children];
+                const recipient = document.querySelector('[data-ndb-notification-recipient]');
+                const deliveries = [...document.querySelectorAll('[data-ndb-notification-delivery]')];
                 const channelControl = document.querySelector('[data-ndb-notification-channel-control]');
                 const tabs = [...document.querySelectorAll('[data-ndb-notifications] [data-ndb-filter-tabs]')];
+                const text = document.querySelector('[data-ndb-notifications]').textContent;
 
                 return getComputedStyle(workspace).display === 'grid'
                     && workspaceBox.height > 576
@@ -62,16 +72,21 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && tabs.length === 1
                     && tabs[0].parentElement === channelControl.parentElement
                     && getComputedStyle(channelControl).display === 'none'
-                    && metadata.querySelectorAll('svg').length === 3
-                    && Math.max(...factWidths) - Math.min(...factWidths) <= 1
+                    && metadataFacts.length === 4
+                    && metadata.querySelectorAll('svg').length === 0
                     && metadata.scrollWidth <= metadata.clientWidth + 1
+                    && recipient.textContent.includes('Recipient')
+                    && recipient.textContent.includes('Destinations')
+                    && deliveries.length === 2
                     && getComputedStyle(detail).overflowY === 'auto'
                     && detail.tabIndex === 0
-                    && !document.querySelector('[data-ndb-notifications]').textContent.includes('•');
+                    && !text.includes('Attempts')
+                    && !text.includes('Delivered successfully')
+                    && !text.includes('•');
             })()
             JS)
-        ->click('[data-ndb-notification-detail-tab="data"]')
-        ->assertVisible('[data-ndb-notification-detail-panel="data"]')
+        ->click('[data-ndb-notification-detail-tab="payload"]')
+        ->assertVisible('[data-ndb-notification-detail-panel="payload"]')
         ->assertVisible('[data-ndb-notification-channel-control]')
         ->assertValue('[data-ndb-notification-channel]', 'mail')
         ->select('[data-ndb-notification-channel]', 'profiled-sms')
@@ -97,7 +112,54 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->select('[data-ndb-notification-filter]', 'all')
         ->assertScript('document.querySelectorAll("[data-ndb-notification-item]:not([hidden])").length', 2)
         ->click('[data-ndb-notification-item="2"]')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-notification-view-mail]")).display === "none"')
+        ->assertScript('document.querySelector("[data-ndb-notification-view-mail]") === null')
+        ->assertNoJavaScriptErrors();
+});
+
+it('keeps many recipients readable without widening the inspector', function () {
+    visit('/profiled-notifications-many-recipients')
+        ->resize(1100, 820)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="notifications"]')
+        ->waitForText('Kyoto review team')
+        ->assertSee('9 notifications')
+        ->assertSee('8 recipients')
+        ->assertVisible('[data-ndb-notification-search]')
+        ->assertVisible('[data-ndb-notification-view-mail]')
+        ->assertScript('document.querySelectorAll("[data-ndb-notification-item]").length', 9)
+        ->assertScript(
+            'document.querySelector("[data-ndb-notification-list]").scrollHeight > document.querySelector("[data-ndb-notification-list]").clientHeight',
+        )
+        ->assertScript(
+            'getComputedStyle(document.querySelector("[data-ndb-notification-list]")).overflowY === "auto"',
+        )
+        ->assertScript(
+            'document.querySelector("[data-ndb-notification-detail-title]").parentElement === document.querySelector("[data-ndb-notification-status]").parentElement',
+        )
+        ->assertScript(
+            'document.querySelector("[data-ndb-notification-view-mail]").closest("[data-ndb-notification-delivery]") === document.querySelector("[data-ndb-notification-delivery]")',
+        )
+        ->assertScript(
+            '[...document.querySelector("[data-ndb-notification-delivery]").querySelectorAll("code")].filter((destination) => destination.getClientRects().length > 0).length',
+            8,
+        )
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-notification-workspace]');
+                const detail = document.querySelector('[data-ndb-notification-detail]');
+                const header = document.querySelector('[data-ndb-notification-recipient]').parentElement;
+                const destinations = [...document.querySelector('[data-ndb-notification-delivery]').querySelectorAll('code')]
+                    .filter((destination) => destination.getClientRects().length > 0);
+
+                return destinations.every((destination) => destination.textContent.includes('@example.test'))
+                    && header.scrollWidth <= header.clientWidth + 1
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && workspace.scrollWidth <= workspace.clientWidth + 1;
+            })()
+            JS)
+        ->fill('[data-ndb-notification-search]', 'Alexander Montgomery-Sinclair')
+        ->assertScript('document.querySelectorAll("[data-ndb-notification-item]:not([hidden])").length', 1)
+        ->assertSee('Alexander Montgomery-Sinclair')
         ->assertNoJavaScriptErrors();
 });
 
@@ -164,17 +226,17 @@ it('drills into notification details with icon tabs on mobile', function () {
                     && tabs.length === 3
                     && icons.every((icon) => icon && icon.getClientRects().length > 0)
                     && labels.every((label) => getComputedStyle(label).display === 'none')
-                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Delivery|Data|Source'
+                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Delivery|Payload|Source'
                     && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)
-        ->click('[data-ndb-notification-detail-tab="data"]')
+        ->click('[data-ndb-notification-detail-tab="payload"]')
         ->assertVisible('[data-ndb-notification-channel-control]')
         ->select('[data-ndb-notification-channel]', 'profiled-sms')
         ->assertSee('Traveler phone number is not verified.')
         ->click('[data-ndb-notification-detail-back]')
         ->click('[data-ndb-notification-item="2"]')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-notification-view-mail]")).display === "none"')
+        ->assertScript('document.querySelector("[data-ndb-notification-view-mail]") === null')
         ->click('[data-ndb-notification-detail-back]')
         ->assertScript(<<<'JS'
             (() => {

@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use Closure;
 use Illuminate\Auth\Access\Events\GateEvaluated;
+use Illuminate\Bus\Queueable;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\CacheHit;
@@ -54,6 +55,25 @@ use Throwable;
 /** Routes Laravel runtime events into their matching request collectors. */
 final class EventRegistrar
 {
+    private const MAX_PENDING_NOTIFICATION_DESTINATIONS = 500;
+
+    /** @var list<string> */
+    private const FRAMEWORK_NOTIFICATION_PROPERTIES = [
+        'afterCommit',
+        'chainCatchCallbacks',
+        'chainConnection',
+        'chainQueue',
+        'chained',
+        'connection',
+        'debounceOwner',
+        'deduplicator',
+        'delay',
+        'messageGroup',
+        'middleware',
+        'queue',
+        'uniqueLockOwner',
+    ];
+
     /** @var list<class-string> */
     private const EXCLUDED_GENERAL_EVENTS = [
         QueryExecuted::class,
@@ -89,6 +109,9 @@ final class EventRegistrar
         PreparingResponse::class,
         ResponsePrepared::class,
     ];
+
+    /** @var array<string, mixed> */
+    private array $notificationDestinations = [];
 
     public function __construct(
         private readonly Dispatcher $events,
@@ -358,6 +381,7 @@ final class EventRegistrar
                     $event->notifiable,
                     $event->notification,
                     (string) $event->channel,
+                    terminal: true,
                 ),
                 ...$this->notificationResponse($event->response),
                 ...$location,
@@ -374,6 +398,7 @@ final class EventRegistrar
                     $event->notifiable,
                     $event->notification,
                     (string) $event->channel,
+                    terminal: true,
                 ),
                 ...$this->notificationFailure($event->data),
                 ...$location,
@@ -536,8 +561,12 @@ final class EventRegistrar
     }
 
     /** @return array<string, mixed> */
-    private function notificationDeliveryMetadata(mixed $notifiable, object $notification, string $channel): array
-    {
+    private function notificationDeliveryMetadata(
+        mixed $notifiable,
+        object $notification,
+        string $channel,
+        bool $terminal = false,
+    ): array {
         $notificationId = isset($notification->id) && is_scalar($notification->id)
             ? (string) $notification->id
             : null;
@@ -552,9 +581,10 @@ final class EventRegistrar
             $notifiableId === null ? 'object:'.$notifiableObjectId : 'id:'.(string) $notifiableId,
         ]);
         $groupId = substr(hash('sha256', $groupIdentity), 0, 24);
+        $attemptId = $groupId.'|'.$channel;
 
         return [
-            'attempt_id' => $groupId.'|'.$channel,
+            'attempt_id' => $attemptId,
             'group_id' => $groupId,
             'notification_id' => $notificationId,
             'notification_object_id' => $notificationObjectId,
@@ -564,11 +594,25 @@ final class EventRegistrar
             'locale' => isset($notification->locale) && is_string($notification->locale)
                 ? $notification->locale
                 : null,
-            'queued' => $notification instanceof ShouldQueue,
+            'queueable' => $notification instanceof ShouldQueue,
+            'queue_connection' => isset($notification->connection) && is_scalar($notification->connection)
+                ? (string) $notification->connection
+                : null,
+            'queue_name' => isset($notification->queue) && is_scalar($notification->queue)
+                ? (string) $notification->queue
+                : null,
             'channel' => $channel,
             'notifiable_type' => $notifiableType,
             'notifiable_id' => $notifiableId,
+            'notifiable_name' => $this->notificationNotifiableName($notifiable),
             'notifiable_object_id' => $notifiableObjectId,
+            'destination' => $this->notificationDestinationForAttempt(
+                $attemptId,
+                $notifiable,
+                $notification,
+                $channel,
+                $terminal,
+            ),
             'routes' => $notifiable instanceof AnonymousNotifiable ? $notifiable->routes : [],
         ];
     }
@@ -588,11 +632,95 @@ final class EventRegistrar
         }
     }
 
+    private function notificationNotifiableName(mixed $notifiable): ?string
+    {
+        if (! is_object($notifiable)) {
+            return null;
+        }
+
+        $values = $notifiable instanceof Model
+            ? $notifiable->getAttributes()
+            : get_object_vars($notifiable);
+
+        foreach (['name', 'full_name', 'display_name'] as $attribute) {
+            $value = $values[$attribute] ?? null;
+
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return null;
+    }
+
+    private function notificationDestinationForAttempt(
+        string $attemptId,
+        mixed $notifiable,
+        object $notification,
+        string $channel,
+        bool $terminal,
+    ): mixed {
+        $destination = array_key_exists($attemptId, $this->notificationDestinations)
+            ? $this->notificationDestinations[$attemptId]
+            : $this->notificationDestination($notifiable, $notification, $channel);
+
+        if ($terminal) {
+            unset($this->notificationDestinations[$attemptId]);
+
+            return $destination;
+        }
+
+        if (count($this->notificationDestinations) >= self::MAX_PENDING_NOTIFICATION_DESTINATIONS) {
+            array_shift($this->notificationDestinations);
+        }
+
+        $this->notificationDestinations[$attemptId] = $destination;
+
+        return $destination;
+    }
+
+    private function notificationDestination(mixed $notifiable, object $notification, string $channel): mixed
+    {
+        if (! is_object($notifiable)) {
+            return null;
+        }
+
+        if ($channel === 'database') {
+            return [
+                'type' => $notifiable::class,
+                'id' => $this->notificationNotifiableId($notifiable),
+                'name' => $this->notificationNotifiableName($notifiable),
+            ];
+        }
+
+        if (! method_exists($notifiable, 'routeNotificationFor')) {
+            return null;
+        }
+
+        try {
+            $destination = $notifiable instanceof AnonymousNotifiable
+                ? $notifiable->routeNotificationFor($channel)
+                : $notifiable->routeNotificationFor($channel, $notification);
+
+            return $this->normalizeNotificationDataValue($destination);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     /** @return array<string, mixed> */
     private function notificationPublicData(object $notification): array
     {
         $data = get_object_vars($notification);
-        unset($data['id'], $data['locale']);
+        $frameworkProperties = ['id', 'locale'];
+
+        if (in_array(Queueable::class, class_uses_recursive($notification), true)) {
+            $frameworkProperties = [...$frameworkProperties, ...self::FRAMEWORK_NOTIFICATION_PROPERTIES];
+        }
+
+        foreach ($frameworkProperties as $property) {
+            unset($data[$property]);
+        }
 
         foreach ($data as $key => $value) {
             $data[$key] = $this->normalizeNotificationDataValue($value);

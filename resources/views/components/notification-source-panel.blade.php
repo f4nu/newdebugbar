@@ -1,11 +1,9 @@
-<div
-    data-ndb-notification-detail-panel="source"
-    x-show.important="notificationDetailTab === 'source'"
-    class="ndb:p-4"
->
+<div data-ndb-notification-detail-panel="source" x-show.important="notificationDetailTab === 'source'" class="ndb:p-4">
     <div class="ndb:space-y-4">
         <div>
-            <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Notification class</p>
+            <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                Notification class
+            </p>
             <code
                 class="ndb:mt-2 ndb:block ndb:break-all ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
                 x-text="selectedNotification.notification"
@@ -32,7 +30,9 @@
             ></code>
         </div>
         <div x-show="selectedNotification.notification_id">
-            <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Notification ID</p>
+            <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                Notification ID
+            </p>
             <code
                 class="ndb:mt-2 ndb:block ndb:break-all ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
                 x-text="selectedNotification.notification_id"
@@ -43,7 +43,9 @@
     <div class="ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800">
         <h4 class="ndb:text-xs ndb:font-bold">Application stack</h4>
         <template x-if="selectedNotification.stack.length === 0">
-            <p class="ndb:mt-2 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">No application stack was captured.</p>
+            <p class="ndb:mt-2 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                No application stack was captured.
+            </p>
         </template>
         <div class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
             <template x-for="(frame, index) in selectedNotification.stack" :key="index">

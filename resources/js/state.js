@@ -2356,7 +2356,7 @@ export function createNewDebugBar(
     },
 
     setNotificationDetailTab(tab) {
-      if (!['delivery', 'data', 'source'].includes(tab)) return;
+      if (!['delivery', 'payload', 'source'].includes(tab)) return;
 
       this.notificationDetailTab = tab;
       this.$nextTick?.(() =>

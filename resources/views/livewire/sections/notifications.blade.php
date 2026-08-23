@@ -7,10 +7,51 @@
         ->filter(fn (mixed $id): bool => is_string($id) && $id !== '')
         ->values()
         ->all();
+    $formatNotificationDestinations = static function (mixed $destination): array {
+        if (is_scalar($destination)) {
+            $label = trim((string) $destination);
+
+            return $label === '' ? [] : [$label];
+        }
+
+        if (! is_array($destination) || $destination === []) {
+            return [];
+        }
+
+        if (is_string($destination['type'] ?? null)) {
+            $name = is_string($destination['name'] ?? null) && trim($destination['name']) !== ''
+                ? trim($destination['name'])
+                : null;
+            $type = class_basename($destination['type']);
+            $id = is_scalar($destination['id'] ?? null) ? (string) $destination['id'] : null;
+            $context = $type.($id === null || $id === '' ? '' : ' #'.$id);
+
+            return [$name === null || $name === $context ? $context : $name.' ('.$context.')'];
+        }
+
+        $parts = [];
+
+        foreach ($destination as $key => $value) {
+            if (is_string($key) && str_contains($key, '@')) {
+                $name = is_scalar($value) ? trim((string) $value) : '';
+                $parts[] = $name === '' ? $key : $name.' <'.$key.'>';
+            } elseif (is_scalar($value) && trim((string) $value) !== '') {
+                $parts[] = trim((string) $value);
+            }
+        }
+
+        if ($parts !== []) {
+            return $parts;
+        }
+
+        $encoded = json_encode($destination, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return is_string($encoded) ? [$encoded] : [];
+    };
     $notificationGroups = collect($capturedNotificationItems)
         ->groupBy(fn (array $item, int $index): string => (string) ($item['group_id'] ?? 'notification-'.$index))
         ->values()
-        ->map(function ($attempts, int $groupIndex) use ($retainedMailIds): array {
+        ->map(function ($attempts, int $groupIndex) use ($retainedMailIds, $formatNotificationDestinations): array {
             $attempts = collect($attempts)->values();
             $first = $attempts->first();
             $notificationClass = (string) ($first['notification'] ?? 'Notification');
@@ -23,7 +64,7 @@
                 ? $first['notification_data']
                 : [];
             $deliveries = $attempts
-                ->map(function (array $attempt, int $attemptIndex): array {
+                ->map(function (array $attempt, int $attemptIndex) use ($formatNotificationDestinations, $retainedMailIds): array {
                     $callsite = is_array($attempt['callsite'] ?? null) ? $attempt['callsite'] : null;
                     $stack = array_values(is_array($attempt['stack'] ?? null) ? $attempt['stack'] : []);
                     $channel = (string) ($attempt['channel'] ?? 'unknown');
@@ -34,6 +75,19 @@
                         ? $attempt['mail_message_id']
                         : null;
                     $responseSummary = null;
+                    $failureMessage = is_string($attempt['exception_message'] ?? null)
+                        ? $attempt['exception_message']
+                        : null;
+
+                    if ($failureMessage === null) {
+                        foreach (['reason', 'message', 'error', 'detail'] as $failureKey) {
+                            if (is_scalar($failureData[$failureKey] ?? null)) {
+                                $failureMessage = trim((string) $failureData[$failureKey]);
+
+                                break;
+                            }
+                        }
+                    }
 
                     if ($mailMessageId !== null) {
                         $responseSummary = 'Mail message '.$mailMessageId;
@@ -45,21 +99,50 @@
                         $responseSummary = class_basename($attempt['response_type']);
                     }
 
+                    $destinationLabels = $formatNotificationDestinations($attempt['destination'] ?? null);
+                    $destinationLabel = implode(', ', $destinationLabels);
+                    $destinationCount = count($destinationLabels);
+                    $channelLabel = str_replace(
+                        ['Sms', 'Mms', 'Api', 'Url'],
+                        ['SMS', 'MMS', 'API', 'URL'],
+                        \Illuminate\Support\Str::headline(str_replace(['-', '_'], ' ', $channel)),
+                    );
+                    $evidenceSummary = match (true) {
+                        $status === 'failed' => null,
+                        $channel === 'mail' && $mailMessageId !== null => 'Mail transport accepted the message.',
+                        $channel === 'database' => 'Notification stored in the database.',
+                        $response !== null => 'Channel returned a provider response.',
+                        default => 'Channel completed without throwing.',
+                    };
+
                     return [
                         'execution' => $attemptIndex + 1,
                         'channel' => $channel,
-                        'channel_label' => \Illuminate\Support\Str::headline(str_replace(['-', '_'], ' ', $channel)),
+                        'channel_label' => $channelLabel,
                         'status' => $status,
-                        'status_label' => $status === 'failed' ? 'Failed' : 'Sent',
+                        'status_label' => $status === 'failed' ? 'Failed' : 'Sent to channel',
                         'duration_ms' => (float) ($attempt['duration_ms'] ?? 0),
+                        'destination' => $attempt['destination'] ?? null,
+                        'destination_labels' => $destinationLabels,
+                        'destination_label' => $destinationLabel === '' ? 'No destination resolved' : $destinationLabel,
+                        'destination_summary_label' => match (true) {
+                            $destinationCount === 0 => 'No destination resolved',
+                            $destinationCount === 1 => $destinationLabel,
+                            $channel === 'mail' => $destinationCount.' recipients',
+                            default => $destinationCount.' destinations',
+                        },
+                        'destination_resolved' => $destinationCount > 0,
                         'response_type' => is_string($attempt['response_type'] ?? null) ? $attempt['response_type'] : null,
                         'response' => $response,
                         'response_summary' => $responseSummary,
+                        'evidence_summary' => $evidenceSummary,
                         'failure_data' => $failureData,
+                        'failure_message' => $failureMessage,
                         'exception_class' => is_string($attempt['exception_class'] ?? null) ? $attempt['exception_class'] : null,
                         'exception_message' => is_string($attempt['exception_message'] ?? null) ? $attempt['exception_message'] : null,
                         'exception_location' => is_array($attempt['exception_location'] ?? null) ? $attempt['exception_location'] : null,
                         'mail_message_id' => $mailMessageId,
+                        'mail_available' => is_string($mailMessageId) && in_array($mailMessageId, $retainedMailIds, true),
                         'callsite' => $callsite,
                         'callsite_label' => $callsite === null ? 'Source unavailable' : $callsite['file'].':'.$callsite['line'],
                         'stack' => $stack,
@@ -76,16 +159,25 @@
             $statusLabel = match ($status) {
                 'sent' => 'Sent',
                 'failed' => 'Failed',
-                default => 'Partially sent',
+                default => 'Needs attention',
             };
-            $recipientLabel = class_basename($notifiableType);
+            $recipientTypeLabel = class_basename($notifiableType);
 
             if (is_scalar($notifiableId) && (string) $notifiableId !== '') {
-                $recipientLabel .= ' #'.(string) $notifiableId;
+                $recipientTypeLabel .= ' #'.(string) $notifiableId;
             }
 
+            $recipientName = is_string($first['notifiable_name'] ?? null) && trim($first['notifiable_name']) !== ''
+                ? trim($first['notifiable_name'])
+                : null;
+            $recipientLabel = $recipientName ?? $recipientTypeLabel;
+            $recipientContextLabel = $recipientName === null ? null : $recipientTypeLabel;
+
             $channels = array_values(array_unique(array_column($deliveries, 'channel_label')));
-            $mailMessageId = collect($deliveries)->pluck('mail_message_id')->first(fn (mixed $id): bool => is_string($id) && $id !== '');
+            $deliverySummary = implode(', ', array_map(
+                fn (array $delivery): string => $delivery['channel_label'].' '.($delivery['status'] === 'failed' ? 'failed' : 'sent'),
+                $deliveries,
+            ));
             $callsite = collect($deliveries)->pluck('callsite')->first(fn (mixed $value): bool => is_array($value));
             $stack = collect($deliveries)->pluck('stack')->first(fn (mixed $value): bool => is_array($value) && $value !== []) ?? [];
             $notificationId = is_string($first['notification_id'] ?? null) ? $first['notification_id'] : null;
@@ -112,11 +204,20 @@
                 'deliveries' => $deliveries,
                 'channels' => $channels,
                 'channels_label' => implode(', ', $channels),
-                'queued' => (bool) ($first['queued'] ?? false),
+                'channel_count_label' => count($channels).' '.\Illuminate\Support\Str::plural('channel', count($channels)),
+                'delivery_summary' => $deliverySummary,
+                'queueable' => (bool) ($first['queueable'] ?? false),
+                'queue_connection' => is_string($first['queue_connection'] ?? null) ? $first['queue_connection'] : null,
+                'queue_name' => is_string($first['queue_name'] ?? null) ? $first['queue_name'] : null,
+                'execution_mode_label' => (bool) ($first['queueable'] ?? false)
+                    ? 'Queueable'.(is_string($first['queue_name'] ?? null) ? ' on '.$first['queue_name'] : '')
+                    : 'Synchronous',
                 'locale' => is_string($first['locale'] ?? null) ? $first['locale'] : null,
                 'notifiable_type' => $notifiableType,
                 'notifiable_id' => $notifiableId,
+                'recipient_name' => $recipientName,
                 'recipient_label' => $recipientLabel,
+                'recipient_context_label' => $recipientContextLabel,
                 'routes' => is_array($first['routes'] ?? null) ? $first['routes'] : [],
                 'notification_data' => $notificationData,
                 'notification_source' => $notificationSource,
@@ -125,16 +226,18 @@
                 'callsite_label' => $callsiteLabel,
                 'callsite_short_label' => $callsiteShortLabel,
                 'stack' => $stack,
-                'mail_message_id' => $mailMessageId,
-                'mail_available' => is_string($mailMessageId) && in_array($mailMessageId, $retainedMailIds, true),
                 'search' => mb_strtolower(implode(' ', array_filter([
                     $notificationClass,
                     $notifiableType,
                     is_scalar($notifiableId) ? (string) $notifiableId : null,
+                    $recipientName,
+                    $recipientLabel,
                     implode(' ', $channels),
+                    $deliverySummary,
                     $statusLabel,
                     $callsite === null ? null : $callsite['file'],
-                    ...array_column($deliveries, 'exception_message'),
+                    ...array_column($deliveries, 'destination_label'),
+                    ...array_column($deliveries, 'failure_message'),
                 ]))),
             ];
         })
@@ -148,10 +251,16 @@
 
 <div
     data-ndb-notifications
-    x-init="initializeNotifications(JSON.parse(atob($el.querySelector('[data-ndb-notification-payload]').textContent)))"
+    x-init="
+        initializeNotifications(
+            JSON.parse(atob($el.querySelector('[data-ndb-notification-payload]').textContent.trim())),
+        )
+    "
     class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
 >
-    <script type="application/json" data-ndb-notification-payload>{{ base64_encode(\Illuminate\Support\Js::encode($notificationGroups)) }}</script>
+    <script type="application/json" data-ndb-notification-payload>
+        {{ base64_encode(\Illuminate\Support\Js::encode($notificationGroups)) }}
+    </script>
 
     @if ($notificationGroups !== [])
         <div
@@ -219,6 +328,7 @@
 
                 <div
                     x-ref="notificationList"
+                    data-ndb-notification-list
                     class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:overflow-y-auto ndb:dark:divide-zinc-800"
                 >
                     @foreach ($notificationGroups as $notification)
@@ -236,33 +346,39 @@
                             class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-3 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span class="ndb:min-w-0">
-                                <span
-                                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
-                                    >{{ $notification['label'] }}</span
-                                >
-                                <span
-                                    class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                >
-                                    To {{ $notification['recipient_label'] }}
+                                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $notification['label'] }}</span>
+                                <span class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    <span class="ndb:truncate">To {{ $notification['recipient_label'] }}</span>
+                                    @if ($notification['recipient_context_label'] !== null)
+                                        <span class="ndb:shrink-0 ndb:text-zinc-400">
+                                            {{ $notification['recipient_context_label'] }}
+                                        </span>
+                                    @endif
                                 </span>
-                                <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400">
-                                    {{ $notification['channels_label'] }}
+                                <span
+                                    data-ndb-notification-outcomes
+                                    class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-2 ndb:gap-y-0.5 ndb:text-[11px]"
+                                >
+                                    @foreach ($notification['deliveries'] as $delivery)
+                                        <span @class(['ndb:font-medium',
+                                            'ndb:text-zinc-400' => $delivery['status'] === 'sent',
+                                            'ndb:text-red-600 ndb:dark:text-red-300' => $delivery['status'] === 'failed',
+                                        ])>
+                                            {{ $delivery['channel_label'] }} {{ $delivery['status'] === 'failed' ? 'failed' : 'sent' }}
+                                        </span>
+                                    @endforeach
                                 </span>
                             </span>
                             <span class="ndb:text-right">
-                                <span
-                                    @class ([
-                                        'ndb:block ndb:text-[11px] ndb:font-bold',
-                                        'ndb:text-emerald-600 ndb:dark:text-emerald-300' => $notification['status'] === 'sent',
-                                        'ndb:text-amber-600 ndb:dark:text-amber-300' => $notification['status'] === 'partial',
-                                        'ndb:text-red-600 ndb:dark:text-red-300' => $notification['status'] === 'failed',
-                                    ])
-                                >
+                                <span @class([
+                                    'ndb:block ndb:text-[11px] ndb:font-bold',
+                                    'ndb:text-emerald-600 ndb:dark:text-emerald-300' => $notification['status'] === 'sent',
+                                    'ndb:text-amber-600 ndb:dark:text-amber-300' => $notification['status'] === 'partial',
+                                    'ndb:text-red-600 ndb:dark:text-red-300' => $notification['status'] === 'failed',
+                                ])>
                                     {{ $notification['status_label'] }}
                                 </span>
-                                <span
-                                    class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
-                                >
+                                <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
                                     {{ number_format($notification['duration_ms'], 2) }} ms
                                 </span>
                             </span>
@@ -296,145 +412,11 @@
 
                 <template x-if="selectedNotification">
                     <div class="ndb:flex ndb:flex-col">
-                        <header class="ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800">
-                            <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:justify-between ndb:gap-3">
-                                <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
-                                    <span
-                                        data-ndb-notification-status
-                                        :class="{
-                                            'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300':
-                                                selectedNotification.status === 'sent',
-                                            'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300':
-                                                selectedNotification.status === 'partial',
-                                            'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300':
-                                                selectedNotification.status === 'failed',
-                                        }"
-                                        class="ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
-                                        x-text="selectedNotification.status_label"
-                                    ></span>
-                                    <span
-                                        x-show="selectedNotification.queued"
-                                        class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-400"
-                                    >
-                                        Queueable
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    data-ndb-notification-view-mail
-                                    x-show.important="selectedNotification.mail_available"
-                                    @click="openNotificationMail(selectedNotification.mail_message_id)"
-                                    class="ndb:inline-flex ndb:h-8 ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-2.5 ndb:text-[11px] ndb:font-bold ndb:text-zinc-700 ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-200 ndb:dark:hover:bg-zinc-800"
-                                >
-                                    <x-newdebugbar::icon name="mail" size="3.5" />
-                                    View email
-                                </button>
-                            </div>
-                            <h3
-                                data-ndb-notification-detail-title
-                                class="ndb:mt-3 ndb:break-all ndb:text-base ndb:font-bold ndb:leading-6"
-                                x-text="selectedNotification.label"
-                            ></h3>
+                        <x-newdebugbar::notification-header />
 
-                            <div
-                                data-ndb-notification-metadata
-                                class="ndb:mt-2 ndb:overflow-hidden ndb:rounded-lg ndb:bg-zinc-50/85 ndb:ring-1 ndb:ring-inset ndb:ring-zinc-200/70 ndb:dark:bg-zinc-900/65 ndb:dark:ring-zinc-800"
-                            >
-                                <dl
-                                    class="ndb:grid ndb:grid-cols-2 ndb:border-b ndb:border-zinc-200/70 ndb:dark:border-zinc-800"
-                                >
-                                    <div
-                                        class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-2.5 ndb:py-1.5 ndb:dark:border-zinc-800"
-                                    >
-                                        <dt
-                                            class="ndb:shrink-0 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300"
-                                        >
-                                            To
-                                        </dt>
-                                        <dd
-                                            :title="selectedNotification.notifiable_type"
-                                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                            x-text="selectedNotification.recipient_label"
-                                        ></dd>
-                                    </div>
-                                    <div
-                                        class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1.5 ndb:px-2.5 ndb:py-1.5"
-                                    >
-                                        <dt class="ndb:shrink-0 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
-                                            Via
-                                        </dt>
-                                        <dd
-                                            :title="selectedNotification.channels_label"
-                                            class="ndb:truncate ndb:text-[11px] ndb:font-medium ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                                            x-text="selectedNotification.channels_label"
-                                        ></dd>
-                                    </div>
-                                </dl>
-                                <dl class="ndb:grid ndb:grid-cols-3">
-                                    <div
-                                        class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-1.5 ndb:py-1.5 ndb:dark:border-zinc-800"
-                                    >
-                                        <span
-                                            class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/80 ndb:text-indigo-600 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300"
-                                        >
-                                            <x-newdebugbar::icon name="clock" size="3" />
-                                        </span>
-                                        <div class="ndb:min-w-0">
-                                            <dt class="ndb:text-[11px] ndb:font-medium ndb:leading-3 ndb:text-zinc-400">
-                                                Runtime
-                                            </dt>
-                                            <dd
-                                                class="ndb:truncate ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                x-text="selectedNotification.duration_ms.toFixed(2) + ' ms'"
-                                            ></dd>
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-1.5 ndb:py-1.5 ndb:dark:border-zinc-800"
-                                    >
-                                        <span
-                                            class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-emerald-100/80 ndb:text-emerald-600 ndb:dark:bg-emerald-950/70 ndb:dark:text-emerald-300"
-                                        >
-                                            <x-newdebugbar::icon name="activity" size="3" />
-                                        </span>
-                                        <div class="ndb:min-w-0">
-                                            <dt class="ndb:text-[11px] ndb:font-medium ndb:leading-3 ndb:text-zinc-400">
-                                                Attempts
-                                            </dt>
-                                            <dd
-                                                class="ndb:truncate ndb:text-[11px] ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                x-text="selectedNotification.delivery_count"
-                                            ></dd>
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:px-1.5 ndb:py-1.5"
-                                    >
-                                        <span
-                                            class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-amber-100/80 ndb:text-amber-700 ndb:dark:bg-amber-950/70 ndb:dark:text-amber-300"
-                                        >
-                                            <x-newdebugbar::icon name="code" size="3" />
-                                        </span>
-                                        <div class="ndb:min-w-0">
-                                            <dt class="ndb:text-[11px] ndb:font-medium ndb:leading-3 ndb:text-zinc-400">
-                                                Source
-                                            </dt>
-                                            <dd
-                                                :title="selectedNotification.callsite_label"
-                                                class="ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                x-text="selectedNotification.callsite_short_label"
-                                            ></dd>
-                                        </div>
-                                    </div>
-                                </dl>
-                            </div>
-                        </header>
-
-                        <div
-                            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800"
-                        >
+                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
                             <x-newdebugbar::filter-tabs label="Notification detail" class="ndb:min-w-0">
-                                @foreach (['delivery' => ['Delivery', 'activity'], 'data' => ['Data', 'database'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
+                                @foreach (['delivery' => ['Delivery', 'activity'], 'payload' => ['Payload', 'database'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
                                     <x-newdebugbar::filter-tab
                                         data-ndb-notification-detail-tab="{{ $tab }}"
                                         @click="setNotificationDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
@@ -456,11 +438,11 @@
                             <label
                                 data-ndb-notification-channel-control
                                 x-show.important="
-                                    notificationDetailTab === 'data' && selectedNotification.delivery_count > 1
+                                    notificationDetailTab === 'payload' && selectedNotification.delivery_count > 1
                                 "
                                 class="ndb:relative ndb:ml-auto ndb:shrink-0"
                             >
-                                <span class="ndb:sr-only">Choose notification channel data</span>
+                                <span class="ndb:sr-only">Choose notification channel payload</span>
                                 <select
                                     data-ndb-notification-channel
                                     x-model="notificationChannel"
@@ -482,7 +464,7 @@
                         </div>
 
                         <x-newdebugbar::notification-delivery-panel />
-                        <x-newdebugbar::notification-data-panel />
+                        <x-newdebugbar::notification-payload-panel />
                         <x-newdebugbar::notification-source-panel />
                     </div>
                 </template>

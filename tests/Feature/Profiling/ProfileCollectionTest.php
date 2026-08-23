@@ -282,15 +282,26 @@ it('groups notification channel attempts and keeps delivery evidence', function 
         ->and($items[0])
         ->status->toBe('sent')
         ->channel->toBe('mail')
-        ->queued->toBeTrue()
+        ->queueable->toBeTrue()
         ->notifiable_id->toBe(1042)
+        ->notifiable_name->toBe('Elise Martin')
+        ->destination->toBe('elise@example.test')
         ->mail_message_id->toBe($mail['payload']['items'][0]['transport_message_id'])
         ->notification_data->privateValue->toBe('Kyoto autumn')
+        ->notification_data->not->toHaveKeys([
+            'connection',
+            'queue',
+            'delay',
+            'afterCommit',
+            'middleware',
+            'chained',
+        ])
         ->notification_source->file->toBe('tests/Fixtures/Notifications/ProfiledNotification.php')
         ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
         ->and($items[1])
         ->status->toBe('failed')
         ->channel->toBe('profiled-sms')
+        ->destination->toBe('+32 470 12 34 56')
         ->exception_class->toBe(RuntimeException::class)
         ->exception_message->toBe('Traveler phone number is not verified.')
         ->exception_location->file->toBe('tests/Fixtures/Notifications/ProfiledNotificationChannel.php')
@@ -298,11 +309,29 @@ it('groups notification channel attempts and keeps delivery evidence', function 
         ->and($items[2])
         ->status->toBe('sent')
         ->channel->toBe('profiled-push')
+        ->destination->toBe('device:journey-1042')
         ->response->toBe([
             'provider' => 'Profiled Push',
             'message_id' => 'push-1042',
         ])
         ->group_id->not->toBe($items[0]['group_id']);
+});
+
+it('captures crowded named mail recipients for compact inspection', function () {
+    $response = $this->get('/profiled-mail-rich', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $recipients = $profile['sections']['mail']['payload']['items'][0]['preview']['to'];
+
+    expect($recipients)
+        ->toHaveCount(6)
+        ->and(implode(' ', $recipients))->toContain(
+            'Taylor Reed',
+            'taylor@example.test',
+            'Alexandra Montgomery',
+            'alexandra.montgomery@example.test',
+            'Arthur Moreau',
+            'arthur@example.test',
+        );
 });
 
 it('captures direct Redis commands and removes cache command duplicates', function () {

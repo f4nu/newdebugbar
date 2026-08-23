@@ -29,7 +29,7 @@ final class DebugBar extends Component
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
         'messages' => 'Review developer messages, their context, and when they were recorded.',
         'models' => 'See which Eloquent models this request loaded or changed. Find repeated record loads, unexpected writes, and when the work happened. Repeated means extra retrievals after a record’s first load.',
-        'notifications' => 'Inspect notification recipients, channel deliveries, failures, data, and source code.',
+        'notifications' => 'Inspect notification recipients, channel deliveries, failures, payloads, and source code.',
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
         'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',
         'redis' => 'Inspect direct Redis commands, their keys, connections, and timing.',
