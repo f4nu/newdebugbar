@@ -3,12 +3,8 @@
     class="ndb:mt-2 ndb:overflow-hidden ndb:rounded-lg ndb:border-0 ndb:bg-zinc-50/85 ndb:ring-1 ndb:ring-inset ndb:ring-zinc-200/70 ndb:dark:bg-zinc-900/65 ndb:dark:ring-zinc-800"
 >
     <dl class="ndb:grid ndb:grid-cols-2 ndb:border-b ndb:border-zinc-200/70 ndb:dark:border-zinc-800">
-        <div
-            class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-2.5 ndb:py-1.5 ndb:dark:border-zinc-800"
-        >
-            <dt
-                class="ndb:shrink-0 ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:text-indigo-600 ndb:dark:text-indigo-300"
-            >
+        <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-2.5 ndb:py-1.5 ndb:dark:border-zinc-800">
+            <dt class="ndb:shrink-0 ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:text-indigo-600 ndb:dark:text-indigo-300">
                 To
             </dt>
             <dd
@@ -28,12 +24,8 @@
     </dl>
 
     <dl class="ndb:grid ndb:grid-cols-3">
-        <div
-            class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-1.5 ndb:py-1.5 ndb:dark:border-zinc-800"
-        >
-            <span
-                class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/80 ndb:text-indigo-600 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300"
-            >
+        <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-1.5 ndb:py-1.5 ndb:dark:border-zinc-800">
+            <span class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-indigo-100/80 ndb:text-indigo-600 ndb:dark:bg-indigo-950/70 ndb:dark:text-indigo-300">
                 <x-newdebugbar::icon name="clock" size="3" />
             </span>
             <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1">
@@ -53,12 +45,8 @@
                 ></dd>
             </div>
         </div>
-        <div
-            class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-1.5 ndb:py-1.5 ndb:dark:border-zinc-800"
-        >
-            <span
-                class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-emerald-100/80 ndb:text-emerald-600 ndb:dark:bg-emerald-950/70 ndb:dark:text-emerald-300"
-            >
+        <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:border-r ndb:border-zinc-200/70 ndb:px-1.5 ndb:py-1.5 ndb:dark:border-zinc-800">
+            <span class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-emerald-100/80 ndb:text-emerald-600 ndb:dark:bg-emerald-950/70 ndb:dark:text-emerald-300">
                 <x-newdebugbar::icon name="server" size="3" />
             </span>
             <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1">
@@ -71,9 +59,7 @@
             </div>
         </div>
         <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:px-1.5 ndb:py-1.5">
-            <span
-                class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-amber-100/80 ndb:text-amber-700 ndb:dark:bg-amber-950/70 ndb:dark:text-amber-300"
-            >
+            <span class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-amber-100/80 ndb:text-amber-700 ndb:dark:bg-amber-950/70 ndb:dark:text-amber-300">
                 <x-newdebugbar::icon name="code" size="3" />
             </span>
             <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1">

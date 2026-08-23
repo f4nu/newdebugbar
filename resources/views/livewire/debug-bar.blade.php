@@ -28,8 +28,7 @@
 >
     <span id="newdebugbar-toolbar-drag-hint" class="ndb:sr-only"
         >Drag this toolbar to pin it to the top, bottom, or any corner. The command palette offers the same
-        actions.</span
-    >
+        actions.</span>
 
     <x-newdebugbar::toolbar-anchor-preview placement="top-left" />
     <x-newdebugbar::toolbar-anchor-preview placement="top" />
@@ -38,9 +37,9 @@
     <x-newdebugbar::toolbar-anchor-preview placement="bottom" />
     <x-newdebugbar::toolbar-anchor-preview placement="bottom-right" />
 
-    @include ('newdebugbar::livewire.toolbar')
+    @include('newdebugbar::livewire.toolbar')
 
-    @include ('newdebugbar::livewire.inspector')
+    @include('newdebugbar::livewire.inspector')
 
     <div
         x-cloak
@@ -57,9 +56,7 @@
             aria-modal="true"
             aria-label="Command palette"
         >
-            <div
-                class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:dark:border-zinc-800"
-            >
+            <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:px-4 ndb:dark:border-zinc-800">
                 <x-newdebugbar::icon name="search" class="ndb:size-5 ndb:text-zinc-400" /><input
                     data-ndb-palette-search
                     x-ref="paletteSearch"
@@ -73,8 +70,7 @@
                     class="ndb:h-14 ndb:min-w-0 ndb:flex-1 ndb:border-0 ndb:bg-transparent ndb:text-sm ndb:font-medium ndb:outline-none ndb:placeholder:text-zinc-400"
                 /><kbd
                     class="ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-1.5 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:text-zinc-400 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-800"
-                    >ESC</kbd
-                >
+                    >ESC</kbd>
             </div>
             <div class="ndb-scrollbar ndb:max-h-[min(420px,60vh)] ndb:overflow-y-auto ndb:p-2">
                 <template x-for="command in allCommands" :key="command.id">
@@ -116,11 +112,11 @@
                 <p
                     x-show.important="filteredCommands.length === 0"
                     class="ndb:px-3 ndb:py-8 ndb:text-center ndb:text-sm ndb:text-zinc-500"
-                >No matching commands.</p>
+                >
+                    No matching commands.
+                </p>
             </div>
-            <div
-                class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
-            >
+            <div class="ndb:flex ndb:items-center ndb:gap-3 ndb:border-t ndb:border-zinc-200 ndb:bg-zinc-50 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
                 <span>↑↓ Navigate</span><span>↵ Select</span><span class="ndb:ml-auto">⌘/Ctrl ⇧ P</span>
             </div>
         </div>

@@ -31,9 +31,7 @@
 @endphp
 
 <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
-    <dl
-        class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
-    >
+    <dl class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-2 ndb:divide-x ndb:divide-y ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:sm:grid-cols-4 ndb:sm:divide-y-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
         @foreach ([['Queued', $section['summary']['queued_count']], ['Executed', $section['summary']['executed_count']], ['Failures', $section['summary']['failed_count']], ['Run time', $section['summary']['duration_ms'].' ms']] as [$label, $value])
             <div class="ndb:px-3.5 ndb:py-3">
                 <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
@@ -84,9 +82,7 @@
             class="ndb:min-w-0 ndb:rounded-xl ndb:border ndb:p-3.5 {{ $status === 'failed' ? 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' : 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' }}"
         >
             <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
-                <span
-                    class="ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $statusClasses[$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300' }}"
-                >
+                <span class="ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $statusClasses[$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300' }}">
                     {{ $statusLabel }}
                 </span>
                 <div class="ndb:min-w-0 ndb:flex-1">
@@ -114,16 +110,12 @@
                     </p>
                 </div>
                 @if (($item['kind'] ?? null) !== 'queued')
-                    <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                        >{{ $item['duration_ms'] }} ms</span
-                    >
+                    <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>
                 @endif
             </div>
 
             @if (($item['communication_type'] ?? null) !== null || $relatedProfileId !== null)
-                <div
-                    class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2 ndb:border-t ndb:border-zinc-200/80 ndb:pt-3 ndb:dark:border-zinc-800"
-                >
+                <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2 ndb:border-t ndb:border-zinc-200/80 ndb:pt-3 ndb:dark:border-zinc-800">
                     @if (($item['communication_type'] ?? null) !== null)
                         <span class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
                             {{ ucfirst($item['communication_type']) }}

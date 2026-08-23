@@ -62,9 +62,7 @@
         <h4 class="ndb:text-xs ndb:font-bold">Attachments</h4>
         <div class="ndb:mt-2 ndb:space-y-2">
             <template x-for="(attachment, index) in selectedMailMessage.attachments" :key="index">
-                <div
-                    class="ndb:flex ndb:min-w-0 ndb:items-center ndb:justify-between ndb:gap-3 ndb:rounded-lg ndb:bg-zinc-100/75 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900"
-                >
+                <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:justify-between ndb:gap-3 ndb:rounded-lg ndb:bg-zinc-100/75 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900">
                     <span
                         class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-semibold"
                         x-text="attachment.name"
@@ -76,7 +74,9 @@
                 </div>
             </template>
         </div>
-        <p class="ndb:mt-2 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-400">Attachment bodies are left out of saved previews and the .eml download.</p>
+        <p class="ndb:mt-2 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-400">
+            Attachment bodies are left out of saved previews and the .eml download.
+        </p>
     </section>
 
     <p
@@ -86,27 +86,27 @@
             selectedMailMessage.attachment_metadata_omitted > 0
         "
         class="ndb:mt-4 ndb:rounded-lg ndb:bg-amber-50 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-amber-700 ndb:dark:bg-amber-950/35 ndb:dark:text-amber-300"
-    >Some message data was bounded to keep this profile responsive.</p>
+    >
+        Some message data was bounded to keep this profile responsive.
+    </p>
 
     <details
         data-ndb-mail-headers
         class="ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
     >
-        <summary
-            class="ndb:cursor-pointer ndb:text-xs ndb:font-bold ndb:text-zinc-900 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-100"
-        >
+        <summary class="ndb:cursor-pointer ndb:text-xs ndb:font-bold ndb:text-zinc-900 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-100">
             Raw headers
         </summary>
-        <pre
-            class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"
-        ><code x-text="selectedMailMessage.headers || 'No raw headers were captured.'"></code></pre>
+        <pre class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="selectedMailMessage.headers || 'No raw headers were captured.'"></code></pre>
     </details>
 </div>
 
 <div data-ndb-mail-detail-panel="source" x-show.important="mailDetailTab === 'source'" class="ndb:p-4">
     <div class="ndb:space-y-4">
         <div>
-            <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Mailable or notification</p>
+            <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                Mailable or notification
+            </p>
             <code
                 class="ndb:mt-2 ndb:block ndb:break-all ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
                 x-text="selectedMailMessage.source || 'No source class was captured.'"
@@ -124,7 +124,9 @@
     <div class="ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800">
         <h4 class="ndb:text-xs ndb:font-bold">Application stack</h4>
         <template x-if="selectedMailMessage.stack.length === 0">
-            <p class="ndb:mt-2 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">No application stack was captured.</p>
+            <p class="ndb:mt-2 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                No application stack was captured.
+            </p>
         </template>
         <div class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
             <template x-for="(frame, index) in selectedMailMessage.stack" :key="index">

@@ -23,9 +23,7 @@
     ];
 @endphp
 
-<dl
-    class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
->
+<dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
     @foreach ([['Sent', $statusCounts['sent'] ?? 0], ['Pending', $pendingCount], ['Failed', $statusCounts['failed'] ?? 0]] as [$label, $value])
         <div class="ndb:px-3.5 ndb:py-3">
             <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
@@ -58,9 +56,7 @@
             class="ndb:min-w-0 ndb:rounded-xl ndb:border ndb:p-3.5 {{ $status === 'failed' ? 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' : 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' }}"
         >
             <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3">
-                <span
-                    class="ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $statusClasses[$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300' }}"
-                >
+                <span class="ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $statusClasses[$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300' }}">
                     {{ $statusLabels[$status] ?? ucfirst($status) }}
                 </span>
                 <div class="ndb:min-w-0 ndb:flex-1">
@@ -73,9 +69,7 @@
                             <span title="{{ $notifiableType }}">{{ class_basename($notifiableType) }}</span>
                         @endif
                         @if (($item['notifiable_count'] ?? 0) > 0)
-                            <span
-                                >{{ $item['notifiable_count'] }} {{ \Illuminate\Support\Str::plural('notifiable', $item['notifiable_count']) }}</span
-                            >
+                            <span>{{ $item['notifiable_count'] }} {{ \Illuminate\Support\Str::plural('notifiable', $item['notifiable_count']) }}</span>
                         @endif
                         @if (($item['queue'] ?? null) !== null)
                             <span>{{ $item['connection'] }} · {{ $item['queue'] ?: 'default queue' }}</span>
@@ -91,9 +85,7 @@
             </div>
 
             @if ($relatedProfileId !== null)
-                <div
-                    class="ndb:mt-3 ndb:flex ndb:justify-end ndb:border-t ndb:border-zinc-200/80 ndb:pt-3 ndb:dark:border-zinc-800"
-                >
+                <div class="ndb:mt-3 ndb:flex ndb:justify-end ndb:border-t ndb:border-zinc-200/80 ndb:pt-3 ndb:dark:border-zinc-800">
                     <button
                         type="button"
                         data-ndb-notification-profile-link

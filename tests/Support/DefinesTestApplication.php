@@ -653,8 +653,7 @@ trait DefinesTestApplication
         string $queue = 'emails',
         int $delay = 5,
         string|int|null $providerId = null,
-    ): JobQueued
-    {
+    ): JobQueued {
         if (method_exists($job, 'onQueue')) {
             $job->onQueue($queue);
         }

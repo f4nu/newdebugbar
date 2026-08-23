@@ -167,9 +167,7 @@
                                 {{ number_format((float) ($mailSummary['duration_ms'] ?? 0), 2) }} ms total
                             </span>
                             @if (($mailSummary['dropped_count'] ?? 0) > 0)
-                                <span
-                                    class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300"
-                                >
+                                <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300">
                                     {{ number_format((int) $mailSummary['dropped_count']) }} not retained
                                 </span>
                             @endif
@@ -232,13 +230,8 @@
                             class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-3 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span class="ndb:min-w-0">
-                                <span
-                                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
-                                    >{{ $message['subject'] }}</span
-                                >
-                                <span
-                                    class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                >
+                                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $message['subject'] }}</span>
+                                <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                     To {{ $message['primary_recipient'] }}
                                 </span>
                                 <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400">
@@ -246,28 +239,20 @@
                                 </span>
                             </span>
                             <span class="ndb:text-right">
-                                <span
-                                    class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $message['status_class'] }}"
-                                >
+                                <span class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $message['status_class'] }}">
                                     {{ $message['status_label'] }}
                                 </span>
                                 @if ($message['status'] === 'sent')
-                                    <span
-                                        class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                    >
+                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                         {{ number_format($message['duration_ms'], 2) }} ms
                                     </span>
                                 @elseif (($message['delay_seconds'] ?? null) > 0)
-                                    <span
-                                        class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
-                                    >
+                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
                                         {{ $message['delay_seconds'] }} s delay
                                     </span>
                                 @endif
                                 @if ($message['attachment_count'] > 0)
-                                    <span
-                                        class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
-                                    >
+                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
                                         {{ $message['attachment_count'] }} {{ \Illuminate\Support\Str::plural('file', $message['attachment_count']) }}
                                     </span>
                                 @endif
@@ -315,8 +300,7 @@
                                     <span
                                         x-show="selectedMailMessage.lifecycle === 'after_response'"
                                         class="ndb:rounded-md ndb:bg-indigo-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
-                                        >After response</span
-                                    >
+                                    >After response</span>
                                     <span
                                         data-ndb-mail-attachment-badge
                                         x-show="selectedMailMessage.attachment_count > 0"
@@ -339,9 +323,7 @@
                             <x-newdebugbar::mail-metadata />
                         </header>
 
-                        <div
-                            class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800"
-                        >
+                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
                             <x-newdebugbar::filter-tabs label="Mail detail" class="ndb:min-w-0">
                                 @foreach (['preview' => ['Preview', 'eye'], 'message' => ['Message', 'mail'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
                                     <x-newdebugbar::filter-tab
@@ -402,8 +384,8 @@
                                         @change="setMailPreviewFormat($event.target.value)"
                                         class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                                     >
-                                        <option value="html" :disabled="!selectedMailMessage.has_html">HTML</option>
-                                        <option value="text" :disabled="!selectedMailMessage.has_text">Text</option>
+                                        <option value="html" :disabled="! selectedMailMessage.has_html">HTML</option>
+                                        <option value="text" :disabled="! selectedMailMessage.has_text">Text</option>
                                     </select>
                                     <x-newdebugbar::icon
                                         name="chevron-down"
@@ -443,13 +425,9 @@
                                         ></iframe>
                                     </div>
                                 </template>
-                                <template x-if="!selectedMailMessage.has_html && !selectedMailMessage.has_text">
-                                    <div
-                                        class="ndb:m-auto ndb:flex ndb:min-h-80 ndb:w-full ndb:flex-col ndb:items-center ndb:justify-center ndb:rounded-lg ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:bg-white/55 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/45"
-                                    >
-                                        <span
-                                            class="ndb:grid ndb:size-9 ndb:place-items-center ndb:rounded-xl ndb:bg-zinc-100 ndb:text-zinc-400 ndb:dark:bg-zinc-800"
-                                        >
+                                <template x-if="! selectedMailMessage.has_html && ! selectedMailMessage.has_text">
+                                    <div class="ndb:m-auto ndb:flex ndb:min-h-80 ndb:w-full ndb:flex-col ndb:items-center ndb:justify-center ndb:rounded-lg ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:bg-white/55 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/45">
+                                        <span class="ndb:grid ndb:size-9 ndb:place-items-center ndb:rounded-xl ndb:bg-zinc-100 ndb:text-zinc-400 ndb:dark:bg-zinc-800">
                                             <x-newdebugbar::icon name="mail" size="4" />
                                         </span>
                                         <p
