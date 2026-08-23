@@ -171,6 +171,7 @@
                 data-ndb-inspector-content
                 x-ref="content"
                 :inert="mobileSectionsOpen"
+                :class="selected === 'mail' ? 'ndb:lg:flex ndb:lg:flex-col' : ''"
                 class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
             >
                 <header data-ndb-section-header class="ndb:px-4 ndb:pt-4 ndb:sm:px-6 ndb:sm:pt-6">
@@ -268,6 +269,7 @@
                         wire:key="profile-details-{{ $profileId }}"
                         wire:loading.remove
                         wire:target="loadDetails"
+                        :class="selected === 'mail' ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
                         class="ndb:p-4 ndb:sm:p-6"
                     >
                         @foreach ($profile['sections'] as $sectionKey => $section)
@@ -275,7 +277,10 @@
                                 data-ndb-section-panel="{{ $sectionKey }}"
                                 @if ($sectionKey !== 'overview') hidden @endif
                                 wire:key="section-{{ $sectionKey }}"
-                                class="ndb:space-y-4"
+                                @class([
+                                    'ndb:space-y-4' => $sectionKey !== 'mail',
+                                    'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => $sectionKey === 'mail',
+                                ])
                             >
                                 @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))
                                 @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? [])))

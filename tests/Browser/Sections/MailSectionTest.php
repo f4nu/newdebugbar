@@ -2,7 +2,7 @@
 
 it('selects and inspects mail with a real in-panel preview', function () {
     visit('/profiled-mail-rich')
-        ->resize(1440, 900)
+        ->resize(1440, 1200)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="mail"]')
         ->waitForText('Payment receipt #NS-1042')
@@ -15,6 +15,11 @@ it('selects and inspects mail with a real in-panel preview', function () {
             (() => {
                 const workspace = document.querySelector('[data-ndb-mail-workspace]');
                 const [list, detail] = workspace.children;
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const details = workspace.parentElement.parentElement.parentElement;
+                const workspaceBox = workspace.getBoundingClientRect();
+                const contentBox = content.getBoundingClientRect();
+                const expectedBottom = contentBox.bottom - Number.parseFloat(getComputedStyle(details).paddingBottom);
                 const listBox = list.getBoundingClientRect();
                 const detailBox = detail.getBoundingClientRect();
                 const selected = document.querySelector('[data-ndb-mail-item][aria-pressed="true"]');
@@ -38,6 +43,8 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 detail.scrollTop = 0;
 
                 return getComputedStyle(workspace).display === 'grid'
+                    && workspaceBox.height > 576
+                    && Math.abs(workspaceBox.bottom - expectedBottom) <= 1
                     && detailBox.width > listBox.width * 1.6
                     && Math.abs(listBox.top - detailBox.top) <= 1
                     && selected.dataset.ndbMailItem === '1'
