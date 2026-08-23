@@ -254,6 +254,7 @@ it('opens and applies a component property edit from its popover', function () {
         ->resize(1024, 900)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
+    DebugBarBrowser::waitForDetails($page);
     DebugBarBrowser::selectSectionViaPalette($page, 'livewire');
 
     $page
@@ -271,7 +272,11 @@ it('opens and applies a component property edit from its popover', function () {
             })()
             JS)
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
-        ->click('[data-ndb-livewire-edit-key$=":count"]')
+        ->click('[data-ndb-livewire-edit-key$=":count"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-livewire-property-popover]');
+
+    $page
         ->assertVisible('[data-ndb-livewire-property-popover]')
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]')
         ->assertAttribute('[data-ndb-livewire-edit-key$=":count"]', 'aria-expanded', 'true')
@@ -348,9 +353,19 @@ it('opens and applies a component property edit from its popover', function () {
         ->type('[data-ndb-livewire-edit-control]', '5')
         ->click('[data-ndb-livewire-edit-apply]')
         ->assertSeeIn('[data-testid="host-counter-value"]', '5')
-        ->assertMissing('[data-ndb-livewire-property-popover]')
-        ->click('[data-ndb-livewire-property-path="settings"] button[aria-label^="Expand"]')
-        ->click('[data-ndb-livewire-edit-key$=":settings.enabled"]')
+        ->assertMissing('[data-ndb-livewire-property-popover]');
+
+    DebugBarBrowser::waitForStableElement($page, '[data-ndb-livewire-property-path="settings"]');
+
+    $page->click('[data-ndb-livewire-property-path="settings"] button[aria-label^="Expand"]');
+
+    DebugBarBrowser::waitForStableElement($page, '[data-ndb-livewire-edit-key$=":settings.enabled"]');
+
+    $page->click('[data-ndb-livewire-edit-key$=":settings.enabled"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-livewire-property-popover]');
+
+    $page
         ->assertVisible('[data-ndb-livewire-property-popover]')
         ->assertAttribute('[data-ndb-livewire-edit-control][role="switch"]', 'aria-checked', 'true')
         ->assertScript(<<<'JS'

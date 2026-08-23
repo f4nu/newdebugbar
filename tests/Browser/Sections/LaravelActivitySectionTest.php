@@ -68,6 +68,8 @@ it('presents Laravel decisions messages and source context without editor links'
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertMissing('[data-ndb-findings]');
 
+    DebugBarBrowser::waitForDetails($page);
+
     $page
         ->click('[data-ndb-select-section="authorization"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Authorization"')
@@ -99,7 +101,21 @@ it('presents Laravel decisions messages and source context without editor links'
 
     $page
         ->click('[data-ndb-select-section="messages"]')
-        ->assertSee('Checkout checkpoint');
+        ->assertSee('Checkout checkpoint')
+        ->click('[data-ndb-select-section="events"]')
+        ->click('[data-ndb-event-item]:first-child summary')
+        ->assertSee(ProfiledApplicationListener::class.'@handle')
+        ->assertMissing('a[href^="vscode://file/"]')
+        ->assertNoJavaScriptErrors();
+
+    DebugBarBrowser::assertSectionSelected($page, 'events');
+});
+
+it('presents view data in an accessible popover', function () {
+    $page = visit('/profiled-context')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::waitForDetails($page);
 
     $page
         ->click('[data-ndb-select-section="views"]')
@@ -155,8 +171,14 @@ it('presents Laravel decisions messages and source context without editor links'
             })()
             JS);
 
+    $page->click('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]');
+
+    DebugBarBrowser::waitForVisibleElement(
+        $page,
+        '[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]',
+    );
+
     $page
-        ->click('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]')
         ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'true')
         ->assertVisible('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-popover]')
         ->assertVisible('[data-ndb-view-data]')
@@ -205,11 +227,7 @@ it('presents Laravel decisions messages and source context without editor links'
         ->assertAttribute('[data-ndb-view-group][open] [data-ndb-view-render]:has([data-ndb-view-data]) [data-ndb-view-data-trigger]', 'aria-expanded', 'false')
         ->assertScript("[...document.querySelectorAll('[data-ndb-view-data-popover]')].every((popover) => getComputedStyle(popover).display === 'none')")
         ->assertMissing('a[href^="vscode://file/"]')
-        ->click('[data-ndb-select-section="events"]')
-        ->click('[data-ndb-event-item]:first-child summary')
-        ->assertSee(ProfiledApplicationListener::class.'@handle')
-        ->assertMissing('a[href^="vscode://file/"]')
         ->assertNoJavaScriptErrors();
 
-    DebugBarBrowser::assertSectionSelected($page, 'events');
+    DebugBarBrowser::assertSectionSelected($page, 'views');
 });

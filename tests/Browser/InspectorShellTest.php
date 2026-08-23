@@ -61,7 +61,11 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
 
 it('prioritizes relevant activity and keeps runtime details collapsed until requested', function () {
     $page = visit('/profiled-rich')
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
         ->assertVisible('[data-ndb-overview-activity]')
         ->assertCount('[data-ndb-overview-activity-section]', 5)
         ->assertMissing('[data-ndb-overview-activity-section] svg')
@@ -87,7 +91,11 @@ it('prioritizes relevant activity and keeps runtime details collapsed until requ
         ->keys('[data-ndb-runtime-detail="drivers"]', 'Enter')
         ->assertVisible('[data-ndb-runtime-detail-panel="drivers"]')
         ->assertScript('document.querySelector(\'[data-ndb-runtime-detail="drivers"]\').getAttribute("aria-pressed") === "true"')
-        ->resize(390, 844)
+        ->resize(390, 844);
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-runtime-detail-select]');
+
+    $page
         ->assertVisible('[data-ndb-runtime-detail-select]')
         ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-navigation]\')).display === "none"')
         ->assertScript('document.querySelector(\'[data-ndb-runtime-detail-select]\').value === "drivers"')

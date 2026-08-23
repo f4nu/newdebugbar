@@ -1,5 +1,7 @@
 <?php
 
+use NewDebugBar\Tests\Support\DebugBarBrowser;
+
 it('presents useful model evidence with progressive controls', function () {
     $page = visit('/profiled-models')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
@@ -86,8 +88,12 @@ it('keeps model evidence contained on a narrow screen', function () {
 });
 
 it('puts model changes before repeated retrievals', function () {
-    visit('/profiled-models?changes=1')
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+    $page = visit('/profiled-models?changes=1')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
         ->click('[data-ndb-select-section="models"]')
         ->assertMissing('[data-ndb-model-finding]')
         ->assertScript(<<<'JS'
