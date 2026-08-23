@@ -207,6 +207,7 @@ it('captures queued dispatches and synchronous execution without job data', func
         ->kind->toBe('queued')
         ->connection->toBe('redis')
         ->queue->toBe('emails')
+        ->job_id->toBe('job-1')
         ->delay_seconds->toBe(5)
         ->and($section['payload']['items'][1])
         ->kind->toBe('executed')

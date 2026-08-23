@@ -494,7 +494,11 @@ trait DefinesTestApplication
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-queue', function () {
-            Event::dispatch($this->queuedEvent('job-1', new ProfiledJob('private queued value')));
+            Event::dispatch($this->queuedEvent(
+                'job-1',
+                new ProfiledJob('private queued value'),
+                providerId: 9001,
+            ));
             Bus::dispatchSync(new ProfiledJob('private sync value'));
 
             try {
@@ -643,7 +647,13 @@ trait DefinesTestApplication
         );
     }
 
-    private function queuedEvent(string $id, object $job, string $queue = 'emails', int $delay = 5): JobQueued
+    private function queuedEvent(
+        string $id,
+        object $job,
+        string $queue = 'emails',
+        int $delay = 5,
+        string|int|null $providerId = null,
+    ): JobQueued
     {
         if (method_exists($job, 'onQueue')) {
             $job->onQueue($queue);
@@ -653,13 +663,14 @@ trait DefinesTestApplication
             $job->delay($delay);
         }
 
-        $payload = json_encode(['private' => 'queued payload'], JSON_THROW_ON_ERROR);
+        $payload = json_encode(['uuid' => $id, 'private' => 'queued payload'], JSON_THROW_ON_ERROR);
+        $providerId ??= $id;
 
         if (property_exists(JobQueued::class, 'queue')) {
-            return new JobQueued('redis', $queue, $id, $job, $payload, $delay);
+            return new JobQueued('redis', $queue, $providerId, $job, $payload, $delay);
         }
 
-        return new JobQueued('redis', $id, $job, $payload);
+        return new JobQueued('redis', $providerId, $job, $payload);
     }
 
     private function keyWrittenEvent(): KeyWritten

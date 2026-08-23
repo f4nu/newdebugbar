@@ -251,13 +251,14 @@ final class EventRegistrar
             $jobDelay = is_object($event->job) ? ($event->job->delay ?? null) : null;
             $queue = $event->queue ?? $jobQueue;
             $delay = $this->jobDelaySeconds($event->delay ?? $jobDelay);
+            $jobId = $this->queuedJobId($event);
             $communication = $this->communications->inspect($event->job) ?? [];
             $job = (string) ($communication['communication_class'] ?? $this->jobName($event->job));
-            $correlationKey = $this->background->key($event->connectionName, $queue, $event->id);
+            $correlationKey = $this->background->key($event->connectionName, $queue, $jobId);
             $status = $delay !== null && $delay > 0 ? 'delayed' : 'queued';
             $facts = [
                 'origin_profile_id' => $this->manager()->currentProfileId(),
-                'job_id' => $event->id,
+                'job_id' => $jobId,
                 'job' => $job,
                 'connection' => $event->connectionName,
                 'queue' => $queue,
@@ -271,7 +272,7 @@ final class EventRegistrar
                 'job' => $job,
                 'connection' => $event->connectionName,
                 'queue' => $queue,
-                'job_id' => $event->id,
+                'job_id' => $jobId,
                 'delay_seconds' => $delay,
                 'correlation_key' => $correlationKey,
                 ...$communication,
@@ -287,7 +288,7 @@ final class EventRegistrar
                     'attachment_count' => 0,
                     'connection' => $event->connectionName,
                     'queue' => $queue,
-                    'job_id' => $event->id,
+                    'job_id' => $jobId,
                     'delay_seconds' => $delay,
                     'correlation_key' => $correlationKey,
                 ]);
@@ -306,7 +307,7 @@ final class EventRegistrar
                         'notifiable_count' => $communication['notifiable_count'] ?? 0,
                         'connection' => $event->connectionName,
                         'queue' => $queue,
-                        'job_id' => $event->id,
+                        'job_id' => $jobId,
                         'delay_seconds' => $delay,
                         'correlation_key' => $correlationKey,
                     ]);
@@ -318,16 +319,17 @@ final class EventRegistrar
 
         $this->listen(JobProcessing::class, function (JobProcessing $event): void {
             $attempt = $event->job->attempts();
+            $jobId = $this->workerJobId($event->job);
             $activity = $this->background->markProcessing(
                 $event->connectionName,
                 $event->job->getQueue(),
-                $event->job->getJobId(),
+                $jobId,
                 $attempt,
             );
             $context = [
                 'connection' => $event->connectionName,
                 'queue' => $event->job->getQueue(),
-                'job_id' => $event->job->getJobId() ?: null,
+                'job_id' => $jobId,
                 'attempt' => $attempt,
                 'correlation_key' => $activity['key'] ?? null,
                 'origin_profile_id' => $activity['origin_profile_id'] ?? null,
@@ -364,7 +366,7 @@ final class EventRegistrar
                 'job' => $event->job->resolveName(),
                 'connection' => $event->connectionName,
                 'queue' => $event->job->getQueue(),
-                'job_id' => $event->job->getJobId() ?: null,
+                'job_id' => $this->workerJobId($event->job),
                 'attempt' => $event->job->attempts(),
                 ...$this->correlationContext($context),
             ]);
@@ -392,7 +394,7 @@ final class EventRegistrar
                 'job' => $event->job->resolveName(),
                 'connection' => $event->connectionName,
                 'queue' => $event->job->getQueue(),
-                'job_id' => $event->job->getJobId() ?: null,
+                'job_id' => $this->workerJobId($event->job),
                 'attempt' => $event->job->attempts(),
                 'exception_class' => $event->exception::class,
                 'will_retry' => ! $failed,
@@ -724,6 +726,38 @@ final class EventRegistrar
             'channels',
             'notifiable_types',
         ]));
+    }
+
+    private function queuedJobId(JobQueued $event): string|int|null
+    {
+        try {
+            $uuid = $event->payload()['uuid'] ?? null;
+
+            if (is_string($uuid) && $uuid !== '') {
+                return $uuid;
+            }
+        } catch (Throwable) {
+            // A malformed payload must not prevent normal queue dispatch.
+        }
+
+        return is_string($event->id) || is_int($event->id) ? $event->id : null;
+    }
+
+    private function workerJobId(object $job): string|int|null
+    {
+        try {
+            $uuid = method_exists($job, 'uuid') ? $job->uuid() : null;
+
+            if (is_string($uuid) && $uuid !== '') {
+                return $uuid;
+            }
+        } catch (Throwable) {
+            // Fall back to the provider identifier for non-standard drivers.
+        }
+
+        $id = method_exists($job, 'getJobId') ? $job->getJobId() : null;
+
+        return is_string($id) || is_int($id) ? $id : null;
     }
 
     private function jobDelaySeconds(mixed $delay): ?int
