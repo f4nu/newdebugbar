@@ -27,6 +27,48 @@ it('loads only the selected profile section after the inspector asks', function 
         ->assertSeeHtml('data-ndb-section-description');
 });
 
+it('keeps a data-heavy profile out of the initial Livewire shell', function () {
+    $id = (string) Str::uuid();
+    $privateValue = 'heavy-view-private-'.Str::random(24);
+    $views = array_map(
+        fn (int $index): array => [
+            'name' => 'reports.row-'.$index,
+            'path' => '/views/reports/row-'.$index.'.blade.php',
+            'duration_ms' => 1.5,
+            'data' => [
+                'private_value' => $privateValue,
+                'payload' => str_repeat('x', 20_000),
+            ],
+        ],
+        range(1, 50),
+    );
+
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'environment' => 'testing',
+        'metrics' => ['duration_ms' => 100, 'peak_memory_mb' => 12],
+        'sections' => [
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'GET', 'status' => 200],
+                'payload' => ['path' => '/heavy', 'method' => 'GET', 'status' => 200],
+            ],
+            'views' => [
+                'label' => 'Views',
+                'summary' => ['count' => count($views)],
+                'payload' => ['items' => $views],
+            ],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => []]],
+        ],
+    ]);
+
+    $component = Livewire::test(DebugBar::class, ['profileId' => $id]);
+
+    expect(strlen($component->html()))
+        ->toBeLessThan(250_000)
+        ->and($component->html())->not->toContain($privateValue);
+});
+
 it('locks server-owned profile state', function () {
     $this->get('/profiled', ['Accept' => 'text/html'])->assertOk();
 
@@ -253,7 +295,76 @@ it('uses the shared presenter for deferred query details and findings', function
         ->call('loadSection', 'queries')
         ->assertSet('profile.sections.queries.summary.repeated_pattern_count', 1)
         ->assertSet('profile.sections.queries.payload.items.0.repeated_count', 2)
-        ->assertSet('profile.findings.0.rule_id', 'query.repeated');
+        ->assertSet('profile.findings.0.rule_id', 'query.repeated')
+        ->assertSeeHtml('data-ndb-query-group')
+        ->assertDontSeeHtml('data-ndb-query-item');
+});
+
+it('paginates long timelines in deterministic batches', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'metrics' => ['duration_ms' => 121],
+        'sections' => [
+            'request' => ['label' => 'Request', 'summary' => ['method' => 'GET', 'status' => 200], 'payload' => [
+                'method' => 'GET',
+                'status' => 200,
+                'path' => '/long-timeline',
+                'route' => null,
+                'action' => null,
+            ]],
+            'logs' => ['label' => 'Logs', 'summary' => ['count' => 120], 'payload' => ['items' => array_map(
+                fn (int $index): array => [
+                    'level' => 'info',
+                    'message' => 'Timeline event '.$index,
+                    'at_ms' => (float) $index,
+                ],
+                range(1, 120),
+            )]],
+            'exceptions' => ['label' => 'Exceptions', 'summary' => ['count' => 0], 'payload' => ['items' => []]],
+        ],
+    ]);
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->call('loadSection', 'timeline')
+        ->assertSet('timelineLimit', 50)
+        ->assertSet('profile.sections.timeline.payload.items', fn (array $items): bool => count($items) === 50)
+        ->assertSet('profile.sections.timeline.payload.total_item_count', 122)
+        ->assertSet('profile.sections.timeline.payload.has_more', true)
+        ->assertSee('Showing 50 of 122 timeline events.')
+        ->assertSeeHtml('data-ndb-timeline-load-more')
+        ->call('loadMoreTimeline')
+        ->assertSet('timelineLimit', 100)
+        ->assertSet('profile.sections.timeline.payload.items', fn (array $items): bool => count($items) === 100)
+        ->call('loadMoreTimeline')
+        ->assertSet('timelineLimit', 122)
+        ->assertSet('profile.sections.timeline.payload.items', fn (array $items): bool => count($items) === 122)
+        ->assertSet('profile.sections.timeline.payload.has_more', false)
+        ->assertDontSeeHtml('data-ndb-timeline-load-more')
+        ->assertSee('All 122 timeline events are loaded.');
+});
+
+it('keeps view data out of section html until its exact render asks', function () {
+    $profileId = $this->get('/profiled-views', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+
+    $component = Livewire::test(DebugBar::class, ['profileId' => $profileId])
+        ->call('loadSection', 'views')
+        ->assertSet('profile.sections.views.payload.groups.0.items.0', fn (array $view): bool => ! array_key_exists('data', $view))
+        ->assertSeeHtml('data-ndb-view-data-trigger')
+        ->assertSeeHtml('data-ndb-view-data-loading')
+        ->assertDontSee('view-data-value');
+
+    $data = $component->instance()->loadViewData(
+        1,
+        app(ProfileStore::class),
+        app(ProfilePresenter::class),
+    );
+
+    expect($data)
+        ->label->toBe('Context view')
+        ->private_value->toBe('view-data-value');
 });
 
 it('switches to an exact foreground application profile', function () {
@@ -339,6 +450,8 @@ it('refreshes bounded background activity and announces completed worker profile
                 && $params['relatedProfiles'][0]['request_type'] === 'queue';
         })
         ->assertNotDispatched('newdebugbar-content-updated');
+
+    expect($component->effects)->not->toHaveKey('html');
 });
 
 it('rejects unavailable request summaries', function () {

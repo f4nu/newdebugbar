@@ -95,10 +95,9 @@
 
                         <div class="ndb:divide-y ndb:divide-zinc-200/80 ndb:border-t ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                             @foreach ($group['items'] as $view)
-                                @php($viewData = is_array($view['data'] ?? null) ? $view['data'] : [])
                                 <article data-ndb-view-render class="ndb:py-4">
                                     <div
-                                        x-data="{ viewDataOpen: false }"
+                                        x-data="newDebugBar.viewData($wire, {{ $view['render_order'] }})"
                                         x-id="['view-data-trigger', 'view-data-popover']"
                                         @keydown.escape.stop.prevent="
                                             if (viewDataOpen) {
@@ -136,7 +135,10 @@
                                                 :id="$id('view-data-trigger')"
                                                 :aria-controls="$id('view-data-popover')"
                                                 :aria-expanded="viewDataOpen"
-                                                @click="viewDataOpen = ! viewDataOpen"
+                                                @click="
+                                                    viewDataOpen = ! viewDataOpen;
+                                                    if (viewDataOpen) loadViewData();
+                                                "
                                                 class="ndb:flex ndb:min-h-8 ndb:shrink-0 ndb:items-center ndb:rounded-lg ndb:px-2.5 ndb:py-1.5 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/60"
                                             >
                                                 <span>View data</span>
@@ -163,17 +165,40 @@
                                             width-class="ndb:w-[min(36rem,calc(100vw-3rem))]"
                                             arrow-class="ndb:right-[24px]"
                                         >
-                                            @if ($viewData !== [])
+                                            <div
+                                                x-show.important="viewDataLoading"
+                                                data-ndb-view-data-loading
+                                                class="ndb:flex ndb:items-center ndb:gap-2 ndb:px-4 ndb:py-3 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                            >
+                                                <span class="ndb:size-1.5 ndb:animate-pulse ndb:rounded-full ndb:bg-indigo-500 ndb:motion-reduce:animate-none"></span>
+                                                Loading view data…
+                                            </div>
+                                            <template x-if="viewDataLoaded && ! viewDataIsEmpty">
                                                 <pre
                                                     tabindex="0"
                                                     data-ndb-view-data
                                                     class="ndb-code ndb-scrollbar ndb:max-h-80 ndb:overflow-auto ndb:rounded-none ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
-                                                ><code data-ndb-language="json">{{ json_encode($viewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</code></pre>
-                                            @else
+                                                ><code data-ndb-language="json" x-text="formattedViewData"></code></pre>
+                                            </template>
+                                            <template x-if="viewDataLoaded && viewDataIsEmpty">
                                                 <p class="ndb:px-4 ndb:py-3 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                                     No data was passed directly to this view.
                                                 </p>
-                                            @endif
+                                            </template>
+                                            <template x-if="viewDataError">
+                                                <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-4 ndb:py-3">
+                                                    <p class="ndb:text-[11px] ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">
+                                                        View data could not be loaded.
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        @click="loadViewData(true)"
+                                                        class="ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                                                    >
+                                                        Retry
+                                                    </button>
+                                                </div>
+                                            </template>
                                         </x-newdebugbar::popover-surface>
                                     </div>
 

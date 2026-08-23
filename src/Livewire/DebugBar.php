@@ -16,6 +16,8 @@ use NewDebugBar\Support\QueryExplainer;
 /** Loads a request summary first and renders one inspector section at a time. */
 final class DebugBar extends Component
 {
+    private const TIMELINE_PAGE_SIZE = 50;
+
     /** @var array<string, string> */
     private const SECTION_DESCRIPTIONS = [
         'overview' => 'Review the important request activity and the runtime behind it.',
@@ -53,6 +55,9 @@ final class DebugBar extends Component
     public string $selectedSection = 'overview';
 
     #[Locked]
+    public int $timelineLimit = self::TIMELINE_PAGE_SIZE;
+
+    #[Locked]
     public int $profileLimit = 20;
 
     /** @var array<int, array<string, mixed>> */
@@ -86,10 +91,50 @@ final class DebugBar extends Component
         $profile = $presenter->present($stored);
         abort_unless(array_key_exists($section, (array) ($profile['sections'] ?? [])), 422);
 
+        if ($this->selectedSection !== $section) {
+            $this->timelineLimit = self::TIMELINE_PAGE_SIZE;
+        }
+
         $this->selectedSection = $section;
         $this->sectionLoaded = true;
         $this->dispatch('newdebugbar-section-loaded', section: $section);
         $this->dispatch('newdebugbar-content-updated');
+    }
+
+    public function loadMoreTimeline(
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+    ): void {
+        abort_unless($this->sectionLoaded && $this->selectedSection === 'timeline', 422);
+        $stored = $store->get($this->profileId);
+        abort_if($stored === null, 404);
+
+        $profile = $presenter->present($stored);
+        $items = (array) ($profile['sections']['timeline']['payload']['items'] ?? []);
+        $this->timelineLimit = min(count($items), $this->timelineLimit + self::TIMELINE_PAGE_SIZE);
+        $this->dispatch('newdebugbar-section-loaded', section: 'timeline');
+        $this->dispatch('newdebugbar-content-updated');
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function loadViewData(
+        int $renderOrder,
+        ProfileStore $store,
+        ProfilePresenter $presenter,
+    ): array {
+        abort_unless($this->sectionLoaded && $this->selectedSection === 'views' && $renderOrder > 0, 422);
+        $profile = $presenter->present($store->get($this->profileId) ?? []);
+
+        foreach ((array) ($profile['sections']['views']['payload']['groups'] ?? []) as $group) {
+            foreach ((array) ($group['items'] ?? []) as $view) {
+                if ((int) ($view['render_order'] ?? 0) === $renderOrder) {
+                    return is_array($view['data'] ?? null) ? $view['data'] : [];
+                }
+            }
+        }
+
+        abort(404);
     }
 
     #[Renderless]
@@ -195,6 +240,7 @@ final class DebugBar extends Component
         $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
         $this->sectionLoaded = false;
         $this->selectedSection = 'overview';
+        $this->timelineLimit = self::TIMELINE_PAGE_SIZE;
         $this->queryExplains = [];
         $this->queryExplainErrors = [];
         $this->dispatch('newdebugbar-profile-switched', summary: $this->summary);
@@ -208,7 +254,30 @@ final class DebugBar extends Component
             return [];
         }
 
-        return app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($this->profileId) ?? []);
+        $profile = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($this->profileId) ?? []);
+
+        if ($this->selectedSection === 'timeline') {
+            $items = (array) ($profile['sections']['timeline']['payload']['items'] ?? []);
+            $profile['sections']['timeline']['payload']['available_sections'] = array_values(array_unique(array_column($items, 'section')));
+            $profile['sections']['timeline']['payload']['total_item_count'] = count($items);
+            $profile['sections']['timeline']['payload']['total_duration_ms'] = max(0.001, ...array_column($items, 'at_ms'));
+            $profile['sections']['timeline']['payload']['items'] = array_slice($items, 0, $this->timelineLimit);
+            $profile['sections']['timeline']['payload']['has_more'] = count($items) > $this->timelineLimit;
+        }
+
+        if ($this->selectedSection === 'views') {
+            $groups = &$profile['sections']['views']['payload']['groups'];
+
+            foreach ($groups as &$group) {
+                foreach ($group['items'] as &$view) {
+                    unset($view['data']);
+                }
+                unset($view);
+            }
+            unset($group);
+        }
+
+        return $profile;
     }
 
     public function render(): View

@@ -1,16 +1,19 @@
 {{-- Renders the request activity timeline. --}}
 @php($timelineItems = $section['payload']['items'])
-@php($timelineSections = array_values(array_unique(array_column($timelineItems, 'section'))))
+@php($timelineSections = $section['payload']['available_sections'] ?? array_values(array_unique(array_column($timelineItems, 'section'))))
 @php($timelineSourceSections = array_values(array_filter($timelineSections, fn ($timelineSection) => $timelineSection !== 'request')))
 @php($timelineKeySections = ['request', 'queries', 'http_client', 'exceptions', 'authorization', 'validation', 'queue'])
-@php($timelineDuration = max(0.001, ...array_column($timelineItems, 'at_ms')))
+@php($timelineDuration = (float) ($section['payload']['total_duration_ms'] ?? max(0.001, ...array_column($timelineItems, 'at_ms'))))
+@php($timelineTotal = (int) ($section['payload']['total_item_count'] ?? count($timelineItems)))
+@php($timelineLoaded = count($timelineItems))
 @php($timelineTicks = [0, 25, 50, 75, 100])
 <div data-ndb-timeline-results-header class="ndb:space-y-3">
     <div data-ndb-timeline-overview class="ndb:flex ndb:flex-wrap ndb:items-end ndb:justify-between ndb:gap-3">
         <div>
             <h3 class="ndb:text-xs ndb:font-bold">Waterfall</h3>
             <p data-ndb-timeline-summary class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-                <span x-text="visibleTimelineCount"></span> events across {{ number_format($timelineDuration, $timelineDuration < 10 ? 1 : 0) }} ms
+                <span x-text="visibleTimelineCount"></span> matching of {{ number_format($timelineLoaded) }} loaded
+                events across {{ number_format($timelineDuration, $timelineDuration < 10 ? 1 : 0) }} ms
             </p>
         </div>
         <div
@@ -185,6 +188,32 @@
         </ol>
     </div>
 </div>
+@if ($section['payload']['has_more'] ?? false)
+    <div
+        data-ndb-timeline-pagination
+        class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30"
+    >
+        <p class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
+            Showing {{ number_format($timelineLoaded) }} of {{ number_format($timelineTotal) }} timeline events.
+        </p>
+        <button
+            type="button"
+            wire:click="loadMoreTimeline"
+            wire:loading.attr="disabled"
+            wire:target="loadMoreTimeline"
+            data-ndb-timeline-load-more
+            class="ndb:min-h-9 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-60 ndb:dark:bg-indigo-400 ndb:dark:text-indigo-950 ndb:dark:hover:bg-indigo-300"
+        >
+            <span wire:loading.remove wire:target="loadMoreTimeline"
+                >Load {{ number_format(min(50, $timelineTotal - $timelineLoaded)) }} more</span>
+            <span wire:loading wire:target="loadMoreTimeline">Loading more…</span>
+        </button>
+    </div>
+@elseif ($timelineTotal > 50)
+    <p data-ndb-timeline-complete class="ndb:text-center ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
+        All {{ number_format($timelineTotal) }} timeline events are loaded.
+    </p>
+@endif
 <div x-show.important="visibleTimelineCount === 0">
     <x-newdebugbar::empty-state label="No timeline events match these filters." />
 </div>

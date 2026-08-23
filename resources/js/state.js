@@ -197,6 +197,45 @@ const defaultRuntime = () => ({
   },
 });
 
+export function createViewDataState(wire, renderOrder, highlight = () => {}) {
+  return {
+    viewDataOpen: false,
+    viewData: null,
+    viewDataLoaded: false,
+    viewDataLoading: false,
+    viewDataError: false,
+
+    get viewDataIsEmpty() {
+      return this.viewData === null || typeof this.viewData !== 'object' || Object.keys(this.viewData).length === 0;
+    },
+
+    get formattedViewData() {
+      return JSON.stringify(this.viewData ?? {}, null, 2);
+    },
+
+    loadViewData(force = false) {
+      if (!force && (this.viewDataLoaded || this.viewDataLoading)) return;
+
+      const action = wire?.loadViewData;
+      if (typeof action !== 'function') return;
+
+      this.viewDataLoading = true;
+      this.viewDataError = false;
+      Promise.resolve(action.call(wire, renderOrder))
+        .then((data) => {
+          this.viewData = data ?? {};
+          this.viewDataLoaded = true;
+          this.viewDataLoading = false;
+          highlight();
+        })
+        .catch(() => {
+          this.viewDataLoading = false;
+          this.viewDataError = true;
+        });
+    },
+  };
+}
+
 export function createNewDebugBar(
   summary = {},
   runtime = null,
@@ -1550,10 +1589,27 @@ export function createNewDebugBar(
     receiveActivityRefresh(summary, relatedProfiles = []) {
       if (!PROFILE_PATTERN.test(summary?.id ?? '') || summary.id !== this.summary.id) return;
 
-      this.summary = { ...this.summary, ...summary };
+      const nextSummary = { ...this.summary, ...summary };
+      const summaryChanged = JSON.stringify(nextSummary) !== JSON.stringify(this.summary);
+      const relatedChanged = (Array.isArray(relatedProfiles) ? relatedProfiles : []).some((profile) => {
+        const existing = this.recentProfiles.find((recent) => recent.id === profile?.id);
+
+        return !existing || JSON.stringify({ ...existing, ...profile }) !== JSON.stringify(existing);
+      });
+
+      this.summary = nextSummary;
       this.rememberProfile(this.summary);
       (Array.isArray(relatedProfiles) ? relatedProfiles : []).forEach((profile) => this.receiveProfile(profile));
       this.activityRefreshPending = false;
+
+      if (
+        (summaryChanged || relatedChanged) &&
+        this.inspectorOpen &&
+        this.loadedSection === this.selected &&
+        !this.sectionLoading
+      ) {
+        this.requestSection(this.selected, true);
+      }
 
       if (this.hasPendingActivity()) this.scheduleActivityRefresh();
       else this.cancelActivityRefresh();

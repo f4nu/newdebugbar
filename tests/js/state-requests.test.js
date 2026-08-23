@@ -258,6 +258,36 @@ test('background refresh is useful-only, bounded, and preserves related navigati
   assert.equal(state.activityPollTimer, null);
 });
 
+test('background refresh reloads only the active section when collected data changes', async () => {
+  const origin = {
+    ...summary,
+    id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8',
+    background_pending: true,
+    background_activity_count: 0,
+  };
+  let loads = 0;
+  const state = createNewDebugBar(origin, runtime());
+  state.inspectorOpen = true;
+  state.selected = 'overview';
+  state.loadedSection = 'overview';
+  state.$wire = {
+    loadSection: async () => loads++,
+  };
+
+  state.receiveActivityRefresh(origin);
+  await Promise.resolve();
+  assert.equal(loads, 0);
+
+  state.receiveActivityRefresh({ ...origin, background_activity_count: 1 });
+  await Promise.resolve();
+  assert.equal(loads, 1);
+  assert.equal(state.loadedSection, 'overview');
+
+  state.receiveActivityRefresh({ ...origin, background_activity_count: 1 });
+  await Promise.resolve();
+  assert.equal(loads, 1);
+});
+
 test('the request picker manages focus, keyboard movement, and profile selection', async () => {
   const requestSummary = {
     ...summary,

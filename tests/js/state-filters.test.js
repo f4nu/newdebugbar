@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createNewDebugBar } from '../../resources/js/state.js';
+import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
 test('HTTP client defaults to all and keeps one filtered request selected', () => {
@@ -728,6 +728,38 @@ test('view headers sort names and render counts in both directions', () => {
   state.toggleViewSort('invalid');
   assert.equal(state.viewSort, 'count');
   assert.equal(state.viewSortDirection, 'asc');
+});
+
+test('view data state loads once and reports retryable failures', async () => {
+  const calls = [];
+  let highlighted = 0;
+  const state = createViewDataState({
+    loadViewData: async (renderOrder) => {
+      calls.push(renderOrder);
+
+      return { label: 'Context view' };
+    },
+  }, 7, () => highlighted++);
+
+  state.loadViewData();
+  assert.equal(state.viewDataLoading, true);
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [7]);
+  assert.equal(state.viewDataLoaded, true);
+  assert.equal(state.viewDataIsEmpty, false);
+  assert.match(state.formattedViewData, /Context view/);
+  assert.equal(highlighted, 1);
+
+  state.loadViewData();
+  assert.deepEqual(calls, [7]);
+
+  const failed = createViewDataState({ loadViewData: async () => Promise.reject(new Error('expired')) }, 8);
+  failed.loadViewData();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(failed.viewDataLoading, false);
+  assert.equal(failed.viewDataError, true);
 });
 
 test('timeline controls filter sections and search labels', () => {

@@ -187,12 +187,15 @@ it('filters searches sorts and shows repeated query evidence without another dis
             (() => {
                 const items = Array.from(document.querySelectorAll('[data-ndb-query-item]'));
                 const groups = Array.from(document.querySelectorAll('[data-ndb-query-group]'));
+                const groupedCount = (type = null) => groups
+                    .filter((group) => type === null || group.dataset.type === type)
+                    .reduce((count, group) => count + Number(group.dataset.resultCount), 0);
                 const expected = {
-                    all: items.length,
-                    attention: groups.reduce((count, group) => count + Number(group.dataset.resultCount), 0)
+                    all: items.length + groupedCount(),
+                    attention: groupedCount()
                         + items.filter((item) => item.dataset.repeated !== 'true' && item.dataset.slow === 'true').length,
-                    read: items.filter((item) => item.dataset.type === 'read').length,
-                    write: items.filter((item) => item.dataset.type === 'write').length,
+                    read: items.filter((item) => item.dataset.type === 'read').length + groupedCount('read'),
+                    write: items.filter((item) => item.dataset.type === 'write').length + groupedCount('write'),
                 };
 
                 return Object.entries(expected).every(([filter, count]) =>

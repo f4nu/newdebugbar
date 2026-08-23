@@ -6,7 +6,10 @@
 
 @php
     $querySummary = $section['summary'];
-    $queryItems = $section['payload']['items'] ?? [];
+    $queryItems = array_values(array_filter(
+        $section['payload']['items'] ?? [],
+        fn (array $query): bool => ! ($query['repeated'] ?? false),
+    ));
     $queryRepeatedGroups = $section['payload']['repeated_groups'] ?? [];
     $queryAttentionCount = array_sum(array_column($queryRepeatedGroups, 'count'))
         + count(array_filter($queryItems, fn (array $query): bool => ($query['slow'] ?? false) && ! ($query['repeated'] ?? false)));
@@ -87,7 +90,7 @@
     </div>
 
     <div x-ref="queryResults" x-init="$nextTick(() => applyQueryView())" class="ndb:space-y-3">
-        @foreach ($section['payload']['items'] as $query)
+        @foreach ($queryItems as $query)
             <x-newdebugbar::query-execution
                 :query="$query"
                 :identity="'item-'.$query['execution']"

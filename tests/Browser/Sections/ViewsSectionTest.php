@@ -52,3 +52,17 @@ it('sorts views from the column headers with clear direction feedback', function
         ->assertScript($groupNames, 'original-response|context')
         ->assertNoJavaScriptErrors();
 });
+
+it('loads one render data payload only when its popover opens', function () {
+    $page = visit('/profiled-views')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="views"]')
+        ->assertMissing('[data-ndb-view-data]')
+        ->assertDontSee('view-data-value')
+        ->click('[data-ndb-view-group][data-name="context"] > summary')
+        ->assertPresent('[data-ndb-view-data-loading]')
+        ->click('[data-ndb-view-group][data-name="context"] [data-ndb-view-data-trigger]')
+        ->waitForText('view-data-value')
+        ->assertVisible('[data-ndb-view-data]')
+        ->assertNoJavaScriptErrors();
+});

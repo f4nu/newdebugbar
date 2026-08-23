@@ -4,7 +4,7 @@ import json from 'highlight.js/lib/languages/json';
 import sql from 'highlight.js/lib/languages/sql';
 import { installLivewireTrace } from './livewire-trace.js';
 import { installProfileDiscoveryBridge, installRequestDiscovery } from './request-discovery.js';
-import { createNewDebugBar } from './state.js';
+import { createNewDebugBar, createViewDataState } from './state.js';
 
 const php = (language) => ({
   name: 'PHP',
@@ -38,6 +38,8 @@ window.newDebugBarHighlight = (root = document) => {
 const livewireTrace = installLivewireTrace();
 
 window.newDebugBar = (summary, profileLimit) => createNewDebugBar(summary, null, [], profileLimit, livewireTrace);
+window.newDebugBar.viewData = (wire, renderOrder) =>
+  createViewDataState(wire, renderOrder, () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')));
 
 installProfileDiscoveryBridge();
 installRequestDiscovery();
