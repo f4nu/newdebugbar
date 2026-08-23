@@ -282,10 +282,24 @@ test('background refresh reloads only the active section when collected data cha
   await Promise.resolve();
   assert.equal(loads, 1);
   assert.equal(state.loadedSection, 'overview');
+  state.sectionLoading = false;
+  state.requestedSection = null;
 
   state.receiveActivityRefresh({ ...origin, background_activity_count: 1 });
   await Promise.resolve();
   assert.equal(loads, 1);
+
+  state.selected = 'views';
+  state.loadedSection = 'views';
+  state.receiveActivityRefresh({ ...origin, completion_state: 'complete', background_activity_count: 2 });
+  await Promise.resolve();
+  assert.equal(loads, 1);
+
+  state.selected = 'mail';
+  state.loadedSection = 'mail';
+  state.receiveActivityRefresh({ ...origin, completion_state: 'complete', background_activity_count: 3 });
+  await Promise.resolve();
+  assert.equal(loads, 2);
 });
 
 test('the request picker manages focus, keyboard movement, and profile selection', async () => {

@@ -1593,11 +1593,19 @@ export function createNewDebugBar(
 
       const nextSummary = { ...this.summary, ...summary };
       const summaryChanged = JSON.stringify(nextSummary) !== JSON.stringify(this.summary);
+      const backgroundChanged =
+        nextSummary.background_pending !== this.summary.background_pending ||
+        nextSummary.background_activity_count !== this.summary.background_activity_count ||
+        JSON.stringify(nextSummary.related_profile_ids ?? []) !== JSON.stringify(this.summary.related_profile_ids ?? []);
       const relatedChanged = (Array.isArray(relatedProfiles) ? relatedProfiles : []).some((profile) => {
         const existing = this.recentProfiles.find((recent) => recent.id === profile?.id);
 
         return !existing || JSON.stringify({ ...existing, ...profile }) !== JSON.stringify(existing);
       });
+      const sectionNeedsRefresh =
+        (this.selected === 'overview' && summaryChanged) ||
+        (['timeline', 'queue', 'mail', 'notifications'].includes(this.selected) &&
+          (backgroundChanged || relatedChanged));
 
       this.summary = nextSummary;
       this.rememberProfile(this.summary);
@@ -1605,7 +1613,7 @@ export function createNewDebugBar(
       this.activityRefreshPending = false;
 
       if (
-        (summaryChanged || relatedChanged) &&
+        sectionNeedsRefresh &&
         this.inspectorOpen &&
         this.loadedSection === this.selected &&
         !this.sectionLoading
