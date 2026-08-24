@@ -37,6 +37,13 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                 const selected = document.querySelector('[data-ndb-cache-item][aria-pressed="true"]');
                 const detailTabs = [...document.querySelectorAll('[data-ndb-cache-detail-tab]')];
                 const actions = [...document.querySelectorAll('[data-ndb-cache-actions] button')];
+                const metadata = document.querySelector('[data-ndb-cache-metadata]');
+                const metadataFacts = [...metadata.querySelectorAll(':scope > div > div')].filter(
+                    (fact) => fact.getClientRects().length > 0,
+                );
+                const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
+                const metadataValues = metadataFacts.map((fact) => fact.querySelector('dd').textContent.trim());
+                const sourceLink = metadata.querySelector('button');
                 const keys = rows.map((row) => row.querySelector('[data-ndb-cache-key]'));
                 const results = rows.map((row) => row.querySelector('[data-ndb-cache-result]'));
                 const keyOffsets = rows.map((row) => row.querySelector('[data-ndb-cache-key]').getBoundingClientRect().left);
@@ -51,6 +58,12 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                     && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
                     && actions.length === 1
                     && actions.every((action) => action.getBoundingClientRect().height >= 32)
+                    && getComputedStyle(metadata.firstElementChild).display === 'grid'
+                    && metadataLabels.join('|') === 'Store|Driver|Runtime|Source'
+                    && metadataValues[0] === 'array'
+                    && metadataValues[1] === 'array'
+                    && metadataValues[2].endsWith(' ms')
+                    && sourceLink?.textContent.trim().includes('.php:')
                     && new Set(keyOffsets.map(Math.round)).size === 1
                     && keys.every((key) => key.clientWidth <= key.parentElement.getBoundingClientRect().width)
                     && keys.every((key) => getComputedStyle(key).textOverflow === 'ellipsis')
@@ -73,7 +86,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
         ->assertSee('Failed')
         ->assertSee('The app may be doing extra work')
         ->assertSee('Check the store connection')
-        ->click('[data-ndb-cache-detail-tab="source"]')
+        ->click('[data-ndb-cache-metadata] button')
         ->assertAttribute('[data-ndb-cache-detail-tab="source"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-cache-detail-panel="source"]')
         ->assertSee('tests/Support/DefinesTestApplication.php')

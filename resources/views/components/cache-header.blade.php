@@ -46,32 +46,46 @@
         </div>
     </x-slot:identity>
 
-    <x-slot:metadata data-ndb-cache-metadata>
-        <div class="ndb:min-w-0">
-            <dt class="ndb:sr-only">Store</dt>
-            <dd class="ndb:truncate ndb:font-semibold">
-                <span x-text="selectedCacheOperation.store_label"></span>
-                <span
-                    x-show.important="
-                        selectedCacheOperation.driver_label &&
-                        selectedCacheOperation.driver_label !== selectedCacheOperation.store_label
-                    "
-                    class="ndb:ml-1 ndb:text-zinc-400"
-                    x-text="'Driver ' + selectedCacheOperation.driver_label"
-                ></span>
-            </dd>
-        </div>
-        <div>
-            <dt class="ndb:sr-only">Timing</dt>
-            <dd class="ndb:font-semibold ndb:tabular-nums" x-text="selectedCacheOperation.duration_label"></dd>
-        </div>
-        <div x-show.important="selectedCacheOperation.source_label !== 'Source unavailable'" class="ndb:min-w-0">
-            <dt class="ndb:sr-only">Source</dt>
-            <dd
-                :title="selectedCacheOperation.source_label"
-                class="ndb:truncate ndb:font-mono ndb:font-medium"
-                x-text="selectedCacheOperation.source_short_label"
-            ></dd>
+    <x-slot:metadata data-ndb-cache-metadata class="ndb:w-full">
+        <div class="ndb:grid ndb:w-full ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4">
+            <div class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Store</dt>
+                <dd
+                    :title="selectedCacheOperation.store_label"
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="selectedCacheOperation.store_label"
+                ></dd>
+            </div>
+            <div x-show.important="selectedCacheOperation.driver_label" class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Driver</dt>
+                <dd
+                    :title="selectedCacheOperation.driver_label"
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="selectedCacheOperation.driver_label"
+                ></dd>
+            </div>
+            <div class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Runtime</dt>
+                <dd
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="selectedCacheOperation.duration_label"
+                ></dd>
+            </div>
+            <div
+                x-show.important="selectedCacheOperation.source_label !== 'Source unavailable'"
+                class="ndb:min-w-0 ndb:bg-transparent"
+            >
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
+                <dd class="ndb:mt-0.5 ndb:min-w-0">
+                    <button
+                        type="button"
+                        :title="selectedCacheOperation.source_label"
+                        @click="setCacheDetailTab('source')"
+                        class="ndb:block ndb:max-w-full ndb:truncate ndb:text-left ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:underline-offset-2 ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                        x-text="selectedCacheOperation.source_short_label"
+                    ></button>
+                </dd>
+            </div>
         </div>
     </x-slot:metadata>
 </x-newdebugbar::inspector-detail-header>
