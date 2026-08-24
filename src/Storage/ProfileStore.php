@@ -75,11 +75,15 @@ final class ProfileStore
 
         try {
             $profile = json_decode($this->files->get($filename), true, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            return null;
+        } catch (JsonException $exception) {
+            throw new RuntimeException('The debug profile could not be decoded.', previous: $exception);
         }
 
-        return is_array($profile) ? $profile : null;
+        if (! is_array($profile)) {
+            throw new RuntimeException('The debug profile did not contain a JSON object.');
+        }
+
+        return $profile;
     }
 
     /** @return list<array<string, mixed>> */

@@ -18,7 +18,7 @@ final class GetDebugProfileData extends DebugTool
 {
     private const DEFAULT_LIMIT = 10;
 
-    protected const DESCRIPTION = 'Read any captured or derived profile value by JSON Pointer. Start at /sections, then follow returned paths to lists, objects, and exact scalar values.';
+    protected const DESCRIPTION = 'Read any captured or derived profile value by JSON Pointer. Start at /sections, then follow returned paths to lists, objects, and exact scalar values. Use /sections/models/payload/model_groups for complete folded model operations, identifiers, sources, timings, query correlation, and guidance.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
 

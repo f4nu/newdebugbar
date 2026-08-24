@@ -60,7 +60,7 @@ it('uses one UUID v4 rule for stored profile identifiers', function () {
         ->and(ProfileStore::validId('../secrets'))->toBeFalse();
 });
 
-it('returns null for missing and malformed profiles', function () {
+it('distinguishes missing profiles from malformed stored data', function () {
     $store = new ProfileStore($this->files, $this->profilePath);
     $missing = (string) Str::uuid();
     $malformed = (string) Str::uuid();
@@ -68,8 +68,9 @@ it('returns null for missing and malformed profiles', function () {
     $this->files->ensureDirectoryExists($this->profilePath);
     $this->files->put($this->profilePath.'/'.$malformed.'.json', '{broken');
 
-    expect($store->get($missing))->toBeNull()
-        ->and($store->get($malformed))->toBeNull();
+    expect($store->get($missing))->toBeNull();
+    expect(fn () => $store->get($malformed))
+        ->toThrow(RuntimeException::class, 'The debug profile could not be decoded.');
 });
 
 it('lists valid recent profiles within the retention limit', function () {

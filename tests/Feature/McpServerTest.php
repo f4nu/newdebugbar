@@ -13,6 +13,8 @@ use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Tests\Fixtures\Models\Client;
+use NewDebugBar\Tests\Fixtures\Models\JobActivity;
 use NewDebugBar\Tests\Support\McpResponse;
 
 function profilePointerToValue(mixed $value, mixed $target, string $path = ''): ?string
@@ -64,11 +66,16 @@ it('registers one local read only server with five schema backed tools', functio
     }
 
     $dataSchema = app(GetDebugProfileData::class)->toArray();
+    $serverDefaults = (new ReflectionClass(NewDebugBarServer::class))->getDefaultProperties();
 
     expect($dataSchema['inputSchema']['properties']['path']['default'])->toBe('/sections')
         ->and($dataSchema['inputSchema']['properties']['limit']['default'])->toBe(10)
         ->and($dataSchema['outputSchema']['properties']['data']['properties'])
-        ->toHaveKeys(['profile_id', 'path', 'type', 'entries', 'value', 'pagination']);
+        ->toHaveKeys(['profile_id', 'path', 'type', 'entries', 'value', 'pagination'])
+        ->and(app(GetDebugProfileData::class)->description())
+        ->toContain('/sections/models/payload/model_groups', 'folded model operations', 'query correlation', 'guidance')
+        ->and($serverDefaults['instructions'])
+        ->toContain('/sections/models/payload/model_groups', 'identifiers', 'changed attributes', 'related queries');
 });
 
 it('correlates the exact response profile while unrelated profiles exist', function () {
@@ -176,6 +183,70 @@ it('walks exact retained values that focused MCP responses intentionally omit', 
             ->and($content['data']['path'])->toBe($path)
             ->and($content['data']['value'])->toBe($expected);
     }
+});
+
+it('keeps complete Models evidence reachable through bounded generic MCP paths', function () {
+    $response = $this->get('/profiled-models?changes=1&queries=1&missing=1', ['Accept' => 'text/html'])
+        ->assertOk();
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
+    $profile = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($profileId));
+    $groups = $profile['sections']['models']['payload']['model_groups'];
+    $clientIndex = array_search(Client::class, array_column($groups, 'model'), true);
+    $jobIndex = array_search(JobActivity::class, array_column($groups, 'model'), true);
+
+    expect($clientIndex)->not->toBeFalse()
+        ->and($jobIndex)->not->toBeFalse();
+
+    $jobSourceIndex = collect($groups[$jobIndex]['sources'])
+        ->search(fn (array $source): bool => (int) ($source['query_count'] ?? 0) > 0);
+    $queryGuidanceIndex = collect($groups[$jobIndex]['guidance'])
+        ->search(fn (array $guidance): bool => ($guidance['type'] ?? null) === 'query_correlation');
+
+    expect($jobSourceIndex)->not->toBeFalse()
+        ->and($queryGuidanceIndex)->not->toBeFalse();
+
+    $paths = [
+        '/sections/models/summary/model_change_count' => $profile['sections']['models']['summary']['model_change_count'],
+        '/sections/models/summary/retrieval_count' => $profile['sections']['models']['summary']['retrieval_count'],
+        "/sections/models/payload/model_groups/{$clientIndex}/model" => Client::class,
+        "/sections/models/payload/model_groups/{$clientIndex}/connection" => 'testing',
+        "/sections/models/payload/model_groups/{$clientIndex}/table" => 'clients',
+        "/sections/models/payload/model_groups/{$clientIndex}/change_operations/0/event" => 'updated',
+        "/sections/models/payload/model_groups/{$clientIndex}/change_operations/0/key" => 4,
+        "/sections/models/payload/model_groups/{$clientIndex}/change_operations/0/changes/status" => 'approved',
+        "/sections/models/payload/model_groups/{$clientIndex}/change_operations/0/changes/api_token" => '[redacted]',
+        "/sections/models/payload/model_groups/{$clientIndex}/change_operations/0/at_ms" => $groups[$clientIndex]['change_operations'][0]['at_ms'],
+        "/sections/models/payload/model_groups/{$clientIndex}/sources/0/callsite/file" => $groups[$clientIndex]['sources'][0]['callsite']['file'],
+        "/sections/models/payload/model_groups/{$jobIndex}/records/0/key" => $groups[$jobIndex]['records'][0]['key'],
+        "/sections/models/payload/model_groups/{$jobIndex}/sources/{$jobSourceIndex}/query_count" => 1,
+        "/sections/models/payload/model_groups/{$jobIndex}/sources/{$jobSourceIndex}/query_read_count" => 1,
+        "/sections/models/payload/model_groups/{$jobIndex}/guidance/{$queryGuidanceIndex}/type" => 'query_correlation',
+        "/sections/models/payload/model_groups/{$jobIndex}/guidance/{$queryGuidanceIndex}/why" => $groups[$jobIndex]['guidance'][$queryGuidanceIndex]['why'],
+    ];
+
+    foreach ($paths as $path => $expected) {
+        $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+            'profile_id' => $profileId,
+            'path' => $path,
+            'limit' => 2,
+        ])->assertOk());
+
+        expect($content)
+            ->status->toBe('ok')
+            ->data->path->toBe($path)
+            ->data->value->toBe($expected);
+    }
+
+    $focused = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'models',
+        'limit' => 50,
+    ])->assertOk());
+
+    expect($focused['data']['payload'])
+        ->not->toHaveKeys(['groups', 'model_groups', 'model_group_previews'])
+        ->and(collect($focused['data']['payload']['items'])->firstWhere('key', '[identifier]'))
+        ->not->toBeNull();
 });
 
 it('discovers and pages nested profile data with JSON Pointer paths', function () {
@@ -574,6 +645,11 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
         ->and($profiles['data']['truncated'])->toBeTrue()
         ->and($models['data']['payload'])->not->toHaveKeys(['groups', 'model_groups', 'repeated_groups', 'repeated_misses'])
         ->and(array_column($profiles['data']['profiles'], 'id'))->not->toContain($corruptId);
+
+    NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $corruptId,
+        'path' => '/sections/models',
+    ])->assertHasErrors();
 });
 
 it('advances past an item that cannot fit within the MCP byte limit', function () {

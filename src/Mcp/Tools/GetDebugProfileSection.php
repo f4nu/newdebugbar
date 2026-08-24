@@ -17,7 +17,7 @@ final class GetDebugProfileSection extends DebugTool
 {
     private const DEFAULT_LIMIT = 5;
 
-    protected const DESCRIPTION = 'Read one focused section from an exact debug profile. Use get-debug-profile-data when the section response omits a deeper collection or value.';
+    protected const DESCRIPTION = 'Read one focused section from an exact debug profile. Use get-debug-profile-data when the section response omits a deeper collection or value, including complete Models evidence.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
 

@@ -145,7 +145,6 @@ final class SectionAnalyzer
 
             usort($modelGroup['change_operations'], fn (array $left, array $right): int => ($left['at_ms'] ?? PHP_FLOAT_MAX) <=> ($right['at_ms'] ?? PHP_FLOAT_MAX));
             $modelGroup['hidden_change_operation_count'] = max(0, count($modelGroup['change_operations']) - self::MAX_MODEL_CHANGE_OPERATIONS);
-            $modelGroup['change_operations'] = array_slice($modelGroup['change_operations'], 0, self::MAX_MODEL_CHANGE_OPERATIONS);
 
             foreach ($modelGroup['records'] as &$record) {
                 [$record['sources'], $record['source_count'], $record['hidden_source_count']] = $this->finalizeModelSources(
@@ -167,13 +166,13 @@ final class SectionAnalyzer
                 ?: strnatcasecmp((string) $left['key'], (string) $right['key']));
 
             $modelGroup['hidden_record_count'] = max(0, $modelGroup['record_count'] - self::MAX_MODEL_RECORDS);
-            $modelGroup['records'] = array_slice($modelGroup['records'], 0, self::MAX_MODEL_RECORDS);
             [$modelGroup['sources'], $modelGroup['source_count'], $modelGroup['hidden_source_count'], $modelGroup['related_query_count']] = $this->finalizeModelSources(
                 $modelGroup['sources'],
                 $querySources,
                 self::MAX_MODEL_SOURCES,
             );
             $modelGroup['activity_count'] = $modelGroup['load_count'] + $modelGroup['change_count'];
+            $modelGroup['guidance'] = $this->modelGuidance($modelGroup);
         }
         unset($modelGroup);
 
@@ -185,6 +184,7 @@ final class SectionAnalyzer
             ?: $right['total_count'] <=> $left['total_count']
             ?: strcasecmp((string) $left['model'], (string) $right['model'])
             ?: strcasecmp((string) ($left['connection'] ?? ''), (string) ($right['connection'] ?? '')));
+        $modelGroupPreviews = array_map($this->modelGroupPreview(...), $modelGroups);
 
         if (isset($profile['sections']['models'])) {
             $profile['sections']['models']['summary']['model_classes'] = count(array_unique(array_column($items, 'model')));
@@ -214,8 +214,13 @@ final class SectionAnalyzer
                 },
                 [],
             );
+            $profile['sections']['models']['summary']['guidance_count'] = array_sum(array_map(
+                fn (array $group): int => count($group['guidance']),
+                $modelGroups,
+            ));
             $profile['sections']['models']['payload']['groups'] = $groups;
             $profile['sections']['models']['payload']['model_groups'] = $modelGroups;
+            $profile['sections']['models']['payload']['model_group_previews'] = $modelGroupPreviews;
         }
 
         return $profile;
@@ -279,7 +284,7 @@ final class SectionAnalyzer
         $total = count($sources);
         $relatedQueryCount = array_sum(array_column($sources, 'query_count'));
 
-        return [array_slice($sources, 0, $limit), $total, max(0, $total - $limit), $relatedQueryCount];
+        return [$sources, $total, max(0, $total - $limit), $relatedQueryCount];
     }
 
     /** @param list<array<string, mixed>> $candidates @return array<string, mixed> */
@@ -379,10 +384,20 @@ final class SectionAnalyzer
             return null;
         }
 
-        return [
+        $normalized = [
             'file' => (string) $callsite['file'],
             'line' => max(1, (int) $callsite['line']),
         ];
+
+        if (($callsite['kind'] ?? null) === 'compiled_view') {
+            $normalized['kind'] = 'compiled_view';
+        }
+
+        if (is_string($callsite['template_file'] ?? null) && $callsite['template_file'] !== '') {
+            $normalized['template_file'] = $callsite['template_file'];
+        }
+
+        return $normalized;
     }
 
     /** @param array{file: string, line: int} $callsite */
@@ -401,6 +416,116 @@ final class SectionAnalyzer
         $at = round((float) $item['at_ms'], 3);
         $target['first_seen_ms'] = $target['first_seen_ms'] === null ? $at : min($target['first_seen_ms'], $at);
         $target['last_seen_ms'] = $target['last_seen_ms'] === null ? $at : max($target['last_seen_ms'], $at);
+    }
+
+    /** @param array<string, mixed> $group @return array<string, mixed> */
+    private function modelGroupPreview(array $group): array
+    {
+        $group['change_operations'] = array_slice(
+            is_array($group['change_operations'] ?? null) ? $group['change_operations'] : [],
+            0,
+            self::MAX_MODEL_CHANGE_OPERATIONS,
+        );
+        $group['sources'] = array_slice(
+            is_array($group['sources'] ?? null) ? $group['sources'] : [],
+            0,
+            self::MAX_MODEL_SOURCES,
+        );
+        $group['records'] = array_slice(
+            is_array($group['records'] ?? null) ? $group['records'] : [],
+            0,
+            self::MAX_MODEL_RECORDS,
+        );
+
+        foreach ($group['records'] as &$record) {
+            $record['sources'] = array_slice(
+                is_array($record['sources'] ?? null) ? $record['sources'] : [],
+                0,
+                self::MAX_RECORD_SOURCES,
+            );
+        }
+        unset($record);
+
+        return $group;
+    }
+
+    /** @param array<string, mixed> $group @return list<array<string, string>> */
+    private function modelGuidance(array $group): array
+    {
+        $guidance = [];
+        $extraRetrievals = (int) ($group['repeated_load_count'] ?? 0);
+        $writes = (int) ($group['change_count'] ?? 0);
+        $unknownSources = (int) ($group['unknown_source_activity_count'] ?? 0);
+        $relatedQueries = (int) ($group['related_query_count'] ?? 0);
+        $changedAttributes = array_sum(array_map(
+            fn (array $operation): int => (int) ($operation['change_attribute_count'] ?? 0),
+            is_array($group['change_operations'] ?? null) ? $group['change_operations'] : [],
+        ));
+        $compiledSources = array_values(array_filter(
+            is_array($group['sources'] ?? null) ? $group['sources'] : [],
+            fn (array $source): bool => ($source['callsite']['kind'] ?? null) === 'compiled_view',
+        ));
+
+        if ($extraRetrievals > 0) {
+            $guidance[] = [
+                'type' => 'extra_retrievals',
+                'summary' => sprintf('%d extra retrieval %s were observed for already identified records.', $extraRetrievals, $extraRetrievals === 1 ? 'event' : 'events'),
+                'why' => 'The same model class and record identifier emitted more than one retrieved event during this request.',
+                'next' => 'Check repeated relationship access, loops, and missing eager loading before deciding whether the work is avoidable.',
+            ];
+        }
+
+        if ($writes > 0) {
+            $guidance[] = [
+                'type' => 'write_evidence',
+                'summary' => sprintf('%d logical write %s were folded from completed Eloquent lifecycle callbacks.', $writes, $writes === 1 ? 'operation' : 'operations'),
+                'why' => $changedAttributes > 0
+                    ? sprintf('%d changed attribute %s were retained with capture-time redaction.', $changedAttributes, $changedAttributes === 1 ? 'value' : 'values')
+                    : 'Laravel reported completed write activity without retained changed attributes.',
+                'next' => $changedAttributes > 0
+                    ? 'Review the changed attributes and source when the write was unexpected.'
+                    : 'Review the write source and lifecycle event when the operation was unexpected.',
+            ];
+        }
+
+        if ($unknownSources > 0) {
+            $guidance[] = [
+                'type' => 'missing_source',
+                'summary' => sprintf('Application source was unavailable for %d model %s.', $unknownSources, $unknownSources === 1 ? 'activity' : 'activities'),
+                'why' => 'The activity count is complete, but the captured stack had no application file New Debug Bar could retain.',
+                'next' => 'Use the model identity, timing, and nearby request activity to narrow the source.',
+            ];
+        }
+
+        if ($compiledSources !== []) {
+            $templateFiles = array_values(array_unique(array_filter(array_map(
+                fn (array $source): ?string => is_string($source['callsite']['template_file'] ?? null)
+                    ? $source['callsite']['template_file']
+                    : null,
+                $compiledSources,
+            ))));
+            $guidance[] = [
+                'type' => 'compiled_blade_source',
+                'summary' => 'Model activity was observed while Laravel executed a compiled Blade view.',
+                'why' => $templateFiles === []
+                    ? 'The exact compiled PHP location was retained, but its template path was unavailable.'
+                    : 'The compiled PHP location and original Blade template path were both retained.',
+                'next' => $templateFiles === []
+                    ? 'Inspect the compiled view location and the Blade template that produced it.'
+                    : 'Inspect '.implode(', ', $templateFiles).' for model access inside rendering.',
+            ];
+        }
+
+        if ($relatedQueries > 0) {
+            $guidance[] = [
+                'type' => 'query_correlation',
+                'summary' => sprintf('%d captured %s shared an exact source location with this model activity.', $relatedQueries, $relatedQueries === 1 ? 'query' : 'queries'),
+                'why' => 'An exact source match is useful correlation evidence, but it does not prove which query hydrated or changed the model.',
+                'next' => 'Inspect the related queries together with the model timing and operation evidence.',
+            ];
+        }
+
+        return $guidance;
     }
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */

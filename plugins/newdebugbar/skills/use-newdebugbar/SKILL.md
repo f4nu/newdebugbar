@@ -26,8 +26,9 @@ Use the package's local MCP tools directly to read exact, saved Laravel request 
 4. Set small limits instead of accepting maximums. Start with 10 profile summaries, 10 findings, and 5 items from a section or query search. Increase a limit or continue from a cursor only when the answer needs more evidence.
 5. Read findings first, then the smallest useful section. Inspect query details only when the request points to a database problem. Prefer `slow` or `repeated`, sort by duration, and return 5 items. Do not request every query by default.
 6. When a focused response omits needed detail, use `get-debug-profile-data` with the same exact profile ID. Start at `/sections`, use a small limit, and follow the returned JSON Pointer paths until the needed object, list, or exact value is reached. Continue from the returned cursor for later items or string chunks.
-7. Inspect no more than three profiles deeply unless the user asks for a broader review.
-8. Separate confirmed facts from guesses.
+7. For Models, follow `/sections/models/payload/model_groups`. It exposes complete folded write operations, record identifiers, capture-redacted changed attributes, source and compiled-Blade evidence, timings, exact-source query correlation, and state-specific guidance. The focused Models response intentionally stays small.
+8. Inspect no more than three profiles deeply unless the user asks for a broader review.
+9. Separate confirmed facts from guesses.
 
 ## Compare page performance
 

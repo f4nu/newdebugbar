@@ -23,6 +23,7 @@ use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Fixtures\Mail\ProfiledMailable;
 use NewDebugBar\Tests\Fixtures\Models\Client;
+use NewDebugBar\Tests\Fixtures\Models\JobActivity;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
@@ -221,6 +222,31 @@ it('captures model sources and folds lifecycle callbacks into logical write oper
             'status' => 'approved',
             'api_token' => '[redacted]',
         ]);
+});
+
+it('captures compiled Blade provenance and correlates model activity with an exact-source query', function () {
+    $response = $this->get('/profiled-models?compiled=1', ['Accept' => 'text/html'])->assertOk();
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $profile = app(ProfilePresenter::class)->present($stored);
+    $rawModel = collect($stored['sections']['models']['payload']['items'])
+        ->first(fn (array $item): bool => ($item['key'] ?? null) === 77);
+    $rawQuery = collect($stored['sections']['queries']['payload']['items'])
+        ->first(fn (array $item): bool => str_contains((string) ($item['sql'] ?? ''), 'select 77 as id'));
+    $group = collect($profile['sections']['models']['payload']['model_groups'])
+        ->firstWhere('model', JobActivity::class);
+    $source = collect($group['sources'])
+        ->first(fn (array $source): bool => ($source['callsite']['kind'] ?? null) === 'compiled_view');
+
+    expect($rawModel['callsite'])
+        ->kind->toBe('compiled_view')
+        ->template_file->toBe('tests/Fixtures/views/model-compiled.blade.php')
+        ->and($rawQuery['callsite'])->toBe($rawModel['callsite'])
+        ->and($source)
+        ->not->toBeNull()
+        ->query_count->toBe(1)
+        ->query_read_count->toBe(1)
+        ->and(array_column($group['guidance'], 'type'))
+        ->toContain('compiled_blade_source', 'query_correlation');
 });
 
 it('captures bounded redacted outbound HTTP request and response evidence', function () {

@@ -53,24 +53,41 @@ it('resolves template files without applying the application call site filter', 
         ]);
 });
 
-it('does not expose an ordinary compiled Blade file as an application call site', function () {
+it('exposes compiled Blade provenance only when a collector asks for it', function () {
     $root = sys_get_temp_dir().'/newdebugbar-callsite-'.bin2hex(random_bytes(6));
     $compiledDirectory = $root.'/storage/framework/views';
     $sourceDirectory = $root.'/resources/views';
     mkdir($compiledDirectory, 0777, true);
     mkdir($sourceDirectory, 0777, true);
+    $resolvedRoot = realpath($root);
+    expect($resolvedRoot)->not->toBeFalse();
     $source = $sourceDirectory.'/plain.blade.php';
     $compiled = $compiledDirectory.'/plain.php';
     file_put_contents($source, '<p>Plain view</p>');
-    file_put_contents($compiled, '<?php return $resolver->capture(); ?>'.PHP_EOL.'<?php /**PATH '.$source.' ENDPATH**/ ?>');
+    file_put_contents($compiled, <<<'PHP'
+        <?php
+        $captureCompiledView = static fn (): array => $resolver->capture(includeCompiledView: true);
+
+        return [
+            'default' => $resolver->capture(),
+            'included' => $captureCompiledView(),
+        ];
+        ?>
+        PHP.PHP_EOL.'<?php /**PATH '.$source.' ENDPATH**/ ?>');
     $resolver = new CallSiteResolver(
-        projectPath: $root,
+        projectPath: $resolvedRoot,
         packagePath: dirname(__DIR__, 2),
     );
 
     $location = (static fn (string $file, CallSiteResolver $resolver): array => include $file)($compiled, $resolver);
 
-    expect($location)->toBe(['callsite' => null, 'stack' => []]);
+    expect($location['default'])->toBe(['callsite' => null, 'stack' => []])
+        ->and($location['included']['callsite'])
+        ->file->toBe('storage/framework/views/plain.php')
+        ->line->toBe(2)
+        ->kind->toBe('compiled_view')
+        ->template_file->toBe('resources/views/plain.blade.php')
+        ->and($location['included']['stack'][0]['function'])->toBe('Compiled Blade view');
 
     unlink($compiled);
     unlink($source);

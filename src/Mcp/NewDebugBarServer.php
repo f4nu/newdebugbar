@@ -16,7 +16,7 @@ final class NewDebugBarServer extends Server
 
     protected string $version = '1.1.0';
 
-    protected string $instructions = 'Read bounded Laravel debug profiles. Use the exact X-NewDebugBar-Profile ID, inspect findings and a small section first, then use get-debug-profile-data with /sections and returned JSON Pointer paths when deeper evidence is needed.';
+    protected string $instructions = 'Read bounded Laravel debug profiles. Use the exact X-NewDebugBar-Profile ID, inspect findings and a small section first, then use get-debug-profile-data with /sections and returned JSON Pointer paths when deeper evidence is needed. For Models, follow /sections/models/payload/model_groups to reach folded writes, identifiers, changed attributes, sources, timings, related queries, and guidance.';
 
     /** @var array<int, class-string<Tool>> */
     protected array $tools = [

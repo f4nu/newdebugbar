@@ -315,6 +315,15 @@ trait DefinesTestApplication
                 Event::dispatch('eloquent.deleted: '.JobActivity::class, [$activity]);
             }
 
+            if (request()->boolean('compiled')) {
+                $model = new JobActivity;
+                $model->setConnection('testing');
+                $model->setRawAttributes(['id' => 77], true);
+                $modelEvent = 'eloquent.retrieved: '.JobActivity::class;
+
+                return view('model-compiled', compact('model', 'modelEvent'));
+            }
+
             return response(<<<'HTML'
                 <!doctype html>
                 <html>

@@ -230,7 +230,7 @@ final class EventRegistrar
         });
 
         $this->listen(QueryExecuted::class, function (QueryExecuted $event): void {
-            $location = $this->callSites->capture();
+            $location = $this->callSites->capture(includeCompiledView: true);
             $runnableSql = null;
 
             if (config('newdebugbar.collection.query_bindings') === 'full') {
@@ -623,7 +623,7 @@ final class EventRegistrar
                 return;
             }
 
-            $location = $this->callSites->capture();
+            $location = $this->callSites->capture(includeCompiledView: true);
             $operation = $this->modelOperation($model, $event);
 
             $this->manager()->record('models', [

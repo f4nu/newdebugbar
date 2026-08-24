@@ -311,6 +311,7 @@ final class McpProfilePresenter
                 $payload['items'],
                 $payload['groups'],
                 $payload['model_groups'],
+                $payload['model_group_previews'],
                 $payload['repeated_groups'],
                 $payload['repeated_misses'],
                 $payload['activity'],

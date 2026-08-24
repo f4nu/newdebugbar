@@ -15,14 +15,20 @@ final class CallSiteResolver
         private readonly int $scanLimit = 40,
     ) {}
 
-    /** @return array{callsite: array{file: string, line: int}|null, stack: list<array{file: string, line: int, function: string}>} */
-    public function capture(): array
+    /**
+     * @return array{
+     *     callsite: array{file: string, line: int, kind?: string, template_file?: string}|null,
+     *     stack: list<array{file: string, line: int, function: string, kind?: string, template_file?: string}>
+     * }
+     */
+    public function capture(bool $includeCompiledView = false): array
     {
         if (! $this->enabled) {
             return ['callsite' => null, 'stack' => []];
         }
 
         $frames = [];
+        $compiledAuthorizationFrame = null;
         $compiledViewFrame = null;
 
         foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $this->scanLimit) as $frame) {
@@ -32,10 +38,17 @@ final class CallSiteResolver
                 continue;
             }
 
-            $compiledViewFrame ??= $this->compiledAuthorizationLocation(
+            $compiledAuthorizationFrame ??= $this->compiledAuthorizationLocation(
                 $file,
                 (int) ($frame['line'] ?? 0),
             );
+
+            if ($includeCompiledView) {
+                $compiledViewFrame ??= $this->compiledViewLocation(
+                    $file,
+                    (int) ($frame['line'] ?? 0),
+                );
+            }
 
             if (! $this->isApplicationFile($file)) {
                 continue;
@@ -52,19 +65,28 @@ final class CallSiteResolver
             }
         }
 
-        if ($compiledViewFrame !== null) {
+        if ($compiledAuthorizationFrame !== null) {
+            array_unshift($frames, [
+                ...$compiledAuthorizationFrame,
+                'function' => 'Blade authorization directive',
+            ]);
+            $frames = array_slice($frames, 0, $this->maxFrames);
+        } elseif ($compiledViewFrame !== null) {
             array_unshift($frames, [
                 ...$compiledViewFrame,
-                'function' => 'Blade authorization directive',
+                'function' => 'Compiled Blade view',
             ]);
             $frames = array_slice($frames, 0, $this->maxFrames);
         }
 
+        $callsite = $frames[0] ?? null;
+
+        if (is_array($callsite)) {
+            unset($callsite['function']);
+        }
+
         return [
-            'callsite' => $frames === [] ? null : [
-                'file' => $frames[0]['file'],
-                'line' => $frames[0]['line'],
-            ],
+            'callsite' => $callsite,
             'stack' => $frames,
         ];
     }
@@ -217,6 +239,37 @@ final class CallSiteResolver
         }
 
         return null;
+    }
+
+    /** @return array{file: string, line: int, kind: string, template_file: string}|null */
+    private function compiledViewLocation(string $file, int $line): ?array
+    {
+        if (! str_contains($file, '/storage/framework/views/') || ! str_ends_with($file, '.php')) {
+            return null;
+        }
+
+        if (! is_readable($file)) {
+            return null;
+        }
+
+        $compiled = file_get_contents($file);
+
+        if (! is_string($compiled) || ! preg_match('/<\?php \/\*\*PATH (.+?) ENDPATH\*\*\/ \?>\s*$/s', $compiled, $pathMatch)) {
+            return null;
+        }
+
+        $source = $this->normalizePath($pathMatch[1]);
+
+        if ($source === null || ! $this->isApplicationFile($source)) {
+            return null;
+        }
+
+        return [
+            'file' => $this->relativePath($file),
+            'line' => max(1, $line),
+            'kind' => 'compiled_view',
+            'template_file' => $this->relativePath($source),
+        ];
     }
 
     /** @param array<string, mixed> $frame */

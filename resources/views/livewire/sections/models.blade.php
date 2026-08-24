@@ -1,6 +1,6 @@
 {{-- Summarizes Eloquent activity before model-specific evidence. --}}
 @php
-    $modelGroups = array_values($section['payload']['model_groups'] ?? []);
+    $modelGroups = array_values($section['payload']['model_group_previews'] ?? $section['payload']['model_groups'] ?? []);
     $modelSummary = $section['summary'] ?? [];
     $modelClassCount = (int) ($modelSummary['model_classes'] ?? 0);
     $modelContextCount = (int) ($modelSummary['model_contexts'] ?? count($modelGroups));

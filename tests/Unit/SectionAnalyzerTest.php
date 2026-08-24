@@ -295,7 +295,9 @@ it('summarizes model loads by record and counts only extra identified retrievals
         ->key->toBe(1)
         ->loads->toBe(3)
         ->first_seen_ms->toBe(2.5)
-        ->last_seen_ms->toBe(8.5);
+        ->last_seen_ms->toBe(8.5)
+        ->and(array_column($profile['sections']['models']['payload']['model_groups'][0]['guidance'], 'type'))
+        ->toContain('extra_retrievals', 'missing_source');
 });
 
 it('ranks changed models before repeated retrievals and keeps write events distinct', function () {
@@ -361,7 +363,9 @@ it('folds duplicate lifecycle callbacks into logical operations and matches quer
         ->query_duration_ms->toBe(3.25)
         ->query_write_count->toBe(1)
         ->query_read_count->toBe(0)
-        ->and($group['related_query_count'])->toBe(1);
+        ->and($group['related_query_count'])->toBe(1)
+        ->and(array_column($group['guidance'], 'type'))->toBe(['write_evidence', 'query_correlation'])
+        ->and($group['guidance'][1]['why'])->toContain('does not prove');
 });
 
 it('bounds rendered record and source evidence without changing complete counts', function () {
@@ -384,13 +388,72 @@ it('bounds rendered record and source evidence without changing complete counts'
         ],
     ]);
     $group = $profile['sections']['models']['payload']['model_groups'][0];
+    $preview = $profile['sections']['models']['payload']['model_group_previews'][0];
 
     expect($group)
         ->record_count->toBe(30)
         ->hidden_record_count->toBe(5)
         ->source_count->toBe(30)
         ->hidden_source_count->toBe(22)
-        ->and($group['records'])->toHaveCount(25)
-        ->and($group['sources'])->toHaveCount(8)
-        ->and($group['records'][0]['key_name'])->toBe('uuid');
+        ->and($group['records'])->toHaveCount(30)
+        ->and($group['sources'])->toHaveCount(30)
+        ->and($preview['records'])->toHaveCount(25)
+        ->and($preview['sources'])->toHaveCount(8)
+        ->and($preview['records'][0]['key_name'])->toBe('uuid');
+});
+
+it('keeps every folded write requestable while bounding the browser preview', function () {
+    $items = array_map(fn (int $operation): array => [
+        'model' => 'App\\Models\\AuditEntry',
+        'event' => 'updated',
+        'operation_id' => $operation,
+        'operation' => 'updated',
+        'key_name' => 'id',
+        'key' => $operation,
+        'at_ms' => $operation,
+        'change_attribute_count' => 1,
+        'changes' => ['sequence' => $operation],
+        'callsite' => ['file' => 'app/Actions/UpdateAudit.php', 'line' => $operation],
+    ], range(1, 22));
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'models' => ['summary' => ['count' => count($items)], 'payload' => ['items' => $items]],
+        ],
+    ]);
+    $group = $profile['sections']['models']['payload']['model_groups'][0];
+    $preview = $profile['sections']['models']['payload']['model_group_previews'][0];
+
+    expect($group)
+        ->change_count->toBe(22)
+        ->hidden_change_operation_count->toBe(2)
+        ->and($group['change_operations'])->toHaveCount(22)
+        ->and($group['change_operations'][21]['changes'])->toBe(['sequence' => 22])
+        ->and($preview['change_operations'])->toHaveCount(20);
+});
+
+it('keeps compiled Blade provenance and guidance on model sources', function () {
+    $callsite = [
+        'file' => 'storage/framework/views/compiled.php',
+        'line' => 18,
+        'kind' => 'compiled_view',
+        'template_file' => 'resources/views/trips/show.blade.php',
+    ];
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'models' => ['summary' => ['count' => 1], 'payload' => ['items' => [[
+                'model' => 'App\\Models\\Trip',
+                'event' => 'retrieved',
+                'key_name' => 'id',
+                'key' => 7,
+                'callsite' => $callsite,
+            ]]]],
+        ],
+    ]);
+    $group = $profile['sections']['models']['payload']['model_groups'][0];
+
+    expect($group['sources'][0]['callsite'])->toBe($callsite)
+        ->and($group['records'][0]['sources'][0]['callsite'])->toBe($callsite)
+        ->and(array_column($group['guidance'], 'type'))->toContain('compiled_blade_source')
+        ->and(collect($group['guidance'])->firstWhere('type', 'compiled_blade_source')['next'])
+        ->toContain('resources/views/trips/show.blade.php');
 });
