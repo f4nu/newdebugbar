@@ -460,6 +460,14 @@ trait DefinesTestApplication
                 'hostile-http.test/*' => Http::response(['message' => 'Hostile upstream failure.'], 503),
             ]);
             Http::delete('https://hostile-http.test/v1/kyoto/'.str_repeat('long-path-', 8).'end');
+            Log::warning('Hostile style log needs attention.', [
+                'trip_id' => 41,
+                'actor' => ['type' => 'planner', 'id' => 7],
+            ]);
+            Log::error('Hostile style log failed.', [
+                'trip_id' => 41,
+                'exception' => new \RuntimeException('Hostile partner rejected the request.'),
+            ]);
 
             return response(<<<'HTML'
                 <!doctype html>
@@ -500,6 +508,10 @@ trait DefinesTestApplication
                             [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-log-entry], [data-ndb-log-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); padding: 24px; }
+                            [data-ndb-log-severity], [data-ndb-log-context-preview] > span { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-log-actions] button, [data-ndb-log-review-exception] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-log-context], [data-ndb-log-timing], [data-ndb-log-source], [data-ndb-log-raw] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
                         </style>
                     </head>
                     <body>

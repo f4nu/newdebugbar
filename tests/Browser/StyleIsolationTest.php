@@ -386,5 +386,52 @@ it('keeps host styles and package styles isolated', function () {
                     && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
             })()
             JS)
+        ->click('[data-ndb-section="logs"]')
+        ->assertVisible('[data-ndb-section-panel="logs"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const entry = document.querySelector('[data-ndb-log-entry]');
+                const severity = entry?.querySelector('[data-ndb-log-severity]');
+                const preview = entry?.querySelector('[data-ndb-log-context-preview] > span');
+                const summary = entry?.querySelector(':scope > summary');
+
+                if (! entry || ! severity || ! preview || ! summary) return false;
+
+                return getComputedStyle(entry).borderLeftWidth !== '20px'
+                    && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(entry).paddingLeft === '0px'
+                    && Number.parseFloat(getComputedStyle(severity).fontSize) === 10
+                    && getComputedStyle(severity).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(preview).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(summary).fontSize) === 12
+                    && getComputedStyle(summary).color !== 'rgb(255, 0, 0)';
+            })()
+            JS)
+        ->click('[data-ndb-log-entry][data-ndb-log-level="error"] > summary')
+        ->assertVisible('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-related-exception]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const entry = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="error"]');
+                const actions = [...entry.querySelectorAll('[data-ndb-log-actions] button')];
+                const context = entry.querySelector('[data-ndb-log-context]');
+                const contextTerm = context.querySelector('dt');
+                const raw = entry.querySelector('[data-ndb-log-raw]');
+                const exception = entry.querySelector('[data-ndb-log-related-exception]');
+                const review = entry.querySelector('[data-ndb-log-review-exception]');
+
+                return actions.length === 3
+                    && actions.every((button) => button.getBoundingClientRect().height === 32)
+                    && actions.every((button) => getComputedStyle(button).backgroundColor !== 'rgb(255, 0, 255)')
+                    && getComputedStyle(context).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(context).paddingLeft === '0px'
+                    && Number.parseFloat(getComputedStyle(contextTerm).fontSize) === 11
+                    && getComputedStyle(contextTerm).color !== 'rgb(0, 128, 0)'
+                    && getComputedStyle(raw).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(raw).paddingLeft === '0px'
+                    && getComputedStyle(exception).backgroundColor !== 'rgb(255, 0, 0)'
+                    && review.getBoundingClientRect().height === 32
+                    && getComputedStyle(review).borderRadius === '8px';
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

@@ -430,8 +430,10 @@ export function createNewDebugBar(
     eventSearch: '',
     visibleEventCount: summary.section_counts?.events ?? 0,
     logLevel: 'all',
+    logChannel: 'all',
     logSearch: '',
     visibleLogCount: summary.section_counts?.logs ?? 0,
+    visibleLogGroupCount: summary.section_counts?.logs ?? 0,
     livewireTab: 'activity',
     livewireSearch: '',
     livewireActivityType: 'all',
@@ -1887,6 +1889,11 @@ export function createNewDebugBar(
       this.visibleAuthorizationCount = 0;
       this.eventSource = 'application';
       this.eventSearch = '';
+      this.logLevel = 'all';
+      this.logChannel = 'all';
+      this.logSearch = '';
+      this.visibleLogCount = 0;
+      this.visibleLogGroupCount = 0;
       if (this.inspectorOpen || selectedFromPicker || selectedFromRelation) {
         this.openInspector(selected);
       } else {
@@ -3264,29 +3271,58 @@ export function createNewDebugBar(
       this.visibleEventCount = visible;
     },
 
+    initializeLogs() {
+      this.logLevel = 'all';
+      this.logChannel = 'all';
+      this.logSearch = '';
+      this.$nextTick?.(() => this.applyLogFilters());
+    },
+
     setLogLevel(level) {
       const list = this.$refs?.logList ?? this.$root?.querySelector?.('[x-ref="logList"]');
-      const available = [...(list?.children ?? [])].map((item) => item.dataset.level);
-      if (level !== 'all' && !available.includes(level)) return;
+      const available = [...(list?.children ?? [])].map((item) => item.dataset.ndbLogLevel);
+      if (!['all', 'attention'].includes(level) && !available.includes(level)) return;
 
       this.logLevel = level;
+      this.applyLogFilters();
+    },
+
+    setLogChannel(channel) {
+      const list = this.$refs?.logList ?? this.$root?.querySelector?.('[x-ref="logList"]');
+      const available = [...(list?.children ?? [])].map((item) => item.dataset.ndbLogChannel);
+      if (channel !== 'all' && !available.includes(channel)) return;
+
+      this.logChannel = channel;
       this.applyLogFilters();
     },
 
     applyLogFilters() {
       const list = this.$refs?.logList ?? this.$root?.querySelector?.('[x-ref="logList"]');
       const search = this.logSearch.toLowerCase().trim();
-      let visible = 0;
+      let visibleRecords = 0;
+      let visibleGroups = 0;
 
       [...(list?.children ?? [])].forEach((item) => {
+        const matchesLevel =
+          this.logLevel === 'all' ||
+          item.dataset.ndbLogLevel === this.logLevel ||
+          (this.logLevel === 'attention' && item.dataset.ndbLogAttention === 'true');
         const matches =
-          (this.logLevel === 'all' || item.dataset.level === this.logLevel) &&
-          (search === '' || item.dataset.search?.includes(search));
+          matchesLevel &&
+          (this.logChannel === 'all' || item.dataset.ndbLogChannel === this.logChannel) &&
+          (search === '' || item.dataset.ndbLogSearchText?.includes(search));
         item.hidden = !matches;
-        if (matches) visible++;
+        if (matches) {
+          item.style?.removeProperty?.('display');
+          visibleRecords += Math.max(1, Number(item.dataset.ndbLogRecordCount) || 1);
+          visibleGroups++;
+        } else {
+          item.style?.setProperty?.('display', 'none', 'important');
+        }
       });
 
-      this.visibleLogCount = visible;
+      this.visibleLogCount = visibleRecords;
+      this.visibleLogGroupCount = visibleGroups;
     },
 
     keepFocusWithin(event, container) {

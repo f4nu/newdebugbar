@@ -1030,26 +1030,74 @@ test('event controls separate framework noise from application events', () => {
   assert.equal(state.visibleEventCount, 0);
 });
 
-test('log controls filter available levels and messages', () => {
+test('log controls combine severity channel and search without losing record counts', () => {
   const state = createNewDebugBar(summary, runtime());
-  const item = (level, search) => ({ dataset: { level, search }, hidden: false });
-  const info = item('info', 'request ready');
-  const error = item('error', 'database unavailable');
-  state.$refs = { logList: { children: [info, error] } };
+  const item = (level, attention, channel, search, count = 1) => ({
+    dataset: {
+      ndbLogLevel: level,
+      ndbLogAttention: String(attention),
+      ndbLogChannel: channel,
+      ndbLogSearchText: search,
+      ndbLogRecordCount: String(count),
+    },
+    hidden: false,
+    style: {
+      display: '',
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+  });
+  const info = item('info', false, 'audit', 'request ready actor planner');
+  const warning = item('warning', true, 'stack', 'partner slow trip 41', 3);
+  const error = item('error', true, 'stack', 'database unavailable orders.php');
+  state.$refs = { logList: { children: [info, warning, error] } };
+  state.$nextTick = (callback) => callback();
+
+  state.initializeLogs();
+  assert.equal(state.logLevel, 'all');
+  assert.equal(state.logChannel, 'all');
+  assert.equal(state.visibleLogCount, 5);
+  assert.equal(state.visibleLogGroupCount, 3);
+
+  state.setLogLevel('attention');
+  assert.equal(info.hidden, true);
+  assert.equal(info.style.display, 'none');
+  assert.equal(warning.hidden, false);
+  assert.equal(error.hidden, false);
+  assert.equal(state.visibleLogCount, 4);
+  assert.equal(state.visibleLogGroupCount, 2);
 
   state.setLogLevel('error');
   assert.equal(info.hidden, true);
+  assert.equal(warning.hidden, true);
   assert.equal(error.hidden, false);
   assert.equal(state.visibleLogCount, 1);
+  assert.equal(state.visibleLogGroupCount, 1);
 
   state.logSearch = 'UNAVAILABLE';
   state.applyLogFilters();
   assert.equal(error.hidden, false);
 
-  state.setLogLevel('debug');
+  state.setLogLevel('missing');
   assert.equal(state.logLevel, 'error');
 
-  state.$refs = {};
   state.setLogLevel('all');
+  state.logSearch = '';
+  state.setLogChannel('audit');
+  assert.equal(info.hidden, false);
+  assert.equal(warning.hidden, true);
+  assert.equal(error.hidden, true);
+  assert.equal(state.visibleLogCount, 1);
+
+  state.setLogChannel('missing');
+  assert.equal(state.logChannel, 'audit');
+
+  state.$refs = {};
+  state.setLogChannel('all');
   assert.equal(state.visibleLogCount, 0);
+  assert.equal(state.visibleLogGroupCount, 0);
 });

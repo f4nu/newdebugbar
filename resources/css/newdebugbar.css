@@ -90,7 +90,8 @@
 }
 
 #newdebugbar [data-ndb-section-panel][hidden],
-#newdebugbar [data-ndb-timeline-item][hidden] {
+#newdebugbar [data-ndb-timeline-item][hidden],
+#newdebugbar [data-ndb-log-entry][hidden] {
     display: none !important;
 }
 
