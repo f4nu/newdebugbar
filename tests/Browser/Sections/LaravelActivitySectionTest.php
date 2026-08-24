@@ -98,6 +98,7 @@ it('groups noisy Laravel events around application evidence', function () {
 
     $page
         ->assertSee('No events match this source and search.')
+        ->assertSee('No event is selected. Adjust the source filter or search.')
         ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length === 0')
         ->type('[data-ndb-event-search]', '')
         ->click('[data-ndb-event-source="framework"]')

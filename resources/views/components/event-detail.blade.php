@@ -8,6 +8,11 @@
     class="ndb-scrollbar ndb:min-h-[32rem] ndb:min-w-0 ndb:flex-col ndb:scroll-mt-20 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:min-h-0 ndb:lg:overflow-y-auto"
 >
     <x-newdebugbar::inspector-detail-back data-ndb-event-detail-back @click="closeEventDetail()" label="Events" />
+    <template x-if="! selectedEvent">
+        <div class="ndb:p-4">
+            <x-newdebugbar::empty-state label="No event is selected. Adjust the source filter or search." />
+        </div>
+    </template>
     <template x-if="selectedEvent">
         <div class="ndb:flex ndb:flex-col">
             <x-newdebugbar::inspector-detail-header data-ndb-event-header>
