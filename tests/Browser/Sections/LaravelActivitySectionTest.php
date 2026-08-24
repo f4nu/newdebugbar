@@ -8,7 +8,14 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="cache"]')
         ->assertSee('Hit rate')
-        ->assertSee('Misses')
+        ->assertScript(<<<'JS'
+            (() => {
+                const results = Array.from(document.querySelectorAll('[data-ndb-cache-result]'))
+                    .map((result) => result.textContent.trim());
+
+                return results.includes('Hit') && results.includes('Miss');
+            })()
+            JS)
         ->click('[data-ndb-select-section="events"]')
         ->assertScript(<<<'JS'
             (() => {
