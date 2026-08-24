@@ -97,12 +97,6 @@
                 data-ndb-log-severity
                 class="ndb:block ndb:bg-transparent ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:leading-4 ndb:tracking-[0.08em] {{ $severityClasses }}"
             >{{ $entry['level_label'] ?? ucfirst($level) }}</span>
-            @if ($attention)
-                <span
-                    data-ndb-log-attention-label
-                    class="ndb:mt-1 ndb:block ndb:bg-transparent ndb:text-[11px] ndb:font-semibold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300"
-                >Needs attention</span>
-            @endif
         </span>
 
         <span
@@ -182,9 +176,6 @@
                         <span class="ndb:font-bold ndb:uppercase ndb:tracking-[0.08em] {{ $severityClasses }}">
                             {{ $entry['level_label'] ?? ucfirst($level) }}
                         </span>
-                        @if ($attention)
-                            <span class="ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">Needs attention</span>
-                        @endif
                         <span class="ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $channelLabel }}</span>
                     </div>
                 </header>
@@ -198,7 +189,7 @@
                                 class="ndb:border-y ndb:border-red-200/80 ndb:bg-transparent ndb:py-3 ndb:dark:border-red-950"
                                 aria-label="Related exception"
                             >
-                                <div class="ndb:grid ndb:min-w-0 ndb:gap-2.5 ndb:sm:grid-cols-[8.5rem_minmax(0,1fr)_auto] ndb:sm:gap-4">
+                                <div class="ndb:grid ndb:min-w-0 ndb:items-start ndb:gap-2.5 ndb:sm:grid-cols-[8.5rem_minmax(0,1fr)_auto] ndb:sm:gap-4">
                                     <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-red-700 ndb:dark:text-red-300">
                                         Related exception
                                     </h3>
@@ -219,7 +210,7 @@
                                         type="button"
                                         data-ndb-log-review-exception
                                         @click="navigateToSection('exceptions')"
-                                        class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:self-start ndb:bg-transparent ndb:px-0 ndb:text-xs ndb:font-bold ndb:text-indigo-700 ndb:underline-offset-4 ndb:hover:bg-transparent ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                                        class="ndb:inline-flex ndb:h-auto ndb:self-start ndb:justify-self-start ndb:bg-transparent ndb:px-0 ndb:py-0 ndb:text-xs ndb:font-bold ndb:leading-4 ndb:text-indigo-700 ndb:underline-offset-4 ndb:hover:bg-transparent ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:justify-self-end ndb:dark:text-indigo-300"
                                     >
                                         Review in Exceptions
                                     </button>

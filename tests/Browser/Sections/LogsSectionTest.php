@@ -76,6 +76,17 @@ it('presents a chronological diagnostic stream with useful filters and details',
         ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-review-exception]')
         ->assertScript(<<<'JS'
             (() => {
+                const popover = document.querySelector('[data-ndb-log-details-popover]');
+                const exception = popover?.querySelector('[data-ndb-log-related-exception]');
+                const label = exception?.querySelector('h3');
+                const review = exception?.querySelector('[data-ndb-log-review-exception]');
+
+                return ! popover?.querySelector('header')?.textContent.includes('Needs attention')
+                    && Math.abs(review.getBoundingClientRect().top - label.getBoundingClientRect().top) <= 1;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const paragraphs = document.querySelectorAll(
                     '[data-ndb-log-details-popover] [data-ndb-log-related-exception] p'
                 );

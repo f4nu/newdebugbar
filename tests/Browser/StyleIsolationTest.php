@@ -392,12 +392,11 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const entry = document.querySelector('[data-ndb-log-entry]');
                 const severity = entry?.querySelector('[data-ndb-log-severity]');
-                const attention = document.querySelector('[data-ndb-log-attention-label]');
                 const levelSelect = document.querySelector('[data-ndb-log-level-select]');
                 const summary = entry?.querySelector('[data-ndb-log-summary]');
                 const trigger = entry?.querySelector('[data-ndb-log-details-trigger]');
 
-                if (! entry || ! severity || ! attention || ! levelSelect || ! summary || ! trigger) return false;
+                if (! entry || ! severity || ! levelSelect || ! summary || ! trigger) return false;
 
                 return getComputedStyle(entry).borderLeftWidth !== '20px'
                     && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
@@ -405,7 +404,7 @@ it('keeps host styles and package styles isolated', function () {
                     && Number.parseFloat(getComputedStyle(severity).fontSize) === 11
                     && getComputedStyle(severity).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(severity).borderRadius === '0px'
-                    && getComputedStyle(attention).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && document.querySelector('[data-ndb-log-attention-label]') === null
                     && levelSelect.getBoundingClientRect().height === 36
                     && getComputedStyle(levelSelect).borderLeftWidth === '1px'
                     && getComputedStyle(levelSelect).backgroundColor !== 'rgb(255, 0, 0)'
@@ -428,6 +427,7 @@ it('keeps host styles and package styles isolated', function () {
                 const contextTerm = context.querySelector('dt');
                 const raw = popover.querySelector('[data-ndb-log-raw]');
                 const exception = popover.querySelector('[data-ndb-log-related-exception]');
+                const exceptionLabel = exception.querySelector('h3');
                 const review = popover.querySelector('[data-ndb-log-review-exception]');
 
                 return actions === null
@@ -446,7 +446,8 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(raw).paddingLeft === '0px'
                     && getComputedStyle(exception).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(exception).borderRadius === '0px'
-                    && review.getBoundingClientRect().height === 32
+                    && review.getBoundingClientRect().height < 24
+                    && Math.abs(review.getBoundingClientRect().top - exceptionLabel.getBoundingClientRect().top) <= 1
                     && getComputedStyle(review).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(review).color !== 'rgb(0, 128, 0)';
             })()
