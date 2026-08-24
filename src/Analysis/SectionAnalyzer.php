@@ -349,7 +349,7 @@ final class SectionAnalyzer
                 default => 'completed',
             },
             'listener_outcome_label' => match (true) {
-                $listenerCount === 0 => 'Observed',
+                $listenerCount === 0 => 'No listeners',
                 $queuedCount === $listenerCount => 'Queued',
                 $queuedCount > 0 => 'Completed and queued',
                 default => 'Completed',
@@ -413,15 +413,15 @@ final class SectionAnalyzer
     private function eventListenerSummary(int $completed, int $queued): string
     {
         if ($completed === 0 && $queued === 0) {
-            return 'No application listener was registered.';
+            return 'No listeners registered.';
         }
 
         if ($queued === 0) {
-            return $completed.' listener '.($completed === 1 ? 'registration completed.' : 'registrations completed.');
+            return $completed.' '.($completed === 1 ? 'registration completed.' : 'registrations completed.');
         }
 
         if ($completed === 0) {
-            return $queued.' queued listener '.($queued === 1 ? 'registration was handed off.' : 'registrations were handed off.');
+            return $queued.' queued '.($queued === 1 ? 'registration handed off.' : 'registrations handed off.');
         }
 
         return $completed.' completed, '.$queued.' queued.';
@@ -518,7 +518,19 @@ final class SectionAnalyzer
         }
 
         if ($group['queued_listener_count'] > 0) {
-            return 'Open Queue to confirm the worker ran each queued listener.';
+            return $group['queued_listener_count'] === 1
+                ? 'Open Queue to confirm the queued listener ran.'
+                : 'Open Queue to confirm the queued listeners ran.';
+        }
+
+        if ($group['listener_count'] === 0) {
+            if ($group['source'] === 'framework') {
+                return 'Use the related collector when this framework event looks unexpected.';
+            }
+
+            return $group['dispatch_sources'] !== []
+                ? 'Start at the dispatch source, then check listener registration and event discovery.'
+                : 'Check listener registration and event discovery to confirm whether this event is observation-only.';
         }
 
         if (($group['broadcast'] ?? false) === true) {
@@ -526,20 +538,20 @@ final class SectionAnalyzer
         }
 
         if (count($group['dispatch_sources']) > 1) {
-            return 'Compare the dispatch sources, then inspect the registered listeners.';
+            return $group['listener_count'] === 1
+                ? 'Compare the dispatch sources, then inspect the registered listener.'
+                : 'Compare the dispatch sources, then inspect the registered listeners.';
         }
 
         if ($group['source'] === 'application' && $group['dispatch_sources'] !== []) {
-            return 'Start at the dispatch source, then inspect each registered listener.';
+            return $group['listener_count'] === 1
+                ? 'Start at the dispatch source, then inspect the registered listener.'
+                : 'Start at the dispatch source, then inspect the registered listeners.';
         }
 
-        if ($group['listener_count'] === 0) {
-            return $group['source'] === 'framework'
-                ? 'Use the related collector for deeper evidence when this framework event looks unexpected.'
-                : 'Confirm whether this event is observation-only or missing an application listener.';
-        }
-
-        return 'Inspect the listener source when the observed result does not match the event.';
+        return $group['listener_count'] === 1
+            ? 'Inspect the listener source when the observed result does not match the event.'
+            : 'Inspect the listener sources when the observed result does not match the event.';
     }
 
     /** @return array{key: string, label: string}|null */

@@ -128,6 +128,89 @@ it('groups repeated event signatures while preserving timing sources listeners a
         ->and($untimed['payload_shape'][0]['type'])->toBe('array');
 });
 
+it('tailors event guidance to the captured listener state', function () {
+    $listener = static fn (string $name, bool $queued = false, int $registrations = 1): array => [
+        'name' => $name,
+        'queued' => $queued,
+        'registrations' => $registrations,
+    ];
+    $source = static fn (string $file): array => ['file' => $file, 'line' => 12];
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'events' => ['summary' => ['count' => 10], 'payload' => ['items' => [
+                [
+                    'name' => 'App\\Events\\NoListeners',
+                    'callsite' => $source('app/Actions/DispatchWithoutListener.php'),
+                ],
+                [
+                    'name' => 'App\\Events\\OneListener',
+                    'callsite' => $source('app/Actions/DispatchToOne.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleOne@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\ManyListeners',
+                    'callsite' => $source('app/Actions/DispatchToMany.php'),
+                    'listeners' => [
+                        $listener('App\\Listeners\\HandleFirst@handle'),
+                        $listener('App\\Listeners\\HandleSecond@handle'),
+                    ],
+                ],
+                [
+                    'name' => 'App\\Events\\DuplicateListener',
+                    'callsite' => $source('app/Actions/DispatchDuplicate.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleDuplicate@handle', registrations: 2)],
+                ],
+                [
+                    'name' => 'App\\Events\\QueuedListener',
+                    'listeners' => [$listener('App\\Listeners\\HandleQueued@handle', queued: true)],
+                ],
+                [
+                    'name' => 'App\\Events\\OneListenerManySources',
+                    'callsite' => $source('app/Actions/DispatchFirst.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleManySources@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\OneListenerManySources',
+                    'callsite' => $source('app/Actions/DispatchSecond.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleManySources@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\ListenerWithoutSource',
+                    'listeners' => [$listener('App\\Listeners\\HandleWithoutSource@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\BroadcastUpdate',
+                    'broadcast' => true,
+                    'listeners' => [$listener('App\\Listeners\\BroadcastUpdate@handle')],
+                ],
+                ['name' => 'Illuminate\\Database\\Events\\StatementPrepared'],
+            ]]],
+        ],
+    ]);
+    $groups = collect($profile['sections']['events']['payload']['groups'])->keyBy('name');
+
+    expect($groups['App\\Events\\NoListeners'])
+        ->listener_outcome_label->toBe('No listeners')
+        ->listener_summary->toBe('No listeners registered.')
+        ->next_step->toBe('Start at the dispatch source, then check listener registration and event discovery.')
+        ->and($groups['App\\Events\\OneListener']['next_step'])
+        ->toBe('Start at the dispatch source, then inspect the registered listener.')
+        ->and($groups['App\\Events\\ManyListeners']['next_step'])
+        ->toBe('Start at the dispatch source, then inspect the registered listeners.')
+        ->and($groups['App\\Events\\DuplicateListener']['next_step'])
+        ->toBe('The same listener is registered more than once. Check explicit registration and event discovery.')
+        ->and($groups['App\\Events\\QueuedListener']['next_step'])
+        ->toBe('Open Queue to confirm the queued listener ran.')
+        ->and($groups['App\\Events\\OneListenerManySources']['next_step'])
+        ->toBe('Compare the dispatch sources, then inspect the registered listener.')
+        ->and($groups['App\\Events\\ListenerWithoutSource']['next_step'])
+        ->toBe('Inspect the listener source when the observed result does not match the event.')
+        ->and($groups['App\\Events\\BroadcastUpdate']['next_step'])
+        ->toBe('Check the broadcast channel and frontend subscription if connected clients did not update.')
+        ->and($groups['Illuminate\\Database\\Events\\StatementPrepared']['next_step'])
+        ->toBe('Use the related collector when this framework event looks unexpected.');
+});
+
 it('bounds grouped event detail while preserving totals and timeline endpoints', function () {
     $items = array_map(fn (int $sequence): array => [
         'name' => 'App\\Events\\RepeatedSignal',
