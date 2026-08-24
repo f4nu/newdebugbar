@@ -33,7 +33,7 @@
                             x-text="visibleEventSummary"
                         ></p>
                         <label class="ndb:relative ndb:shrink-0">
-                            <span class="ndb:sr-only">Sort event groups</span>
+                            <span class="ndb:sr-only">Sort events</span>
                             <select
                                 data-ndb-event-sort
                                 x-model="eventSort"
@@ -88,7 +88,7 @@
                 <div
                     x-ref="eventList"
                     data-ndb-event-list
-                    aria-label="Grouped Laravel events"
+                    aria-label="Laravel events"
                     class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:overflow-y-auto ndb:dark:divide-zinc-800"
                 >
                     @foreach ($eventGroups as $event)
@@ -106,7 +106,7 @@
                             :class="eventSelected === {{ $event['id'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_7rem] ndb:items-baseline ndb:gap-x-3 ndb:gap-y-0.5 ndb:px-3 ndb:py-1 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span
                                 data-ndb-event-list-name
@@ -131,28 +131,31 @@
                                     >{{ $event['namespace'] }}</code>
                                 @endif
                             </span>
-                            @if ($event['first_at_ms'] !== null)
-                                <span class="ndb:col-start-2 ndb:row-start-2 ndb:justify-self-end ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400">
+                            <span class="ndb:col-start-2 ndb:row-start-2 ndb:w-full ndb:truncate ndb:text-right ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400">
+                                @if ($event['first_at_ms'] !== null)
                                     @if ($event['first_at_ms'] === $event['last_at_ms'])
                                         {{ number_format($event['first_at_ms'], 2) }} ms
                                     @else
                                         {{ number_format($event['first_at_ms'], 2) }}–{{ number_format($event['last_at_ms'], 2) }} ms
                                     @endif
-                                </span>
-                            @endif
-                            <span class="ndb:col-start-1 ndb:row-start-3 ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-2 ndb:gap-y-0.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                <span class="ndb:min-w-0 ndb:truncate" title="{{ $event['listener_summary'] }}">
-                                    {{ $event['listener_summary'] }}
-                                </span>
-                                @if ($event['duplicate_registration_count'] > 0)
-                                    <span class="ndb:shrink-0 ndb:font-bold ndb:text-amber-600 ndb:dark:text-amber-300">
-                                        Duplicate registration
-                                    </span>
+                                @else
+                                    —
                                 @endif
                             </span>
-                            <span class="ndb:col-start-2 ndb:row-start-3 ndb:justify-self-end ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
+                            <span
+                                class="ndb:col-start-1 ndb:row-start-3 ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                title="{{ $event['listener_summary'] }}"
+                            >
+                                {{ $event['listener_summary'] }}
+                            </span>
+                            <span class="ndb:col-start-2 ndb:row-start-3 ndb:w-full ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
                                 {{ number_format($event['occurrence_count']) }} {{ \Illuminate\Support\Str::plural('dispatch', $event['occurrence_count']) }}
                             </span>
+                            @if ($event['duplicate_registration_count'] > 0)
+                                <span class="ndb:col-start-1 ndb:row-start-4 ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:font-bold ndb:text-amber-600 ndb:dark:text-amber-300">
+                                    Duplicate listener registration
+                                </span>
+                            @endif
                         </button>
                     @endforeach
                 </div>

@@ -722,10 +722,15 @@ export function createNewDebugBar(
     },
 
     get visibleEventSummary() {
-      const events = `${this.visibleEventCount} ${this.visibleEventCount === 1 ? 'event' : 'events'}`;
-      const groups = `${this.visibleEventGroupCount} ${this.visibleEventGroupCount === 1 ? 'group' : 'groups'}`;
+      if (this.visibleEventGroupCount === 0) return 'No events';
 
-      return `${events} in ${groups}`;
+      const events = `${this.visibleEventGroupCount} ${this.visibleEventGroupCount === 1 ? 'event' : 'events'}`;
+
+      if (this.visibleEventCount === this.visibleEventGroupCount) return events;
+
+      const dispatches = `${this.visibleEventCount} dispatches`;
+
+      return `${events}, ${dispatches}`;
     },
 
     get livewireComponents() {
@@ -3382,7 +3387,7 @@ export function createNewDebugBar(
     },
 
     formatEventTime(value) {
-      if (value === null || value === '' || !Number.isFinite(Number(value))) return 'Timing unavailable';
+      if (value === null || value === '' || !Number.isFinite(Number(value))) return '—';
 
       return `${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ms`;
     },

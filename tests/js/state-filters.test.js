@@ -1042,6 +1042,10 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   ]);
   assert.equal(state.eventSource, 'application');
   assert.equal(state.eventSelected, 2);
+  assert.equal(state.selectedEvent?.id, 2);
+  state.eventSelected = 99;
+  assert.equal(state.selectedEvent, null);
+  state.eventSelected = 2;
   assert.equal(state.eventDetailTab, 'overview');
   assert.equal(framework.hidden, true);
   assert.equal(framework.style.display, 'none');
@@ -1049,7 +1053,12 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(laterApplication.hidden, false);
   assert.equal(state.visibleEventCount, 3);
   assert.equal(state.visibleEventGroupCount, 2);
-  assert.equal(state.visibleEventSummary, '3 events in 2 groups');
+  assert.equal(state.visibleEventSummary, '2 events, 3 dispatches');
+
+  state.visibleEventCount = 2;
+  state.visibleEventGroupCount = 2;
+  assert.equal(state.visibleEventSummary, '2 events');
+  state.applyEventFilters();
 
   state.eventSearch = 'PAYLOAD';
   state.applyEventFilters();
@@ -1057,6 +1066,7 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(laterApplication.hidden, true);
   assert.equal(state.visibleEventCount, 2);
   assert.equal(state.visibleEventGroupCount, 1);
+  assert.equal(state.visibleEventSummary, '1 event, 2 dispatches');
 
   state.eventSearch = '';
   state.setEventDetailTab('payload');
@@ -1072,12 +1082,15 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   state.setEventSource('all');
   assert.equal(state.eventSelected, 1);
   assert.equal(state.eventDetailTab, 'overview');
+  laterApplication.dataset.ndbEventOccurrenceCount = '2';
   state.setEventSort('frequency');
   assert.deepEqual(appended.slice(-3), [framework, application, laterApplication]);
+  laterApplication.dataset.ndbEventOccurrenceCount = '1';
 
   appended.length = 0;
+  laterApplication.dataset.ndbEventLastSequence = '18';
   state.setEventSort('latest');
-  assert.deepEqual(appended, [laterApplication, framework, application]);
+  assert.deepEqual(appended, [framework, laterApplication, application]);
 
   state.selectEvent(3, laterApplication);
   assert.equal(state.eventSelected, 3);
@@ -1096,13 +1109,26 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(state.eventSort, 'latest');
   assert.equal(state.eventSelected, 3);
   assert.equal(state.eventDetailTab, 'payload');
-  assert.equal(state.formatEventTime(null), 'Timing unavailable');
-  assert.equal(state.formatEventTime('missing'), 'Timing unavailable');
+  assert.equal(state.formatEventTime(null), '—');
+  assert.equal(state.formatEventTime(''), '—');
+  assert.equal(state.formatEventTime('missing'), '—');
+  assert.equal(state.formatEventTime(12.3), '12.30 ms');
 
   state.$refs = {};
   state.applyEventFilters();
   assert.equal(state.visibleEventCount, 0);
   assert.equal(state.visibleEventGroupCount, 0);
+  assert.equal(state.visibleEventSummary, 'No events');
+
+  const emptyState = createNewDebugBar(summary, runtime());
+  emptyState.initializeEvents(null);
+  assert.deepEqual(emptyState.eventGroups, []);
+  assert.equal(emptyState.eventSelected, null);
+
+  emptyState.$nextTick = (callback) => callback();
+  emptyState.initializeEvents([{ id: 4, source: 'framework', name: 'Illuminate\\Events\\Dispatcher' }]);
+  assert.equal(emptyState.eventSelected, null);
+  assert.equal(emptyState.visibleEventCount, 0);
 });
 
 test('log controls filter available levels and messages', () => {

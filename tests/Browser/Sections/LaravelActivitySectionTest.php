@@ -4,10 +4,14 @@ use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledQueuedApplicationListener;
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('groups noisy Laravel events around application evidence', function () {
-    $page = visit('/profiled-events')
+it('switches from Cache diagnostics to current Events evidence', function () {
+    $page = visit('/profiled')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->click('[data-ndb-select-section="cache"]')
+        ->click('[data-ndb-select-section="cache"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
         ->assertSee('Hit rate')
         ->assertScript(<<<'JS'
             (() => {
@@ -22,12 +26,28 @@ it('groups noisy Laravel events around application evidence', function () {
     DebugBarBrowser::waitForDetails($page);
 
     $page
+        ->assertAttribute('[data-ndb-event-source="application"]', 'aria-pressed', 'true')
+        ->assertNoJavaScriptErrors();
+
+    DebugBarBrowser::assertSectionSelected($page, 'events');
+});
+
+it('groups noisy Laravel events around application evidence', function () {
+    $page = visit('/profiled-events')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="events"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
         ->assertScript(<<<'JS'
             (() => {
                 const buttons = Array.from(document.querySelectorAll('[data-ndb-event-source]'));
 
                 return buttons.map((button) => button.dataset.ndbEventSource).join('|') === 'all|application|framework'
-                    && document.querySelector('[data-ndb-event-source="application"]').getAttribute('aria-pressed') === 'true';
+                    && document.querySelector('[data-ndb-event-source="application"]').getAttribute('aria-pressed') === 'true'
+                    && document.querySelector('[data-ndb-event-sort]').labels[0].firstElementChild.textContent.trim() === 'Sort events'
+                    && document.querySelector('[data-ndb-event-list]').getAttribute('aria-label') === 'Laravel events';
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -75,7 +95,21 @@ it('groups noisy Laravel events around application evidence', function () {
                     && visible.every((item) => item.dataset.ndbEventSourceValue === 'application')
                     && visible.reduce((count, item) => count + Number(item.dataset.ndbEventOccurrenceCount), 0) === 12
                     && selected?.dataset.ndbEventSourceValue === 'application'
-                    && document.querySelector('[data-ndb-event-visible-summary]').textContent.trim() === '12 events in 4 groups';
+                    && document.querySelector('[data-ndb-event-visible-summary]').textContent.trim() === '4 events, 12 dispatches';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const rows = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+                const tracks = rows.map((row) => getComputedStyle(row).gridTemplateColumns);
+                const attention = [...document.querySelectorAll('[data-ndb-event-item] span')]
+                    .find((element) => element.textContent.trim() === 'Duplicate listener registration');
+                const attentionRow = attention?.closest('[data-ndb-event-item]');
+
+                return rows.length > 1
+                    && new Set(tracks).size === 1
+                    && attention
+                    && Math.abs(attention.getBoundingClientRect().left - attentionRow.children[0].getBoundingClientRect().left) < 1;
             })()
             JS)
         ->assertSee(ProfiledApplicationListener::class.'@handle')
@@ -85,29 +119,20 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertSee('Listener handling')
         ->assertSee('What to inspect next')
         ->assertMissing('private fixture value')
-        ->assertVisible('[data-ndb-event-copy-name]')
-        ->assertAttribute('[data-ndb-event-copy-name]', 'aria-label', 'Copy event name')
         ->assertScript(<<<'JS'
             (() => {
-                const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
+                const header = document.querySelector('[data-ndb-event-header]');
+                const overview = document.querySelector('[data-ndb-event-detail-panel="overview"]');
+                const facts = overview.querySelector('[data-ndb-event-facts]');
 
-                window.newdebugbarEventClipboardWrites = [];
-                window.newdebugbarExpectedEventClipboard = {
-                    name: state?.selectedEvent?.name,
-                    payload: JSON.stringify(state?.selectedEvent?.payload_shape, null, 2),
-                };
-                Object.defineProperty(window.navigator, 'clipboard', {
-                    configurable: true,
-                    value: {
-                        writeText: async (value) => window.newdebugbarEventClipboardWrites.push(value),
-                    },
-                });
-
-                return window.newdebugbarExpectedEventClipboard.name?.includes('ProfiledApplicationEvent');
+                return header.querySelector('[data-ndb-event-qualified-name]')
+                    && ! header.querySelector('[data-ndb-event-facts]')
+                    && facts
+                    && facts.querySelectorAll('[data-ndb-event-fact]').length === 4
+                    && ! document.querySelector('[data-ndb-event-copy-name]')
+                    && ! overview.querySelector('[data-ndb-event-copy-listener-source]');
             })()
             JS)
-        ->click('[data-ndb-event-copy-name]')
-        ->wait(0.05)
         ->assertAttribute('[data-ndb-event-detail-tab="overview"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-event-detail-panel="overview"]')
         ->click('[data-ndb-event-detail-tab="payload"]')
@@ -115,27 +140,32 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertVisible('[data-ndb-event-detail-panel="payload"]')
         ->assertSee('trip')
         ->assertSee('changes')
-        ->assertVisible('[data-ndb-event-copy-payload-shape]')
-        ->click('[data-ndb-event-copy-payload-shape]')
-        ->wait(0.05)
-        ->assertScript(<<<'JS'
-            (() => {
-                const [name, payload] = window.newdebugbarEventClipboardWrites;
-
-                return window.newdebugbarEventClipboardWrites.length === 2
-                    && name === window.newdebugbarExpectedEventClipboard.name
-                    && payload === window.newdebugbarExpectedEventClipboard.payload
-                    && payload.includes('"trip"')
-                    && payload.includes('"changes"');
-            })()
-            JS)
+        ->assertMissing('[data-ndb-event-copy-payload-shape]')
         ->click('[data-ndb-event-detail-tab="source"]')
         ->assertAttribute('[data-ndb-event-detail-tab="source"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-event-detail-panel="source"]')
         ->assertCount('[data-ndb-event-copy-dispatch-source]', 2)
         ->assertScript(<<<'JS'
-            [...document.querySelectorAll('[data-ndb-event-copy-dispatch-source]')]
-                .every((button) => button.getClientRects().length > 0)
+            (() => {
+                const buttons = [...document.querySelectorAll('[data-ndb-event-copy-dispatch-source]')];
+
+                window.newdebugbarEventClipboardWrites = [];
+                window.newdebugbarExpectedEventClipboard = buttons[0].querySelector('code').textContent.trim();
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarEventClipboardWrites.push(value),
+                    },
+                });
+
+                return buttons.every((button) => button.getClientRects().length > 0);
+            })()
+            JS)
+        ->click('[data-ndb-event-copy-dispatch-source]:first-of-type')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            window.newdebugbarEventClipboardWrites.length === 1
+                && window.newdebugbarEventClipboardWrites[0] === window.newdebugbarExpectedEventClipboard
             JS)
         ->click('[data-ndb-event-detail-tab="overview"]')
         ->type('[data-ndb-event-search]', 'ItineraryRecalculation');
@@ -202,13 +232,23 @@ it('keeps Events selection focused with one mobile scroll owner', function () {
                 const workspace = document.querySelector('[data-ndb-event-workspace]');
                 const [list, detail] = workspace.children;
                 const rows = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+                const checks = {
+                    dialogOverflow: dialog.scrollWidth <= dialog.clientWidth + 1,
+                    workspaceOverflow: workspace.scrollWidth <= workspace.clientWidth + 1,
+                    mobileWorkspace: getComputedStyle(workspace).display !== 'grid',
+                    listVisible: getComputedStyle(list).display === 'flex',
+                    detailHidden: getComputedStyle(detail).display === 'none',
+                    compactRows: rows.every((row) => row.getBoundingClientRect().height <= 84),
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
 
-                return dialog.scrollWidth <= dialog.clientWidth + 1
-                    && workspace.scrollWidth <= workspace.clientWidth + 1
-                    && getComputedStyle(workspace).display !== 'grid'
-                    && getComputedStyle(list).display === 'flex'
-                    && getComputedStyle(detail).display === 'none'
-                    && rows.every((row) => row.getBoundingClientRect().height <= 84);
+                if (failures.length > 0) {
+                    throw new Error(
+                        failures.join(', ') + '; row heights: ' + rows.map((row) => row.getBoundingClientRect().height).join(', '),
+                    );
+                }
+
+                return true;
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -315,11 +355,7 @@ it('presents Laravel decisions messages and source context without editor links'
         ->assertSee(ProfiledQueuedApplicationListener::class.'@handle')
         ->assertSee('Completed and queued')
         ->assertSee('2 registrations')
-        ->assertCount('[data-ndb-event-copy-listener-source]', 2)
-        ->assertScript(<<<'JS'
-            [...document.querySelectorAll('[data-ndb-event-copy-listener-source]')]
-                .every((button) => button.getClientRects().length > 0)
-            JS)
+        ->assertMissing('[data-ndb-event-copy-listener-source]')
         ->assertMissing('a[href^="vscode://file/"]')
         ->assertNoJavaScriptErrors();
 

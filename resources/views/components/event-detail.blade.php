@@ -20,92 +20,22 @@
         <div class="ndb:flex ndb:flex-col">
             <x-newdebugbar::inspector-detail-header data-ndb-event-header>
                 <x-slot:title>
-                    <h3
-                        data-ndb-event-detail-title
-                        class="ndb:break-words ndb:text-base ndb:font-bold ndb:leading-6"
-                        x-text="selectedEvent.display_name"
-                    ></h3>
-                </x-slot:title>
-
-                <x-slot:aside>
-                    <button
-                        type="button"
-                        data-ndb-event-copy-name
-                        aria-label="Copy event name"
-                        @click="copyText(selectedEvent.name)"
-                        class="ndb:inline-flex ndb:min-h-8 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
-                    >
-                        <x-newdebugbar::icon name="copy" size="3" />
-                        <span class="ndb:hidden ndb:sm:inline">Copy name</span>
-                    </button>
-                </x-slot:aside>
-
-                <x-slot:identity data-ndb-event-identity>
-                    <code
-                        data-ndb-event-qualified-name
-                        :title="selectedEvent.name"
-                        class="ndb:block ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                        x-text="selectedEvent.name"
-                    ></code>
-                </x-slot:identity>
-
-                <x-slot:metadata data-ndb-event-metadata class="ndb:w-full">
-                    <div
-                        data-ndb-event-facts
-                        class="ndb:grid ndb:w-full ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4"
-                    >
-                        <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Origin
-                            </dt>
-                            <dd
-                                class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                x-text="
-                                    selectedEvent.source === 'application'
-                                        ? selectedEvent.broadcast
-                                            ? 'Application broadcast'
-                                            : 'Application'
-                                        : 'Framework'
-                                "
-                            ></dd>
-                        </div>
-                        <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Sequence
-                            </dt>
-                            <dd
-                                class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                x-text="
-                                    selectedEvent.first_sequence === selectedEvent.last_sequence
-                                        ? '#' + selectedEvent.first_sequence
-                                        : '#' + selectedEvent.first_sequence + '–' + selectedEvent.last_sequence
-                                "
-                            ></dd>
-                        </div>
-                        <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Dispatches
-                            </dt>
-                            <dd
-                                class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                x-text="selectedEvent.occurrence_count"
-                            ></dd>
-                        </div>
-                        <div
-                            data-ndb-event-fact
-                            x-show.important="selectedEvent.first_at_ms !== null"
-                            class="ndb:min-w-0 ndb:bg-transparent"
-                        >
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                First seen
-                            </dt>
-                            <dd
-                                class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                x-text="formatEventTime(selectedEvent.first_at_ms)"
-                            ></dd>
-                        </div>
+                    <div class="ndb:min-w-0">
+                        <h3
+                            data-ndb-event-detail-title
+                            class="ndb:break-words ndb:text-base ndb:font-bold ndb:leading-6"
+                            x-text="selectedEvent.display_name"
+                        ></h3>
+                        <code
+                            data-ndb-event-qualified-name
+                            x-show.important="selectedEvent.name !== selectedEvent.display_name"
+                            :title="selectedEvent.name"
+                            class="ndb:mt-1 ndb:block ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:font-medium ndb:leading-4 ndb:text-zinc-400"
+                            x-text="selectedEvent.name"
+                        ></code>
                     </div>
-                </x-slot:metadata>
+                </x-slot:title>
+                <x-slot:aside></x-slot:aside>
             </x-newdebugbar::inspector-detail-header>
 
             <div class="ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
@@ -135,7 +65,59 @@
                 x-show.important="eventDetailTab === 'overview'"
                 class="ndb:p-4"
             >
-                <section data-ndb-event-listeners>
+                <dl
+                    data-ndb-event-facts
+                    class="ndb:grid ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4"
+                >
+                    <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
+                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                            Origin
+                        </dt>
+                        <dd
+                            class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                            x-text="
+                                selectedEvent.source === 'application'
+                                    ? selectedEvent.broadcast
+                                        ? 'Application broadcast'
+                                        : 'Application'
+                                    : 'Framework'
+                            "
+                        ></dd>
+                    </div>
+                    <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
+                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                            Sequence
+                        </dt>
+                        <dd
+                            class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                            x-text="
+                                selectedEvent.first_sequence === selectedEvent.last_sequence
+                                    ? '#' + selectedEvent.first_sequence
+                                    : '#' + selectedEvent.first_sequence + '–' + selectedEvent.last_sequence
+                            "
+                        ></dd>
+                    </div>
+                    <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
+                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                            Dispatches
+                        </dt>
+                        <dd
+                            class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                            x-text="selectedEvent.occurrence_count"
+                        ></dd>
+                    </div>
+                    <div data-ndb-event-fact class="ndb:min-w-0 ndb:bg-transparent">
+                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                            First seen
+                        </dt>
+                        <dd
+                            class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                            x-text="formatEventTime(selectedEvent.first_at_ms)"
+                        ></dd>
+                    </div>
+                </dl>
+
+                <section data-ndb-event-listeners class="ndb:mt-6">
                     <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3">
                         <h4 class="ndb:text-xs ndb:font-bold">Listener handling</h4>
                         <span
@@ -183,17 +165,11 @@
                                     class="ndb:col-start-2 ndb:row-start-1 ndb:justify-self-end ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                     x-text="listener.queued ? 'Queued' : 'Completed'"
                                 ></span>
-                                <button
-                                    type="button"
-                                    data-ndb-event-copy-listener-source
+                                <code
                                     x-show.important="listener.source"
-                                    @click="copyText(listener.source.file + ':' + listener.source.line)"
-                                    :aria-label="listener.source
-                                        ? 'Copy listener source ' + listener.source.file + ':' + listener.source.line
-                                        : 'Copy listener source'"
-                                    class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:truncate ndb:bg-transparent ndb:text-left ndb:font-mono ndb:text-[11px] ndb:text-indigo-600 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                                    class="ndb:col-start-1 ndb:row-start-2 ndb:min-w-0 ndb:truncate ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                     x-text="listener.source ? listener.source.file + ':' + listener.source.line : ''"
-                                ></button>
+                                ></code>
                                 <span
                                     :class="listener.registrations > 1
                                         ? 'ndb:text-amber-600 ndb:dark:text-amber-300'
@@ -249,19 +225,7 @@
             </div>
 
             <div data-ndb-event-detail-panel="payload" x-show.important="eventDetailTab === 'payload'" class="ndb:p-4">
-                <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
-                    <h4 class="ndb:text-xs ndb:font-bold">Payload shape</h4>
-                    <button
-                        type="button"
-                        data-ndb-event-copy-payload-shape
-                        x-show.important="selectedEvent.payload_shape.length > 0"
-                        @click="copyText(JSON.stringify(selectedEvent.payload_shape, null, 2))"
-                        class="ndb:inline-flex ndb:min-h-8 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
-                    >
-                        <x-newdebugbar::icon name="copy" size="3" />
-                        Copy shape
-                    </button>
-                </div>
+                <h4 class="ndb:text-xs ndb:font-bold">Payload shape</h4>
 
                 <template x-if="selectedEvent.payload_shape.length === 0">
                     <p class="ndb:mt-2 ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
@@ -310,7 +274,7 @@
                 </dl>
 
                 <p class="ndb:mt-3 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-400">
-                    Field names and types are shown. Payload values are not copied into this view.
+                    Field names and types are shown. Payload values are not captured.
                 </p>
             </div>
 
