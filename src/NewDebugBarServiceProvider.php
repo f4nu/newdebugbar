@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
+use NewDebugBar\Analysis\CacheAnalyzer;
 use NewDebugBar\Analysis\HttpClientAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
@@ -74,6 +75,10 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         ));
         $this->app->singleton(HttpClientAnalyzer::class, fn (): HttpClientAnalyzer => new HttpClientAnalyzer(
             (float) config('newdebugbar.slow_http_request_ms', 250),
+        ));
+        $this->app->singleton(CacheAnalyzer::class, fn (): CacheAnalyzer => new CacheAnalyzer(
+            minimumReads: (int) config('newdebugbar.findings.minimum_cache_operations', 5),
+            highMissRate: (float) config('newdebugbar.findings.high_cache_miss_rate', 0.8),
         ));
         $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
             queries: $app->make(QueryAnalyzer::class),

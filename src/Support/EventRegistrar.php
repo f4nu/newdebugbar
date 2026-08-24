@@ -5,12 +5,21 @@ namespace NewDebugBar\Support;
 use Closure;
 use Illuminate\Auth\Access\Events\GateEvaluated;
 use Illuminate\Bus\Queueable;
-use Illuminate\Cache\Events\CacheEvent;
+use Illuminate\Cache\Events\CacheFailedOver;
 use Illuminate\Cache\Events\CacheFlushed;
+use Illuminate\Cache\Events\CacheFlushFailed;
+use Illuminate\Cache\Events\CacheFlushing;
 use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
+use Illuminate\Cache\Events\ForgettingKey;
+use Illuminate\Cache\Events\KeyForgetFailed;
 use Illuminate\Cache\Events\KeyForgotten;
+use Illuminate\Cache\Events\KeyWriteFailed;
 use Illuminate\Cache\Events\KeyWritten;
+use Illuminate\Cache\Events\RetrievingKey;
+use Illuminate\Cache\Events\RetrievingManyKeys;
+use Illuminate\Cache\Events\WritingKey;
+use Illuminate\Cache\Events\WritingManyKeys;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -57,6 +66,8 @@ use Throwable;
 /** Routes Laravel runtime events into their matching request collectors. */
 final class EventRegistrar
 {
+    private const MAX_PENDING_CACHE_OPERATIONS = 500;
+
     private const MAX_PENDING_NOTIFICATION_DESTINATIONS = 500;
 
     /** @var list<string> */
@@ -82,13 +93,30 @@ final class EventRegistrar
     /** @var list<int> */
     private array $activeJobOrder = [];
 
+    /** @var array<string, list<array<string, mixed>>> */
+    private array $pendingCacheOperations = [];
+
+    private int $pendingCacheOperationCount = 0;
+
+    private int $cacheOperationSequence = 0;
+
     /** @var list<class-string> */
     private const EXCLUDED_GENERAL_EVENTS = [
         QueryExecuted::class,
         CacheHit::class,
         CacheMissed::class,
+        RetrievingKey::class,
+        RetrievingManyKeys::class,
+        WritingKey::class,
+        WritingManyKeys::class,
+        ForgettingKey::class,
+        CacheFlushing::class,
         KeyWritten::class,
+        KeyWriteFailed::class,
         KeyForgotten::class,
+        KeyForgetFailed::class,
+        CacheFlushFailed::class,
+        CacheFailedOver::class,
         MessageLogged::class,
         RequestSending::class,
         ResponseReceived::class,
@@ -574,26 +602,22 @@ final class EventRegistrar
             ]);
         });
 
-        $this->listenForCacheEvent(CacheHit::class, 'hit');
-        $this->listenForCacheEvent(CacheMissed::class, 'miss');
-        $this->listenForCacheEvent(KeyWritten::class, 'write');
-        $this->listenForCacheEvent(KeyForgotten::class, 'forget');
-        if (class_exists(CacheFlushed::class)) {
-            $this->listen(CacheFlushed::class, function (CacheFlushed $event): void {
-                $this->manager()->record('cache', [
-                    'operation' => 'flush',
-                    'key_hash' => null,
-                    'key_policy' => $this->keyPolicy(),
-                    'store' => $event->storeName,
-                    ...$this->cacheTags($event->tags),
-                    'seconds' => null,
-                ]);
+        $this->listenForCacheStart(RetrievingKey::class, 'read');
+        $this->listenForCacheBatchStart(RetrievingManyKeys::class, 'read');
+        $this->listenForCacheStart(WritingKey::class, 'write');
+        $this->listenForCacheBatchStart(WritingManyKeys::class, 'write');
+        $this->listenForCacheStart(ForgettingKey::class, 'forget');
+        $this->listenForCacheFlushStart();
 
-                if ($this->cacheStoreUsesRedis($event->storeName)) {
-                    $this->manager()->excludeRedisCacheOperation('flush');
-                }
-            });
-        }
+        $this->listenForCacheEvent(CacheHit::class, 'hit', 'read');
+        $this->listenForCacheEvent(CacheMissed::class, 'miss', 'read');
+        $this->listenForCacheEvent(KeyWritten::class, 'write', 'write');
+        $this->listenForCacheEvent(KeyForgotten::class, 'forget', 'forget');
+        $this->listenForCacheEvent(KeyWriteFailed::class, 'write_failed', 'write', failed: true);
+        $this->listenForCacheEvent(KeyForgetFailed::class, 'forget_failed', 'forget', failed: true);
+        $this->listenForCacheFlushEvent(CacheFlushed::class, 'flush');
+        $this->listenForCacheFlushEvent(CacheFlushFailed::class, 'flush_failed', failed: true);
+        $this->listenForCacheFailover();
 
         $this->listen('composing: *', function (string $name, array $payload): void {
             $view = $payload[0] ?? null;
@@ -644,25 +668,326 @@ final class EventRegistrar
         });
     }
 
-    /** @param class-string<CacheEvent> $eventClass */
-    private function listenForCacheEvent(string $eventClass, string $operation): void
+    private function listenForCacheStart(string $eventClass, string $operation): void
     {
-        $this->listen($eventClass, function (CacheEvent $event) use ($operation): void {
-            $storeName = $event->storeName ?? null;
+        if (! class_exists($eventClass)) {
+            return;
+        }
+
+        $this->listen($eventClass, function (object $event) use ($operation): void {
+            $this->rememberCacheOperation(
+                operation: $operation,
+                store: $this->cacheEventStore($event),
+                key: $event->key ?? null,
+                context: $this->cacheStartContext(
+                    durationScope: 'operation',
+                    value: property_exists($event, 'value') ? $event->value : null,
+                    hasValue: property_exists($event, 'value'),
+                    seconds: property_exists($event, 'seconds') ? $event->seconds : null,
+                ),
+            );
+        });
+    }
+
+    private function listenForCacheBatchStart(string $eventClass, string $operation): void
+    {
+        if (! class_exists($eventClass)) {
+            return;
+        }
+
+        $this->listen($eventClass, function (object $event) use ($operation): void {
+            $keys = is_array($event->keys ?? null) ? array_values($event->keys) : [];
+
+            if ($keys === []) {
+                return;
+            }
+
+            $location = $this->callSites->capture();
+            $startedAt = hrtime(true);
+            $durationId = 'cache-batch-'.(++$this->cacheOperationSequence);
+            $values = is_array($event->values ?? null) ? $event->values : [];
+
+            foreach ($keys as $index => $key) {
+                $valueExists = $operation === 'write'
+                    && (array_key_exists($key, $values) || array_key_exists($index, $values));
+                $value = array_key_exists($key, $values) ? $values[$key] : ($values[$index] ?? null);
+
+                $this->rememberCacheOperation(
+                    operation: $operation,
+                    store: $this->cacheEventStore($event),
+                    key: $key,
+                    context: [
+                        'started_at_ns' => $startedAt,
+                        'duration_scope' => 'batch',
+                        'duration_id' => $durationId,
+                        'batch_size' => count($keys),
+                        'seconds' => property_exists($event, 'seconds') ? $event->seconds : null,
+                        ...$this->cacheValueMetadata($value, $valueExists),
+                        ...$location,
+                    ],
+                );
+            }
+        });
+    }
+
+    private function listenForCacheFlushStart(): void
+    {
+        if (! class_exists(CacheFlushing::class)) {
+            return;
+        }
+
+        $this->listen(CacheFlushing::class, function (object $event): void {
+            $this->rememberCacheOperation(
+                operation: 'flush',
+                store: $this->cacheEventStore($event),
+                key: null,
+                context: $this->cacheStartContext('operation'),
+            );
+        });
+    }
+
+    private function listenForCacheEvent(
+        string $eventClass,
+        string $operation,
+        string $pendingOperation,
+        bool $failed = false,
+    ): void {
+        if (! class_exists($eventClass)) {
+            return;
+        }
+
+        $this->listen($eventClass, function (object $event) use ($operation, $pendingOperation, $failed): void {
+            $storeName = $this->cacheEventStore($event);
+            $key = $event->key ?? null;
+            $context = $this->takeCacheOperation($pendingOperation, $storeName, $key);
+            $hasValue = property_exists($event, 'value');
+            $valueMetadata = $context === null ? [] : $this->cacheValueMetadataFromContext($context);
+
+            if ($valueMetadata === []) {
+                $valueMetadata = $this->cacheValueMetadata($hasValue ? $event->value : null, $hasValue);
+            }
+            $location = $context === null ? $this->callSites->capture() : [
+                'callsite' => $context['callsite'] ?? null,
+                'stack' => $context['stack'] ?? [],
+            ];
 
             $this->manager()->record('cache', [
                 'operation' => $operation,
-                'key_hash' => $this->redactor->cleanKey($event->key),
-                'key' => $this->keyPolicy() === 'full' ? $this->redactor->cleanKey($event->key, 'full') : null,
-                'key_policy' => $this->keyPolicy(),
+                ...$this->cacheKey($key),
                 'store' => $storeName,
-                ...$this->cacheTags($event->tags),
-                'seconds' => $event instanceof KeyWritten ? $event->seconds : null,
+                'driver' => $this->cacheDriver($storeName),
+                ...$this->cacheTags(is_array($event->tags ?? null) ? $event->tags : []),
+                'seconds' => $context['seconds'] ?? (property_exists($event, 'seconds') ? $event->seconds : null),
+                ...$valueMetadata,
+                ...$this->cacheTiming($context),
+                ...$location,
+                'failed' => $failed,
             ]);
-            if ($this->cacheStoreUsesRedis($storeName)) {
+
+            if (! $failed && $this->cacheStoreUsesRedis($storeName)) {
                 $this->manager()->excludeRedisCacheOperation($operation);
             }
         });
+    }
+
+    private function listenForCacheFlushEvent(string $eventClass, string $operation, bool $failed = false): void
+    {
+        if (! class_exists($eventClass)) {
+            return;
+        }
+
+        $this->listen($eventClass, function (object $event) use ($operation, $failed): void {
+            $storeName = $this->cacheEventStore($event);
+            $context = $this->takeCacheOperation('flush', $storeName, null);
+            $location = $context === null ? $this->callSites->capture() : [
+                'callsite' => $context['callsite'] ?? null,
+                'stack' => $context['stack'] ?? [],
+            ];
+
+            $this->manager()->record('cache', [
+                'operation' => $operation,
+                ...$this->cacheKey(null),
+                'store' => $storeName,
+                'driver' => $this->cacheDriver($storeName),
+                ...$this->cacheTags(is_array($event->tags ?? null) ? $event->tags : []),
+                'seconds' => null,
+                ...$this->cacheTiming($context),
+                ...$location,
+                'failed' => $failed,
+            ]);
+
+            if (! $failed && $this->cacheStoreUsesRedis($storeName)) {
+                $this->manager()->excludeRedisCacheOperation('flush');
+            }
+        });
+    }
+
+    private function listenForCacheFailover(): void
+    {
+        if (! class_exists(CacheFailedOver::class)) {
+            return;
+        }
+
+        $this->listen(CacheFailedOver::class, function (object $event): void {
+            $exception = $event->exception ?? null;
+            $storeName = $this->cacheEventStore($event);
+
+            $this->manager()->record('cache', [
+                'operation' => 'failover',
+                ...$this->cacheKey(null),
+                'store' => $storeName,
+                'driver' => $this->cacheDriver($storeName),
+                ...$this->cacheTags([]),
+                'seconds' => null,
+                'duration_ms' => null,
+                'duration_scope' => null,
+                'duration_id' => null,
+                'callsite' => $exception instanceof Throwable ? $this->callSites->fromThrowable($exception) : null,
+                'stack' => [],
+                'failed' => true,
+                'exception_class' => $exception instanceof Throwable ? $exception::class : null,
+                'exception_message' => $exception instanceof Throwable ? $exception->getMessage() : null,
+            ]);
+        });
+    }
+
+    /** @return array<string, mixed> */
+    private function cacheStartContext(
+        string $durationScope,
+        mixed $value = null,
+        bool $hasValue = false,
+        mixed $seconds = null,
+    ): array {
+        return [
+            'started_at_ns' => hrtime(true),
+            'duration_scope' => $durationScope,
+            'duration_id' => 'cache-operation-'.(++$this->cacheOperationSequence),
+            'batch_size' => 1,
+            'seconds' => $seconds,
+            ...$this->cacheValueMetadata($value, $hasValue),
+            ...$this->callSites->capture(),
+        ];
+    }
+
+    /** @param array<string, mixed> $context */
+    private function rememberCacheOperation(string $operation, ?string $store, mixed $key, array $context): void
+    {
+        while ($this->pendingCacheOperationCount >= self::MAX_PENDING_CACHE_OPERATIONS) {
+            $identity = array_key_first($this->pendingCacheOperations);
+
+            if ($identity === null) {
+                $this->pendingCacheOperationCount = 0;
+
+                break;
+            }
+
+            array_shift($this->pendingCacheOperations[$identity]);
+            $this->pendingCacheOperationCount--;
+
+            if ($this->pendingCacheOperations[$identity] === []) {
+                unset($this->pendingCacheOperations[$identity]);
+            }
+        }
+
+        $identity = $this->cacheOperationIdentity($operation, $store, $key);
+        $this->pendingCacheOperations[$identity][] = $context;
+        $this->pendingCacheOperationCount++;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function takeCacheOperation(string $operation, ?string $store, mixed $key): ?array
+    {
+        $identity = $this->cacheOperationIdentity($operation, $store, $key);
+
+        if (! isset($this->pendingCacheOperations[$identity])) {
+            return null;
+        }
+
+        $context = array_pop($this->pendingCacheOperations[$identity]);
+        $this->pendingCacheOperationCount--;
+
+        if ($this->pendingCacheOperations[$identity] === []) {
+            unset($this->pendingCacheOperations[$identity]);
+        }
+
+        return is_array($context) ? $context : null;
+    }
+
+    private function cacheOperationIdentity(string $operation, ?string $store, mixed $key): string
+    {
+        $keyIdentity = $key === null ? 'no-key' : $this->redactor->cleanKey($key);
+
+        return $operation.'|'.($store ?? 'default').'|'.$keyIdentity;
+    }
+
+    /** @param array<string, mixed>|null $context @return array<string, mixed> */
+    private function cacheTiming(?array $context): array
+    {
+        if ($context === null || ! isset($context['started_at_ns']) || ! is_int($context['started_at_ns'])) {
+            return [
+                'duration_ms' => null,
+                'duration_scope' => null,
+                'duration_id' => null,
+                'batch_size' => null,
+            ];
+        }
+
+        return [
+            'duration_ms' => round(max(0, hrtime(true) - $context['started_at_ns']) / 1_000_000, 3),
+            'duration_scope' => $context['duration_scope'] ?? 'operation',
+            'duration_id' => $context['duration_id'] ?? null,
+            'batch_size' => $context['batch_size'] ?? 1,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function cacheValueMetadata(mixed $value, bool $hasValue): array
+    {
+        if (! $hasValue) {
+            return [];
+        }
+
+        $metadata = ['value_type' => get_debug_type($value)];
+
+        if (is_string($value)) {
+            $metadata['value_size_bytes'] = strlen($value);
+        } elseif (is_array($value)) {
+            $metadata['value_item_count'] = count($value);
+        } elseif (is_object($value)) {
+            $metadata['value_class'] = $value::class;
+        }
+
+        return $metadata;
+    }
+
+    /** @param array<string, mixed> $context @return array<string, mixed> */
+    private function cacheValueMetadataFromContext(array $context): array
+    {
+        return array_filter([
+            'value_type' => $context['value_type'] ?? null,
+            'value_size_bytes' => $context['value_size_bytes'] ?? null,
+            'value_item_count' => $context['value_item_count'] ?? null,
+            'value_class' => $context['value_class'] ?? null,
+        ], fn (mixed $value): bool => $value !== null);
+    }
+
+    /** @return array{key_hash: string|null, key: string|null, key_policy: string} */
+    private function cacheKey(mixed $key): array
+    {
+        if ($key === null) {
+            return ['key_hash' => null, 'key' => null, 'key_policy' => $this->keyPolicy()];
+        }
+
+        return [
+            'key_hash' => $this->redactor->cleanKey($key),
+            'key' => $this->keyPolicy() === 'full' ? $this->redactor->cleanKey($key, 'full') : null,
+            'key_policy' => $this->keyPolicy(),
+        ];
+    }
+
+    private function cacheEventStore(object $event): ?string
+    {
+        return is_string($event->storeName ?? null) && $event->storeName !== '' ? $event->storeName : null;
     }
 
     /** @param class-string|string $event */
@@ -1357,6 +1682,16 @@ final class EventRegistrar
         $definition = is_array($stores) && is_string($store) ? ($stores[$store] ?? null) : null;
 
         return is_array($definition) && ($definition['driver'] ?? null) === 'redis';
+    }
+
+    private function cacheDriver(?string $store): ?string
+    {
+        $store ??= is_string(config('cache.default')) ? config('cache.default') : null;
+        $stores = config('cache.stores', []);
+        $definition = is_array($stores) && $store !== null ? ($stores[$store] ?? null) : null;
+        $driver = is_array($definition) ? ($definition['driver'] ?? null) : null;
+
+        return is_string($driver) && $driver !== '' ? $driver : null;
     }
 
     /** @param list<mixed> $tags @return array{tag_count: int, tag_retained: int, tag_dropped: int, tag_hashes: list<string>, tags: list<string>} */

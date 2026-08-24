@@ -2,6 +2,7 @@
 
 namespace NewDebugBar\Presentation;
 
+use NewDebugBar\Analysis\CacheAnalyzer;
 use NewDebugBar\Analysis\HttpClientAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
@@ -13,6 +14,7 @@ final class ProfilePresenter
 {
     public function __construct(
         private readonly QueryAnalyzer $queries,
+        private readonly CacheAnalyzer $cache,
         private readonly HttpClientAnalyzer $httpClient,
         private readonly ProfileAnalyzer $profiles,
         private readonly SectionAnalyzer $sections,
@@ -64,6 +66,21 @@ final class ProfilePresenter
                 'duration_ms' => $collectorSummary['duration_ms'] ?? 0,
             ];
             $profile['sections']['http_client']['payload']['items'] = $httpAnalysis['items'];
+        }
+
+        if (isset($profile['sections']['cache'])) {
+            $cacheItems = $profile['sections']['cache']['payload']['items'] ?? [];
+            $cacheAnalysis = $this->cache->analyze(is_array($cacheItems) ? $cacheItems : []);
+            $collectorSummary = $profile['sections']['cache']['summary'] ?? [];
+            $profile['sections']['cache']['summary'] = [
+                ...$collectorSummary,
+                ...$cacheAnalysis['summary'],
+                'count' => $collectorSummary['count'] ?? count($cacheAnalysis['items']),
+                'retained_count' => $collectorSummary['retained_count'] ?? count($cacheAnalysis['items']),
+                'dropped_count' => $collectorSummary['dropped_count'] ?? 0,
+            ];
+            $profile['sections']['cache']['payload']['items'] = $cacheAnalysis['items'];
+            $profile['sections']['cache']['payload']['repeated_misses'] = $cacheAnalysis['repeated_misses'];
         }
 
         $profile = $this->sections->analyze($profile);

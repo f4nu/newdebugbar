@@ -9,7 +9,6 @@ final class SectionAnalyzer
     public function analyze(array $profile): array
     {
         $profile = $this->models($profile);
-        $profile = $this->cache($profile);
         $profile = $this->views($profile);
 
         return $this->events($profile);
@@ -150,46 +149,6 @@ final class SectionAnalyzer
         $at = round((float) $item['at_ms'], 3);
         $target['first_seen_ms'] = $target['first_seen_ms'] === null ? $at : min($target['first_seen_ms'], $at);
         $target['last_seen_ms'] = $target['last_seen_ms'] === null ? $at : max($target['last_seen_ms'], $at);
-    }
-
-    /** @param array<string, mixed> $profile @return array<string, mixed> */
-    private function cache(array $profile): array
-    {
-        $items = $this->items($profile, 'cache');
-        $operations = [];
-        $misses = [];
-
-        foreach ($items as $item) {
-            $operation = (string) ($item['operation'] ?? 'unknown');
-            $operations[$operation] = ($operations[$operation] ?? 0) + 1;
-
-            if ($operation === 'miss' && isset($item['key_hash'])) {
-                $misses[$item['key_hash']] = ($misses[$item['key_hash']] ?? 0) + 1;
-            }
-        }
-
-        $reads = (int) ($operations['hit'] ?? 0) + (int) ($operations['miss'] ?? 0);
-        $repeatedMisses = [];
-
-        foreach ($misses as $keyHash => $count) {
-            if ($count > 1) {
-                $repeatedMisses[] = ['key_hash' => $keyHash, 'count' => $count];
-            }
-        }
-
-        usort($repeatedMisses, fn (array $left, array $right): int => $right['count'] <=> $left['count']);
-
-        if (isset($profile['sections']['cache'])) {
-            $profile['sections']['cache']['summary']['reads'] = $reads;
-            $profile['sections']['cache']['summary']['hit_rate'] = $reads > 0
-                ? round(((int) ($operations['hit'] ?? 0) / $reads) * 100, 1)
-                : 0.0;
-            $profile['sections']['cache']['summary']['operations'] = $operations;
-            $profile['sections']['cache']['summary']['repeated_miss_count'] = count($repeatedMisses);
-            $profile['sections']['cache']['payload']['repeated_misses'] = $repeatedMisses;
-        }
-
-        return $profile;
     }
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */

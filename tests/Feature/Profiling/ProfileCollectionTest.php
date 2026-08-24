@@ -3,7 +3,10 @@
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Promise\Create;
 use Illuminate\Cache\Events\CacheEvent;
+use Illuminate\Cache\Events\CacheFailedOver;
 use Illuminate\Cache\Events\CacheFlushed;
+use Illuminate\Cache\Events\KeyForgetFailed;
+use Illuminate\Cache\Events\KeyWriteFailed;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
@@ -106,6 +109,52 @@ it('captures a local web request and its Laravel activity', function () {
         foreach ($section['payload']['items'] ?? [] as $item) {
             expect($item['at_ms'])->toBeNumeric()->toBeGreaterThanOrEqual(0);
         }
+    }
+});
+
+it('captures bounded cache timing source value and failure metadata', function () {
+    $response = $this->get('/profiled-cache-rich', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $section = $profile['sections']['cache'];
+    $items = collect($section['payload']['items']);
+    $write = $items->firstWhere('key', 'trip:kyoto:weather');
+    $hit = $items->where('key', 'trip:kyoto:weather')->firstWhere('operation', 'hit');
+    $batchWrites = $items->where('operation', 'write')->where('duration_scope', 'batch')->values();
+    $failureCount = (int) class_exists(KeyWriteFailed::class)
+        + (int) class_exists(KeyForgetFailed::class)
+        + (int) class_exists(CacheFailedOver::class);
+
+    expect($section['summary'])
+        ->hits->toBeGreaterThanOrEqual(2)
+        ->misses->toBeGreaterThanOrEqual(3)
+        ->writes->toBeGreaterThanOrEqual(4)
+        ->forgets->toBeGreaterThanOrEqual(2)
+        ->flushes->toBe(1)
+        ->failures->toBe($failureCount)
+        ->timed_count->toBeGreaterThan(0)
+        ->duration_ms->toBeGreaterThanOrEqual(0.0)
+        ->and($write)
+        ->driver->toBe('array')
+        ->value_type->toBe('array')
+        ->value_item_count->toBe(2)
+        ->duration_ms->toBeNumeric()->toBeGreaterThanOrEqual(0)
+        ->duration_scope->toBe('operation')
+        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
+        ->stack->not->toBeEmpty()
+        ->and($hit)
+        ->value_type->toBe('array')
+        ->value_item_count->toBe(2)
+        ->and($batchWrites)->toHaveCount(2)
+        ->and($batchWrites->pluck('duration_id')->unique())->toHaveCount(1)
+        ->and($batchWrites->pluck('batch_size')->unique()->all())->toBe([2])
+        ->and(json_encode($section))->not->toContain(
+            'temples and gardens',
+            'not retained',
+            'A compact autumn itinerary',
+        );
+
+    if ($failureCount > 0) {
+        expect($items->where('failed', true))->toHaveCount($failureCount);
     }
 });
 

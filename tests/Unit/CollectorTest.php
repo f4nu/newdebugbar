@@ -110,6 +110,11 @@ it('includes dropped items in cache and log summaries', function () {
         'hits' => 1,
         'misses' => 1,
         'writes' => 0,
+        'forgets' => 0,
+        'flushes' => 0,
+        'failures' => 0,
+        'timed_count' => 0,
+        'duration_ms' => 0.0,
     ])->and($logs->summary())->toBe([
         'count' => 2,
         'retained_count' => 1,
@@ -117,6 +122,22 @@ it('includes dropped items in cache and log summaries', function () {
         'truncated' => true,
         'errors' => 1,
     ]);
+});
+
+it('bounds cache timing identities and counts a batch once', function () {
+    $cache = new CacheCollector(new Redactor, maxItems: 2);
+
+    $cache->record(['operation' => 'write', 'duration_ms' => 1.2, 'duration_id' => 'batch-1']);
+    $cache->record(['operation' => 'write', 'duration_ms' => 1.5, 'duration_id' => 'batch-1']);
+    $cache->record(['operation' => 'hit', 'duration_ms' => 0.4, 'duration_id' => 'read-1']);
+    $cache->record(['operation' => 'miss', 'duration_ms' => 9.0, 'duration_id' => 'dropped-timing']);
+
+    expect($cache->summary())
+        ->count->toBe(4)
+        ->retained_count->toBe(2)
+        ->dropped_count->toBe(2)
+        ->timed_count->toBe(2)
+        ->duration_ms->toBe(1.9);
 });
 
 it('attaches the rendered response to every retained validation failure', function () {

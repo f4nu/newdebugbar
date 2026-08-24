@@ -5,7 +5,10 @@ namespace NewDebugBar\Tests\Support;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Promise\Create;
 use Illuminate\Cache\Events\CacheEvent;
+use Illuminate\Cache\Events\CacheFailedOver;
 use Illuminate\Cache\Events\CacheFlushed;
+use Illuminate\Cache\Events\KeyForgetFailed;
+use Illuminate\Cache\Events\KeyWriteFailed;
 use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
@@ -162,6 +165,60 @@ trait DefinesTestApplication
 
             return $profiledPage('Rich request', '/profiled', 'First request');
         });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-cache-rich', function () {
+            config()->set('cache.stores.secondary', ['driver' => 'array']);
+
+            $primary = Cache::store('array');
+            $secondary = Cache::store('secondary');
+            $primary->put('trip:kyoto:option:1', 'stale option', 60);
+            $primary->forget('trip:kyoto:option:1');
+            $primary->get('trip:kyoto:option:1');
+            $primary->get('trip:kyoto:option:1');
+            $primary->put('trip:kyoto:weather', ['high' => 24, 'low' => 15], 900);
+            $primary->get('trip:kyoto:weather');
+            $primary->putMany([
+                'trip:kyoto:summary' => 'A compact autumn itinerary',
+                'trip:kyoto:rail-pass' => true,
+            ], 3600);
+            $primary->many(['trip:kyoto:summary', 'trip:kyoto:missing-note']);
+            $secondary->put(
+                'trip:kyoto:recommendations:'.str_repeat('long-key-segment:', 8).'end',
+                'temples and gardens',
+                120,
+            );
+            $secondary->put('trip:kyoto:stale-quote', 'stale quote', 60);
+            $secondary->forget('trip:kyoto:stale-quote');
+            $secondary->clear();
+
+            if (class_exists(KeyWriteFailed::class)) {
+                Event::dispatch(new KeyWriteFailed('secondary', 'trip:kyoto:failed-write', 'not retained', 60));
+            }
+
+            if (class_exists(KeyForgetFailed::class)) {
+                Event::dispatch(new KeyForgetFailed('secondary', 'trip:kyoto:failed-forget'));
+            }
+
+            if (class_exists(CacheFailedOver::class)) {
+                Event::dispatch(new CacheFailedOver('secondary', new \RuntimeException('Secondary cache unavailable.')));
+            }
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cache diagnostics</title></head>
+                    <body><main><h1 data-testid="host-page">Cache diagnostics</h1></main></body>
+                </html>
+                HTML);
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-cache-empty', fn () => response(<<<'HTML'
+            <!doctype html>
+            <html>
+                <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Empty cache diagnostics</title></head>
+                <body><main><h1 data-testid="host-page">Empty cache diagnostics</h1></main></body>
+            </html>
+            HTML));
 
         $router->middleware(ProfileRequest::class)->get('/profiled-models', function () {
             $retrievals = [
