@@ -2,7 +2,7 @@
 
 use NewDebugBar\Analysis\LogAnalyzer;
 
-it('renders structured log evidence before the raw record', function () {
+it('renders structured log details without repeating the raw record', function () {
     $analysis = app(LogAnalyzer::class)->analyze([
         [
             'level' => 'error',
@@ -40,7 +40,6 @@ it('renders structured log evidence before the raw record', function () {
             'data-ndb-popover-surface',
             'data-ndb-log-related-exception',
             'data-ndb-log-source',
-            'data-ndb-log-raw',
             'View details',
             'Review in Exceptions',
         )
@@ -51,6 +50,8 @@ it('renders structured log evidence before the raw record', function () {
             'data-ndb-log-attention-label',
             'data-ndb-copy-log-',
             'data-ndb-log-filter=',
+            'data-ndb-log-raw',
+            'Raw evidence',
             '<details data-ndb-log-entry',
         );
 });

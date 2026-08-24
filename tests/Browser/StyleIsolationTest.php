@@ -425,7 +425,6 @@ it('keeps host styles and package styles isolated', function () {
                 const actions = popover.querySelector('[data-ndb-log-actions]');
                 const context = popover.querySelector('[data-ndb-log-context]');
                 const contextTerm = context.querySelector('dt');
-                const raw = popover.querySelector('[data-ndb-log-raw]');
                 const exception = popover.querySelector('[data-ndb-log-related-exception]');
                 const exceptionLabel = exception.querySelector('h3');
                 const review = popover.querySelector('[data-ndb-log-review-exception]');
@@ -442,8 +441,6 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(context).paddingLeft === '0px'
                     && Number.parseFloat(getComputedStyle(contextTerm).fontSize) === 11
                     && getComputedStyle(contextTerm).color !== 'rgb(0, 128, 0)'
-                    && getComputedStyle(raw).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(raw).paddingLeft === '0px'
                     && getComputedStyle(exception).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(exception).borderRadius === '0px'
                     && review.getBoundingClientRect().height < 24

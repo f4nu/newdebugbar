@@ -560,7 +560,7 @@ trait DefinesTestApplication
                             [data-ndb-log-details-popover] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
                             [data-ndb-log-details-title] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-log-review-exception] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
-                            [data-ndb-log-context], [data-ndb-log-timing], [data-ndb-log-source], [data-ndb-log-raw], [data-ndb-log-related-exception] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
+                            [data-ndb-log-context], [data-ndb-log-timing], [data-ndb-log-source], [data-ndb-log-related-exception] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
                             [data-ndb-event-next-step] { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); }
                             [data-ndb-event-detail-tab] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-event-listener-row] { background: rgb(255, 0, 0); padding: 50px; }

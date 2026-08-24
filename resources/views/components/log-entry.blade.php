@@ -13,22 +13,6 @@
     $relatedException = is_array($entry['related_exception'] ?? null) ? $entry['related_exception'] : null;
     $stack = array_values(is_array($entry['stack'] ?? null) ? $entry['stack'] : []);
     $occurrences = array_values(is_array($entry['occurrences'] ?? null) ? $entry['occurrences'] : []);
-    $rawRecord = array_intersect_key($entry, array_flip([
-        'level',
-        'message',
-        'channel',
-        'context',
-        'callsite',
-        'stack',
-        'related_exception',
-        'occurred_at',
-        'at_ms',
-        'lifecycle',
-    ]));
-    $rawJson = json_encode(
-        $rawRecord,
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE,
-    ) ?: '{}';
     $sourceLabel = isset($callsite['file'], $callsite['line']) ? $callsite['file'].':'.$callsite['line'] : null;
     $sourceShortLabel = $sourceLabel === null
         ? '—'
@@ -326,19 +310,6 @@
                             </section>
                         @endif
 
-                        <details
-                            data-ndb-log-raw
-                            class="ndb:group/raw ndb:border-0 ndb:border-t ndb:border-zinc-200/90 ndb:bg-transparent ndb:p-0 ndb:pt-3 ndb:dark:border-zinc-800"
-                        >
-                            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500">
-                                <span class="ndb:flex-1">Raw evidence</span>
-                                <x-newdebugbar::icon
-                                    name="chevron-down"
-                                    class="ndb-details-chevron ndb:size-3.5 ndb:transition-transform"
-                                />
-                            </summary>
-                            <pre class="ndb-code ndb-scrollbar ndb:mt-3 ndb:max-w-full"><code data-ndb-language="json">{{ $rawJson }}</code></pre>
-                        </details>
                     </div>
                 </div>
             </x-newdebugbar::popover-surface>

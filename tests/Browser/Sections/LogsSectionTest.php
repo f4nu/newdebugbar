@@ -97,7 +97,7 @@ it('presents a chronological diagnostic stream with useful filters and details',
             })()
             JS)
         ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-source]')
-        ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-raw]')
+        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-log-raw]')
         ->assertScript(<<<'JS'
             (() => {
                 const trigger = document.querySelector(
@@ -116,7 +116,7 @@ it('presents a chronological diagnostic stream with useful filters and details',
                     && getComputedStyle(detail).overflowY === 'auto';
             })()
             JS)
-        ->keys('[data-ndb-log-details-popover] [data-ndb-log-raw] > summary', 'Escape')
+        ->keys('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]', 'Escape')
         ->assertMissing('[data-ndb-log-details-popover]')
         ->assertScript(<<<'JS'
             document.activeElement === document.querySelector(
@@ -199,7 +199,7 @@ it('keeps log reading usable on mobile dark mode empty results and reopen', func
                     && document.activeElement === trigger;
             })()
             JS)
-        ->keys('[data-ndb-log-details-popover] [data-ndb-log-raw] > summary', 'Escape')
+        ->keys('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-details-trigger]', 'Escape')
         ->assertMissing('[data-ndb-log-details-popover]')
         ->assertScript(<<<'JS'
             document.activeElement === document.querySelector(
