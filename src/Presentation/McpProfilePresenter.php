@@ -370,9 +370,18 @@ final class McpProfilePresenter
         } elseif ($section === 'logs') {
             $item = [
                 'at_ms' => $item['at_ms'] ?? null,
+                'occurred_at' => $item['occurred_at'] ?? null,
                 'level' => $item['level'] ?? null,
+                'channel' => $item['channel'] ?? null,
                 'message' => '[message hidden]',
                 'callsite' => $item['callsite'] ?? null,
+                'context_keys' => array_keys(is_array($item['context'] ?? null) ? $item['context'] : []),
+                'related_exception' => is_array($item['related_exception'] ?? null) ? [
+                    'class' => $item['related_exception']['class'] ?? null,
+                    'message' => '[message hidden]',
+                    'file' => $item['related_exception']['file'] ?? null,
+                    'line' => $item['related_exception']['line'] ?? null,
+                ] : null,
             ];
         } elseif ($section === 'exceptions') {
             $item = [

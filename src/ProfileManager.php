@@ -222,16 +222,20 @@ final class ProfileManager
         return $this->profileType === 'queue' && is_array($context) ? $context : [];
     }
 
-    public function recordException(Throwable $exception): void
+    /** @return array<string, mixed> */
+    public function recordException(Throwable $exception): array
     {
-        $this->record('exceptions', $this->exceptionNormalizer?->normalize($exception) ?? [
+        $normalized = $this->exceptionNormalizer?->normalize($exception) ?? [
             'class' => $exception::class,
             'message' => $exception->getMessage(),
             'file' => basename($exception->getFile()),
             'line' => $exception->getLine(),
             'frames' => ['application' => [], 'vendor' => []],
             'source' => null,
-        ]);
+        ];
+        $this->record('exceptions', $normalized);
+
+        return $normalized;
     }
 
     /** @param array<string, mixed> $context */

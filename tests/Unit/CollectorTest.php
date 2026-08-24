@@ -121,6 +121,7 @@ it('includes dropped items in cache and log summaries', function () {
         'dropped_count' => 1,
         'truncated' => true,
         'errors' => 1,
+        'attention_count' => 1,
     ]);
 });
 

@@ -5,6 +5,9 @@ namespace NewDebugBar\Collectors;
 /** Collects log records and counts severe entries. */
 final class LogCollector extends AbstractCollector
 {
+    /** @var list<string> */
+    private const ATTENTION_LEVELS = ['warning', 'error', 'critical', 'alert', 'emergency'];
+
     public function record(array $item): void
     {
         $message = (string) ($item['message'] ?? '');
@@ -32,6 +35,7 @@ final class LogCollector extends AbstractCollector
         return [
             ...parent::summary(),
             'errors' => $this->totals['errors'] ?? 0,
+            'attention_count' => $this->totals['attention'] ?? 0,
         ];
     }
 
@@ -39,6 +43,10 @@ final class LogCollector extends AbstractCollector
     {
         if (in_array($item['level'] ?? null, ['error', 'critical', 'alert', 'emergency'], true)) {
             $this->totals['errors'] = ($this->totals['errors'] ?? 0) + 1;
+        }
+
+        if (in_array($item['level'] ?? null, self::ATTENTION_LEVELS, true)) {
+            $this->totals['attention'] = ($this->totals['attention'] ?? 0) + 1;
         }
     }
 

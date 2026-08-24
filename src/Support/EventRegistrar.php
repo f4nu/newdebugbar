@@ -163,6 +163,7 @@ final class EventRegistrar
         private readonly MailPreview $mailPreview,
         private readonly QueuedCommunicationInspector $communications,
         private readonly BackgroundActivityStore $background,
+        private readonly LogChannelTracker $logChannels,
     ) {}
 
     public function register(): void
@@ -657,19 +658,25 @@ final class EventRegistrar
 
         $this->listen(MessageLogged::class, function (MessageLogged $event): void {
             $location = $this->callSites->capture();
+            $context = $event->context;
+            $exception = $context['exception'] ?? null;
+            $relatedException = null;
+
+            if ($exception instanceof Throwable) {
+                $normalized = $this->manager()->recordException($exception);
+                $relatedException = array_intersect_key($normalized, array_flip(['class', 'message', 'file', 'line']));
+                unset($context['exception']);
+            }
 
             $this->manager()->record('logs', [
                 'level' => $event->level,
                 'message' => $event->message,
-                'context' => $event->context,
+                'channel' => $this->logChannels->take($event->level, $event->message, $event->context),
+                'context' => $context,
+                'related_exception' => $relatedException,
+                'occurred_at' => now()->format('Y-m-d\TH:i:s.vP'),
                 ...$location,
             ]);
-
-            $exception = $event->context['exception'] ?? null;
-
-            if ($exception instanceof Throwable) {
-                $this->manager()->recordException($exception);
-            }
         });
 
         $this->listen('*', function (string $name, array $payload): void {
@@ -1349,7 +1356,11 @@ final class EventRegistrar
             return $context;
         }
 
-        $id = $this->activeJobOrder[array_key_last($this->activeJobOrder)] ?? null;
+        if ($this->activeJobOrder === []) {
+            return [];
+        }
+
+        $id = $this->activeJobOrder[array_key_last($this->activeJobOrder)];
 
         return is_int($id) ? ($this->activeJobContexts[$id] ?? []) : [];
     }

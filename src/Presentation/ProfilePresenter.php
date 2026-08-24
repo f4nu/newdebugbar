@@ -4,6 +4,7 @@ namespace NewDebugBar\Presentation;
 
 use NewDebugBar\Analysis\CacheAnalyzer;
 use NewDebugBar\Analysis\HttpClientAnalyzer;
+use NewDebugBar\Analysis\LogAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
@@ -16,6 +17,7 @@ final class ProfilePresenter
         private readonly QueryAnalyzer $queries,
         private readonly CacheAnalyzer $cache,
         private readonly HttpClientAnalyzer $httpClient,
+        private readonly LogAnalyzer $logs,
         private readonly ProfileAnalyzer $profiles,
         private readonly SectionAnalyzer $sections,
         private readonly TimelineBuilder $timeline,
@@ -81,6 +83,17 @@ final class ProfilePresenter
             ];
             $profile['sections']['cache']['payload']['items'] = $cacheAnalysis['items'];
             $profile['sections']['cache']['payload']['repeated_misses'] = $cacheAnalysis['repeated_misses'];
+        }
+
+        if (isset($profile['sections']['logs'])) {
+            $logItems = $profile['sections']['logs']['payload']['items'] ?? [];
+            $logAnalysis = $this->logs->analyze(is_array($logItems) ? $logItems : []);
+            $profile['sections']['logs']['summary'] = [
+                ...($profile['sections']['logs']['summary'] ?? []),
+                ...$logAnalysis['summary'],
+            ];
+            $profile['sections']['logs']['payload']['items'] = $logAnalysis['items'];
+            $profile['sections']['logs']['payload']['groups'] = $logAnalysis['groups'];
         }
 
         $profile = $this->sections->analyze($profile);

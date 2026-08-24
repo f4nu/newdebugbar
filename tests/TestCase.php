@@ -4,6 +4,7 @@ namespace NewDebugBar\Tests;
 
 use Laravel\Mcp\Server\McpServiceProvider;
 use Livewire\LivewireServiceProvider;
+use Monolog\Handler\NullHandler;
 use NewDebugBar\NewDebugBarServiceProvider;
 use NewDebugBar\Tests\Support\DefinesTestApplication;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -38,6 +39,12 @@ abstract class TestCase extends Orchestra
         ]);
         $app['config']->set('mail.default', 'array');
         $app['config']->set('mail.mailers.array', ['transport' => 'array']);
+        $loggingChannels = (array) $app['config']->get('logging.channels', []);
+        $loggingChannels['newdebugbar-audit'] = [
+            'driver' => 'monolog',
+            'handler' => NullHandler::class,
+        ];
+        $app['config']->set('logging.channels', $loggingChannels);
     }
 
     protected function setUp(): void

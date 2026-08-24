@@ -108,6 +108,31 @@ trait DefinesTestApplication
             fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
         );
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-logs', function () {
+            Log::debug('Preparing the journey workspace.', ['trip_id' => 1]);
+            Log::channel('newdebugbar-audit')->info('Audit channel accepted the refresh.', [
+                'trip_id' => 1,
+                'actor' => ['type' => 'planner', 'id' => 7],
+            ]);
+            Log::notice("Partner response is delayed.\nThe cached itinerary remains available.");
+
+            foreach (range(1, 3) as $attempt) {
+                Log::warning('Rail reservation refresh needs attention.', ['trip_id' => 1, 'attempt' => 'final']);
+            }
+
+            Log::error('Rail reservation refresh failed.', [
+                'trip_id' => 1,
+                'exception' => new \RuntimeException('The rail partner rejected reservation KYO-441.'),
+            ]);
+            Log::critical(str_repeat('Critical itinerary integrity warning. ', 24), ['trip_id' => 1]);
+
+            foreach (range(1, 18) as $index) {
+                Log::debug('Journey step checked.', ['step' => $index]);
+            }
+
+            return response('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><main>Logs fixture</main></body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
             $component = app('livewire')->mount('host-counter', key: 'host-counter-browser');
 

@@ -613,3 +613,54 @@ it('profiles partial models without requiring their primary key', function () {
         ->and($partialModel['event'])->toBe('retrieved')
         ->and($partialModel['key'])->toBeNull();
 });
+
+it('captures structured log channels timing context and related exceptions', function () {
+    $response = $this->get('/profiled-logs', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->assertHeader('X-NewDebugBar-Profile');
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $profile = app(ProfilePresenter::class)->present($stored);
+    $logs = $profile['sections']['logs'];
+    $audit = collect($logs['payload']['items'])->firstWhere('message', 'Audit channel accepted the refresh.');
+    $failed = collect($logs['payload']['items'])->firstWhere('message', 'Rail reservation refresh failed.');
+
+    expect($logs['summary'])
+        ->count->toBe(26)
+        ->errors->toBe(2)
+        ->attention_count->toBe(5)
+        ->group_count->toBe(24)
+        ->repeated_count->toBe(2)
+        ->levels->toBe([
+            'debug' => 19,
+            'info' => 1,
+            'notice' => 1,
+            'warning' => 3,
+            'error' => 1,
+            'critical' => 1,
+        ])
+        ->and($audit)
+        ->channel->toBe('newdebugbar-audit')
+        ->context_fields->toHaveCount(2)
+        ->and($failed)
+        ->channel->not->toBeNull()
+        ->context->toBe(['trip_id' => 1])
+        ->related_exception->toMatchArray([
+            'class' => RuntimeException::class,
+            'message' => 'The rail partner rejected reservation KYO-441.',
+        ])
+        ->occurred_at->toMatch('/^\d{4}-\d{2}-\d{2}T/')
+        ->and($failed['context'])->not->toHaveKey('exception')
+        ->and($profile['sections']['exceptions']['summary']['count'])->toBe(1)
+        ->and($logs['payload']['groups'][3]['repeat_count'])->toBe(3)
+        ->and(array_column($logs['payload']['groups'][3]['occurrences'], 'sequence'))->toBe([4, 5, 6]);
+});
+
+it('does not create package deprecation logs when no queue job context is active', function () {
+    $response = $this->get('/profiled-rich', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->assertHeader('X-NewDebugBar-Profile');
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $messages = array_column($profile['sections']['logs']['payload']['items'] ?? [], 'message');
+
+    expect(implode("\n", $messages))->not->toContain('Using null as an array offset');
+});

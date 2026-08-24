@@ -8,6 +8,8 @@ use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Request;
+use Illuminate\Log\Logger;
+use Illuminate\Log\LogManager;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +17,7 @@ use Laravel\Mcp\Facades\Mcp;
 use Livewire\Livewire;
 use NewDebugBar\Analysis\CacheAnalyzer;
 use NewDebugBar\Analysis\HttpClientAnalyzer;
+use NewDebugBar\Analysis\LogAnalyzer;
 use NewDebugBar\Analysis\ProfileAnalyzer;
 use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
@@ -44,6 +47,8 @@ use NewDebugBar\Support\CallSiteResolver;
 use NewDebugBar\Support\EventRegistrar;
 use NewDebugBar\Support\ExceptionNormalizer;
 use NewDebugBar\Support\LivewireRegistrar;
+use NewDebugBar\Support\LogChannelTap;
+use NewDebugBar\Support\LogChannelTracker;
 use NewDebugBar\Support\MailPreview;
 use NewDebugBar\Support\ProfileFinalizer;
 use NewDebugBar\Support\QueryExplainer;
@@ -80,6 +85,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             minimumReads: (int) config('newdebugbar.findings.minimum_cache_operations', 5),
             highMissRate: (float) config('newdebugbar.findings.high_cache_miss_rate', 0.8),
         ));
+        $this->app->singleton(LogAnalyzer::class);
+        $this->app->singleton(LogChannelTracker::class);
         $this->app->singleton(ProfileAnalyzer::class, fn ($app): ProfileAnalyzer => new ProfileAnalyzer(
             queries: $app->make(QueryAnalyzer::class),
             slowRequestMs: (float) config('newdebugbar.slow_request_ms', 1_000),
@@ -193,6 +200,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             return;
         }
 
+        $this->registerLogChannelTracking();
+
         (new EventRegistrar(
             $events,
             $this->app,
@@ -202,6 +211,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             $this->app->make(MailPreview::class),
             $this->app->make(QueuedCommunicationInspector::class),
             $this->app->make(BackgroundActivityStore::class),
+            $this->app->make(LogChannelTracker::class),
         ))->register();
         (new LivewireRegistrar(
             $this->app,
@@ -257,6 +267,49 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         return config('newdebugbar.enabled', true)
             && is_array($environments)
             && $this->app->environment($environments);
+    }
+
+    private function registerLogChannelTracking(): void
+    {
+        $channels = config('logging.channels', []);
+
+        if (! is_array($channels)) {
+            return;
+        }
+
+        foreach ($channels as $channel => $configuration) {
+            if (! is_string($channel) || ! is_array($configuration)) {
+                continue;
+            }
+
+            $tap = LogChannelTap::class.':'.$channel;
+            $taps = array_values(array_filter((array) ($configuration['tap'] ?? []), 'is_string'));
+
+            if (! in_array($tap, $taps, true)) {
+                $configuration['tap'] = [...$taps, $tap];
+                $channels[$channel] = $configuration;
+            }
+        }
+
+        config(['logging.channels' => $channels]);
+
+        if (! $this->app->resolved('log')) {
+            return;
+        }
+
+        $manager = $this->app->make('log');
+
+        if (! $manager instanceof LogManager) {
+            return;
+        }
+
+        $tap = $this->app->make(LogChannelTap::class);
+
+        foreach ($manager->getChannels() as $channel => $logger) {
+            if ($logger instanceof Logger) {
+                $tap($logger, (string) $channel);
+            }
+        }
     }
 
     private function registerMcpServer(): void
