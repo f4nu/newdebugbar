@@ -145,8 +145,8 @@
                             <p class="ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold">
                                 {{ $relatedException['class'] ?? '—' }}
                             </p>
-                            <p class="ndb:mt-1 ndb:whitespace-pre-wrap ndb:break-words ndb:text-xs ndb:font-medium ndb:leading-5 ndb:[overflow-wrap:anywhere]">
-                                {{ ($relatedException['message'] ?? '') === '' ? '—' : $relatedException['message'] }}
+                            <p class="ndb:mt-1 ndb:break-words ndb:text-xs ndb:font-medium ndb:leading-5 ndb:[overflow-wrap:anywhere]">
+                                <span class="ndb:whitespace-pre-wrap">{{ ($relatedException['message'] ?? '') === '' ? '—' : $relatedException['message'] }}</span>
                             </p>
                             @if ($exceptionSource !== null)
                                 <p class="ndb:mt-1 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">

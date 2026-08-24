@@ -67,6 +67,17 @@ it('presents a chronological diagnostic stream with useful filters and details',
         ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="error"]', 'open', '')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-related-exception]')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-review-exception]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const paragraphs = document.querySelectorAll(
+                    '[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-related-exception] p'
+                );
+
+                const message = paragraphs[1]?.querySelector('span');
+
+                return message && message.textContent === message.textContent.trim();
+            })()
+            JS)
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-source]')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-raw]')
         ->select('[data-ndb-log-level-select]', 'attention')
