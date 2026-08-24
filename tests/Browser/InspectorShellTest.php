@@ -148,9 +148,12 @@ it('uses one non-sticky title and description hierarchy for every section', func
                     && heading !== null
                     && description !== null
                     && getComputedStyle(header).position === 'static'
-                    && getComputedStyle(heading).fontSize === '14px'
+                    && getComputedStyle(heading).fontSize === '16px'
+                    && getComputedStyle(heading).lineHeight === '20px'
                     && getComputedStyle(description).fontSize === '12px'
+                    && getComputedStyle(description).lineHeight === '16px'
                     && heading.getBoundingClientRect().bottom <= description.getBoundingClientRect().top
+                    && description.getBoundingClientRect().top - heading.getBoundingClientRect().bottom <= 2
                     && heading.getAttribute('aria-describedby') === description.id;
             })()
             JS);

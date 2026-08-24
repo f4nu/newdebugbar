@@ -76,6 +76,14 @@ it('uses one filter tab treatment across inspector sections', function () {
     }
 });
 
+it('uses the shared section heading hierarchy in the inspector shell', function () {
+    $inspector = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/inspector.blade.php');
+
+    expect($inspector)
+        ->toContain('<x-newdebugbar::section-heading>')
+        ->not->toContain('<header data-ndb-section-header');
+});
+
 it('uses layout instead of punctuation to separate interface facts', function () {
     $resources = dirname(__DIR__, 2).'/resources';
     $offenders = [];

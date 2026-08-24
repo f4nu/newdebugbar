@@ -8,7 +8,10 @@
         :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'notifications'].includes(selected)
             ? 'ndb:lg:min-h-0 ndb:lg:flex-1'
             : ''"
-        class="ndb:p-4 ndb:sm:p-6"
+        @class([
+            'ndb:p-4 ndb:sm:p-6' => $sectionKey !== 'http_client',
+            'ndb:p-4 ndb:sm:pt-6 ndb:sm:pr-6 ndb:sm:pb-6 ndb:sm:pl-0' => $sectionKey === 'http_client',
+        ])
     >
         <section
             data-ndb-section-panel="{{ $sectionKey }}"

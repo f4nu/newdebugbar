@@ -176,23 +176,21 @@
                     : ''"
                 class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
             >
-                <header data-ndb-section-header class="ndb:px-4 ndb:pt-4 ndb:sm:px-6 ndb:sm:pt-6">
-                    <h2
+                <x-newdebugbar::section-heading>
+                    <x-slot:heading
                         data-ndb-section-heading
                         x-ref="sectionHeading"
                         tabindex="-1"
                         aria-describedby="newdebugbar-section-description"
-                        class="ndb:text-sm ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                         x-text="selectedSection.label"
-                    ></h2>
-                    <p
+                    ></x-slot:heading>
+                    <x-slot:description
                         id="newdebugbar-section-description"
                         data-ndb-section-description
                         x-ref="sectionDescription"
-                        class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
                         x-text="selectedSection.description"
-                    ></p>
-                </header>
+                    ></x-slot:description>
+                </x-newdebugbar::section-heading>
 
                 <div
                     data-ndb-section-stage

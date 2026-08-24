@@ -103,9 +103,14 @@
                         </label>
                     </div>
 
-                    <x-newdebugbar::filter-tabs label="Filter outbound HTTP requests" class="ndb:w-full">
+                    <x-newdebugbar::filter-tabs
+                        label="Filter outbound HTTP requests"
+                        variant="segmented"
+                        class="ndb:w-full"
+                    >
                         @foreach ($httpFilters as $filter => [$label, $count])
                             <x-newdebugbar::filter-tab
+                                variant="segmented"
                                 data-ndb-http-client-filter="{{ $filter }}"
                                 @click="setHttpClientFilter({{ \Illuminate\Support\Js::from($filter) }})"
                                 ::aria-pressed="httpClientFilter === {{ \Illuminate\Support\Js::from($filter) }}"

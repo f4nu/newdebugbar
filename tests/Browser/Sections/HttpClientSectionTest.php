@@ -18,6 +18,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
             (() => {
                 const workspace = document.querySelector('[data-ndb-http-client-workspace]');
                 const [list, detail] = workspace.children;
+                const sectionNavigation = document.querySelector('#newdebugbar-section-navigation');
                 const rows = [...document.querySelectorAll('[data-ndb-http-client-item]')];
                 const methods = rows.map((row) => row.querySelector('[data-ndb-http-client-method]'));
                 const hosts = rows.map((row) => row.querySelector('[data-ndb-http-client-host]'));
@@ -29,6 +30,9 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 const search = document.querySelector('[data-ndb-http-client-search]');
                 const sort = document.querySelector('[data-ndb-http-client-sort]');
                 const filters = document.querySelector('[data-ndb-filter-tabs][aria-label="Filter outbound HTTP requests"]');
+                const filterButtons = [...filters.querySelectorAll('[data-ndb-filter-tab]')];
+                const selectedFilter = filters.querySelector('[aria-pressed="true"]');
+                const unselectedFilter = filters.querySelector('[aria-pressed="false"]');
                 const urlAction = header.querySelector('[data-ndb-http-client-copy-url]');
                 const urlIcon = urlAction.querySelector('svg');
                 const headerMethod = header.querySelector('[data-ndb-http-client-detail-method]');
@@ -53,6 +57,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
 
                 return getComputedStyle(workspace).display === 'grid'
                     && workspace.getBoundingClientRect().height > 500
+                    && Math.abs(workspace.getBoundingClientRect().left - sectionNavigation.getBoundingClientRect().right) <= 1
                     && detail.getBoundingClientRect().width > list.getBoundingClientRect().width * 1.6
                     && document.querySelector('[data-ndb-http-client-item][aria-pressed="true"]').dataset.ndbHttpClientItem === '1'
                     && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px')
@@ -70,6 +75,15 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && Math.abs(search.getBoundingClientRect().top - sort.getBoundingClientRect().top) <= 1
                     && search.getBoundingClientRect().right < sort.getBoundingClientRect().left
                     && filters.getBoundingClientRect().top > search.getBoundingClientRect().bottom
+                    && filters.dataset.ndbFilterTabsVariant === 'segmented'
+                    && getComputedStyle(filters).display === 'grid'
+                    && getComputedStyle(filters).backgroundColor !== 'rgba(0, 0, 0, 0)'
+                    && parseFloat(getComputedStyle(filters).paddingLeft) > 0
+                    && Math.max(...filterButtons.map((button) => button.getBoundingClientRect().width))
+                        - Math.min(...filterButtons.map((button) => button.getBoundingClientRect().width)) <= 1
+                    && filterButtons.every((button) => button.dataset.ndbFilterTabVariant === 'segmented')
+                    && getComputedStyle(selectedFilter).backgroundColor !== getComputedStyle(unselectedFilter).backgroundColor
+                    && getComputedStyle(selectedFilter).boxShadow !== 'none'
                     && hosts.every((host, index) => {
                         const gap = host.getBoundingClientRect().left - methods[index].getBoundingClientRect().right;
 
@@ -88,6 +102,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && document.querySelectorAll('[data-ndb-http-client-copy-curl]').length === 1
                     && detailTabs.map((tab) => tab.textContent.trim()).join('|') === 'Overview|Request|Response|Source'
                     && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
+                    && detailTabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'tabs')
                     && detailTabs.every((tab) => tab.querySelector('svg') === null)
                     && getComputedStyle(successStatus).color !== getComputedStyle(failedStatus).color
                     && getComputedStyle(slowDuration).color !== getComputedStyle(successStatus).color
@@ -97,7 +112,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && rows.every((row) => ! /#\d+/.test(row.textContent));
             })()
             JS)
-        ->click('[data-ndb-http-client-filter="failed"]')
+        ->keys('[data-ndb-http-client-filter="failed"]', 'Enter')
         ->assertAttribute('[data-ndb-http-client-filter="failed"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 4)
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-http-client-item=\\"1\\"]")).display === "none"')
