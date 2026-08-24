@@ -38,6 +38,7 @@ abstract class TestCase extends Orchestra
         ]);
         $app['config']->set('mail.default', 'array');
         $app['config']->set('mail.mailers.array', ['transport' => 'array']);
+        $app['config']->set('queue.default', 'sync');
     }
 
     protected function setUp(): void
