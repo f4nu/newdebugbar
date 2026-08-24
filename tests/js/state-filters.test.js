@@ -800,6 +800,15 @@ test('query controls filter search and sort captured evidence', () => {
   state.setQuerySort('invalid');
   assert.equal(state.queryFilter, 'all');
   assert.equal(state.querySort, 'duration');
+
+  state.queryFilter = 'write';
+  state.navigateToQueriesAtSource('app/Actions/LoadTrip.php:42');
+  assert.equal(state.selected, 'queries');
+  assert.equal(state.queryFilter, 'all');
+  assert.equal(state.querySearch, 'app/Actions/LoadTrip.php:42');
+
+  state.navigateToQueriesAtSource('');
+  assert.equal(state.querySearch, 'app/Actions/LoadTrip.php:42');
 });
 
 test('authorization controls filter search selection detail and overview navigation', () => {

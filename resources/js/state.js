@@ -3057,6 +3057,16 @@ export function createNewDebugBar(
       this.applyQueryView();
     },
 
+    navigateToQueriesAtSource(source) {
+      const search = String(source ?? '').trim();
+
+      if (search === '') return;
+
+      this.queryFilter = 'all';
+      this.querySearch = search;
+      this.selectSection('queries');
+    },
+
     applyQueryView() {
       const results = this.$refs?.queryResults;
       const search = this.querySearch.toLowerCase().trim();

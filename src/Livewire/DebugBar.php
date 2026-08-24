@@ -30,7 +30,7 @@ final class DebugBar extends Component
         'livewire' => 'Inspect Livewire activity and mounted components.',
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
         'messages' => 'Review developer messages, their context, and when they were recorded.',
-        'models' => 'See which Eloquent models were retrieved or changed, where the activity started, and which records may deserve a closer look. The count is retrieved instances plus logical writes.',
+        'models' => 'Review Eloquent retrievals, writes, repeated records, source code, and related query evidence.',
         'notifications' => 'Inspect notification recipients, channel deliveries, failures, payloads, and source code.',
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
         'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',

@@ -2,20 +2,26 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('explains populated model activity with progressive evidence', function () {
+it('presents populated model activity as a flat aligned evidence list', function () {
     $page = visit('/profiled-models')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="models"]')
-        ->assertSee('See which Eloquent models were retrieved or changed, where the activity started, and which records may deserve a closer look.')
-        ->assertSee('Retrieved instances count Eloquent retrieved events.')
-        ->assertSee('They are not query counts or database row counts.')
-        ->assertSee('Model classes')
-        ->assertSee('Retrieved instances')
-        ->assertSee('Write operations')
+        ->assertSee('Review Eloquent retrievals, writes, repeated records, source code, and related query evidence.')
+        ->assertSee('44 Eloquent activities')
+        ->assertSee('Across 5 model classes.')
+        ->assertSee('It does not mean database rows or queries.')
+        ->assertSee('Callbacks with a shared operation ID are shown once as one write.')
+        ->assertSee('Retrieved')
+        ->assertSee('Writes')
         ->assertSee('Extra retrievals')
-        ->assertScript('document.querySelector("[data-ndb-select-section=models]").textContent.trim().endsWith("44")')
+        ->assertSee('5 contexts')
         ->assertMissing('[data-ndb-model-expand-all]')
         ->assertMissing('[data-ndb-model-finding]')
+        ->assertMissing('[data-ndb-model-copy-class]')
+        ->assertMissing('[data-ndb-model-copy-source]')
+        ->assertMissing('[data-ndb-model-lifecycle]')
+        ->assertDontSee('Raw lifecycle callbacks')
+        ->assertScript('document.querySelector("[data-ndb-select-section=models]").textContent.trim().endsWith("44")')
         ->assertScript(<<<'JS'
             JSON.stringify(Array.from(document.querySelectorAll('[data-ndb-model-group]'))
                 .map((group) => [
@@ -33,6 +39,29 @@ it('explains populated model activity with progressive evidence', function () {
                 ])
             JS)
         ->assertScript(<<<'JS'
+            (() => {
+                const groups = Array.from(document.querySelectorAll('[data-ndb-model-group]'));
+                const columns = Array.from(document.querySelectorAll(
+                    '[data-ndb-model-retrieved-column], [data-ndb-model-write-column], [data-ndb-model-extra-column]'
+                ));
+
+                return getComputedStyle(document.querySelector('[data-ndb-model-list]')).borderTopWidth === '0px'
+                    && groups.every((group) => {
+                        const style = getComputedStyle(group);
+
+                        return style.borderRadius === '0px'
+                            && style.borderLeftWidth === '0px'
+                            && style.borderRightWidth === '0px';
+                    })
+                    && columns.every((column) => {
+                        const style = getComputedStyle(column);
+
+                        return style.borderRadius === '0px'
+                            && style.backgroundColor === 'rgba(0, 0, 0, 0)';
+                    });
+            })()
+            JS)
+        ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-models] *')).every((element) =>
                 Array.from(element.attributes)
                     .filter((attribute) => attribute.name.startsWith('data-'))
@@ -42,6 +71,9 @@ it('explains populated model activity with progressive evidence', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const summary = document.querySelector('[data-ndb-model-group] > summary');
+                const next = document.querySelectorAll('[data-ndb-model-group] > summary')[1];
+
+                window.newdebugbarModelRowGeometry = [summary.offsetLeft, summary.offsetWidth, next.offsetLeft, next.offsetWidth];
                 summary.focus();
 
                 return document.activeElement === summary;
@@ -49,37 +81,36 @@ it('explains populated model activity with progressive evidence', function () {
             JS)
         ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
-        ->assertSee('NewDebugBar\\Tests\\Fixtures\\Models\\StudioJob')
+        ->assertSee('NewDebugBar\Tests\Fixtures\Models\StudioJob')
         ->assertSee('studio_jobs')
-        ->assertSee('Application sources')
         ->assertSee('Retrieved records')
-        ->assertSee('Raw lifecycle callbacks')
-        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record]").length', 6)
-        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record][data-ndb-model-record-retrievals]:not([data-ndb-model-record-retrievals=\"1\"])").length', 5)
+        ->assertSee('Application sources')
         ->assertScript(<<<'JS'
             (() => {
-                window.newdebugbarModelClipboardWrites = [];
-                Object.defineProperty(window.navigator, 'clipboard', {
-                    configurable: true,
-                    value: {
-                        writeText: async (value) => window.newdebugbarModelClipboardWrites.push(value),
-                    },
-                });
+                const summaries = document.querySelectorAll('[data-ndb-model-group] > summary');
 
-                return true;
+                return JSON.stringify(window.newdebugbarModelRowGeometry) === JSON.stringify([
+                    summaries[0].offsetLeft,
+                    summaries[0].offsetWidth,
+                    summaries[1].offsetLeft,
+                    summaries[1].offsetWidth,
+                ]) && document.activeElement === summaries[0]
+                    && getComputedStyle(document.querySelector('[data-ndb-model-facts]')).display === 'grid';
             })()
             JS)
-        ->click('[data-ndb-model-group]:first-of-type [data-ndb-model-copy-class]')
-        ->click('[data-ndb-model-group]:first-of-type [data-ndb-model-copy-source="0"]')
-        ->assertScript(<<<'JS'
-            window.newdebugbarModelClipboardWrites.length === 2
-                && window.newdebugbarModelClipboardWrites[0] === 'NewDebugBar\\Tests\\Fixtures\\Models\\StudioJob'
-                && window.newdebugbarModelClipboardWrites[1].includes('tests/Support/DefinesTestApplication.php:')
-            JS)
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record]").length', 6)
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:first-of-type [data-ndb-model-record][data-ndb-model-record-retrievals]:not([data-ndb-model-record-retrievals=\"1\"])").length', 5)
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->refresh()
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="models"]')
+        ->assertVisible('[data-ndb-model-list]')
         ->assertNoJavaScriptErrors();
 });
 
-it('keeps expanded model evidence contained at 390 pixels', function () {
+it('keeps expanded model evidence contained with one scroll owner at 390 pixels', function () {
     $page = visit('/profiled-models')
         ->resize(390, 844)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
@@ -89,25 +120,31 @@ it('keeps expanded model evidence contained at 390 pixels', function () {
         ->assertVisible('[data-ndb-command="section:models"]')
         ->click('[data-ndb-command="section:models"]')
         ->assertVisible('[data-ndb-section-panel="models"]')
-        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
-        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->keys('[data-ndb-model-group][data-ndb-model-short-name="ProofVersion"] > summary', 'Enter')
+        ->assertAttribute('[data-ndb-model-group][data-ndb-model-short-name="ProofVersion"]', 'open', '')
+        ->assertSee('NewDebugBar\Tests\Fixtures\Models\ProofVersion')
         ->assertScript(<<<'JS'
             (() => {
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const panel = document.querySelector('[data-ndb-section-panel="models"]');
                 const models = document.querySelector('[data-ndb-models]');
-                const records = Array.from(document.querySelectorAll('[data-ndb-model-record]'));
+                const heading = document.querySelector('[data-ndb-model-list-heading]');
+                const groups = Array.from(document.querySelectorAll('[data-ndb-model-group]'));
+                const details = Array.from(document.querySelectorAll('[data-ndb-model-detail]'));
 
                 return panel.getBoundingClientRect().width <= content.clientWidth + 1
                     && content.scrollWidth <= content.clientWidth + 1
+                    && ['auto', 'scroll'].includes(getComputedStyle(content).overflowY)
                     && getComputedStyle(models).overflowY === 'visible'
-                    && records.every((record) => record.scrollWidth <= record.clientWidth + 1);
+                    && getComputedStyle(heading).display === 'none'
+                    && groups.every((group) => group.scrollWidth <= group.clientWidth + 1)
+                    && details.every((detail) => getComputedStyle(detail).overflowY === 'visible');
             })()
             JS)
         ->assertNoJavaScriptErrors();
 });
 
-it('folds lifecycle callbacks into truthful model write operations', function () {
+it('folds lifecycle callbacks into neutral write evidence with redacted changes', function () {
     $page = visit('/profiled-models?changes=1')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
@@ -115,7 +152,7 @@ it('folds lifecycle callbacks into truthful model write operations', function ()
 
     $page
         ->click('[data-ndb-select-section="models"]')
-        ->assertSee('7 intermediate callbacks were folded into 4 logical write operations.')
+        ->assertSee('7 other lifecycle callbacks stay outside the activity total.')
         ->assertScript('document.querySelector("[data-ndb-select-section=models]").textContent.trim().endsWith("48")')
         ->assertScript(<<<'JS'
             JSON.stringify(Array.from(document.querySelectorAll('[data-ndb-model-group]'))
@@ -133,6 +170,20 @@ it('folds lifecycle callbacks into truthful model write operations', function ()
         ->assertScript('document.querySelectorAll("[data-ndb-model-group][data-ndb-model-short-name=\"Client\"] [data-ndb-model-operation]").length', 1)
         ->assertSeeIn('[data-ndb-model-group][data-ndb-model-short-name="Client"] [data-ndb-model-operation]', 'Updated')
         ->assertSeeIn('[data-ndb-model-group][data-ndb-model-short-name="Client"] [data-ndb-model-operation]', 'id 4')
+        ->assertSeeIn('[data-ndb-model-group][data-ndb-model-short-name="Client"] [data-ndb-model-operation]', '3 callbacks, folded')
+        ->assertScript(<<<'JS'
+            (() => {
+                const group = document.querySelector('[data-ndb-model-group][data-ndb-model-short-name="Client"]');
+                const write = group.querySelector('[data-ndb-model-write-column]');
+                const extra = group.querySelector('[data-ndb-model-extra-column]');
+                const operation = group.querySelector('[data-ndb-model-operation]');
+
+                return !write.className.includes('amber')
+                    && extra.className.includes('amber')
+                    && !operation.className.includes('amber')
+                    && getComputedStyle(operation).borderRadius === '0px';
+            })()
+            JS)
         ->keys('[data-ndb-model-group][data-ndb-model-short-name="Client"] [data-ndb-model-operation-changes] > summary', 'Enter')
         ->assertAttribute('[data-ndb-model-group][data-ndb-model-short-name="Client"] [data-ndb-model-operation-changes]', 'open', '')
         ->assertSee('status')
@@ -141,13 +192,15 @@ it('folds lifecycle callbacks into truthful model write operations', function ()
         ->assertSee("'[redacted]'")
         ->assertDontSee('private-token')
         ->assertDontSee('updated-private-token')
+        ->assertMissing('[data-ndb-model-copy-operation-source]')
+        ->assertDontSee('Raw lifecycle callbacks')
         ->keys('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] > summary', 'Enter')
-        ->assertScript('document.querySelectorAll("[data-ndb-model-group][data-ndb-model-short-name=\"JobActivity\"] [data-ndb-model-operation]").length', 1)
         ->assertSeeIn('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] [data-ndb-model-operation]', 'Trashed')
+        ->assertSeeIn('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] [data-ndb-model-operation]', '3 callbacks, folded')
         ->assertNoJavaScriptErrors();
 });
 
-it('bounds large record lists and explains missing identifiers', function () {
+it('bounds large record lists and handles unavailable identifiers quietly', function () {
     visit('/profiled-models?large=1&missing=1')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="models"]')
@@ -156,19 +209,56 @@ it('bounds large record lists and explains missing identifiers', function () {
         ->assertSeeIn('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] [data-ndb-model-record-limit]', 'Showing 25 of 40 identified records.')
         ->keys('[data-ndb-model-group][data-ndb-model-short-name="ProfiledModel"] > summary', 'Enter')
         ->assertVisible('[data-ndb-model-group][data-ndb-model-short-name="ProfiledModel"] [data-ndb-model-missing-identifiers]')
-        ->assertSee('Record identifiers were unavailable for these retrievals, so repeated records cannot be determined.')
+        ->assertSee('A dash means the model identifier was unavailable.')
+        ->assertSee('These retrievals are excluded from the extra-retrieval count.')
         ->assertNoJavaScriptErrors();
 });
 
-it('links only exact source query evidence without claiming causation', function () {
+it('filters Queries to exact-source correlation without claiming causation', function () {
     visit('/profiled-models?queries=1')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="models"]')
         ->keys('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] > summary', 'Enter')
         ->assertVisible('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] [data-ndb-model-query-evidence]')
-        ->assertSee('The source location matches exactly. That does not prove which query hydrated or changed this model.')
+        ->assertSee('Related queries share the exact file and line.')
+        ->assertSee('it does not prove that a query hydrated or changed the model.')
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group][data-ndb-model-short-name=\"JobActivity\"] [data-ndb-model-query-guidance]").length', 1)
         ->click('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] [data-ndb-model-view-queries]')
         ->assertVisible('[data-ndb-section-panel="queries"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const input = document.querySelector('[data-ndb-query-search]');
+                const visible = Array.from(document.querySelectorAll('[data-ndb-query-item], [data-ndb-query-group]'))
+                    .filter((result) => !result.hidden);
+
+                return input.value.includes('tests/Support/DefinesTestApplication.php:')
+                    && visible.length === 1
+                    && visible[0].dataset.search.includes(input.value.toLowerCase())
+                    && document.querySelector('[data-ndb-query-result-label]').textContent.includes('1');
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows original Blade and exact compiled source evidence', function () {
+    visit('/profiled-models?compiled=1')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="models"]')
+        ->keys('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] > summary', 'Enter')
+        ->assertVisible('[data-ndb-model-compiled-source]')
+        ->assertSee('Blade template')
+        ->assertSee('tests/Fixtures/views/model-compiled.blade.php')
+        ->assertSee('Compiled location')
+        ->assertSee('storage/framework/views/')
+        ->assertVisible('[data-ndb-model-group][data-ndb-model-short-name="JobActivity"] [data-ndb-model-query-evidence]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const source = document.querySelector('[data-ndb-model-compiled-source]').closest('[data-ndb-model-source]');
+
+                return source.scrollWidth <= source.clientWidth + 1
+                    && source.querySelectorAll('[data-ndb-model-view-queries]').length === 1;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 

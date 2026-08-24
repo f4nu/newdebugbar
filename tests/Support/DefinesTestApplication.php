@@ -518,6 +518,7 @@ trait DefinesTestApplication
             $hostileModel->setRawAttributes(['id' => 7, 'status' => 'draft'], true);
             Event::dispatch('eloquent.retrieved: '.Client::class, [$hostileModel]);
             Event::dispatch('eloquent.retrieved: '.Client::class, [$hostileModel]);
+            [DB::select('select 7 as hostile_model_id'), Event::dispatch('eloquent.retrieved: '.Client::class, [$hostileModel])];
             $hostileModel->setAttribute('status', 'approved');
             $hostileModel->syncChanges();
             Event::dispatch('eloquent.updating: '.Client::class, [$hostileModel]);
@@ -630,7 +631,8 @@ trait DefinesTestApplication
                             [data-ndb-event-detail-tab] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-event-listener-row] { background: rgb(255, 0, 0); padding: 50px; }
                             [data-ndb-event-timeline] { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
-                            [data-ndb-model-summary], [data-ndb-model-group], [data-ndb-model-operation], [data-ndb-model-source], [data-ndb-model-record] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-model-summary], [data-ndb-model-list], [data-ndb-model-list-heading], [data-ndb-model-group], [data-ndb-model-detail], [data-ndb-model-facts], [data-ndb-model-operations], [data-ndb-model-operation], [data-ndb-model-operation-changes], [data-ndb-model-changes], [data-ndb-model-records], [data-ndb-model-record], [data-ndb-model-extra-guidance], [data-ndb-model-sources], [data-ndb-model-source], [data-ndb-model-source-gap], [data-ndb-model-compiled-source], [data-ndb-model-query-guidance], [data-ndb-model-query-evidence], [data-ndb-model-retrieved-column], [data-ndb-model-write-column], [data-ndb-model-extra-column], [data-ndb-model-source-column] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
+                            [data-ndb-model-view-queries] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; }
                         </style>
                     </head>
                     <body>

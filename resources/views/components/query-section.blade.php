@@ -62,7 +62,7 @@
                     x-model="querySearch"
                     @input.debounce.100ms="applyQueryView()"
                     type="search"
-                    placeholder="Search SQL"
+                    placeholder="Search SQL or source"
                     class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
                 />
                 <x-newdebugbar::icon
@@ -101,7 +101,14 @@
         @endforeach
 
         @foreach ($section['payload']['repeated_groups'] as $group)
-            @php($groupSearch = mb_strtolower($group['sql'].' '.json_encode(array_column($group['executions'], 'bindings'), JSON_UNESCAPED_SLASHES)))
+            @php
+                $groupSources = array_map(static function (array $execution): string {
+                    $callsite = is_array($execution['callsite'] ?? null) ? $execution['callsite'] : null;
+
+                    return $callsite === null ? '' : $callsite['file'].':'.$callsite['line'];
+                }, $group['executions']);
+                $groupSearch = mb_strtolower($group['sql'].' '.json_encode(array_column($group['executions'], 'bindings'), JSON_UNESCAPED_SLASHES).' '.implode(' ', $groupSources));
+            @endphp
             @php($groupSlow = collect($group['executions'])->contains(fn (array $execution): bool => $execution['slow']))
             <article
                 data-ndb-query-group="{{ $group['fingerprint'] }}"

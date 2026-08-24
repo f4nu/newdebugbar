@@ -12,7 +12,9 @@
     $bindings = is_array($query['bindings'] ?? null) ? $query['bindings'] : [];
     $stack = is_array($query['stack'] ?? null) ? $query['stack'] : [];
     $sql = (string) ($query['sql'] ?? '');
-    $search = mb_strtolower($sql.' '.json_encode($bindings, JSON_UNESCAPED_SLASHES));
+    $callsite = is_array($query['callsite'] ?? null) ? $query['callsite'] : null;
+    $source = $callsite === null ? '' : $callsite['file'].':'.$callsite['line'];
+    $search = mb_strtolower($sql.' '.json_encode($bindings, JSON_UNESCAPED_SLASHES).' '.$source);
     $hasMultipleEvidence = $bindings !== [] && $stack !== [];
     $defaultTab = $stack !== [] ? 'stack' : 'bindings';
 @endphp
