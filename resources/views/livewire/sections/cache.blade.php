@@ -20,6 +20,11 @@
         'deletes' => ['Deletes', (int) ($cacheSummary['filter_counts']['deletes'] ?? $cacheDeletes)],
         'failed' => ['Failed', (int) ($cacheSummary['filter_counts']['failed'] ?? $cacheFailures)],
     ];
+    $cacheFilters = array_filter(
+        $cacheFilters,
+        fn (array $filter, string $key): bool => $key === 'all' || $filter[1] > 0,
+        ARRAY_FILTER_USE_BOTH,
+    );
     $cacheNeedsAttention = $cacheFailures > 0
         || $cacheFlushes > 0
         || $cacheRepeatedMisses > 0
@@ -46,118 +51,70 @@
 <div
     data-ndb-cache
     x-init="initializeCache(JSON.parse(atob($el.querySelector('[data-ndb-cache-payload]').textContent.trim())))"
-    class="ndb:space-y-3 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
+    class="ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
 >
     <script type="application/json" data-ndb-cache-payload>
         {{ base64_encode(\Illuminate\Support\Js::encode($cacheItems)) }}
     </script>
 
     @if ($cacheItems !== [])
-        <dl
-            data-ndb-cache-summary
-            :class="cacheDetailOpen ? 'ndb:hidden ndb:lg:grid' : 'ndb:grid'"
-            class="ndb:grid-cols-2 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:sm:grid-cols-4 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/35"
-        >
-            <div
-                class="ndb:border-r ndb:border-b ndb:border-zinc-200/90 ndb:px-3 ndb:py-2.5 ndb:sm:border-b-0 ndb:dark:border-zinc-800"
-            >
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    Operations
-                </dt>
-                <dd class="ndb:mt-0.5 ndb:text-sm ndb:font-bold ndb:tabular-nums">{{ number_format($cacheCount) }}</dd>
-                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                    {{ number_format($cacheReads) }} reads, {{ number_format($cacheWrites + $cacheDeletes) }} changes
-                </p>
-            </div>
-            <div
-                class="ndb:border-b ndb:border-zinc-200/90 ndb:px-3 ndb:py-2.5 ndb:sm:border-r ndb:sm:border-b-0 ndb:dark:border-zinc-800"
-            >
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    Hit rate
-                </dt>
-                <dd class="ndb:mt-0.5 ndb:text-sm ndb:font-bold ndb:tabular-nums">
-                    {{ number_format($cacheHitRate, 1) }}%
-                </dd>
-                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                    {{ number_format($cacheHits) }} {{ \Illuminate\Support\Str::plural('hit', $cacheHits) }}, {{ number_format($cacheMisses) }} {{ \Illuminate\Support\Str::plural('miss', $cacheMisses) }}
-                </p>
-            </div>
-            <div class="ndb:border-r ndb:border-zinc-200/90 ndb:px-3 ndb:py-2.5 ndb:dark:border-zinc-800">
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Scope</dt>
-                <dd class="ndb:mt-0.5 ndb:text-sm ndb:font-bold ndb:tabular-nums">
-                    {{ number_format((int) ($cacheSummary['unique_key_count'] ?? 0)) }} keys
-                </dd>
-                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                    {{ number_format((int) ($cacheSummary['store_count'] ?? 0)) }} {{ \Illuminate\Support\Str::plural('store', (int) ($cacheSummary['store_count'] ?? 0)) }}
-                </p>
-            </div>
-            <div class="ndb:px-3 ndb:py-2.5">
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    Cache time
-                </dt>
-                <dd class="ndb:mt-0.5 ndb:text-sm ndb:font-bold ndb:tabular-nums">
-                    {{ number_format($cacheDuration, $cacheDuration < 1 ? 3 : 2) }} ms
-                </dd>
-                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                    {{ number_format((int) ($cacheSummary['timed_count'] ?? 0)) }} timed {{ \Illuminate\Support\Str::plural('scope', (int) ($cacheSummary['timed_count'] ?? 0)) }}
-                </p>
-            </div>
-        </dl>
-
-        @if ($cacheNeedsAttention)
-            <div
-                data-ndb-cache-attention
-                role="status"
-                :class="cacheDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
-                @class ([
-                    'ndb:items-start ndb:gap-2.5 ndb:rounded-xl ndb:border ndb:px-3 ndb:py-2.5',
-                    'ndb:border-red-200 ndb:bg-red-50/55 ndb:text-red-800 ndb:dark:border-red-950 ndb:dark:bg-red-950/25 ndb:dark:text-red-200' => $cacheFailures > 0,
-                    'ndb:border-amber-200 ndb:bg-amber-50/55 ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-200' => $cacheFailures === 0,
-                ])
-            >
-                <x-newdebugbar::icon name="warning" class="ndb:mt-0.5 ndb:size-3.5 ndb:shrink-0" />
-                <div class="ndb:min-w-0">
-                    <p class="ndb:text-xs ndb:font-bold">Cache needs attention</p>
-                    <p class="ndb:mt-0.5 ndb:text-[11px] ndb:leading-4">
-                        {{ ucfirst(implode(', ', $cacheAttentionParts)) }}. Select an operation to see the source and
-                        next check.
-                    </p>
-                </div>
-            </div>
-        @endif
-
         <x-newdebugbar::inspector-workspace data-ndb-cache-workspace>
             <div
                 :class="cacheDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
                 class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
             >
                 <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
-                    <p class="ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">
-                        <span data-ndb-cache-visible-count x-text="visibleCacheCount"></span>
-                        <span x-text="visibleCacheCount === 1 ? ' operation' : ' operations'"></span>
-                        <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
-                            Select one to inspect its result and source
-                        </span>
-                    </p>
+                    <div data-ndb-cache-summary class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-4">
+                        <div class="ndb:min-w-0">
+                            <p class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200">
+                                {{ number_format($cacheCount) }} {{ \Illuminate\Support\Str::plural('operation', $cacheCount) }}
+                                <span
+                                    x-show.important="visibleCacheCount !== cacheOperations.length"
+                                    class="ndb:ml-1 ndb:text-[11px] ndb:font-medium ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >
+                                    <span data-ndb-cache-visible-count x-text="visibleCacheCount"></span>
+                                    shown
+                                </span>
+                            </p>
+                            <p class="ndb:mt-0.5 ndb:text-[11px] ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                {{ number_format($cacheDuration, $cacheDuration < 1 ? 3 : 2) }} ms total
+                            </p>
+                        </div>
+                        @if ($cacheReads > 0)
+                            <div class="ndb:shrink-0 ndb:text-right">
+                                <p @class([
+                                    'ndb:text-xs ndb:font-bold ndb:tabular-nums',
+                                    'ndb:text-amber-700 ndb:dark:text-amber-300' => (bool) ($cacheSummary['high_miss_rate'] ?? false),
+                                    'ndb:text-zinc-700 ndb:dark:text-zinc-200' => ! (bool) ($cacheSummary['high_miss_rate'] ?? false),
+                                ])>
+                                    {{ number_format($cacheHitRate, 1) }}% hit rate
+                                </p>
+                                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    {{ number_format($cacheHits) }} {{ \Illuminate\Support\Str::plural('hit', $cacheHits) }}, {{ number_format($cacheMisses) }} {{ \Illuminate\Support\Str::plural('miss', $cacheMisses) }}
+                                </p>
+                            </div>
+                        @endif
+                    </div>
 
-                    <x-newdebugbar::filter-tabs
-                        label="Filter cache operations"
-                        class="ndb:w-full ndb:flex-wrap ndb:overflow-visible"
-                    >
-                        @foreach ($cacheFilters as $filter => [$label, $count])
-                            <x-newdebugbar::filter-tab
-                                data-ndb-cache-filter="{{ $filter }}"
-                                @click="setCacheFilter({{ \Illuminate\Support\Js::from($filter) }})"
-                                ::aria-pressed="cacheFilter === {{ \Illuminate\Support\Js::from($filter) }}"
-                                class="ndb:h-auto ndb:flex-1 ndb:basis-[calc(33.333%-0.25rem)] ndb:justify-center ndb:px-2 ndb:py-1.5"
-                            >
-                                <span>{{ $label }}</span>
-                                <span class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70">{{ $count }}</span>
-                            </x-newdebugbar::filter-tab>
-                        @endforeach
-                    </x-newdebugbar::filter-tabs>
+                    @if ($cacheNeedsAttention)
+                        <p
+                            data-ndb-cache-attention
+                            role="status"
+                            @class([
+                                'ndb:flex ndb:items-start ndb:gap-2 ndb:text-[11px] ndb:font-medium ndb:leading-4',
+                                'ndb:text-red-700 ndb:dark:text-red-300' => $cacheFailures > 0,
+                                'ndb:text-amber-700 ndb:dark:text-amber-300' => $cacheFailures === 0,
+                            ])
+                        >
+                            <x-newdebugbar::icon name="warning" class="ndb:mt-px ndb:size-3.5 ndb:shrink-0" />
+                            <span>
+                                <strong class="ndb:font-bold">Cache needs attention.</strong>
+                                {{ ucfirst(implode(', ', $cacheAttentionParts)) }}.
+                            </span>
+                        </p>
+                    @endif
 
-                    <div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_8.5rem] ndb:gap-2">
+                    @if ($cacheCount >= 5)
                         <label class="ndb:relative ndb:block ndb:min-w-0">
                             <span class="ndb:sr-only">Search cache operations</span>
                             <input
@@ -171,6 +128,26 @@
                             <x-newdebugbar::icon
                                 name="search"
                                 class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                            />
+                        </label>
+                    @endif
+
+                    <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2">
+                        <label class="ndb:relative ndb:block">
+                            <span class="ndb:sr-only">Filter cache operations</span>
+                            <select
+                                data-ndb-cache-filter
+                                x-model="cacheFilter"
+                                @change="setCacheFilter($event.target.value)"
+                                class="ndb:h-9 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                            >
+                                @foreach ($cacheFilters as $filter => [$label, $count])
+                                    <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
+                                @endforeach
+                            </select>
+                            <x-newdebugbar::icon
+                                name="chevron-down"
+                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
                             />
                         </label>
                         <label class="ndb:relative ndb:block">
@@ -214,45 +191,33 @@
                             :class="cacheSelected === {{ $item['execution'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.6rem_minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.5rem_minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span
                                 data-ndb-cache-operation
-                                class="ndb:flex ndb:w-full ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-zinc-100/75 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-600 ndb:dark:bg-white/10 ndb:dark:text-zinc-200"
-                                >{{ $item['operation_label'] }}</span
-                            >
+                                class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            >{{ $item['operation_label'] }}</span>
                             <code
                                 data-ndb-cache-key
                                 :title="{{ \Illuminate\Support\Js::from($item['key_label']) }}"
                                 class="ndb:min-w-0 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-800 ndb:dark:text-zinc-200"
-                                >{{ $item['key_label'] }}</code
-                            >
+                            >{{ $item['key_label'] }}</code>
                             <span
                                 data-ndb-cache-result
-                                @class ([
+                                @class([
                                     'ndb:text-[11px] ndb:font-bold',
                                     'ndb:text-red-600 ndb:dark:text-red-300' => $item['failed'] ?? false,
                                     'ndb:text-amber-600 ndb:dark:text-amber-300' => ! ($item['failed'] ?? false) && in_array($item['result'], ['miss', 'flushed'], true),
-                                    'ndb:text-emerald-600 ndb:dark:text-emerald-300' => ! ($item['failed'] ?? false) && in_array($item['result'], ['hit', 'stored'], true),
-                                    'ndb:text-zinc-500 ndb:dark:text-zinc-400' => ! ($item['failed'] ?? false) && ! in_array($item['result'], ['miss', 'flushed', 'hit', 'stored'], true),
+                                    'ndb:text-zinc-500 ndb:dark:text-zinc-400' => ! ($item['failed'] ?? false) && ! in_array($item['result'], ['miss', 'flushed'], true),
                                 ])
-                                >{{ $item['result_label'] }}</span
-                            >
-                            <span
-                                class="ndb:col-start-2 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                            >
-                                <span class="ndb:truncate">Store {{ $item['store_label'] }}</span>
-                                @if (($item['related_count'] ?? 0) > 1)
-                                    <span class="ndb:shrink-0 ndb:font-semibold ndb:tabular-nums">
-                                        {{ $item['related_count'] }} uses
-                                    </span>
-                                @endif
+                            >{{ $item['result_label'] }}</span>
+                            <span class="ndb:col-start-2 ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                {{ $item['store_label'] }} store
                             </span>
                             <span
                                 data-ndb-cache-list-duration
                                 class="ndb:col-start-3 ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                >{{ $item['duration_label'] }}</span
-                            >
+                            >{{ $item['duration_label'] }}</span>
                         </button>
                     @endforeach
                 </div>
@@ -302,54 +267,20 @@
                             <div
                                 data-ndb-cache-detail-panel="overview"
                                 x-show.important="cacheDetailTab === 'overview'"
-                                class="ndb:space-y-5"
                             >
-                                <dl class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+                                <dl
+                                    x-show.important="
+                                        selectedCacheOperation.value_type ||
+                                        ['write', 'write_failed'].includes(selectedCacheOperation.operation) ||
+                                        selectedCacheOperation.duration_scope === 'batch' ||
+                                        selectedCacheOperation.related_count > 1 ||
+                                        (selectedCacheOperation.failed && selectedCacheOperation.exception_message)
+                                    "
+                                    class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800"
+                                >
                                     <div
+                                        x-show.important="selectedCacheOperation.value_type"
                                         class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
-                                    >
-                                        <dt class="ndb:text-xs ndb:font-bold">Outcome</dt>
-                                        <dd
-                                            :class="selectedCacheOperation.failed
-                                                ? 'ndb:text-red-600 ndb:dark:text-red-300'
-                                                : selectedCacheOperation.result === 'miss' ||
-                                                    selectedCacheOperation.result === 'flushed'
-                                                  ? 'ndb:text-amber-600 ndb:dark:text-amber-300'
-                                                  : 'ndb:text-emerald-600 ndb:dark:text-emerald-300'"
-                                            class="ndb:text-xs ndb:font-semibold ndb:leading-5"
-                                            x-text="selectedCacheOperation.result_label"
-                                        ></dd>
-                                    </div>
-                                    <div
-                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
-                                    >
-                                        <dt class="ndb:text-xs ndb:font-bold">Store</dt>
-                                        <dd class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300">
-                                            <span x-text="selectedCacheOperation.store_label"></span>
-                                            <span
-                                                x-show.important="selectedCacheOperation.driver_label"
-                                                class="ndb:ml-2 ndb:text-zinc-400"
-                                                x-text="'Driver ' + selectedCacheOperation.driver_label"
-                                            ></span>
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
-                                    >
-                                        <dt class="ndb:text-xs ndb:font-bold">Timing</dt>
-                                        <dd
-                                            class="ndb:text-xs ndb:leading-5 ndb:tabular-nums ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                                        >
-                                            <span x-text="selectedCacheOperation.duration_label"></span>
-                                            <span
-                                                x-show.important="selectedCacheOperation.duration_scope === 'batch'"
-                                                class="ndb:ml-2 ndb:text-zinc-400"
-                                                x-text="'Batch of ' + selectedCacheOperation.batch_size + ' operations'"
-                                            ></span>
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
                                     >
                                         <dt class="ndb:text-xs ndb:font-bold">Value</dt>
                                         <dd
@@ -358,6 +289,9 @@
                                         ></dd>
                                     </div>
                                     <div
+                                        x-show.important="
+                                            ['write', 'write_failed'].includes(selectedCacheOperation.operation)
+                                        "
                                         class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
                                     >
                                         <dt class="ndb:text-xs ndb:font-bold">Lifetime</dt>
@@ -367,56 +301,100 @@
                                         ></dd>
                                     </div>
                                     <div
-                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:last:pb-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
+                                        x-show.important="selectedCacheOperation.duration_scope === 'batch'"
+                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
+                                    >
+                                        <dt class="ndb:text-xs ndb:font-bold">Timing context</dt>
+                                        <dd
+                                            class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                            x-text="
+                                                'Shared across a batch of ' +
+                                                selectedCacheOperation.batch_size +
+                                                ' operations.'
+                                            "
+                                        ></dd>
+                                    </div>
+                                    <div
+                                        x-show.important="selectedCacheOperation.related_count > 1"
+                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
                                     >
                                         <dt class="ndb:text-xs ndb:font-bold">Related uses</dt>
                                         <dd
                                             class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                             x-text="
-                                                selectedCacheOperation.related_count > 1
-                                                    ? selectedCacheOperation.related_count +
-                                                      ' operations for this key in this store, executions ' +
-                                                      selectedCacheOperation.related_executions.join(', ')
-                                                    : selectedCacheOperation.related_count === 1
-                                                      ? 'No other operation used this key in this store.'
-                                                      : 'This operation does not target one key.'
+                                                selectedCacheOperation.related_count +
+                                                ' operations for this key in this store, executions ' +
+                                                selectedCacheOperation.related_executions.join(', ')
                                             "
+                                        ></dd>
+                                    </div>
+                                    <div
+                                        x-show.important="
+                                            selectedCacheOperation.failed && selectedCacheOperation.exception_message
+                                        "
+                                        class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
+                                    >
+                                        <dt class="ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">
+                                            Failure
+                                        </dt>
+                                        <dd
+                                            class="ndb:text-xs ndb:leading-5 ndb:text-red-700 ndb:dark:text-red-300"
+                                            x-text="selectedCacheOperation.exception_message"
                                         ></dd>
                                     </div>
                                 </dl>
 
                                 <div
                                     data-ndb-cache-guidance
-                                    class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-zinc-50/45 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35 ndb:dark:divide-zinc-800"
+                                    :class="selectedCacheOperation.value_type ||
+                                    ['write', 'write_failed'].includes(selectedCacheOperation.operation) ||
+                                    selectedCacheOperation.duration_scope === 'batch' ||
+                                    selectedCacheOperation.related_count > 1 ||
+                                    (selectedCacheOperation.failed && selectedCacheOperation.exception_message)
+                                        ? 'ndb:mt-6'
+                                        : ''"
+                                    class="ndb:space-y-5"
                                 >
-                                    <div class="ndb:p-3">
-                                        <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">What happened</p>
-                                        <p class="ndb:mt-1 ndb:text-xs ndb:leading-5" x-text="
-                                                selectedCacheOperation.what_happened
-                                            "></p>
-                                    </div>
-                                    <div class="ndb:p-3">
-                                        <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Why it matters</p>
-                                        <p class="ndb:mt-1 ndb:text-xs ndb:leading-5" x-text="
+                                    <section>
+                                        <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                                            What happened
+                                        </p>
+                                        <p
+                                            class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                            x-text="
+                                                selectedCacheOperation.what_happened +
+                                                ' ' +
                                                 selectedCacheOperation.why_it_matters
-                                            "></p>
-                                    </div>
-                                    <div class="ndb:p-3">
-                                        <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Check next</p>
-                                        <p class="ndb:mt-1 ndb:text-xs ndb:leading-5" x-text="
-                                                selectedCacheOperation.check_next
-                                            "></p>
-                                    </div>
+                                            "
+                                        ></p>
+                                    </section>
+                                    <section>
+                                        <p
+                                            :class="selectedCacheOperation.failed
+                                                ? 'ndb:text-red-600 ndb:dark:text-red-300'
+                                                : selectedCacheOperation.attention
+                                                  ? 'ndb:text-amber-600 ndb:dark:text-amber-300'
+                                                  : 'ndb:text-zinc-400'"
+                                            class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider"
+                                        >
+                                            Check next
+                                        </p>
+                                        <p
+                                            class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                            x-text="selectedCacheOperation.check_next"
+                                        ></p>
+                                    </section>
                                 </div>
                             </div>
 
                             <div data-ndb-cache-detail-panel="source" x-show.important="cacheDetailTab === 'source'">
                                 <template x-if="(selectedCacheOperation.stack ?? []).length === 0">
-                                    <div
-                                        class="ndb:rounded-xl ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:p-5 ndb:text-center ndb:dark:border-zinc-700"
-                                    >
+                                    <div class="ndb:rounded-xl ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:p-5 ndb:text-center ndb:dark:border-zinc-700">
                                         <p class="ndb:text-xs ndb:font-semibold">No application stack was captured.</p>
-                                        <p class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">This can happen when call-site collection is off or the framework only emitted a final event.</p>
+                                        <p class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                            This can happen when call-site collection is off or the framework only
+                                            emitted a final event.
+                                        </p>
                                     </div>
                                 </template>
                                 <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
@@ -436,20 +414,33 @@
                             </div>
 
                             <div data-ndb-cache-detail-panel="raw" x-show.important="cacheDetailTab === 'raw'">
-                                <p class="ndb:mb-2 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">Captured collector fields only. Values are limited to safe metadata.</p>
-                                <pre
-                                    class="ndb-scrollbar ndb:max-w-full ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"
-                                ><code x-text="formatCachePayload(selectedCacheOperation.raw)"></code></pre>
+                                <div class="ndb:mb-2 ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
+                                    <p class="ndb:max-w-xl ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                        Captured collector fields only. Values are limited to safe metadata.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        data-ndb-cache-copy-raw
+                                        @click="copyText(formatCachePayload(selectedCacheOperation.raw))"
+                                        class="ndb:inline-flex ndb:h-auto ndb:min-h-8 ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
+                                    >
+                                        <x-newdebugbar::icon name="copy" size="3.5" />
+                                        Copy JSON
+                                    </button>
+                                </div>
+                                <pre class="ndb-scrollbar ndb:max-w-full ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatCachePayload(selectedCacheOperation.raw)"></code></pre>
                             </div>
                         </div>
                     </div>
                 </template>
 
                 <div
-                    x-show.important="!selectedCacheOperation"
+                    x-show.important="! selectedCacheOperation"
                     class="ndb:grid ndb:min-h-[32rem] ndb:place-items-center ndb:p-6 ndb:lg:min-h-0"
                 >
-                    <p class="ndb:text-xs ndb:font-semibold ndb:text-zinc-400">Choose an operation to inspect its evidence.</p>
+                    <p class="ndb:text-xs ndb:font-semibold ndb:text-zinc-400">
+                        Choose an operation to inspect its evidence.
+                    </p>
                 </div>
             </section>
         </x-newdebugbar::inspector-workspace>
@@ -460,7 +451,9 @@
         >
             <div class="ndb:w-full ndb:max-w-lg">
                 <x-newdebugbar::empty-state label="No cache operations were captured for this request." />
-                <p class="ndb:mt-3 ndb:text-center ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">Reads, writes, deletes, and store flushes will appear here when Laravel emits them.</p>
+                <p class="ndb:mt-3 ndb:text-center ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                    Reads, writes, deletes, and store flushes will appear here when Laravel emits them.
+                </p>
             </div>
         </div>
     @endif

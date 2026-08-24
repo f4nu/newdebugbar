@@ -119,7 +119,7 @@ it('keeps host styles and package styles isolated', function () {
                 const filter = document.querySelector('[data-ndb-cache-filter]');
                 const search = document.querySelector('[data-ndb-cache-search]');
                 const detail = document.querySelector('[data-ndb-cache-detail]');
-                const summaryTerm = document.querySelector('[data-ndb-cache-summary] dt');
+                const summaryPrimary = document.querySelector('[data-ndb-cache-summary] p');
 
                 return [
                     root.getAttribute('data-cache'),
@@ -134,9 +134,9 @@ it('keeps host styles and package styles isolated', function () {
                     getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)',
                     filter.getBoundingClientRect().height < 91,
                     getComputedStyle(detail).borderLeftWidth === '0px',
-                    Number.parseFloat(getComputedStyle(summaryTerm).fontSize) === 11,
-                    getComputedStyle(summaryTerm).backgroundColor === 'rgba(0, 0, 0, 0)',
-                    getComputedStyle(summaryTerm).color !== 'rgb(0, 128, 0)',
+                    Number.parseFloat(getComputedStyle(summaryPrimary).fontSize) === 12,
+                    getComputedStyle(summaryPrimary).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    getComputedStyle(summaryPrimary).color !== 'rgb(0, 128, 0)',
                 ];
             })()
             JS, [null, null, null, null, null, null, true, true, true, true, true, true, true, true, true])
