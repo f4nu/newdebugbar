@@ -309,7 +309,6 @@
                                 </ol>
                             </section>
                         @endif
-
                     </div>
                 </div>
             </x-newdebugbar::popover-surface>
