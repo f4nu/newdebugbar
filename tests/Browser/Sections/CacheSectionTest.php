@@ -25,6 +25,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
         ->assertSee('Cache needs attention')
         ->assertSee('17')
         ->assertSee('40.0%')
+        ->assertScript('!document.querySelector("[data-ndb-cache-attention]").textContent.includes("miss rate")')
         ->assertValue('[data-ndb-cache-filter]', 'all')
         ->assertAttribute('[data-ndb-cache-detail-tab="overview"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=overview] dd pre").textContent.trim()', 'stale option')

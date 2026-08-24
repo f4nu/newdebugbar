@@ -27,8 +27,7 @@
     );
     $cacheNeedsAttention = $cacheFailures > 0
         || $cacheFlushes > 0
-        || $cacheRepeatedMisses > 0
-        || (bool) ($cacheSummary['high_miss_rate'] ?? false);
+        || $cacheRepeatedMisses > 0;
     $cacheAttentionParts = [];
 
     if ($cacheFailures > 0) {
@@ -43,9 +42,6 @@
         $cacheAttentionParts[] = number_format($cacheFlushes).' store '.\Illuminate\Support\Str::plural('flush', $cacheFlushes);
     }
 
-    if ((bool) ($cacheSummary['high_miss_rate'] ?? false)) {
-        $cacheAttentionParts[] = number_format(100 - $cacheHitRate, 1).'% miss rate';
-    }
 @endphp
 
 <div
