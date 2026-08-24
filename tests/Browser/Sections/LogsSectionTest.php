@@ -28,9 +28,13 @@ it('presents a chronological diagnostic stream with useful filters and details',
                 const entries = Array.from(document.querySelectorAll('[data-ndb-log-entry]'));
                 const sequences = entries.map((entry) => Number(entry.dataset.ndbLogFirstSequence));
                 const controls = document.querySelector('[data-ndb-log-controls]');
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const list = document.querySelector('[data-ndb-log-list]');
 
                 return sequences.every((sequence, index) => index === 0 || sequence > sequences[index - 1])
                     && document.querySelector('[data-ndb-log-order]').textContent.trim() === 'Oldest first'
+                    && getComputedStyle(content).overflowY === 'auto'
+                    && getComputedStyle(list).overflowY === 'visible'
                     && ! ['•', '·'].some((separator) => controls.textContent.includes(separator));
             })()
             JS)
