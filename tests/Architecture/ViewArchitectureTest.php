@@ -66,6 +66,7 @@ it('uses one filter tab treatment across inspector sections', function () {
         'components/query-section.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
+        'components/cache-controls.blade.php',
         'components/http-client-controls.blade.php',
     ] as $view) {
         $contents = file_get_contents($views.'/'.$view);
@@ -75,9 +76,14 @@ it('uses one filter tab treatment across inspector sections', function () {
             ->toContain('<x-newdebugbar::filter-tab');
     }
 
-    expect(file_get_contents($views.'/components/http-client-detail-tabs.blade.php'))
-        ->toContain('<x-newdebugbar::inspector-detail-tabs')
-        ->toContain('<x-newdebugbar::filter-tab');
+    foreach ([
+        'components/cache-detail-tabs.blade.php',
+        'components/http-client-detail-tabs.blade.php',
+    ] as $view) {
+        expect(file_get_contents($views.'/'.$view))
+            ->toContain('<x-newdebugbar::inspector-detail-tabs')
+            ->toContain('<x-newdebugbar::filter-tab');
+    }
 
     expect(file_get_contents($views.'/components/inspector-detail-tabs.blade.php'))
         ->toContain('<x-newdebugbar::filter-tabs');
@@ -138,6 +144,58 @@ it('composes the HTTP Client workspace from focused view components', function (
     expect($source)
         ->toContain('<x-newdebugbar::inspector-facts')
         ->toContain('<x-newdebugbar::inspector-stack');
+});
+
+it('composes the Cache workspace from the shared inspector components', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/cache.blade.php');
+    $workspace = file_get_contents($views.'/components/cache-workspace.blade.php');
+    $detail = file_get_contents($views.'/components/cache-detail.blade.php');
+    $controls = file_get_contents($views.'/components/cache-controls.blade.php');
+    $header = file_get_contents($views.'/components/cache-header.blade.php');
+    $overview = file_get_contents($views.'/components/cache-overview-panel.blade.php');
+    $raw = file_get_contents($views.'/components/cache-raw-panel.blade.php');
+    $source = file_get_contents($views.'/components/cache-source-panel.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::cache-workspace')
+        ->toContain('<x-newdebugbar::cache-empty')
+        ->not->toContain('data-ndb-cache-list');
+
+    expect($workspace)
+        ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::cache-controls')
+        ->toContain('<x-newdebugbar::cache-list-item')
+        ->toContain('<x-newdebugbar::cache-detail');
+
+    expect($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::cache-header')
+        ->toContain('<x-newdebugbar::cache-detail-tabs')
+        ->toContain('<x-newdebugbar::cache-overview-panel')
+        ->toContain('<x-newdebugbar::cache-raw-panel')
+        ->toContain('<x-newdebugbar::cache-source-panel');
+
+    expect($controls)
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::filter-tabs')
+        ->toContain('variant="segmented"')
+        ->not->toContain('<select')
+        ->not->toContain('cacheSort');
+
+    expect($header)
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->not->toContain('font-mono');
+
+    expect($overview)
+        ->toContain('<x-newdebugbar::cache-overview-facts')
+        ->toContain('<x-newdebugbar::inspector-definition-list')
+        ->not->toContain('What happened')
+        ->not->toContain('Check next');
+
+    expect($raw)->toContain('<x-newdebugbar::inspector-evidence');
+    expect($source)->toContain('<x-newdebugbar::inspector-stack');
 });
 
 it('uses the shared section heading hierarchy in the inspector shell', function () {

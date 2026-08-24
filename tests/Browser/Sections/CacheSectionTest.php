@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('filters sorts selects and inspects rich cache diagnostics', function () {
+it('filters selects and inspects rich cache diagnostics', function () {
     $preferences = json_encode(['theme' => 'light', 'favorites' => []], JSON_THROW_ON_ERROR);
     $page = visit('/profiled-cache-rich')->resize(1440, 900);
 
@@ -26,7 +26,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
         ->assertSee('17')
         ->assertSee('40.0%')
         ->assertScript('!document.querySelector("[data-ndb-cache-attention]").textContent.includes("miss rate")')
-        ->assertValue('[data-ndb-cache-filter]', 'all')
+        ->assertAttribute('[data-ndb-cache-filter="all"]', 'aria-pressed', 'true')
         ->assertAttribute('[data-ndb-cache-detail-tab="overview"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=overview] dd pre").textContent.trim()', 'stale option')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 17)
@@ -39,6 +39,10 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                 const selected = document.querySelector('[data-ndb-cache-item][aria-pressed="true"]');
                 const detailTabs = [...document.querySelectorAll('[data-ndb-cache-detail-tab]')];
                 const header = document.querySelector('[data-ndb-cache-header]');
+                const headerPrimary = header.querySelector('[data-ndb-inspector-detail-header-primary]');
+                const headerLine = header.querySelector('h3');
+                const headerOperation = header.querySelector('[data-ndb-cache-detail-operation]');
+                const headerKey = header.querySelector('[data-ndb-cache-detail-key]');
                 const metadata = document.querySelector('[data-ndb-cache-metadata]');
                 const metadataFacts = [...metadata.querySelectorAll(':scope > div')].filter(
                     (fact) => fact.getClientRects().length > 0,
@@ -46,6 +50,12 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                 const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
                 const metadataValues = metadataFacts.map((fact) => fact.querySelector('dd').textContent.trim());
                 const sourceLink = metadata.querySelector('button');
+                const search = document.querySelector('[data-ndb-cache-search]');
+                const searchIcon = search.parentElement.querySelector('svg');
+                const filterGroup = document.querySelector('[data-ndb-filter-tabs][aria-label="Filter cache operations"]');
+                const filterButtons = [...filterGroup.querySelectorAll('[data-ndb-cache-filter]')];
+                const selectedFilter = filterGroup.querySelector('[aria-pressed="true"]');
+                const unselectedFilter = filterGroup.querySelector('[aria-pressed="false"]');
                 const keys = rows.map((row) => row.querySelector('[data-ndb-cache-key]'));
                 const results = rows.map((row) => row.querySelector('[data-ndb-cache-result]'));
                 const durations = rows.map((row) => row.querySelector('[data-ndb-cache-list-duration]'));
@@ -64,12 +74,30 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                     && selected.dataset.ndbCacheItem === '1'
                     && detailTabs.length === 3
                     && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
-                    && header.children.length === 2
-                    && header.children[0].matches('[data-ndb-cache-detail-operation]')
-                    && header.children[1].matches('[data-ndb-cache-detail-key]')
-                    && header.querySelector('button, dl, [data-ndb-inspector-detail-header-primary]') === null
+                    && detailTabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Overview|Raw|Source'
+                    && header.children.length === 1
+                    && header.children[0] === headerPrimary
+                    && headerLine.children.length === 2
+                    && headerLine.children[0] === headerOperation
+                    && headerLine.children[1] === headerKey
+                    && getComputedStyle(headerLine).display === 'flex'
+                    && Math.abs(headerOperation.getBoundingClientRect().bottom - headerKey.getBoundingClientRect().bottom) <= 1
+                    && headerKey.getBoundingClientRect().left > headerOperation.getBoundingClientRect().right
+                    && !getComputedStyle(headerKey).fontFamily.toLowerCase().includes('mono')
+                    && header.querySelector('button, dl') === null
                     && document.querySelector('[data-ndb-cache-copy-key]') === null
                     && document.querySelector('[data-ndb-cache-copy-raw]') === null
+                    && document.querySelector('[data-ndb-cache-sort]') === null
+                    && document.querySelector('[data-ndb-cache] select') === null
+                    && filterGroup.dataset.ndbFilterTabsVariant === 'segmented'
+                    && getComputedStyle(filterGroup).display === 'grid'
+                    && filterButtons.map((button) => button.textContent.trim()).join('|') === 'All|Reads|Writes|Deletes|Failed'
+                    && filterButtons.every((button) => button.dataset.ndbFilterTabVariant === 'segmented')
+                    && getComputedStyle(selectedFilter).backgroundColor !== getComputedStyle(unselectedFilter).backgroundColor
+                    && getComputedStyle(selectedFilter).boxShadow !== 'none'
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left >= 9
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left <= 11
+                    && Math.round(searchIcon.getBoundingClientRect().width) === 16
                     && getComputedStyle(metadata).display === 'grid'
                     && metadataLabels.join('|') === 'Result|Runtime|Store|Driver|Source'
                     && metadataValues[0] === 'Stored'
@@ -81,6 +109,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                     && new Set(keyOffsets.map(Math.round)).size === 1
                     && keys.every((key) => key.clientWidth <= key.parentElement.getBoundingClientRect().width)
                     && keys.every((key) => getComputedStyle(key).textOverflow === 'ellipsis')
+                    && keys.every((key) => !getComputedStyle(key).fontFamily.toLowerCase().includes('mono'))
                     && results.every((result) => getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && results.every((result) => getComputedStyle(result).textAlign === 'right')
                     && new Set(rightTrackWidths.map(Math.round)).size === 1
@@ -110,8 +139,8 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
         ->assertAttribute('[data-ndb-cache-item="6"]', 'aria-pressed', 'true')
         ->assertAttribute('[aria-label="Open cache execution 6"]', 'aria-current', 'true')
         ->assertSee('Hit')
-        ->select('[data-ndb-cache-filter]', 'failed')
-        ->assertValue('[data-ndb-cache-filter]', 'failed')
+        ->click('[data-ndb-cache-filter="failed"]')
+        ->assertAttribute('[data-ndb-cache-filter="failed"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 3)
         ->keys('[data-ndb-cache-item="15"]', 'Enter')
         ->assertAttribute('[data-ndb-cache-item="15"]', 'aria-pressed', 'true')
@@ -126,8 +155,8 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
             '—',
         )
         ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=overview] dd pre").textContent.trim()', 'not retained')
-        ->assertSee('The app may be doing extra work')
-        ->assertSee('Check the store connection')
+        ->assertDontSee('What happened')
+        ->assertDontSee('Check next')
         ->click('[data-ndb-cache-metadata] button')
         ->assertAttribute('[data-ndb-cache-detail-tab="source"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-cache-detail-panel="source"]')
@@ -145,20 +174,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                     && raw.includes('"value": "not retained"');
             })()
             JS)
-        ->select('[data-ndb-cache-filter]', 'all')
-        ->select('[data-ndb-cache-sort]', 'duration')
-        ->assertValue('[data-ndb-cache-sort]', 'duration')
-        ->assertScript(<<<'JS'
-            (() => {
-                const visible = [...document.querySelectorAll('[data-ndb-cache-item]:not([hidden])')];
-                const timed = visible.filter((item) => item.dataset.ndbCacheTimed === 'true');
-                const untimed = visible.filter((item) => item.dataset.ndbCacheTimed === 'false');
-                const durations = timed.map((item) => Number(item.dataset.ndbCacheDuration));
-
-                return visible.indexOf(untimed[0]) >= timed.length
-                    && durations.every((duration, index) => index === 0 || durations[index - 1] >= duration);
-            })()
-            JS)
+        ->click('[data-ndb-cache-filter="all"]')
         ->type('[data-ndb-cache-search]', 'missing-note')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 1)
         ->assertSee('trip:kyoto:missing-note')
@@ -180,9 +196,9 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
     DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-cache-workspace]');
 
     $page
-        ->assertValue('[data-ndb-cache-filter]', 'all')
+        ->assertAttribute('[data-ndb-cache-filter="all"]', 'aria-pressed', 'true')
         ->assertValue('[data-ndb-cache-search]', '')
-        ->assertValue('[data-ndb-cache-sort]', 'execution')
+        ->assertScript('document.querySelector("[data-ndb-cache-sort]") === null')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 17)
         ->assertNoJavaScriptErrors();
 });
@@ -226,7 +242,7 @@ it('drills into cache detail on mobile in dark mode', function () {
                     && document.querySelector('[data-ndb-cache-summary]').getBoundingClientRect().width <= workspace.getBoundingClientRect().width + 1;
             })()
             JS)
-        ->select('[data-ndb-cache-filter]', 'failed')
+        ->click('[data-ndb-cache-filter="failed"]')
         ->click('[data-ndb-cache-item="15"]')
         ->assertAttribute('[data-ndb-cache-item="15"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-cache-detail]')
@@ -249,7 +265,7 @@ it('drills into cache detail on mobile in dark mode', function () {
                     && back.getClientRects().length > 0
                     && back.textContent.trim() === 'Operations'
                     && tabs.length === 3
-                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Overview|Source|Raw'
+                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Overview|Raw|Source'
                     && labels.every((label) => getComputedStyle(label).display === 'none')
                     && document.querySelector('[data-ndb-cache-copy-key]') === null
                     && document.querySelector('[data-ndb-cache-copy-raw]') === null;

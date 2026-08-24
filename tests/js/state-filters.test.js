@@ -71,20 +71,16 @@ test('Models opens one focused detail and restores list scroll and focus', () =>
   assert.equal(state.modelDetailOpen, false);
 });
 
-test('Cache filters searches sorts and keeps a visible operation selected', () => {
+test('Cache filters searches and keeps a visible operation selected', () => {
   const state = createNewDebugBar(summary, runtime());
-  const appended = [];
   const scrolled = [];
   let detailResets = 0;
   let contentResets = 0;
-  const element = (execution, duration, timed, category, failed, key, search) => ({
+  const element = (execution, category, failed, search) => ({
     dataset: {
       ndbCacheExecution: String(execution),
-      ndbCacheDuration: String(duration),
-      ndbCacheTimed: String(timed),
       ndbCacheCategory: category,
       ndbCacheFailed: String(failed),
-      ndbCacheKey: key,
       ndbCacheSearchText: search,
     },
     hidden: false,
@@ -99,13 +95,12 @@ test('Cache filters searches sorts and keeps a visible operation selected', () =
       },
     },
   });
-  const first = element(1, 0.4, true, 'read', false, 'trip:alpha', 'get hit trip alpha array');
-  const second = element(2, 2.1, true, 'write', false, 'trip:beta', 'put stored trip beta redis');
-  const third = element(3, 0, false, 'delete', true, 'trip:stale', 'forget failed trip stale database');
+  const first = element(1, 'read', false, 'get hit trip alpha array');
+  const second = element(2, 'write', false, 'put stored trip beta redis');
+  const third = element(3, 'delete', true, 'forget failed trip stale database');
   state.$refs = {
     cacheList: {
       children: [first, second, third],
-      appendChild: (child) => appended.push(child),
     },
     cacheDetail: { scrollTo: () => detailResets++ },
     content: { scrollTo: () => contentResets++ },
@@ -143,14 +138,6 @@ test('Cache filters searches sorts and keeps a visible operation selected', () =
   assert.equal(state.cacheSelected, 1);
 
   state.cacheSearch = '';
-  appended.length = 0;
-  state.setCacheSort('duration');
-  assert.deepEqual(appended, [second, first, third]);
-
-  appended.length = 0;
-  state.setCacheSort('key');
-  assert.deepEqual(appended, [first, second, third]);
-
   state.selectCacheOperation(3);
   assert.equal(state.cacheSelected, 3);
   assert.equal(state.cacheDetailOpen, true);
@@ -172,11 +159,9 @@ test('Cache filters searches sorts and keeps a visible operation selected', () =
   state.setCacheDetailTab('raw');
   state.setCacheDetailTab('invalid');
   state.setCacheFilter('invalid');
-  state.setCacheSort('invalid');
   state.selectCacheOperation(99);
   assert.equal(state.cacheDetailTab, 'raw');
   assert.equal(state.cacheFilter, 'all');
-  assert.equal(state.cacheSort, 'key');
   assert.equal(state.cacheSelected, 2);
   assert.equal(state.formatCachePayload({ key: 'trip:alpha' }), '{\n  "key": "trip:alpha"\n}');
 
