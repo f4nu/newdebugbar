@@ -324,7 +324,7 @@
     </script>
 
     @if ($notificationGroups !== [])
-        <x-newdebugbar::inspector-workspace data-ndb-notification-workspace>
+        <x-newdebugbar::inspector-workspace frame="top" data-ndb-notification-workspace>
             <div
                 :class="notificationDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
                 class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"

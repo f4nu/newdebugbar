@@ -194,7 +194,7 @@
     class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
 >
     @if ($mailItems !== [])
-        <x-newdebugbar::inspector-workspace data-ndb-mail-workspace>
+        <x-newdebugbar::inspector-workspace frame="top" data-ndb-mail-workspace>
             <div
                 :class="mailDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
                 class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"

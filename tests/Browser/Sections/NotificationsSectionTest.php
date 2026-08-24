@@ -56,6 +56,8 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-notification-workspace]');
+                const loadedSection = document.querySelector('[data-ndb-loaded-section="notifications"]');
+                const stage = document.querySelector('[data-ndb-section-stage]');
                 const [list, detail] = workspace.children;
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const details = workspace.parentElement.parentElement.parentElement;
@@ -86,6 +88,15 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 return getComputedStyle(workspace).display === 'grid'
                     && workspaceBox.height > 576
                     && Math.abs(workspaceBox.bottom - expectedBottom) <= 1
+                    && getComputedStyle(loadedSection).paddingLeft === '0px'
+                    && getComputedStyle(loadedSection).paddingRight === '0px'
+                    && Math.abs(workspaceBox.left - stage.getBoundingClientRect().left) <= 1
+                    && Math.abs(workspaceBox.right - stage.getBoundingClientRect().right) <= 1
+                    && getComputedStyle(workspace).borderTopWidth === '1px'
+                    && getComputedStyle(workspace).borderRightWidth === '0px'
+                    && getComputedStyle(workspace).borderBottomWidth === '0px'
+                    && getComputedStyle(workspace).borderLeftWidth === '0px'
+                    && getComputedStyle(workspace).borderRadius === '0px'
                     && detailBox.width > listBox.width * 1.6
                     && Math.abs(listBox.top - detailBox.top) <= 1
                     && selected.dataset.ndbNotificationItem === '1'

@@ -9,8 +9,8 @@
             ? 'ndb:lg:min-h-0 ndb:lg:flex-1'
             : ''"
         @class([
-            'ndb:p-4 ndb:sm:p-6' => ! in_array($sectionKey, ['cache', 'http_client'], true),
-            'ndb:p-4 ndb:sm:px-0 ndb:sm:py-6' => in_array($sectionKey, ['cache', 'http_client'], true),
+            'ndb:p-4 ndb:sm:p-6' => ! in_array($sectionKey, ['cache', 'http_client', 'mail', 'notifications'], true),
+            'ndb:p-4 ndb:sm:px-0 ndb:sm:py-6' => in_array($sectionKey, ['cache', 'http_client', 'mail', 'notifications'], true),
         ])
     >
         <section

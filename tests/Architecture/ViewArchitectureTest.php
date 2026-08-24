@@ -200,6 +200,21 @@ it('composes the Cache workspace from the shared inspector components', function
     expect($source)->toContain('<x-newdebugbar::inspector-stack');
 });
 
+it('uses the top-only frame across edge-to-edge inspector workspaces', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+
+    foreach ([
+        'components/cache-workspace.blade.php',
+        'components/http-client-workspace.blade.php',
+        'livewire/sections/mail.blade.php',
+        'livewire/sections/notifications.blade.php',
+    ] as $view) {
+        expect(file_get_contents($views.'/'.$view))
+            ->toContain('<x-newdebugbar::inspector-workspace')
+            ->toContain('frame="top"');
+    }
+});
+
 it('uses the shared section heading hierarchy in the inspector shell', function () {
     $inspector = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/inspector.blade.php');
 
