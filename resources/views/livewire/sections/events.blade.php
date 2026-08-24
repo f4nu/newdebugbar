@@ -25,7 +25,7 @@
                 class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
             >
                 <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
-                    <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
+                    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
                         <p
                             data-ndb-event-visible-summary
                             aria-live="polite"
