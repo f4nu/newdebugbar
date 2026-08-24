@@ -214,6 +214,8 @@ it('drills into cache detail on mobile in dark mode', function () {
                     && getComputedStyle(detail).display === 'flex'
                     && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
                     && detail.scrollWidth <= detail.clientWidth + 1
+                    && detail.scrollTop === 0
+                    && content.scrollTop === 0
                     && content.scrollWidth <= content.clientWidth + 1
                     && back.getClientRects().length > 0
                     && back.textContent.trim() === 'Operations'

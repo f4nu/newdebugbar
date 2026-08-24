@@ -8,6 +8,7 @@ test('Cache filters searches sorts and keeps a visible operation selected', () =
   const state = createNewDebugBar(summary, runtime());
   const appended = [];
   let detailResets = 0;
+  let contentResets = 0;
   const element = (execution, duration, timed, category, failed, key, search) => ({
     dataset: {
       ndbCacheExecution: String(execution),
@@ -38,6 +39,7 @@ test('Cache filters searches sorts and keeps a visible operation selected', () =
       appendChild: (child) => appended.push(child),
     },
     cacheDetail: { scrollTo: () => detailResets++ },
+    content: { scrollTo: () => contentResets++ },
   };
   state.$nextTick = (callback) => callback();
 
@@ -84,9 +86,12 @@ test('Cache filters searches sorts and keeps a visible operation selected', () =
   assert.equal(state.cacheSelected, 3);
   assert.equal(state.cacheDetailOpen, true);
   assert.equal(state.cacheDetailTab, 'overview');
+  assert.equal(detailResets, 1);
+  assert.equal(contentResets, 1);
 
   state.setCacheDetailTab('source');
-  assert.equal(detailResets, 1);
+  assert.equal(detailResets, 2);
+  assert.equal(contentResets, 2);
   state.setCacheDetailTab('raw');
   state.setCacheDetailTab('invalid');
   state.setCacheFilter('invalid');

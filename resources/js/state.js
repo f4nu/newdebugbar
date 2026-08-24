@@ -2421,13 +2421,21 @@ export function createNewDebugBar(
       this.cacheSelected = execution;
       this.cacheDetailOpen = true;
       this.cacheDetailTab = 'overview';
+      this.resetCacheDetailScroll();
     },
 
     setCacheDetailTab(tab) {
       if (!['overview', 'source', 'raw'].includes(tab)) return;
 
       this.cacheDetailTab = tab;
-      this.$nextTick?.(() => this.$refs?.cacheDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+      this.resetCacheDetailScroll();
+    },
+
+    resetCacheDetailScroll() {
+      this.$nextTick?.(() => {
+        this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
+        this.$refs?.cacheDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+      });
     },
 
     applyCacheView() {
