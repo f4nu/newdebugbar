@@ -114,7 +114,7 @@ final class SectionAnalyzer
                 unset($record);
             }
 
-            if (in_array($event, self::MODEL_CHANGE_EVENTS, true)) {
+            if (in_array($event, self::MODEL_CHANGE_EVENTS, true) || (isset($item['operation_id']) && is_numeric($item['operation_id']))) {
                 $operationKey = isset($item['operation_id']) && is_numeric($item['operation_id'])
                     ? 'operation:'.(string) $item['operation_id']
                     : 'event:'.$index;
@@ -131,6 +131,10 @@ final class SectionAnalyzer
 
         foreach ($modelGroups as &$modelGroup) {
             foreach ($modelGroup['change_candidates'] as $candidates) {
+                if (! $this->hasCompletedModelChange($candidates)) {
+                    continue;
+                }
+
                 $operation = $this->modelChangeOperation($candidates);
                 $modelGroup['change_operations'][] = $operation;
                 $modelGroup['change_count']++;
@@ -352,6 +356,18 @@ final class SectionAnalyzer
                 $candidates,
             )),
         ];
+    }
+
+    /** @param list<array<string, mixed>> $candidates */
+    private function hasCompletedModelChange(array $candidates): bool
+    {
+        foreach ($candidates as $candidate) {
+            if (in_array($candidate['event'] ?? null, self::MODEL_CHANGE_EVENTS, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return array<string, array<string, int|float>> */

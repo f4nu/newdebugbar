@@ -356,6 +356,15 @@ it('folds duplicate lifecycle callbacks into logical operations and matches quer
         ->model_change_events->toBe(['updated' => 1, 'trashed' => 1])
         ->and($group['change_operations'])->toHaveCount(2)
         ->and(array_column($group['change_operations'], 'event'))->toBe(['updated', 'trashed'])
+        ->and($group['change_operations'][0]['lifecycle_events'])->toBe([
+            'updating' => 1,
+            'updated' => 1,
+            'saved' => 1,
+        ])
+        ->and($group['change_operations'][1]['lifecycle_events'])->toBe([
+            'trashed' => 1,
+            'deleted' => 1,
+        ])
         ->and($group['sources'][0])
         ->activity_count->toBe(2)
         ->change_count->toBe(2)
@@ -366,6 +375,23 @@ it('folds duplicate lifecycle callbacks into logical operations and matches quer
         ->and($group['related_query_count'])->toBe(1)
         ->and(array_column($group['guidance'], 'type'))->toBe(['write_evidence', 'query_correlation'])
         ->and($group['guidance'][1]['why'])->toContain('does not prove');
+});
+
+it('does not infer a write from incomplete lifecycle callbacks', function () {
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'models' => ['summary' => ['count' => 2], 'payload' => ['items' => [
+                ['model' => 'App\\Models\\Client', 'event' => 'updating', 'operation_id' => 9, 'operation' => 'updated'],
+                ['model' => 'App\\Models\\Client', 'event' => 'saving'],
+            ]]],
+        ],
+    ]);
+    $group = $profile['sections']['models']['payload']['model_groups'][0];
+
+    expect($profile['sections']['models']['summary'])
+        ->model_change_count->toBe(0)
+        ->activity_count->toBe(0)
+        ->and($group['change_operations'])->toBe([]);
 });
 
 it('bounds rendered record and source evidence without changing complete counts', function () {

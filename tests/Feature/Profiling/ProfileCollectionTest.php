@@ -218,6 +218,11 @@ it('captures model sources and folds lifecycle callbacks into logical write oper
         ->and($models['payload']['model_groups'][0]['change_operations'][0])
         ->event->toBe('updated')
         ->change_attribute_count->toBe(2)
+        ->lifecycle_events->toBe([
+            'updating' => 1,
+            'updated' => 1,
+            'saved' => 1,
+        ])
         ->changes->toBe([
             'status' => 'approved',
             'api_token' => '[redacted]',
