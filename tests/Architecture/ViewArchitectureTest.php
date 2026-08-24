@@ -66,7 +66,7 @@ it('uses one filter tab treatment across inspector sections', function () {
         'components/query-section.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
-        'livewire/sections/http_client.blade.php',
+        'components/http-client-controls.blade.php',
     ] as $view) {
         $contents = file_get_contents($views.'/'.$view);
 
@@ -74,6 +74,70 @@ it('uses one filter tab treatment across inspector sections', function () {
             ->toContain('<x-newdebugbar::filter-tabs')
             ->toContain('<x-newdebugbar::filter-tab');
     }
+
+    expect(file_get_contents($views.'/components/http-client-detail-tabs.blade.php'))
+        ->toContain('<x-newdebugbar::inspector-detail-tabs')
+        ->toContain('<x-newdebugbar::filter-tab');
+
+    expect(file_get_contents($views.'/components/inspector-detail-tabs.blade.php'))
+        ->toContain('<x-newdebugbar::filter-tabs');
+});
+
+it('composes the HTTP Client workspace from focused view components', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/http_client.blade.php');
+    $workspace = file_get_contents($views.'/components/http-client-workspace.blade.php');
+    $detail = file_get_contents($views.'/components/http-client-detail.blade.php');
+    $controls = file_get_contents($views.'/components/http-client-controls.blade.php');
+    $header = file_get_contents($views.'/components/http-client-header.blade.php');
+    $request = file_get_contents($views.'/components/http-client-request-panel.blade.php');
+    $response = file_get_contents($views.'/components/http-client-response-panel.blade.php');
+    $source = file_get_contents($views.'/components/http-client-source-panel.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::http-client-workspace')
+        ->toContain('<x-newdebugbar::http-client-empty')
+        ->not->toContain('data-ndb-http-client-list');
+
+    expect($workspace)
+        ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::http-client-controls')
+        ->toContain('<x-newdebugbar::http-client-list-item')
+        ->toContain('<x-newdebugbar::http-client-detail');
+
+    expect($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::http-client-header')
+        ->toContain('<x-newdebugbar::http-client-detail-tabs')
+        ->toContain('<x-newdebugbar::http-client-request-panel')
+        ->toContain('<x-newdebugbar::http-client-response-panel')
+        ->toContain('<x-newdebugbar::http-client-source-panel');
+
+    expect($controls)
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::select-field')
+        ->toContain('<x-newdebugbar::filter-tabs');
+
+    expect($header)
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::http-client-method')
+        ->toContain('<x-newdebugbar::inspector-action');
+
+    expect($request)
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-action')
+        ->toContain('<x-newdebugbar::inspector-evidence');
+
+    expect($response)
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-definition-list')
+        ->toContain('<x-newdebugbar::inspector-evidence')
+        ->toContain('<x-newdebugbar::http-client-no-response');
+
+    expect($source)
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-stack');
 });
 
 it('uses the shared section heading hierarchy in the inspector shell', function () {
