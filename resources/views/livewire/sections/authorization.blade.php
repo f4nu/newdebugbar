@@ -208,171 +208,125 @@
 @endphp
 
 <div
-  data-ndb-authorization
-  x-init="
-    initializeAuthorization(
-      JSON.parse(
-        atob(
-          $el
-            .querySelector('[data-ndb-authorization-payload]')
-            .textContent.trim(),
-        ),
-      ),
-    )
-  "
-  class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
+    data-ndb-authorization
+    x-init="
+        initializeAuthorization(
+            JSON.parse(atob($el.querySelector('[data-ndb-authorization-payload]').textContent.trim())),
+        )
+    "
+    class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
 >
-  <script type="application/json" data-ndb-authorization-payload>
-    {{ base64_encode(\Illuminate\Support\Js::encode($authorizationItems)) }}
-  </script>
+    <script type="application/json" data-ndb-authorization-payload>
+        {{ base64_encode(\Illuminate\Support\Js::encode($authorizationItems)) }}
+    </script>
 
-  @if ($authorizationItems !== [])
-    <x-newdebugbar::inspector-workspace data-ndb-authorization-workspace>
-      <div
-        :class="authorizationDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
-        class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
-      >
-        <div
-          class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800"
-        >
-          <p
-            data-ndb-authorization-summary
-            class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-          >
-            <span data-ndb-authorization-summary-count class="ndb:block">
-              {{ number_format(count($authorizationItems)) }} {{ \Illuminate\Support\Str::plural('decision', count($authorizationItems)) }}
-            </span>
-            <span
-              class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
+    @if ($authorizationItems !== [])
+        <x-newdebugbar::inspector-workspace data-ndb-authorization-workspace>
+            <div
+                :class="authorizationDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
+                class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
             >
-              <span
-                >{{ number_format($authorizationCounts['denied'] ?? 0) }} denied</span
-              >
-              <span
-                >{{ number_format($authorizationCounts['allowed'] ?? 0) }} allowed</span
-              >
-            </span>
-          </p>
+                <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
+                    <p
+                        data-ndb-authorization-summary
+                        class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                    >
+                        <span data-ndb-authorization-summary-count class="ndb:block">
+                            {{ number_format(count($authorizationItems)) }} {{ \Illuminate\Support\Str::plural('decision', count($authorizationItems)) }}
+                        </span>
+                        <span class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
+                            <span>{{ number_format($authorizationCounts['denied'] ?? 0) }} denied</span>
+                            <span>{{ number_format($authorizationCounts['allowed'] ?? 0) }} allowed</span>
+                        </span>
+                    </p>
 
-          <x-newdebugbar::filter-tabs
-            label="Filter authorization decisions"
-            class="ndb:w-full"
-          >
-            @foreach ($authorizationFilters as $filter => [$label, $count])
-              <x-newdebugbar::filter-tab
-                data-ndb-authorization-filter="{{ $filter }}"
-                @click="setAuthorizationFilter({{ \Illuminate\Support\Js::from($filter) }})"
-                ::aria-pressed="authorizationFilter === {{ \Illuminate\Support\Js::from($filter) }}"
-                class="ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
-              >
-                <span>{{ $label }}</span>
-                <span
-                  class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70"
-                  >{{ $count }}</span
+                    <x-newdebugbar::filter-tabs label="Filter authorization decisions" class="ndb:w-full">
+                        @foreach ($authorizationFilters as $filter => [$label, $count])
+                            <x-newdebugbar::filter-tab
+                                data-ndb-authorization-filter="{{ $filter }}"
+                                @click="setAuthorizationFilter({{ \Illuminate\Support\Js::from($filter) }})"
+                                ::aria-pressed="authorizationFilter === {{ \Illuminate\Support\Js::from($filter) }}"
+                                class="ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
+                            >
+                                <span>{{ $label }}</span>
+                                <span class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70">{{ $count }}</span>
+                            </x-newdebugbar::filter-tab>
+                        @endforeach
+                    </x-newdebugbar::filter-tabs>
+
+                    @if (count($authorizationItems) > 5)
+                        <label class="ndb:relative ndb:block ndb:min-w-0">
+                            <span class="ndb:sr-only">Search authorization decisions</span>
+                            <input
+                                data-ndb-authorization-search
+                                x-model="authorizationSearch"
+                                @input.debounce.100ms="applyAuthorizationView()"
+                                type="search"
+                                placeholder="Search ability, actor, or target"
+                                class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                            />
+                            <x-newdebugbar::icon
+                                name="search"
+                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                            />
+                        </label>
+                    @endif
+                </div>
+
+                <div
+                    x-ref="authorizationList"
+                    data-ndb-authorization-list
+                    class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-800 ndb:lg:overflow-y-auto"
                 >
-              </x-newdebugbar::filter-tab>
-            @endforeach
-          </x-newdebugbar::filter-tabs>
-
-          @if (count($authorizationItems) > 5)
-            <label class="ndb:relative ndb:block ndb:min-w-0">
-              <span class="ndb:sr-only">Search authorization decisions</span>
-              <input
-                data-ndb-authorization-search
-                x-model="authorizationSearch"
-                @input.debounce.100ms="applyAuthorizationView()"
-                type="search"
-                placeholder="Search ability, actor, or target"
-                class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-              />
-              <x-newdebugbar::icon
-                name="search"
-                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-              />
-            </label>
-          @endif
-        </div>
-
-        <div
-          x-ref="authorizationList"
-          data-ndb-authorization-list
-          class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-800 ndb:lg:overflow-y-auto"
-        >
-          @foreach ($authorizationItems as $decision)
-            <button
-              type="button"
-              data-ndb-authorization-item="{{ $decision['execution'] }}"
-              data-ndb-authorization-execution="{{ $decision['execution'] }}"
-              data-ndb-authorization-result="{{ $decision['result'] }}"
-              data-ndb-authorization-search-value="{{ $decision['search'] }}"
-              wire:key="authorization-{{ $decision['execution'] }}"
-              @click="selectAuthorizationDecision({{ $decision['execution'] }})"
-              :aria-pressed="authorizationSelected === {{ $decision['execution'] }}"
-              :class="authorizationSelected === {{ $decision['execution'] }}
+                    @foreach ($authorizationItems as $decision)
+                        <button
+                            type="button"
+                            data-ndb-authorization-item="{{ $decision['execution'] }}"
+                            data-ndb-authorization-execution="{{ $decision['execution'] }}"
+                            data-ndb-authorization-result="{{ $decision['result'] }}"
+                            data-ndb-authorization-search-value="{{ $decision['search'] }}"
+                            wire:key="authorization-{{ $decision['execution'] }}"
+                            @click="selectAuthorizationDecision({{ $decision['execution'] }})"
+                            :aria-pressed="authorizationSelected === {{ $decision['execution'] }}"
+                            :class="authorizationSelected === {{ $decision['execution'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-              class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-x-3 ndb:gap-y-1.5 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
-            >
-              <code
-                data-ndb-authorization-ability
-                class="ndb:min-w-0 ndb:break-words ndb:font-mono ndb:text-xs ndb:font-bold ndb:leading-5"
-                >{{ $decision['ability'] }}</code
-              >
-              <span
-                data-ndb-authorization-result-label
-                @class ([
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-x-3 ndb:gap-y-1.5 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                        >
+                            <code
+                                data-ndb-authorization-ability
+                                class="ndb:min-w-0 ndb:break-words ndb:font-mono ndb:text-xs ndb:font-bold ndb:leading-5"
+                            >{{ $decision['ability'] }}</code>
+                            <span
+                                data-ndb-authorization-result-label
+                                @class([
                                     'ndb:inline-flex ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold',
                                     'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300' => $decision['result'] === 'allowed',
                                     'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300' => $decision['result'] === 'denied',
                                 ])
-                >{{ $decision['result_label'] }}</span
-              >
-              <span
-                class="ndb:col-span-2 ndb:grid ndb:min-w-0 ndb:gap-1 ndb:text-[11px] ndb:leading-4"
-              >
-                <span
-                  data-ndb-authorization-actor
-                  class="ndb:flex ndb:min-w-0 ndb:gap-2"
-                >
-                  <span
-                    class="ndb:w-11 ndb:shrink-0 ndb:font-semibold ndb:text-zinc-400"
-                    >Actor</span
-                  >
-                  <span
-                    class="ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                    >{{ $decision['actor_label'] }}</span
-                  >
-                </span>
-                <span
-                  data-ndb-authorization-target
-                  class="ndb:flex ndb:min-w-0 ndb:gap-2"
-                >
-                  <span
-                    class="ndb:w-11 ndb:shrink-0 ndb:font-semibold ndb:text-zinc-400"
-                    >Target</span
-                  >
-                  <span
-                    class="ndb:min-w-0 ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                    >{{ $decision['argument_summary'] }}</span
-                  >
-                </span>
-              </span>
-            </button>
-          @endforeach
-        </div>
+                            >{{ $decision['result_label'] }}</span>
+                            <span class="ndb:col-span-2 ndb:grid ndb:min-w-0 ndb:gap-1 ndb:text-[11px] ndb:leading-4">
+                                <span data-ndb-authorization-actor class="ndb:flex ndb:min-w-0 ndb:gap-2">
+                                    <span class="ndb:w-11 ndb:shrink-0 ndb:font-semibold ndb:text-zinc-400">Actor</span>
+                                    <span class="ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $decision['actor_label'] }}</span>
+                                </span>
+                                <span data-ndb-authorization-target class="ndb:flex ndb:min-w-0 ndb:gap-2">
+                                    <span class="ndb:w-11 ndb:shrink-0 ndb:font-semibold ndb:text-zinc-400">Target</span>
+                                    <span class="ndb:min-w-0 ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $decision['argument_summary'] }}</span>
+                                </span>
+                            </span>
+                        </button>
+                    @endforeach
+                </div>
 
-        <div x-show.important="visibleAuthorizationCount === 0" class="ndb:p-3">
-          <x-newdebugbar::empty-state
-            label="No authorization decisions match these filters."
-          />
-        </div>
-      </div>
+                <div x-show.important="visibleAuthorizationCount === 0" class="ndb:p-3">
+                    <x-newdebugbar::empty-state label="No authorization decisions match these filters." />
+                </div>
+            </div>
 
-      <x-newdebugbar::authorization-detail />
-    </x-newdebugbar::inspector-workspace>
-  @else
-    <x-newdebugbar::empty-state
-      label="No authorization decisions were captured."
-    />
-  @endif
+            <x-newdebugbar::authorization-detail />
+        </x-newdebugbar::inspector-workspace>
+    @else
+        <x-newdebugbar::empty-state label="No authorization decisions were captured." />
+    @endif
 </div>

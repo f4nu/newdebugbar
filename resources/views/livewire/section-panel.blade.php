@@ -5,7 +5,9 @@
         wire:key="profile-section-{{ $profileId }}-{{ $sectionKey }}"
         x-cloak
         x-show.important="loadedSection === @js($sectionKey) || requestedSection === @js($sectionKey)"
-        :class="['authorization', 'cache', 'http_client', 'mail', 'notifications'].includes(selected) ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
+        :class="['authorization', 'cache', 'http_client', 'mail', 'notifications'].includes(selected)
+            ? 'ndb:lg:min-h-0 ndb:lg:flex-1'
+            : ''"
         class="ndb:p-4 ndb:sm:p-6"
     >
         <section
