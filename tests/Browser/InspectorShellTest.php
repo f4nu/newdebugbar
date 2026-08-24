@@ -65,6 +65,24 @@ it('prioritizes relevant activity and keeps runtime details collapsed until requ
 
     DebugBarBrowser::waitForDetails($page);
 
+    $page->assertScript(<<<'JS'
+        (() => {
+            const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
+            state.cancelActivityRefresh(true);
+            state.receiveActivityRefresh = () => {
+                state.activityRefreshPending = false;
+                state.cancelActivityRefresh();
+            };
+            state.summary = {
+                ...state.summary,
+                completion_state: 'complete',
+                background_pending: false,
+            };
+
+            return state.activityPollTimer === null && state.hasPendingActivity() === false;
+        })()
+        JS);
+
     $page
         ->assertVisible('[data-ndb-overview-activity]')
         ->assertCount('[data-ndb-overview-activity-section]', 5)
@@ -84,7 +102,6 @@ it('prioritizes relevant activity and keeps runtime details collapsed until requ
     DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-runtime-detail-panel="runtime"]');
 
     $page
-        ->assertVisible('[data-ndb-runtime-detail-panel="runtime"]')
         ->assertVisible('[data-ndb-runtime-detail-navigation]')
         ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-select-wrapper]\')).display === "none"')
         ->assertMissing('[data-ndb-runtime-detail-count]')
