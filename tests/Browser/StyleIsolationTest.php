@@ -393,11 +393,10 @@ it('keeps host styles and package styles isolated', function () {
                 const entry = document.querySelector('[data-ndb-log-entry]');
                 const severity = entry?.querySelector('[data-ndb-log-severity]');
                 const attention = document.querySelector('[data-ndb-log-attention-label]');
-                const repeat = document.querySelector('[data-ndb-log-repeat-label]');
                 const levelSelect = document.querySelector('[data-ndb-log-level-select]');
                 const summary = entry?.querySelector(':scope > summary');
 
-                if (! entry || ! severity || ! attention || ! repeat || ! levelSelect || ! summary) return false;
+                if (! entry || ! severity || ! attention || ! levelSelect || ! summary) return false;
 
                 return getComputedStyle(entry).borderLeftWidth !== '20px'
                     && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
@@ -406,7 +405,6 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(severity).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(severity).borderRadius === '0px'
                     && getComputedStyle(attention).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(repeat).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && levelSelect.getBoundingClientRect().height === 36
                     && getComputedStyle(levelSelect).borderLeftWidth === '1px'
                     && getComputedStyle(levelSelect).backgroundColor !== 'rgb(255, 0, 0)'

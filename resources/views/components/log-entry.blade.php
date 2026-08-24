@@ -83,12 +83,12 @@
         <span class="ndb:row-span-3 ndb:min-w-0 ndb:sm:row-span-1">
             <span
                 data-ndb-log-severity
-                class="ndb:block ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:leading-4 ndb:tracking-[0.08em] {{ $severityClasses }}"
+                class="ndb:block ndb:bg-transparent ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:leading-4 ndb:tracking-[0.08em] {{ $severityClasses }}"
             >{{ $entry['level_label'] ?? ucfirst($level) }}</span>
             @if ($attention)
                 <span
                     data-ndb-log-attention-label
-                    class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300"
+                    class="ndb:mt-1 ndb:block ndb:bg-transparent ndb:text-[11px] ndb:font-semibold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300"
                 >Needs attention</span>
             @endif
         </span>
@@ -105,7 +105,7 @@
                 <span class="ndb:block ndb:tabular-nums">to {{ $lastRequestTimeLabel }}</span>
             @endif
             @if ($repeatCount > 1)
-                <span data-ndb-log-repeat-label class="ndb:mt-0.5 ndb:block ndb:font-medium">
+                <span data-ndb-log-repeat-label class="ndb:mt-0.5 ndb:block ndb:bg-transparent ndb:font-medium">
                     {{ $repeatCount }} records
                 </span>
             @endif
