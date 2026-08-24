@@ -79,7 +79,11 @@ it('prioritizes relevant activity and keeps runtime details collapsed until requ
             JS)
         ->assertVisible('[data-ndb-overview-runtime]')
         ->assertScript('document.querySelector("[data-ndb-overview-runtime]").open === false')
-        ->click('[data-ndb-overview-runtime] > summary')
+        ->click('[data-ndb-overview-runtime] > summary');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-runtime-detail-panel="runtime"]');
+
+    $page
         ->assertVisible('[data-ndb-runtime-detail-panel="runtime"]')
         ->assertVisible('[data-ndb-runtime-detail-navigation]')
         ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-select-wrapper]\')).display === "none"')
@@ -96,7 +100,6 @@ it('prioritizes relevant activity and keeps runtime details collapsed until requ
     DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-runtime-detail-select]');
 
     $page
-        ->assertVisible('[data-ndb-runtime-detail-select]')
         ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-navigation]\')).display === "none"')
         ->assertScript('document.querySelector(\'[data-ndb-runtime-detail-select]\').value === "drivers"')
         ->select('[data-ndb-runtime-detail-select]', 'ecosystem')
