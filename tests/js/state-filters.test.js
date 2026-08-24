@@ -1042,6 +1042,7 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   ]);
   assert.equal(state.eventSource, 'application');
   assert.equal(state.eventSelected, 2);
+  assert.equal(state.eventDetailTab, 'overview');
   assert.equal(framework.hidden, true);
   assert.equal(framework.style.display, 'none');
   assert.equal(application.hidden, false);
@@ -1058,8 +1059,10 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(state.visibleEventGroupCount, 1);
 
   state.eventSearch = '';
+  state.setEventDetailTab('payload');
   state.setEventSource('framework');
   assert.equal(state.eventSource, 'framework');
+  assert.equal(state.eventDetailTab, 'overview');
   assert.equal(framework.hidden, false);
   assert.equal(application.hidden, true);
   assert.equal(state.eventSelected, 1);
@@ -1067,6 +1070,8 @@ test('event controls group, filter, sort, and select useful event evidence', () 
 
   appended.length = 0;
   state.setEventSource('all');
+  assert.equal(state.eventSelected, 1);
+  assert.equal(state.eventDetailTab, 'overview');
   state.setEventSort('frequency');
   assert.deepEqual(appended.slice(-3), [framework, application, laterApplication]);
 
@@ -1077,15 +1082,20 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   state.selectEvent(3, laterApplication);
   assert.equal(state.eventSelected, 3);
   assert.equal(state.eventDetailOpen, true);
+  assert.equal(state.eventDetailTab, 'overview');
+  state.setEventDetailTab('payload');
+  assert.equal(state.eventDetailTab, 'payload');
   state.closeEventDetail();
   assert.equal(state.eventDetailOpen, false);
 
   state.setEventSource('invalid');
   state.setEventSort('invalid');
+  state.setEventDetailTab('invalid');
   state.selectEvent(99);
   assert.equal(state.eventSource, 'all');
   assert.equal(state.eventSort, 'latest');
   assert.equal(state.eventSelected, 3);
+  assert.equal(state.eventDetailTab, 'payload');
   assert.equal(state.formatEventTime(null), 'Timing unavailable');
   assert.equal(state.formatEventTime('missing'), 'Timing unavailable');
 

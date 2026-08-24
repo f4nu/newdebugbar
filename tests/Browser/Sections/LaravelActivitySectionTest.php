@@ -53,6 +53,19 @@ it('groups noisy Laravel events around application evidence', function () {
                     && ! style.transitionProperty.includes('border');
             })
             JS)
+        ->click('[data-ndb-event-source="all"]')
+        ->assertAttribute('[data-ndb-event-source="all"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+                const all = [...document.querySelectorAll('[data-ndb-event-item]')];
+
+                return visible.length === all.length
+                    && new Set(visible.map((item) => item.dataset.ndbEventSourceValue)).size === 2;
+            })()
+            JS)
+        ->click('[data-ndb-event-source="application"]')
+        ->assertAttribute('[data-ndb-event-source="application"]', 'aria-pressed', 'true')
         ->assertScript(<<<'JS'
             (() => {
                 const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
@@ -69,13 +82,62 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertSee(ProfiledQueuedApplicationListener::class.'@handle')
         ->assertSee('2 registrations')
         ->assertSee('1 extra registration')
-        ->assertSee('trip')
-        ->assertSee('changes')
-        ->assertSee('What to check next')
+        ->assertSee('Listener handling')
+        ->assertSee('What to inspect next')
         ->assertMissing('private fixture value')
         ->assertVisible('[data-ndb-event-copy-name]')
         ->assertAttribute('[data-ndb-event-copy-name]', 'aria-label', 'Copy event name')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
+
+                window.newdebugbarEventClipboardWrites = [];
+                window.newdebugbarExpectedEventClipboard = {
+                    name: state?.selectedEvent?.name,
+                    payload: JSON.stringify(state?.selectedEvent?.payload_shape, null, 2),
+                };
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarEventClipboardWrites.push(value),
+                    },
+                });
+
+                return window.newdebugbarExpectedEventClipboard.name?.includes('ProfiledApplicationEvent');
+            })()
+            JS)
+        ->click('[data-ndb-event-copy-name]')
+        ->wait(0.05)
+        ->assertAttribute('[data-ndb-event-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-event-detail-panel="overview"]')
+        ->click('[data-ndb-event-detail-tab="payload"]')
+        ->assertAttribute('[data-ndb-event-detail-tab="payload"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-event-detail-panel="payload"]')
+        ->assertSee('trip')
+        ->assertSee('changes')
         ->assertVisible('[data-ndb-event-copy-payload-shape]')
+        ->click('[data-ndb-event-copy-payload-shape]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            (() => {
+                const [name, payload] = window.newdebugbarEventClipboardWrites;
+
+                return window.newdebugbarEventClipboardWrites.length === 2
+                    && name === window.newdebugbarExpectedEventClipboard.name
+                    && payload === window.newdebugbarExpectedEventClipboard.payload
+                    && payload.includes('"trip"')
+                    && payload.includes('"changes"');
+            })()
+            JS)
+        ->click('[data-ndb-event-detail-tab="source"]')
+        ->assertAttribute('[data-ndb-event-detail-tab="source"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-event-detail-panel="source"]')
+        ->assertCount('[data-ndb-event-copy-dispatch-source]', 2)
+        ->assertScript(<<<'JS'
+            [...document.querySelectorAll('[data-ndb-event-copy-dispatch-source]')]
+                .every((button) => button.getClientRects().length > 0)
+            JS)
+        ->click('[data-ndb-event-detail-tab="overview"]')
         ->type('[data-ndb-event-search]', 'ItineraryRecalculation');
 
     DebugBarBrowser::waitForVisibleElement(
@@ -119,6 +181,95 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertNoJavaScriptErrors();
 
     DebugBarBrowser::assertSectionSelected($page, 'events');
+});
+
+it('keeps Events selection focused with one mobile scroll owner', function () {
+    $page = visit('/profiled-events')
+        ->resize(390, 844)
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="events"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
+        ->assertVisible('[data-ndb-event-item][aria-pressed="true"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const workspace = document.querySelector('[data-ndb-event-workspace]');
+                const [list, detail] = workspace.children;
+                const rows = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+
+                return dialog.scrollWidth <= dialog.clientWidth + 1
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && getComputedStyle(workspace).display !== 'grid'
+                    && getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && rows.every((row) => row.getBoundingClientRect().height <= 84);
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const selected = document.querySelector('[data-ndb-event-item][aria-pressed="true"]');
+                selected.focus();
+
+                return document.activeElement === selected;
+            })()
+            JS)
+        ->keys('[data-ndb-event-item][aria-pressed="true"]', 'Enter');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-event-detail]');
+
+    $page
+        ->assertVisible('[data-ndb-event-detail]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const workspace = document.querySelector('[data-ndb-event-workspace]');
+                const [list, detail] = workspace.children;
+                const tabs = [...document.querySelectorAll('[data-ndb-event-detail-tab]')];
+                const labels = tabs.map((tab) => tab.querySelector('span'));
+                const icons = tabs.map((tab) => tab.querySelector('[data-ndb-event-detail-tab-icon]'));
+                const candidates = [content, list, detail];
+                const scrollOwners = candidates.filter((element) => {
+                    const overflow = getComputedStyle(element).overflowY;
+
+                    return element.scrollHeight > element.clientHeight + 1
+                        && (overflow === 'auto' || overflow === 'scroll');
+                });
+
+                return getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && document.activeElement === detail
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && tabs.length === 3
+                    && labels.every((label) => getComputedStyle(label).display === 'none')
+                    && icons.every((icon) => getComputedStyle(icon).display !== 'none')
+                    && scrollOwners.length === 1
+                    && scrollOwners[0] === content;
+            })()
+            JS)
+        ->keys('[data-ndb-event-detail-tab="payload"]', 'Enter')
+        ->assertAttribute('[data-ndb-event-detail-tab="payload"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-event-detail-panel="payload"]')
+        ->keys('[data-ndb-event-detail-back]', 'Enter');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-event-item][aria-pressed="true"]');
+
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const selected = document.querySelector('[data-ndb-event-item][aria-pressed="true"]');
+                const detail = document.querySelector('[data-ndb-event-detail]');
+
+                return document.activeElement === selected
+                    && getComputedStyle(detail).display === 'none';
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
 });
 
 it('presents Laravel decisions messages and source context without editor links', function () {

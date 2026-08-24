@@ -511,16 +511,19 @@ trait DefinesTestApplication
                             [data-http-client], [data-http-client-item], [data-method], [data-host], [data-status], [data-duration], [data-source] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-item], [data-ndb-notification-item], [data-ndb-event-item] { border-left: 20px solid rgb(255, 0, 0); }
-                            [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-event-outcome] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-event-listener-outcome] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
-                            [data-ndb-mail-facts], [data-ndb-notification-facts] { background: rgb(255, 0, 0); border-top: 20px solid rgb(255, 0, 0); display: block; padding: 50px; }
-                            [data-ndb-mail-fact], [data-ndb-notification-fact] { background: rgb(255, 0, 0); }
+                            [data-ndb-mail-facts], [data-ndb-notification-facts], [data-ndb-event-facts] { background: rgb(255, 0, 0); border-top: 20px solid rgb(255, 0, 0); display: block; padding: 50px; }
+                            [data-ndb-mail-fact], [data-ndb-notification-fact], [data-ndb-event-fact] { background: rgb(255, 0, 0); }
                             [data-ndb-mail-attachment-download] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
                             [data-ndb-authorization-item] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); height: 91px; }
                             [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-event-next-step] { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); }
+                            [data-ndb-event-detail-tab] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-event-listener-row] { background: rgb(255, 0, 0); padding: 50px; }
+                            [data-ndb-event-timeline] { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
                         </style>
                     </head>
                     <body>

@@ -392,16 +392,52 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const root = document.querySelector('[data-ndb-events]');
                 const row = document.querySelector('[data-ndb-event-item]:not([hidden])');
-                const outcome = document.querySelector('[data-ndb-event-outcome]');
+                const metadata = document.querySelector('[data-ndb-event-metadata]');
+                const metadataGrid = metadata.querySelector('[data-ndb-event-facts]');
+                const metadataFacts = [...metadata.querySelectorAll('[data-ndb-event-fact]')];
+                const metadataTerms = [...metadata.querySelectorAll('dt, dd')];
+                const outcome = document.querySelector('[data-ndb-event-listener-outcome]');
                 const nextStep = document.querySelector('[data-ndb-event-next-step]');
+                const listenerRow = document.querySelector('[data-ndb-event-listener-row]');
+                const timeline = document.querySelector('[data-ndb-event-timeline]');
+                const tabs = [...document.querySelectorAll('[data-ndb-event-detail-tab]')];
+                const tabIcons = [...document.querySelectorAll('[data-ndb-event-detail-tab-icon]')];
 
-                return root.getAttribute('data-events') === null
-                    && getComputedStyle(row).borderLeftWidth === '0px'
-                    && getComputedStyle(row).height !== '91px'
-                    && Number.parseFloat(getComputedStyle(outcome).fontSize) === 11
-                    && getComputedStyle(outcome).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(nextStep).backgroundColor !== 'rgb(255, 0, 0)'
-                    && Number.parseFloat(getComputedStyle(nextStep).borderRadius) > 0;
+                const checks = {
+                    rootAttribute: root.getAttribute('data-events') === null,
+                    rowBorder: getComputedStyle(row).borderLeftWidth === '0px',
+                    rowHeight: getComputedStyle(row).height !== '91px',
+                    metadataDisplay: getComputedStyle(metadataGrid).display === 'grid',
+                    metadataBorder: getComputedStyle(metadataGrid).borderTopWidth === '0px',
+                    metadataPadding: Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0,
+                    metadataBackground: getComputedStyle(metadataGrid).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    factBackgrounds: metadataFacts.every(
+                        (fact) => getComputedStyle(fact).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    ),
+                    termBackgrounds: metadataTerms.every(
+                        (term) => getComputedStyle(term).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    ),
+                    termColors: metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)'),
+                    termSize: Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 11,
+                    outcomeSize: Number.parseFloat(getComputedStyle(outcome).fontSize) === 11,
+                    outcomeBackground: getComputedStyle(outcome).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    nextStepBackground: getComputedStyle(nextStep).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    nextStepPadding: Number.parseFloat(getComputedStyle(nextStep).paddingTop) === 0,
+                    nextStepColor: getComputedStyle(nextStep).color !== 'rgb(0, 128, 0)',
+                    listenerBackground: getComputedStyle(listenerRow).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    listenerPadding: Number.parseFloat(getComputedStyle(listenerRow).paddingLeft) === 0,
+                    timelineBackground: getComputedStyle(timeline).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    timelineBorder: getComputedStyle(timeline).borderLeftWidth === '0px',
+                    timelinePadding: Number.parseFloat(getComputedStyle(timeline).paddingTop) === 0,
+                    tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                    tabIconCount: tabIcons.length === 3,
+                    tabIconSize: tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14),
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Event isolation failed: ' + failures.join(', '));
+
+                return true;
             })()
             JS)
         ->assertNoJavaScriptErrors();

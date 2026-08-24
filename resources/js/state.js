@@ -432,6 +432,7 @@ export function createNewDebugBar(
     eventSort: 'sequence',
     eventSelected: null,
     eventDetailOpen: false,
+    eventDetailTab: 'overview',
     eventDetailReturnFocus: null,
     visibleEventCount: summary.section_counts?.events ?? 0,
     visibleEventGroupCount: 0,
@@ -1908,6 +1909,7 @@ export function createNewDebugBar(
       this.eventSort = 'sequence';
       this.eventSelected = null;
       this.eventDetailOpen = false;
+      this.eventDetailTab = 'overview';
       this.eventDetailReturnFocus = null;
       this.visibleEventGroupCount = 0;
       if (this.inspectorOpen || selectedFromPicker || selectedFromRelation) {
@@ -3270,6 +3272,7 @@ export function createNewDebugBar(
       this.eventSearch = '';
       this.eventSort = 'sequence';
       this.eventDetailOpen = false;
+      this.eventDetailTab = 'overview';
       this.eventDetailReturnFocus = null;
       this.eventSelected = this.eventGroups.find((event) => event.source === 'application')?.id ?? null;
       this.$nextTick?.(() => this.applyEventFilters());
@@ -3280,6 +3283,9 @@ export function createNewDebugBar(
 
       this.eventSource = source;
       this.eventDetailOpen = false;
+      this.eventDetailTab = 'overview';
+      this.eventDetailReturnFocus = null;
+      this.eventSelected = null;
       this.applyEventFilters();
     },
 
@@ -3295,6 +3301,7 @@ export function createNewDebugBar(
 
       this.eventSelected = id;
       this.eventDetailOpen = true;
+      this.eventDetailTab = 'overview';
       this.eventDetailReturnFocus = returnFocus;
       this.$nextTick?.(() => {
         if (browser.viewportWidth?.() < 1024) this.$refs?.eventDetail?.focus?.();
@@ -3306,6 +3313,13 @@ export function createNewDebugBar(
       this.eventDetailOpen = false;
       this.eventDetailReturnFocus = null;
       this.$nextTick?.(() => returnFocus?.isConnected && returnFocus.focus?.());
+    },
+
+    setEventDetailTab(tab) {
+      if (!['overview', 'payload', 'source'].includes(tab)) return;
+
+      this.eventDetailTab = tab;
+      this.$nextTick?.(() => this.$refs?.eventDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
     },
 
     applyEventFilters() {
@@ -3362,6 +3376,7 @@ export function createNewDebugBar(
       this.visibleEventGroupCount = visibleGroups;
 
       if (!selectedVisible) {
+        if (this.eventSelected !== firstVisible) this.eventDetailTab = 'overview';
         this.eventSelected = firstVisible;
       }
     },
