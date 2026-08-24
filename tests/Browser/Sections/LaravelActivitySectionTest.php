@@ -1,10 +1,11 @@
 <?php
 
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
+use NewDebugBar\Tests\Fixtures\Events\ProfiledQueuedApplicationListener;
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('presents grouped Laravel activity with useful controls', function () {
-    visit('/profiled')
+it('groups noisy Laravel events around application evidence', function () {
+    $page = visit('/profiled-events')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="cache"]')
         ->assertSee('Hit rate')
@@ -16,7 +17,11 @@ it('presents grouped Laravel activity with useful controls', function () {
                 return results.includes('Hit') && results.includes('Miss');
             })()
             JS)
-        ->click('[data-ndb-select-section="events"]')
+        ->click('[data-ndb-select-section="events"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
         ->assertScript(<<<'JS'
             (() => {
                 const buttons = Array.from(document.querySelectorAll('[data-ndb-event-source]'));
@@ -26,14 +31,18 @@ it('presents grouped Laravel activity with useful controls', function () {
             })()
             JS)
         ->assertScript(<<<'JS'
-            ['application', 'all', 'framework'].every((source) => {
-                const expected = source === 'all'
-                    ? document.querySelectorAll('[data-ndb-event-item]').length
-                    : document.querySelectorAll(`[data-ndb-event-item][data-source="${source}"]`).length;
-                const count = document.querySelector(`[data-ndb-event-source-count="${source}"]`);
+            (() => {
+                const items = [...document.querySelectorAll('[data-ndb-event-item]')];
 
-                return count && Number(count.textContent.trim()) === expected;
-            })
+                return ['application', 'all', 'framework'].every((source) => {
+                    const expected = items
+                        .filter((item) => source === 'all' || item.dataset.ndbEventSourceValue === source)
+                        .reduce((count, item) => count + Number(item.dataset.ndbEventOccurrenceCount), 0);
+                    const count = document.querySelector(`[data-ndb-event-source-count="${source}"]`);
+
+                    return count && Number(count.textContent.trim()) === expected;
+                });
+            })()
             JS)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-event-source]')).every((button) => {
@@ -44,30 +53,70 @@ it('presents grouped Laravel activity with useful controls', function () {
                     && ! style.transitionProperty.includes('border');
             })
             JS)
-        ->click('[data-ndb-event-source="application"]')
         ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-event-item]:not([hidden])'))
-                .every((item) => item.dataset.source === 'application')
-            JS)
-        ->type('[data-ndb-event-search]', 'application.ready')
-        ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length', 1)
-        ->click('[data-ndb-select-section="logs"]')
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-log-level]')).every((button) => {
-                const style = getComputedStyle(button);
+            (() => {
+                const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+                const selected = document.querySelector('[data-ndb-event-item][aria-pressed="true"]');
 
-                return parseFloat(style.borderBottomLeftRadius) > 0
-                    && style.borderTopColor === style.borderBottomColor;
-            })
+                return visible.length === 4
+                    && visible.every((item) => item.dataset.ndbEventSourceValue === 'application')
+                    && visible.reduce((count, item) => count + Number(item.dataset.ndbEventOccurrenceCount), 0) === 12
+                    && selected?.dataset.ndbEventSourceValue === 'application'
+                    && document.querySelector('[data-ndb-event-visible-summary]').textContent.trim() === '12 events in 4 groups';
+            })()
             JS)
-        ->click('[data-ndb-log-level="info"]')
+        ->assertSee(ProfiledApplicationListener::class.'@handle')
+        ->assertSee(ProfiledQueuedApplicationListener::class.'@handle')
+        ->assertSee('2 registrations')
+        ->assertSee('1 extra registration')
+        ->assertSee('trip')
+        ->assertSee('changes')
+        ->assertSee('What to check next')
+        ->assertMissing('private fixture value')
+        ->assertVisible('[data-ndb-event-copy-name]')
+        ->assertVisible('[data-ndb-event-copy-payload-shape]')
+        ->type('[data-ndb-event-search]', 'ItineraryRecalculation');
+
+    DebugBarBrowser::waitForVisibleElement(
+        $page,
+        '[data-ndb-event-item][data-ndb-event-occurrence-count="8"]:not([hidden])',
+    );
+
+    $page
         ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-log-item]:not([hidden])'))
-                .every((item) => item.dataset.level === 'info')
+            (() => {
+                const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+
+                return visible.length === 1
+                    && visible[0].dataset.ndbEventOccurrenceCount === '8'
+                    && document.querySelector('[data-ndb-event-detail-title]').textContent.includes('ItineraryRecalculation');
+            })()
             JS)
-        ->type('[data-ndb-log-search]', 'profiled request')
-        ->assertScript('document.querySelectorAll("[data-ndb-log-item]:not([hidden])").length', 1)
+        ->type('[data-ndb-event-search]', 'event-that-does-not-exist');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-event-empty]');
+
+    $page
+        ->assertSee('No events match this source and search.')
+        ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length === 0')
+        ->type('[data-ndb-event-search]', '')
+        ->click('[data-ndb-event-source="framework"]')
+        ->select('[data-ndb-event-sort]', 'frequency')
+        ->assertAttribute('[data-ndb-event-source="framework"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
+                const counts = visible.map((item) => Number(item.dataset.ndbEventOccurrenceCount));
+
+                return visible.length > 0
+                    && visible.every((item) => item.dataset.ndbEventSourceValue === 'framework')
+                    && counts.every((count, index) => index === 0 || counts[index - 1] >= count)
+                    && document.querySelector('[data-ndb-event-detail-title]').textContent.trim().length > 0;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
+
+    DebugBarBrowser::assertSectionSelected($page, 'events');
 });
 
 it('presents Laravel decisions messages and source context without editor links', function () {
@@ -103,9 +152,21 @@ it('presents Laravel decisions messages and source context without editor links'
     $page
         ->click('[data-ndb-select-section="messages"]')
         ->assertSee('Checkout checkpoint')
-        ->click('[data-ndb-select-section="events"]')
-        ->click('[data-ndb-event-item]:first-child summary')
+        ->click('[data-ndb-select-section="events"]');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
+        ->click('[data-ndb-event-item]:not([hidden])')
         ->assertSee(ProfiledApplicationListener::class.'@handle')
+        ->assertSee(ProfiledQueuedApplicationListener::class.'@handle')
+        ->assertSee('Completed and queued')
+        ->assertSee('2 registrations')
+        ->assertCount('[data-ndb-event-copy-listener-source]', 2)
+        ->assertScript(<<<'JS'
+            [...document.querySelectorAll('[data-ndb-event-copy-listener-source]')]
+                .every((button) => button.getClientRects().length > 0)
+            JS)
         ->assertMissing('a[href^="vscode://file/"]')
         ->assertNoJavaScriptErrors();
 

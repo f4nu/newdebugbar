@@ -386,5 +386,23 @@ it('keeps host styles and package styles isolated', function () {
                     && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
             })()
             JS)
+        ->click('[data-ndb-section="events"]')
+        ->assertVisible('[data-ndb-section-panel="events"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-events]');
+                const row = document.querySelector('[data-ndb-event-item]:not([hidden])');
+                const outcome = document.querySelector('[data-ndb-event-outcome]');
+                const nextStep = document.querySelector('[data-ndb-event-next-step]');
+
+                return root.getAttribute('data-events') === null
+                    && getComputedStyle(row).borderLeftWidth === '0px'
+                    && getComputedStyle(row).height !== '91px'
+                    && Number.parseFloat(getComputedStyle(outcome).fontSize) === 11
+                    && getComputedStyle(outcome).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(nextStep).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(nextStep).borderRadius) > 0;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

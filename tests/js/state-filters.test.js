@@ -1000,34 +1000,99 @@ test('timeline controls filter sections and search labels', () => {
   assert.equal(state.visibleTimelineCount, 0);
 });
 
-test('event controls separate framework noise from application events', () => {
-  const state = createNewDebugBar(summary, runtime());
-  const item = (source, search) => ({ dataset: { source, search }, hidden: false });
-  const framework = item('framework', 'illuminate auth login');
-  const application = item('application', 'clinic ready');
-  state.$refs = { eventList: { children: [framework, application] } };
+test('event controls group, filter, sort, and select useful event evidence', () => {
+  const browser = runtime();
+  const state = createNewDebugBar(summary, browser);
+  const appended = [];
+  const item = (id, source, search, occurrences, firstSequence, lastSequence) => ({
+    dataset: {
+      ndbEventId: String(id),
+      ndbEventSourceValue: source,
+      ndbEventSearchValue: search,
+      ndbEventOccurrenceCount: String(occurrences),
+      ndbEventFirstSequence: String(firstSequence),
+      ndbEventLastSequence: String(lastSequence),
+    },
+    hidden: false,
+    style: {
+      display: '',
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+  });
+  const framework = item(1, 'framework', 'illuminate auth login', 14, 1, 18);
+  const application = item(2, 'application', 'clinic ready listener payload source', 2, 4, 9);
+  const laterApplication = item(3, 'application', 'trip refreshed listener', 1, 20, 20);
+  state.$refs = {
+    eventList: {
+      children: [framework, application, laterApplication],
+      appendChild: (child) => appended.push(child),
+    },
+  };
+  state.$nextTick = (callback) => callback();
 
-  state.applyEventFilters();
+  state.initializeEvents([
+    { id: 1, source: 'framework', name: 'Illuminate\\Auth\\Events\\Login' },
+    { id: 2, source: 'application', name: 'App\\Events\\ClinicReady' },
+    { id: 3, source: 'application', name: 'App\\Events\\TripRefreshed' },
+  ]);
   assert.equal(state.eventSource, 'application');
+  assert.equal(state.eventSelected, 2);
   assert.equal(framework.hidden, true);
+  assert.equal(framework.style.display, 'none');
   assert.equal(application.hidden, false);
-  assert.equal(state.visibleEventCount, 1);
+  assert.equal(laterApplication.hidden, false);
+  assert.equal(state.visibleEventCount, 3);
+  assert.equal(state.visibleEventGroupCount, 2);
+  assert.equal(state.visibleEventSummary, '3 events in 2 groups');
 
-  state.eventSearch = 'READY';
+  state.eventSearch = 'PAYLOAD';
   state.applyEventFilters();
   assert.equal(application.hidden, false);
+  assert.equal(laterApplication.hidden, true);
+  assert.equal(state.visibleEventCount, 2);
+  assert.equal(state.visibleEventGroupCount, 1);
 
+  state.eventSearch = '';
   state.setEventSource('framework');
   assert.equal(state.eventSource, 'framework');
-  assert.equal(framework.hidden, true);
+  assert.equal(framework.hidden, false);
   assert.equal(application.hidden, true);
+  assert.equal(state.eventSelected, 1);
+  assert.equal(state.visibleEventCount, 14);
+
+  appended.length = 0;
+  state.setEventSource('all');
+  state.setEventSort('frequency');
+  assert.deepEqual(appended.slice(-3), [framework, application, laterApplication]);
+
+  appended.length = 0;
+  state.setEventSort('latest');
+  assert.deepEqual(appended, [laterApplication, framework, application]);
+
+  state.selectEvent(3, laterApplication);
+  assert.equal(state.eventSelected, 3);
+  assert.equal(state.eventDetailOpen, true);
+  state.closeEventDetail();
+  assert.equal(state.eventDetailOpen, false);
 
   state.setEventSource('invalid');
-  assert.equal(state.eventSource, 'framework');
+  state.setEventSort('invalid');
+  state.selectEvent(99);
+  assert.equal(state.eventSource, 'all');
+  assert.equal(state.eventSort, 'latest');
+  assert.equal(state.eventSelected, 3);
+  assert.equal(state.formatEventTime(null), 'Timing unavailable');
+  assert.equal(state.formatEventTime('missing'), 'Timing unavailable');
 
   state.$refs = {};
   state.applyEventFilters();
   assert.equal(state.visibleEventCount, 0);
+  assert.equal(state.visibleEventGroupCount, 0);
 });
 
 test('log controls filter available levels and messages', () => {

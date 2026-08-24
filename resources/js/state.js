@@ -426,9 +426,15 @@ export function createNewDebugBar(
     timelineFilter: 'key',
     timelineSearch: '',
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
+    eventGroups: [],
     eventSource: 'application',
     eventSearch: '',
+    eventSort: 'sequence',
+    eventSelected: null,
+    eventDetailOpen: false,
+    eventDetailReturnFocus: null,
     visibleEventCount: summary.section_counts?.events ?? 0,
+    visibleEventGroupCount: 0,
     logLevel: 'all',
     logSearch: '',
     visibleLogCount: summary.section_counts?.logs ?? 0,
@@ -708,6 +714,17 @@ export function createNewDebugBar(
       return (
         this.authorizationDecisions.find((decision) => decision.execution === this.authorizationSelected) ?? null
       );
+    },
+
+    get selectedEvent() {
+      return this.eventGroups.find((event) => event.id === this.eventSelected) ?? null;
+    },
+
+    get visibleEventSummary() {
+      const events = `${this.visibleEventCount} ${this.visibleEventCount === 1 ? 'event' : 'events'}`;
+      const groups = `${this.visibleEventGroupCount} ${this.visibleEventGroupCount === 1 ? 'group' : 'groups'}`;
+
+      return `${events} in ${groups}`;
     },
 
     get livewireComponents() {
@@ -1885,8 +1902,14 @@ export function createNewDebugBar(
       this.authorizationDetailOpen = false;
       this.authorizationDetailTab = 'decision';
       this.visibleAuthorizationCount = 0;
+      this.eventGroups = [];
       this.eventSource = 'application';
       this.eventSearch = '';
+      this.eventSort = 'sequence';
+      this.eventSelected = null;
+      this.eventDetailOpen = false;
+      this.eventDetailReturnFocus = null;
+      this.visibleEventGroupCount = 0;
       if (this.inspectorOpen || selectedFromPicker || selectedFromRelation) {
         this.openInspector(selected);
       } else {
@@ -3241,27 +3264,112 @@ export function createNewDebugBar(
       this.visibleTimelineCount = visible;
     },
 
+    initializeEvents(groups) {
+      this.eventGroups = Array.isArray(groups) ? groups : [];
+      this.eventSource = 'application';
+      this.eventSearch = '';
+      this.eventSort = 'sequence';
+      this.eventDetailOpen = false;
+      this.eventDetailReturnFocus = null;
+      this.eventSelected = this.eventGroups.find((event) => event.source === 'application')?.id ?? null;
+      this.$nextTick?.(() => this.applyEventFilters());
+    },
+
     setEventSource(source) {
       if (!['all', 'application', 'framework'].includes(source)) return;
 
       this.eventSource = source;
+      this.eventDetailOpen = false;
       this.applyEventFilters();
+    },
+
+    setEventSort(sort) {
+      if (!['sequence', 'frequency', 'latest'].includes(sort)) return;
+
+      this.eventSort = sort;
+      this.applyEventFilters();
+    },
+
+    selectEvent(id, returnFocus = null) {
+      if (!this.eventGroups.some((event) => event.id === id)) return;
+
+      this.eventSelected = id;
+      this.eventDetailOpen = true;
+      this.eventDetailReturnFocus = returnFocus;
+      this.$nextTick?.(() => {
+        if (browser.viewportWidth?.() < 1024) this.$refs?.eventDetail?.focus?.();
+      });
+    },
+
+    closeEventDetail() {
+      const returnFocus = this.eventDetailReturnFocus;
+      this.eventDetailOpen = false;
+      this.eventDetailReturnFocus = null;
+      this.$nextTick?.(() => returnFocus?.isConnected && returnFocus.focus?.());
     },
 
     applyEventFilters() {
       const list = this.$refs?.eventList ?? this.$root?.querySelector?.('[x-ref="eventList"]');
       const search = this.eventSearch.toLowerCase().trim();
-      let visible = 0;
+      let visibleEvents = 0;
+      let visibleGroups = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
 
-      [...(list?.children ?? [])].forEach((item) => {
-        const matches =
-          (this.eventSource === 'all' || item.dataset.source === this.eventSource) &&
-          (search === '' || item.dataset.search?.includes(search));
-        item.hidden = !matches;
-        if (matches) visible++;
-      });
+      [...(list?.children ?? [])]
+        .sort((left, right) => {
+          const firstSequence = Number(left.dataset.ndbEventFirstSequence ?? 0);
+          const rightFirstSequence = Number(right.dataset.ndbEventFirstSequence ?? 0);
 
-      this.visibleEventCount = visible;
+          if (this.eventSort === 'frequency') {
+            return (
+              Number(right.dataset.ndbEventOccurrenceCount ?? 0) -
+                Number(left.dataset.ndbEventOccurrenceCount ?? 0) ||
+              firstSequence - rightFirstSequence
+            );
+          }
+
+          if (this.eventSort === 'latest') {
+            return (
+              Number(right.dataset.ndbEventLastSequence ?? 0) - Number(left.dataset.ndbEventLastSequence ?? 0) ||
+              firstSequence - rightFirstSequence
+            );
+          }
+
+          return firstSequence - rightFirstSequence;
+        })
+        .forEach((item) => {
+          const matches =
+            (this.eventSource === 'all' || item.dataset.ndbEventSourceValue === this.eventSource) &&
+            (search === '' || item.dataset.ndbEventSearchValue?.includes(search));
+          item.hidden = !matches;
+
+          if (matches) {
+            item.style.removeProperty('display');
+            const id = Number(item.dataset.ndbEventId);
+            firstVisible ??= id;
+            selectedVisible ||= id === this.eventSelected;
+            visibleEvents += Number(item.dataset.ndbEventOccurrenceCount ?? 0);
+            visibleGroups++;
+          } else {
+            item.style.setProperty('display', 'none', 'important');
+          }
+
+          list?.appendChild?.(item);
+        });
+
+      this.visibleEventCount = visibleEvents;
+      this.visibleEventGroupCount = visibleGroups;
+
+      if (!selectedVisible) {
+        this.eventSelected = firstVisible;
+      }
+    },
+
+    formatEventTime(value) {
+      if (value === null || value === '' || !Number.isFinite(Number(value))) return 'Timing unavailable';
+
+      return `${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ms`;
     },
 
     setLogLevel(level) {

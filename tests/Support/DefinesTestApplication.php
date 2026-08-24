@@ -342,6 +342,46 @@ trait DefinesTestApplication
             fn () => response('<!doctype html><html><body><h1>Empty authorization fixture</h1></body></html>'),
         );
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-events', function () {
+            Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
+            Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
+            Event::listen(ProfiledApplicationEvent::class, ProfiledQueuedApplicationListener::class);
+            Event::listen('App\\Events\\TripArchived', static fn () => null);
+
+            Event::dispatch(new ProfiledApplicationEvent);
+            Event::dispatch(new ProfiledApplicationEvent(
+                trip: 'Long application event fixture',
+                changes: ['status', 'travelers', 'lodging'],
+            ));
+            Event::dispatch('App\\Events\\TripArchived', [['tripId' => 42]]);
+
+            $largeShape = array_fill_keys(
+                array_map(static fn (int $index): string => 'field_'.$index, range(1, 30)),
+                'private fixture value',
+            );
+
+            foreach (range(1, 8) as $dispatch) {
+                Event::dispatch(
+                    'App\\Events\\TravelPlanning\\KyotoAutumnItineraryRecalculationRequestedForEveryCollaborator',
+                    [[...$largeShape, 'dispatch' => $dispatch]],
+                );
+            }
+
+            Event::dispatch('App\\Events\\NoListenerWasRegistered');
+
+            foreach (range(1, 12) as $number) {
+                DB::select('select ? as event_fixture', [$number]);
+            }
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Event diagnostics</title></head>
+                    <body><main><h1 data-testid="host-page">Event diagnostics</h1></main></body>
+                </html>
+                HTML);
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-views', function () {
             $context = view('context', [
                 'label' => 'Context view',
@@ -379,6 +419,8 @@ trait DefinesTestApplication
         );
 
         $router->middleware(ProfileRequest::class)->get('/hostile-styles', function () {
+            Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
+            Event::dispatch(new ProfiledApplicationEvent);
             foreach (['alpha', 'beta', 'gamma'] as $value) {
                 DB::select('select ? as hostile_value', [$value]);
             }
@@ -468,8 +510,8 @@ trait DefinesTestApplication
                             [data-cache], [data-cache-item], [data-cache-result], [data-cache-filter], [data-cache-search], [data-cache-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-http-client], [data-http-client-item], [data-method], [data-host], [data-status], [data-duration], [data-source] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
-                            [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
-                            [data-ndb-queue-status], [data-ndb-notification-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-queue-item], [data-ndb-notification-item], [data-ndb-event-item] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-event-outcome] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-mail-facts], [data-ndb-notification-facts] { background: rgb(255, 0, 0); border-top: 20px solid rgb(255, 0, 0); display: block; padding: 50px; }
                             [data-ndb-mail-fact], [data-ndb-notification-fact] { background: rgb(255, 0, 0); }
@@ -478,6 +520,7 @@ trait DefinesTestApplication
                             [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-event-next-step] { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); }
                         </style>
                     </head>
                     <body>
