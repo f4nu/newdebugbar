@@ -74,6 +74,7 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertSee('What to check next')
         ->assertMissing('private fixture value')
         ->assertVisible('[data-ndb-event-copy-name]')
+        ->assertAttribute('[data-ndb-event-copy-name]', 'aria-label', 'Copy event name')
         ->assertVisible('[data-ndb-event-copy-payload-shape]')
         ->type('[data-ndb-event-search]', 'ItineraryRecalculation');
 
