@@ -813,6 +813,7 @@ test('authorization controls filter search selection detail and overview navigat
   let headingFocused = 0;
   let selectedFocused = 0;
   let detailScrolled = 0;
+  let detailFocusOptions = null;
   const style = () => ({ removeProperty() {}, setProperty() {} });
   const allowed = {
     dataset: {
@@ -840,7 +841,13 @@ test('authorization controls filter search selection detail and overview navigat
   };
   state.$refs = {
     authorizationList: { children: [allowed, denied] },
-    authorizationDetail: { scrollTo: () => detailScrolled++ },
+    authorizationDetail: {
+      scrollTo: () => detailScrolled++,
+      focus: (options) => {
+        detailFocusOptions = options;
+      },
+    },
+    content: { scrollTop: 42 },
     sectionHeading: { focus: () => headingFocused++ },
   };
   state.$nextTick = (callback) => callback();
@@ -870,6 +877,8 @@ test('authorization controls filter search selection detail and overview navigat
   assert.equal(state.authorizationSelected, 2);
   assert.equal(state.authorizationDetailOpen, true);
   assert.equal(state.authorizationDetailTab, 'decision');
+  assert.equal(state.$refs.content.scrollTop, 0);
+  assert.deepEqual(detailFocusOptions, { preventScroll: true });
 
   state.setAuthorizationDetailTab('source');
   assert.equal(state.authorizationDetailTab, 'source');

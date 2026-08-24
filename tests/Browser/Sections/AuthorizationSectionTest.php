@@ -177,6 +177,8 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                 const list = workspace.firstElementChild;
                 const back = document.querySelector('[data-ndb-authorization-detail-back]');
                 const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
+                const contentRect = content.getBoundingClientRect();
+                const backRect = back.getBoundingClientRect();
 
                 return getComputedStyle(list).display === 'none'
                     && getComputedStyle(detail).display === 'flex'
@@ -186,6 +188,9 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                     && getComputedStyle(detail).overflowY !== 'auto'
                     && getComputedStyle(content).overflowY === 'auto'
                     && back.getClientRects().length > 0
+                    && content.scrollTop === 0
+                    && backRect.top >= contentRect.top
+                    && backRect.bottom <= contentRect.bottom
                     && back.textContent.trim() === 'Decisions'
                     && tabs.length === 2
                     && tabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))

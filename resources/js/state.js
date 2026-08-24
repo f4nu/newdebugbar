@@ -3129,9 +3129,12 @@ export function createNewDebugBar(
       this.resetAuthorizationDetail();
       this.$nextTick?.(() => {
         const detail = this.$refs?.authorizationDetail;
-        const mobile = globalThis.matchMedia?.('(max-width: 1023px)')?.matches ?? false;
+        const mobile = browser.matchMedia?.('(max-width: 1023px)')?.matches ?? false;
 
-        if (mobile) detail?.focus?.();
+        if (mobile) {
+          if (this.$refs?.content) this.$refs.content.scrollTop = 0;
+          detail?.focus?.({ preventScroll: true });
+        }
       });
     },
 
