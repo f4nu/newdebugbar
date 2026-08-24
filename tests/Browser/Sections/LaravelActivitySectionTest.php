@@ -103,13 +103,18 @@ it('groups noisy Laravel events around application evidence', function () {
                 const rows = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
                 const tracks = rows.map((row) => getComputedStyle(row).gridTemplateColumns);
                 const attention = [...document.querySelectorAll('[data-ndb-event-item] span')]
-                    .find((element) => element.textContent.trim() === 'Duplicate listener registration');
+                    .find((element) => element.textContent.trim() === 'Duplicate registration');
                 const attentionRow = attention?.closest('[data-ndb-event-item]');
+                const rightEdges = rows.flatMap((row) => [row.children[1], row.children[3]])
+                    .map((element) => Math.round(element.getBoundingClientRect().right));
 
                 return rows.length > 1
                     && new Set(tracks).size === 1
+                    && rows.every((row) => row.children.length === 4 && row.getBoundingClientRect().height <= 64)
+                    && new Set(rightEdges).size === 1
                     && attention
-                    && Math.abs(attention.getBoundingClientRect().left - attentionRow.children[0].getBoundingClientRect().left) < 1;
+                    && attention === attentionRow.children[3]
+                    && attention.getBoundingClientRect().right <= attentionRow.getBoundingClientRect().right;
             })()
             JS)
         ->assertSee(ProfiledApplicationListener::class.'@handle')
@@ -238,7 +243,7 @@ it('keeps Events selection focused with one mobile scroll owner', function () {
                     mobileWorkspace: getComputedStyle(workspace).display !== 'grid',
                     listVisible: getComputedStyle(list).display === 'flex',
                     detailHidden: getComputedStyle(detail).display === 'none',
-                    compactRows: rows.every((row) => row.getBoundingClientRect().height <= 84),
+                    compactRows: rows.every((row) => row.getBoundingClientRect().height <= 64),
                 };
                 const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
 

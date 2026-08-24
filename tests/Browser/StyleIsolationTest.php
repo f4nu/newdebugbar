@@ -406,7 +406,7 @@ it('keeps host styles and package styles isolated', function () {
                 const checks = {
                     rootAttribute: root.getAttribute('data-events') === null,
                     rowBorder: getComputedStyle(row).borderLeftWidth === '0px',
-                    rowHeight: getComputedStyle(row).height !== '91px',
+                    rowHeight: row.getBoundingClientRect().height <= 64,
                     metadataDisplay: getComputedStyle(metadataGrid).display === 'grid',
                     metadataBorder: getComputedStyle(metadataGrid).borderTopWidth === '0px',
                     metadataPadding: Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0,
