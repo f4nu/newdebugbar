@@ -22,7 +22,7 @@ final class HttpClientAnalyzer
 
         foreach (array_values($requests) as $index => $request) {
             $url = (string) ($request['url'] ?? '');
-            $host = (string) (parse_url($url, PHP_URL_HOST) ?: 'Unknown host');
+            $host = (string) (parse_url($url, PHP_URL_HOST) ?: '—');
             $path = (string) (parse_url($url, PHP_URL_PATH) ?: '/');
             $query = parse_url($url, PHP_URL_QUERY);
             $duration = is_numeric($request['duration_ms'] ?? null)
@@ -32,8 +32,11 @@ final class HttpClientAnalyzer
             $failed = (bool) ($request['failed'] ?? false) || ($status !== null && $status >= 400);
             $slow = $duration !== null && $duration >= $this->slowRequestMs;
             $reason = trim((string) ($request['reason'] ?? ''));
-            $method = strtoupper((string) ($request['method'] ?? 'HTTP'));
+            $method = strtoupper(trim((string) ($request['method'] ?? '')));
+            $method = $method === '' ? '—' : $method;
             $durationLabel = $this->durationLabel($duration);
+            $redirect = $status !== null && $status >= 300 && $status < 400;
+            $redirectLocation = $this->headerValue($request['response']['headers'] ?? null, 'location');
 
             $items[] = [
                 ...$request,
@@ -46,18 +49,24 @@ final class HttpClientAnalyzer
                 'status' => $status,
                 'failed' => $failed,
                 'slow' => $slow,
+                'redirect' => $redirect,
                 'attention' => $failed || $slow,
                 'status_label' => $this->statusLabel($status, $reason, $failed),
+                'list_status_label' => $status === null ? ($failed ? 'Failed' : '—') : (string) $status,
                 'duration_label' => $durationLabel,
                 'timing_summary' => $this->timingSummary($durationLabel, $slow),
+                'request_body_size_label' => $this->byteLabel($request['request']['body_size_bytes'] ?? null),
+                'response_body_size_label' => $this->byteLabel($request['response']['body_size_bytes'] ?? null),
+                'redirect_location' => $redirectLocation,
                 'response_summary' => $this->responseSummary(
                     $request['response'] ?? null,
                     $request['exception_message'] ?? null,
+                    $redirectLocation,
                 ),
-                'meaning' => $this->meaning($status, $failed, $slow),
+                'meaning' => $this->meaning($status, $failed, $slow, $redirect),
                 'what_happened' => $this->whatHappened($host, $status, $reason, $failed, $slow, $duration),
-                'why_it_matters' => $this->whyItMatters($status, $failed, $slow),
-                'check_next' => $this->checkNext($status, $failed, $slow),
+                'why_it_matters' => $this->whyItMatters($status, $failed, $slow, $redirect),
+                'check_next' => $this->checkNext($status, $failed, $slow, $redirect),
                 'curl' => $this->curl($method, $url, $request['request'] ?? null),
                 'search' => mb_strtolower(implode(' ', array_filter([
                     $method,
@@ -69,6 +78,7 @@ final class HttpClientAnalyzer
                     $request['exception_class'] ?? null,
                     $request['exception_message'] ?? null,
                     $request['callsite']['file'] ?? null,
+                    $redirectLocation,
                 ], fn (mixed $value): bool => is_scalar($value) && (string) $value !== ''))),
             ];
         }
@@ -91,13 +101,13 @@ final class HttpClientAnalyzer
             return trim($status.' '.$reason);
         }
 
-        return $failed ? 'Connection error' : 'No response';
+        return $failed ? 'Connection failed' : 'No response';
     }
 
     private function durationLabel(?float $duration): string
     {
         if ($duration === null) {
-            return 'Timing unavailable';
+            return '—';
         }
 
         if ($duration === 0.0) {
@@ -120,7 +130,7 @@ final class HttpClientAnalyzer
         );
     }
 
-    private function responseSummary(mixed $response, mixed $exceptionMessage): string
+    private function responseSummary(mixed $response, mixed $exceptionMessage, ?string $redirectLocation): string
     {
         if (is_scalar($exceptionMessage) && trim((string) $exceptionMessage) !== '') {
             return trim((string) $exceptionMessage);
@@ -128,6 +138,10 @@ final class HttpClientAnalyzer
 
         if (! is_array($response)) {
             return 'No response was captured.';
+        }
+
+        if ($redirectLocation !== null) {
+            return 'Redirected to '.$redirectLocation.'.';
         }
 
         $body = $response['body'] ?? null;
@@ -160,6 +174,10 @@ final class HttpClientAnalyzer
         if ($status !== null) {
             $statusLabel = trim($status.' '.$reason);
 
+            if ($slow && $duration !== null) {
+                return sprintf('%s returned HTTP %s in %s ms.', $host, $statusLabel, $this->number($duration));
+            }
+
             return sprintf('%s returned HTTP %s.', $host, $statusLabel);
         }
 
@@ -174,7 +192,7 @@ final class HttpClientAnalyzer
         return sprintf('The request to %s completed.', $host);
     }
 
-    private function meaning(?int $status, bool $failed, bool $slow): string
+    private function meaning(?int $status, bool $failed, bool $slow, bool $redirect): string
     {
         if ($status !== null && $status >= 500) {
             return 'The upstream service could not complete this request.';
@@ -192,23 +210,39 @@ final class HttpClientAnalyzer
             return 'The upstream service responded more slowly than expected.';
         }
 
+        if ($redirect) {
+            return 'The upstream service redirected the request.';
+        }
+
         return 'The upstream service completed this request.';
     }
 
-    private function whyItMatters(?int $status, bool $failed, bool $slow): string
+    private function whyItMatters(?int $status, bool $failed, bool $slow, bool $redirect): string
     {
-        if ($failed || ($status !== null && $status >= 400)) {
-            return 'This request did not complete normally.';
+        if ($status !== null && $status >= 500) {
+            return 'The upstream service could not complete the request, so the caller must handle an unavailable dependency.';
+        }
+
+        if ($status !== null && $status >= 400) {
+            return 'The upstream service rejected the request, so retrying it unchanged is unlikely to help.';
+        }
+
+        if ($failed) {
+            return 'No HTTP response reached the application, so the dependent work may be incomplete.';
         }
 
         if ($slow) {
-            return sprintf('This request exceeded the %s ms slow-request threshold.', $this->number($this->slowRequestMs));
+            return sprintf('It exceeded the %s ms threshold and added avoidable time to this request.', $this->number($this->slowRequestMs));
         }
 
-        return 'The upstream service completed this request normally.';
+        if ($redirect) {
+            return 'The caller received a redirect instead of the requested representation.';
+        }
+
+        return 'The upstream service completed the request normally.';
     }
 
-    private function checkNext(?int $status, bool $failed, bool $slow): string
+    private function checkNext(?int $status, bool $failed, bool $slow, bool $redirect): string
     {
         if ($status === 401 || $status === 403) {
             return 'Check the credentials, scopes, and access rules used for this request.';
@@ -230,6 +264,10 @@ final class HttpClientAnalyzer
             return 'Confirm endpoint health, timeout, and retry behavior.';
         }
 
+        if ($status !== null && $status >= 400) {
+            return 'Inspect the response body, then confirm the request method, URL, headers, and payload.';
+        }
+
         if ($failed) {
             return 'Check DNS, network access, the endpoint, and timeout settings.';
         }
@@ -238,7 +276,47 @@ final class HttpClientAnalyzer
             return 'Inspect the response size, endpoint work, timeout, and whether this call can leave the request path.';
         }
 
+        if ($redirect) {
+            return 'If the redirect was unexpected, inspect the Location header and the client redirect settings.';
+        }
+
         return 'No follow-up is needed.';
+    }
+
+    private function byteLabel(mixed $bytes): string
+    {
+        if (! is_numeric($bytes)) {
+            return '—';
+        }
+
+        $bytes = max(0, (int) $bytes);
+
+        return match (true) {
+            $bytes >= 1024 * 1024 => $this->number($bytes / (1024 * 1024)).' MB',
+            $bytes >= 1024 => $this->number($bytes / 1024).' KB',
+            default => number_format($bytes).' B',
+        };
+    }
+
+    private function headerValue(mixed $headers, string $name): ?string
+    {
+        if (! is_array($headers)) {
+            return null;
+        }
+
+        foreach ($headers as $header => $values) {
+            if (strtolower((string) $header) !== strtolower($name)) {
+                continue;
+            }
+
+            foreach ((array) $values as $value) {
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    return trim((string) $value);
+                }
+            }
+        }
+
+        return null;
     }
 
     private function curl(string $method, string $url, mixed $request): string

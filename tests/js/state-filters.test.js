@@ -226,7 +226,7 @@ test('HTTP client filters failures and slow requests while keeping one selected'
   assert.equal(state.httpClientSort, 'duration');
   assert.equal(state.httpClientSelected, 2);
 
-  assert.equal(state.formatHttpClientEvidence(null), 'No evidence was captured.');
+  assert.equal(state.formatHttpClientEvidence(null), '—');
   assert.equal(state.formatHttpClientEvidence('raw body'), 'raw body');
   assert.equal(state.formatHttpClientEvidence({ ready: true }), '{\n  "ready": true\n}');
 });

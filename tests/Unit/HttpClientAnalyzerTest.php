@@ -11,8 +11,12 @@ it('turns outbound requests into focused failure and timing evidence', function 
             'reason' => 'OK',
             'duration_ms' => 319.53,
             'failed' => false,
+            'request' => [
+                'body_size_bytes' => 0,
+            ],
             'response' => [
                 'body' => ['recommendations' => ['debugging', 'profiling']],
+                'body_size_bytes' => 128,
             ],
             'callsite' => ['file' => 'routes/web.php', 'line' => 122],
         ],
@@ -30,10 +34,12 @@ it('turns outbound requests into focused failure and timing evidence', function 
                     'Host' => ['api.error.test'],
                 ],
                 'body' => ['name' => "D'Angelo", 'token' => '[redacted]'],
+                'body_size_bytes' => 52,
             ],
             'exception_message' => 'Remote service failed',
             'response' => [
                 'body' => ['message' => 'Service unavailable.'],
+                'body_size_bytes' => 34,
             ],
             'callsite' => ['file' => 'routes/web.php', 'line' => 125],
         ],
@@ -44,6 +50,7 @@ it('turns outbound requests into focused failure and timing evidence', function 
             'duration_ms' => null,
             'failed' => true,
             'exception_class' => 'Illuminate\\Http\\Client\\ConnectionException',
+            'request' => ['body_size_bytes' => 28],
         ],
     ]);
 
@@ -63,8 +70,11 @@ it('turns outbound requests into focused failure and timing evidence', function 
         ->status_label->toBe('200 OK')
         ->duration_label->toBe('319.53 ms')
         ->timing_summary->toBe('319.53 ms, above the 250 ms threshold')
+        ->request_body_size_label->toBe('0 B')
+        ->response_body_size_label->toBe('128 B')
         ->response_summary->toBe('A response body was captured.')
         ->meaning->toBe('The upstream service responded more slowly than expected.')
+        ->what_happened->toBe('api.recommendations.test returned HTTP 200 OK in 319.53 ms.')
         ->why_it_matters->toContain('250 ms')
         ->and($analysis['items'][1])
         ->execution->toBe(2)
@@ -72,6 +82,8 @@ it('turns outbound requests into focused failure and timing evidence', function 
         ->status_label->toBe('503 Service Unavailable')
         ->duration_label->toBe('68.44 ms')
         ->timing_summary->toBe('68.44 ms')
+        ->request_body_size_label->toBe('52 B')
+        ->response_body_size_label->toBe('34 B')
         ->response_summary->toBe('Remote service failed')
         ->meaning->toBe('The upstream service could not complete this request.')
         ->what_happened->toBe('api.error.test returned HTTP 503 Service Unavailable.')
@@ -86,9 +98,12 @@ it('turns outbound requests into focused failure and timing evidence', function 
         ->curl->not->toContain("--header 'Host:")
         ->and($analysis['items'][2])
         ->duration_ms->toBeNull()
-        ->status_label->toBe('Connection error')
-        ->duration_label->toBe('Timing unavailable')
-        ->timing_summary->toBe('Timing unavailable')
+        ->status_label->toBe('Connection failed')
+        ->list_status_label->toBe('Failed')
+        ->duration_label->toBe('—')
+        ->timing_summary->toBe('—')
+        ->request_body_size_label->toBe('28 B')
+        ->response_body_size_label->toBe('—')
         ->response_summary->toBe('No response was captured.')
         ->meaning->toBe('No response reached the application.')
         ->check_next->toBe('Check DNS, network access, the endpoint, and timeout settings.')
@@ -105,7 +120,7 @@ it('keeps successful fast requests quiet', function () {
     ]])['items'][0];
 
     expect($item)
-        ->host->toBe('Unknown host')
+        ->host->toBe('—')
         ->path->toBe('not-a-url')
         ->failed->toBeFalse()
         ->slow->toBeFalse()
@@ -115,4 +130,42 @@ it('keeps successful fast requests quiet', function () {
         ->response_summary->toBe('No response body was returned.')
         ->meaning->toBe('The upstream service completed this request.')
         ->check_next->toBe('No follow-up is needed.');
+});
+
+it('distinguishes redirects and generic HTTP failures from connection failures', function () {
+    $items = (new HttpClientAnalyzer)->analyze([
+        [
+            'method' => 'GET',
+            'url' => 'https://api.example.test/v1/legacy',
+            'status' => 302,
+            'reason' => 'Found',
+            'duration_ms' => 12.4,
+            'response' => [
+                'headers' => ['Location' => ['https://api.example.test/v2/current']],
+                'body_size_bytes' => 0,
+            ],
+        ],
+        [
+            'method' => 'POST',
+            'url' => 'https://api.example.test/v1/teapot',
+            'status' => 418,
+            'reason' => "I'm a teapot",
+            'duration_ms' => 8.2,
+            'response' => ['body' => ['message' => 'Use the coffee endpoint.']],
+        ],
+    ])['items'];
+
+    expect($items[0])
+        ->redirect->toBeTrue()
+        ->failed->toBeFalse()
+        ->redirect_location->toBe('https://api.example.test/v2/current')
+        ->response_body_size_label->toBe('0 B')
+        ->response_summary->toBe('Redirected to https://api.example.test/v2/current.')
+        ->meaning->toBe('The upstream service redirected the request.')
+        ->check_next->toContain('Location header')
+        ->and($items[1])
+        ->failed->toBeTrue()
+        ->redirect->toBeFalse()
+        ->check_next->toBe('Inspect the response body, then confirm the request method, URL, headers, and payload.')
+        ->check_next->not->toContain('DNS');
 });

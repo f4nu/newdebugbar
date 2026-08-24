@@ -431,6 +431,10 @@ trait DefinesTestApplication
                 'mail',
                 ['message_id' => 'hostile-notification'],
             ));
+            Http::fake([
+                'hostile-http.test/*' => Http::response(['message' => 'Hostile upstream failure.'], 503),
+            ]);
+            Http::delete('https://hostile-http.test/v1/kyoto/'.str_repeat('long-path-', 8).'end');
 
             return response(<<<'HTML'
                 <!doctype html>
@@ -459,6 +463,7 @@ trait DefinesTestApplication
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
                             [data-cache], [data-cache-item], [data-cache-result], [data-cache-filter], [data-cache-search], [data-cache-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
+                            [data-http-client], [data-http-client-item], [data-method], [data-host], [data-status], [data-duration], [data-source] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-status], [data-ndb-notification-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
@@ -575,6 +580,11 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>HTTP client</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-http-client-empty',
+            fn () => response('<!doctype html><html><body>HTTP client empty</body></html>'),
+        );
+
         $router->middleware(ProfileRequest::class)->get('/profiled-http-client-rich', function () {
             $failedConnection = method_exists(Factory::class, 'failedConnection')
                 ? Http::failedConnection('Connection refused')
@@ -592,6 +602,9 @@ trait DefinesTestApplication
                     ]);
                 },
                 'api.healthy.test/*' => Http::response(null, 204),
+                'api.redirect.test/*' => Http::response(null, 302, [
+                    'Location' => 'https://api.redirect.test/v2/current',
+                ]),
                 'api.validation.test/*' => Http::response([
                     'message' => 'The submitted data was invalid.',
                     'errors' => ['email' => ['The email must be valid.']],
@@ -606,6 +619,7 @@ trait DefinesTestApplication
             Http::withHeaders(['X-Debug-Request' => 'recommendations'])
                 ->get('https://api.recommendations.test/v2/personalized/homepage?locale=en');
             Http::get('https://api.healthy.test/v1/status');
+            Http::withoutRedirecting()->get('https://api.redirect.test/v1/legacy');
             Http::patch('https://api.validation.test/v1/team-members/42', [
                 'email' => 'not-an-email',
             ]);

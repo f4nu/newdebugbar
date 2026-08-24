@@ -2627,7 +2627,7 @@ export function createNewDebugBar(
     },
 
     formatHttpClientEvidence(value) {
-      if (value === null || value === undefined || value === '') return 'No evidence was captured.';
+      if (value === null || value === undefined || value === '') return '—';
       if (typeof value === 'string') return value;
 
       return JSON.stringify(value, null, 2);
