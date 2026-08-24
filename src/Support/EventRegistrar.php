@@ -1572,14 +1572,17 @@ final class EventRegistrar
                 if (is_object($policy) || is_string($policy)) {
                     $class = is_object($policy) ? $policy::class : $policy;
                     $method = str_contains($event->ability, '-') ? Str::camel($event->ability) : $event->ability;
-                    $name = $class.'@'.$method;
 
-                    return [
-                        'legacy' => $name,
-                        'kind' => 'policy',
-                        'name' => $name,
-                        'source' => $this->methodLocation($class, $method),
-                    ];
+                    if (is_callable([$policy, $method])) {
+                        $name = $class.'@'.$method;
+
+                        return [
+                            'legacy' => $name,
+                            'kind' => 'policy',
+                            'name' => $name,
+                            'source' => $this->methodLocation($class, $method),
+                        ];
+                    }
                 }
             }
 

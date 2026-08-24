@@ -94,6 +94,32 @@ it('captures actor identity and bounded model and value arguments', function () 
         ->stack->not->toBeEmpty();
 });
 
+it('identifies a named gate callback when its model also has a policy', function () {
+    Route::middleware(ProfileRequest::class)->get('/profiled-callback-with-policy', function () {
+        Gate::policy(ProfiledModel::class, ProfiledAuthorizationPolicy::class);
+        Gate::define(
+            'coordinate-profile',
+            fn (mixed $user, ProfiledModel $model): bool => $user?->getAuthIdentifier() === 'planner-7'
+                && $model->getKey() === 42,
+        );
+        $model = new ProfiledModel;
+        $model->setRawAttributes(['id' => 42], true);
+        Gate::forUser(new GenericUser(['id' => 'planner-7']))->allows('coordinate-profile', $model);
+
+        return response('Profiled callback with policy');
+    });
+
+    $response = $this->get('/profiled-callback-with-policy')->assertOk();
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $profile = app(ProfilePresenter::class)->present($stored);
+
+    expect($profile['sections']['authorization']['payload']['items'][0])
+        ->handler->toBe('callback')
+        ->handler_kind->toBe('callback')
+        ->handler_name->toBe('Gate callback')
+        ->handler_source->file->toBe('tests/Feature/EventRegistrarTest.php');
+});
+
 it('normalizes policy responses and preserves their reasons and source', function () {
     Route::middleware(ProfileRequest::class)->get('/profiled-policy-authorization', function () {
         Gate::policy(ProfiledModel::class, ProfiledAuthorizationPolicy::class);
