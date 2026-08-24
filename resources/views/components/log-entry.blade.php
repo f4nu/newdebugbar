@@ -84,7 +84,7 @@
     >
         <span
             data-ndb-log-severity
-            class="ndb:mt-0.5 ndb:inline-flex ndb:min-w-16 ndb:justify-center ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.08em] {{ $badgeClasses }}"
+            class="ndb:mt-0.5 ndb:inline-flex ndb:min-w-16 ndb:justify-center ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-[0.08em] {{ $badgeClasses }}"
         >
             {{ $entry['level_label'] ?? ucfirst($level) }}
         </span>
@@ -126,7 +126,7 @@
             @endif
 
             @if ($attention || $repeatCount > 1)
-                <span class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-1.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-[0.08em]">
+                <span class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-1.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-[0.08em]">
                     @if ($attention)
                         <span
                             data-ndb-log-attention-label
@@ -263,19 +263,19 @@
                 </h3>
                 <dl class="ndb:mt-2 ndb:grid ndb:gap-2 ndb:text-xs ndb:sm:grid-cols-3">
                     <div class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70">
-                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             Record
                         </dt>
                         <dd class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums">{{ $recordLabel }}</dd>
                     </div>
                     <div class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70">
-                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             From request start
                         </dt>
                         <dd class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums">{{ $requestTimeRange }}</dd>
                     </div>
                     <div class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70">
-                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             Captured at
                         </dt>
                         <dd

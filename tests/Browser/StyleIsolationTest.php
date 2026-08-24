@@ -400,7 +400,7 @@ it('keeps host styles and package styles isolated', function () {
                 return getComputedStyle(entry).borderLeftWidth !== '20px'
                     && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(entry).paddingLeft === '0px'
-                    && Number.parseFloat(getComputedStyle(severity).fontSize) === 10
+                    && Number.parseFloat(getComputedStyle(severity).fontSize) === 11
                     && getComputedStyle(severity).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(preview).backgroundColor !== 'rgb(255, 0, 0)'
                     && Number.parseFloat(getComputedStyle(summary).fontSize) === 12

@@ -40,7 +40,7 @@
                         All
                         <span
                             data-ndb-log-filter-count="all"
-                            class="ndb:text-[10px] ndb:tabular-nums ndb:opacity-70"
+                            class="ndb:text-[11px] ndb:tabular-nums ndb:opacity-70"
                         >{{ $summary['count'] ?? count($groups) }}</span>
                     </x-newdebugbar::filter-tab>
                     @if (($summary['attention_count'] ?? 0) > 0)
@@ -52,7 +52,7 @@
                             Needs attention
                             <span
                                 data-ndb-log-filter-count="attention"
-                                class="ndb:text-[10px] ndb:tabular-nums ndb:opacity-70"
+                                class="ndb:text-[11px] ndb:tabular-nums ndb:opacity-70"
                             >{{ $summary['attention_count'] }}</span>
                         </x-newdebugbar::filter-tab>
                     @endif
@@ -65,7 +65,7 @@
                             {{ ucfirst($level) }}
                             <span
                                 data-ndb-log-filter-count="{{ $level }}"
-                                class="ndb:text-[10px] ndb:tabular-nums ndb:opacity-70"
+                                class="ndb:text-[11px] ndb:tabular-nums ndb:opacity-70"
                             >{{ $levelCounts[$level] }}</span>
                         </x-newdebugbar::filter-tab>
                     @endforeach
