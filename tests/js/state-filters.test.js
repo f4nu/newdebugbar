@@ -1056,14 +1056,18 @@ test('log controls combine severity channel and search without losing record cou
   const error = item('error', true, 'stack', 'database unavailable orders.php');
   state.$refs = { logList: { children: [info, warning, error] } };
   state.$nextTick = (callback) => callback();
+  state.logDetailSequence = 3;
 
   state.initializeLogs();
   assert.equal(state.logLevel, 'all');
   assert.equal(state.logChannel, 'all');
+  assert.equal(state.logDetailSequence, null);
   assert.equal(state.visibleLogCount, 5);
   assert.equal(state.visibleLogGroupCount, 3);
 
+  state.logDetailSequence = 3;
   state.setLogLevel('attention');
+  assert.equal(state.logDetailSequence, null);
   assert.equal(info.hidden, true);
   assert.equal(info.style.display, 'none');
   assert.equal(warning.hidden, false);

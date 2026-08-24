@@ -394,9 +394,10 @@ it('keeps host styles and package styles isolated', function () {
                 const severity = entry?.querySelector('[data-ndb-log-severity]');
                 const attention = document.querySelector('[data-ndb-log-attention-label]');
                 const levelSelect = document.querySelector('[data-ndb-log-level-select]');
-                const summary = entry?.querySelector(':scope > summary');
+                const summary = entry?.querySelector('[data-ndb-log-summary]');
+                const trigger = entry?.querySelector('[data-ndb-log-details-trigger]');
 
-                if (! entry || ! severity || ! attention || ! levelSelect || ! summary) return false;
+                if (! entry || ! severity || ! attention || ! levelSelect || ! summary || ! trigger) return false;
 
                 return getComputedStyle(entry).borderLeftWidth !== '20px'
                     && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
@@ -409,22 +410,34 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(levelSelect).borderLeftWidth === '1px'
                     && getComputedStyle(levelSelect).backgroundColor !== 'rgb(255, 0, 0)'
                     && Number.parseFloat(getComputedStyle(summary).fontSize) === 12
-                    && getComputedStyle(summary).color !== 'rgb(255, 0, 0)';
+                    && getComputedStyle(summary).color !== 'rgb(255, 0, 0)'
+                    && trigger.getBoundingClientRect().height === 32
+                    && getComputedStyle(trigger).backgroundColor !== 'rgb(255, 0, 255)'
+                    && getComputedStyle(trigger).color !== 'rgb(0, 128, 0)';
             })()
             JS)
-        ->click('[data-ndb-log-entry][data-ndb-log-level="error"] > summary')
-        ->assertVisible('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-related-exception]')
+        ->click('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]')
+        ->assertVisible('[data-ndb-log-details-popover] [data-ndb-log-related-exception]')
         ->assertScript(<<<'JS'
             (() => {
-                const entry = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="error"]');
-                const actions = entry.querySelector('[data-ndb-log-actions]');
-                const context = entry.querySelector('[data-ndb-log-context]');
+                const popover = document.querySelector('[data-ndb-log-details-popover]');
+                const surface = popover.querySelector('[data-ndb-popover-surface]');
+                const title = popover.querySelector('[data-ndb-log-details-title]');
+                const actions = popover.querySelector('[data-ndb-log-actions]');
+                const context = popover.querySelector('[data-ndb-log-context]');
                 const contextTerm = context.querySelector('dt');
-                const raw = entry.querySelector('[data-ndb-log-raw]');
-                const exception = entry.querySelector('[data-ndb-log-related-exception]');
-                const review = entry.querySelector('[data-ndb-log-review-exception]');
+                const raw = popover.querySelector('[data-ndb-log-raw]');
+                const exception = popover.querySelector('[data-ndb-log-related-exception]');
+                const review = popover.querySelector('[data-ndb-log-review-exception]');
 
                 return actions === null
+                    && getComputedStyle(popover).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(popover).borderLeftWidth === '0px'
+                    && getComputedStyle(popover).paddingLeft === '0px'
+                    && getComputedStyle(surface).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(title).fontSize) === 13
+                    && getComputedStyle(title).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(title).color !== 'rgb(0, 128, 0)'
                     && getComputedStyle(context).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(context).paddingLeft === '0px'
                     && Number.parseFloat(getComputedStyle(contextTerm).fontSize) === 11

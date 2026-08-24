@@ -432,6 +432,7 @@ export function createNewDebugBar(
     logLevel: 'all',
     logChannel: 'all',
     logSearch: '',
+    logDetailSequence: null,
     visibleLogCount: summary.section_counts?.logs ?? 0,
     visibleLogGroupCount: summary.section_counts?.logs ?? 0,
     livewireTab: 'activity',
@@ -1892,6 +1893,7 @@ export function createNewDebugBar(
       this.logLevel = 'all';
       this.logChannel = 'all';
       this.logSearch = '';
+      this.logDetailSequence = null;
       this.visibleLogCount = 0;
       this.visibleLogGroupCount = 0;
       if (this.inspectorOpen || selectedFromPicker || selectedFromRelation) {
@@ -3275,6 +3277,7 @@ export function createNewDebugBar(
       this.logLevel = 'all';
       this.logChannel = 'all';
       this.logSearch = '';
+      this.logDetailSequence = null;
       this.$nextTick?.(() => this.applyLogFilters());
     },
 
@@ -3301,6 +3304,8 @@ export function createNewDebugBar(
       const search = this.logSearch.toLowerCase().trim();
       let visibleRecords = 0;
       let visibleGroups = 0;
+
+      this.logDetailSequence = null;
 
       [...(list?.children ?? [])].forEach((item) => {
         const matchesLevel =

@@ -105,13 +105,13 @@
 
         <div
             aria-hidden="true"
-            class="ndb:hidden ndb:grid-cols-[5.5rem_minmax(0,1fr)_9.5rem_11rem_1rem] ndb:gap-x-3 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:grid"
+            class="ndb:hidden ndb:grid-cols-[5.5rem_minmax(0,1fr)_9.5rem_11rem_5.75rem] ndb:gap-x-3 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:grid"
         >
             <span>Severity</span>
             <span>Message</span>
             <span>Order and time</span>
             <span>Channel and source</span>
-            <span></span>
+            <span class="ndb:text-right">Details</span>
         </div>
 
         <div

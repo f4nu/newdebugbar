@@ -36,9 +36,13 @@ it('renders structured log evidence before the raw record', function () {
             'data-ndb-log-channel="morrow-audit"',
             'data-ndb-log-level-select',
             'data-ndb-log-attention-label',
+            'data-ndb-log-details-trigger',
+            'data-ndb-log-details-popover',
+            'data-ndb-popover-surface',
             'data-ndb-log-related-exception',
             'data-ndb-log-source',
             'data-ndb-log-raw',
+            'View details',
             'Review in Exceptions',
         )
         ->not->toContain(
@@ -47,6 +51,7 @@ it('renders structured log evidence before the raw record', function () {
             'data-ndb-log-actions',
             'data-ndb-copy-log-',
             'data-ndb-log-filter=',
+            '<details data-ndb-log-entry',
         );
 });
 
