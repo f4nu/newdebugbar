@@ -317,19 +317,23 @@ it('keeps host styles and package styles isolated', function () {
                 const detailResult = document.querySelector('[data-ndb-authorization-detail-result]');
 
                 return Number.parseFloat(getComputedStyle(result).fontSize) === 11
-                    && getComputedStyle(result).backgroundColor !== 'rgb(255, 0, 0)'
-                    && Number.parseFloat(getComputedStyle(detailResult).fontSize) === 11
-                    && getComputedStyle(detailResult).backgroundColor !== 'rgb(255, 0, 0)';
+                    && getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(detailResult).fontSize) === 12
+                    && getComputedStyle(detailResult).backgroundColor === 'rgba(0, 0, 0, 0)';
             })()
             JS)
         ->assertScript(<<<'JS'
             (() => {
                 const detail = document.querySelector('[data-ndb-authorization-detail]');
                 const metadata = document.querySelector('[data-ndb-authorization-metadata]');
+                const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
                 const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
 
                 return getComputedStyle(detail).borderLeftWidth === '0px'
                     && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
+                    && metadataTerms.every((term) => getComputedStyle(term).backgroundColor !== 'rgb(255, 0, 0)')
+                    && metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)')
+                    && metadataTerms.every((term) => Number.parseFloat(getComputedStyle(term).fontSize) < 42)
                     && tabs.length === 2
                     && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
             })()

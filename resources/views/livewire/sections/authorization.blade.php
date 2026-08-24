@@ -100,7 +100,7 @@
                 ->all();
             $argumentCount = count($arguments);
             $argumentSummary = match (true) {
-                $argumentCount === 0 => 'No target or arguments',
+                $argumentCount === 0 => '—',
                 $argumentCount === 1 => $arguments[0]['label'],
                 default => $arguments[0]['label'].' and '.($argumentCount - 1).' more',
             };
@@ -125,7 +125,7 @@
                 ? null
                 : ($callsite['copy'] ?? (($callsite['file'] ?? 'Unknown source').':'.($callsite['line'] ?? '?')));
             $callsiteShortLabel = $callsite === null
-                ? 'Source unavailable'
+                ? '—'
                 : basename(str_replace('\\', '/', (string) ($callsite['file'] ?? $callsiteLabel))).':'.($callsite['line'] ?? '?');
             $resultMessage = is_string($item['result_message'] ?? null) && $item['result_message'] !== ''
                 ? $item['result_message']
@@ -136,9 +136,21 @@
                 is_array($item['stack'] ?? null) ? $item['stack'] : [],
                 static fn (mixed $frame): bool => is_array($frame) && is_string($frame['file'] ?? null),
             ));
-            $checkNext = $result === 'denied'
-                ? 'Check the actor and ordered arguments against '.$handlerShortName.'. If the denial is unexpected, inspect the configured handler and any Gate before or after hooks.'
-                : 'Confirm this actor and target should receive the ability. If the allow is unexpected, inspect the configured handler and any Gate before or after hooks.';
+            $actorGuidance = match (true) {
+                $actorType === null && $result === 'denied' => 'Confirm guests should be denied this ability.',
+                $actorType === null => 'Confirm guests should receive this ability.',
+                $result === 'denied' => 'Confirm '.$actorLabel.' should be denied this ability.',
+                default => 'Confirm '.$actorLabel.' should receive this ability.',
+            };
+            $handlerGuidance = $handlerKind === 'callback' && $handlerName === 'Gate callback'
+                ? 'the configured Gate callback'
+                : $handlerShortName;
+            $unexpectedGuidance = match ($argumentCount) {
+                0 => 'If this result is unexpected, review '.$handlerGuidance.'.',
+                1 => 'If this result is unexpected, compare the supplied target with '.$handlerGuidance.'.',
+                default => 'If this result is unexpected, compare all '.number_format($argumentCount).' supplied arguments with '.$handlerGuidance.'.',
+            };
+            $checkNext = $actorGuidance.' '.$unexpectedGuidance;
             $copyEvidence = json_encode([
                 'result' => $result,
                 'ability' => $ability,
@@ -168,7 +180,6 @@
                 'result_status' => $resultStatus,
                 'actor_label' => $actorLabel,
                 'actor_type' => $actorType,
-                'actor_type_short' => $actorType === null ? 'Unauthenticated actor' : $shortType($actorType),
                 'actor_name' => $actorName,
                 'actor_identifier_name' => $actorIdentifierName,
                 'actor_identifier' => $actorIdentifier,
@@ -234,9 +245,11 @@
                         <span data-ndb-authorization-summary-count class="ndb:block">
                             {{ number_format(count($authorizationItems)) }} {{ \Illuminate\Support\Str::plural('decision', count($authorizationItems)) }}
                         </span>
-                        <span class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
-                            <span>{{ number_format($authorizationCounts['denied'] ?? 0) }} denied</span>
-                            <span>{{ number_format($authorizationCounts['allowed'] ?? 0) }} allowed</span>
+                        <span
+                            x-show.important="visibleAuthorizationCount !== authorizationDecisions.length"
+                            class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
+                        >
+                            <span x-text="visibleAuthorizationCount"></span> shown
                         </span>
                     </p>
 
@@ -291,7 +304,7 @@
                             :class="authorizationSelected === {{ $decision['execution'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-x-3 ndb:gap-y-1.5 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_4.75rem] ndb:items-start ndb:gap-x-3 ndb:gap-y-1.5 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <code
                                 data-ndb-authorization-ability
@@ -300,19 +313,19 @@
                             <span
                                 data-ndb-authorization-result-label
                                 @class([
-                                    'ndb:inline-flex ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold',
-                                    'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300' => $decision['result'] === 'allowed',
-                                    'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300' => $decision['result'] === 'denied',
+                                    'ndb:w-full ndb:bg-transparent ndb:pt-0.5 ndb:text-right ndb:text-[11px] ndb:font-bold',
+                                    'ndb:text-emerald-700 ndb:dark:text-emerald-300' => $decision['result'] === 'allowed',
+                                    'ndb:text-red-700 ndb:dark:text-red-300' => $decision['result'] === 'denied',
                                 ])
                             >{{ $decision['result_label'] }}</span>
-                            <span class="ndb:col-span-2 ndb:grid ndb:min-w-0 ndb:gap-1 ndb:text-[11px] ndb:leading-4">
-                                <span data-ndb-authorization-actor class="ndb:flex ndb:min-w-0 ndb:gap-2">
-                                    <span class="ndb:w-11 ndb:shrink-0 ndb:font-semibold ndb:text-zinc-400">Actor</span>
-                                    <span class="ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $decision['actor_label'] }}</span>
+                            <span class="ndb:col-span-2 ndb:grid ndb:min-w-0 ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:gap-x-2 ndb:gap-y-1 ndb:text-[11px] ndb:leading-4">
+                                <span class="ndb:font-semibold ndb:text-zinc-400">Actor</span>
+                                <span data-ndb-authorization-actor class="ndb:min-w-0">
+                                    <span class="ndb:block ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $decision['actor_label'] }}</span>
                                 </span>
-                                <span data-ndb-authorization-target class="ndb:flex ndb:min-w-0 ndb:gap-2">
-                                    <span class="ndb:w-11 ndb:shrink-0 ndb:font-semibold ndb:text-zinc-400">Target</span>
-                                    <span class="ndb:min-w-0 ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $decision['argument_summary'] }}</span>
+                                <span class="ndb:font-semibold ndb:text-zinc-400">Arguments</span>
+                                <span data-ndb-authorization-target class="ndb:min-w-0">
+                                    <span class="ndb:block ndb:min-w-0 ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $decision['argument_summary'] }}</span>
                                 </span>
                             </span>
                         </button>

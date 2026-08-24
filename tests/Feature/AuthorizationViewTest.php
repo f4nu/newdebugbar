@@ -10,7 +10,7 @@ function authorizationSectionDocument(array $items): array
     $document = new DOMDocument;
     $previousLibxmlState = libxml_use_internal_errors(true);
 
-    $document->loadHTML('<!doctype html><html><body>'.$html.'</body></html>');
+    $document->loadHTML('<?xml encoding="utf-8" ?><!doctype html><html><body>'.$html.'</body></html>');
     libxml_clear_errors();
     libxml_use_internal_errors($previousLibxmlState);
 
@@ -93,20 +93,54 @@ it('renders decisions for scanning and keeps structured evidence in the inspecto
         ->and($second)->toBeInstanceOf(DOMElement::class)
         ->and($second?->getAttribute('data-ndb-authorization-result'))->toBe('denied')
         ->and($text($second, 'data-ndb-authorization-actor'))->toContain('Guest')
-        ->and($text($second, 'data-ndb-authorization-target'))->toContain('No target or arguments')
+        ->and($text($second, 'data-ndb-authorization-target'))->toBe('—')
         ->and($xpath->query('//*[@data-ndb-authorization-detail]')->length)->toBe(1)
         ->and($xpath->query('//*[@data-ndb-authorization-detail-tab="decision"]')->length)->toBe(1)
         ->and($xpath->query('//*[@data-ndb-authorization-detail-tab="source"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-ndb-authorization-copy-evidence]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-ndb-authorization-copy-handler]')->length)->toBe(0)
+        ->and($xpath->query('//*[@data-ndb-authorization-copy-handler-source]')->length)->toBe(0)
+        ->and($xpath->query('//*[@data-ndb-authorization-copy-callsite]')->length)->toBe(0)
         ->and($xpath->query('//*[@data-ndb-authorization-connector]')->length)->toBe(0)
         ->and($decoded[0]['actor_label'])->toBe('Mara Voss')
         ->and($decoded[0]['argument_summary'])->toBe('Kyoto in autumn and 2 more')
         ->and($decoded[0]['handler_short_name'])->toBe('TripPolicy@reviseItinerary')
         ->and($decoded[0]['result_message'])->toBe('The planner owns this trip.')
+        ->and($decoded[0]['check_next'])->toBe('Confirm Mara Voss should receive this ability. If this result is unexpected, compare all 3 supplied arguments with TripPolicy@reviseItinerary.')
         ->and($decoded[1]['actor_label'])->toBe('Guest')
         ->and($decoded[1]['arguments'])->toBe([])
+        ->and($decoded[1]['argument_summary'])->toBe('—')
+        ->and($decoded[1]['check_next'])->toBe('Confirm guests should be denied this ability. If this result is unexpected, review the configured Gate callback.')
         ->and($html)->toContain('Check next')
         ->and($html)->toContain('Laravel reports the final result.')
+        ->and($html)->not->toContain('Laravel allowed this ability')
+        ->and($html)->not->toContain('No target or additional arguments were supplied.')
         ->and($html)->not->toContain('→');
+});
+
+it('keeps named callback guidance specific without inventing optional evidence', function () {
+    [, $xpath] = authorizationSectionDocument([[
+        'execution' => 9,
+        'result' => 'allowed',
+        'ability' => 'view-public-trip-outline',
+        'handler' => 'callback',
+        'handler_kind' => 'callback',
+        'handler_name' => 'App\\Gates\\PublicTripGate@view',
+        'actor' => null,
+        'arguments' => [],
+    ]]);
+    $payload = trim((string) $xpath->evaluate('string(//*[@data-ndb-authorization-payload])'));
+    $decision = json_decode(base64_decode($payload, true), true, flags: JSON_THROW_ON_ERROR)[0];
+
+    expect($decision)
+        ->actor_label->toBe('Guest')
+        ->argument_summary->toBe('—')
+        ->callsite_label->toBeNull()
+        ->callsite_short_label->toBe('—')
+        ->result_message->toBeNull()
+        ->result_code->toBeNull()
+        ->result_status->toBeNull()
+        ->check_next->toBe('Confirm guests should receive this ability. If this result is unexpected, review PublicTripGate@view.');
 });
 
 it('renders a clear empty authorization state', function () {
