@@ -27,6 +27,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
         ->assertSee('40.0%')
         ->assertValue('[data-ndb-cache-filter]', 'all')
         ->assertAttribute('[data-ndb-cache-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=overview] dd pre").textContent.trim()', 'stale option')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 17)
         ->assertScript(<<<'JS'
             (() => {
@@ -48,6 +49,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                 const results = rows.map((row) => row.querySelector('[data-ndb-cache-result]'));
                 const durations = rows.map((row) => row.querySelector('[data-ndb-cache-list-duration]'));
                 const stores = rows.map((row) => row.children[3].textContent.trim());
+                const executionIds = rows.map((row) => row.children[0].lastElementChild.textContent.trim());
                 const keyOffsets = rows.map((row) => row.querySelector('[data-ndb-cache-key]').getBoundingClientRect().left);
                 const rightTrackWidths = rows.map((row) => Number.parseFloat(getComputedStyle(row).gridTemplateColumns.split(' ').at(-1)));
                 const resultRightEdges = results.map((result) => Math.round(result.getBoundingClientRect().right));
@@ -74,6 +76,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                     && metadataValues[2] === 'array'
                     && metadataValues[3] === 'array'
                     && sourceLink?.textContent.trim().includes('.php:')
+                    && executionIds.every((id, index) => id === `#${rows[index].dataset.ndbCacheExecution}`)
                     && new Set(keyOffsets.map(Math.round)).size === 1
                     && keys.every((key) => key.clientWidth <= key.parentElement.getBoundingClientRect().width)
                     && keys.every((key) => getComputedStyle(key).textOverflow === 'ellipsis')
@@ -94,6 +97,18 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
                     && !document.querySelector('[data-ndb-cache]').textContent.includes('·');
             })()
             JS)
+        ->click('[data-ndb-cache-item="5"]')
+        ->assertSee('2 operations for this key in this store:')
+        ->assertScript(<<<'JS'
+            [...document.querySelectorAll('[aria-label^="Open cache execution "]')]
+                .map((link) => link.textContent.trim())
+                .join('|')
+            JS, '#5|#6')
+        ->assertAttribute('[aria-label="Open cache execution 5"]', 'aria-current', 'true')
+        ->click('[aria-label="Open cache execution 6"]')
+        ->assertAttribute('[data-ndb-cache-item="6"]', 'aria-pressed', 'true')
+        ->assertAttribute('[aria-label="Open cache execution 6"]', 'aria-current', 'true')
+        ->assertSee('Hit')
         ->select('[data-ndb-cache-filter]', 'failed')
         ->assertValue('[data-ndb-cache-filter]', 'failed')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 3)
@@ -109,6 +124,7 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
             'document.querySelectorAll("[data-ndb-cache-metadata] dd")[1].textContent.trim()',
             '—',
         )
+        ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=overview] dd pre").textContent.trim()', 'not retained')
         ->assertSee('The app may be doing extra work')
         ->assertSee('Check the store connection')
         ->click('[data-ndb-cache-metadata] button')
@@ -118,14 +134,14 @@ it('filters sorts selects and inspects rich cache diagnostics', function () {
         ->click('[data-ndb-cache-detail-tab="raw"]')
         ->assertVisible('[data-ndb-cache-detail-panel="raw"]')
         ->assertSee('Captured collector fields only')
-        ->assertDontSee('not retained')
-        ->assertDontSee('temples and gardens')
+        ->assertSee('Values are bounded and sensitive fields are redacted')
+        ->assertSee('not retained')
         ->assertScript(<<<'JS'
             (() => {
                 const raw = document.querySelector('[data-ndb-cache-detail-panel="raw"] pre').textContent;
 
                 return raw.includes('"operation": "write_failed"')
-                    && !raw.includes('not retained');
+                    && raw.includes('"value": "not retained"');
             })()
             JS)
         ->select('[data-ndb-cache-filter]', 'all')

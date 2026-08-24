@@ -135,23 +135,16 @@ it('captures bounded cache timing source value and failure metadata', function (
         ->duration_ms->toBeGreaterThanOrEqual(0.0)
         ->and($write)
         ->driver->toBe('array')
-        ->value_type->toBe('array')
-        ->value_item_count->toBe(2)
         ->duration_ms->toBeNumeric()->toBeGreaterThanOrEqual(0)
         ->duration_scope->toBe('operation')
         ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
         ->stack->not->toBeEmpty()
-        ->and($hit)
-        ->value_type->toBe('array')
-        ->value_item_count->toBe(2)
+        ->and($write['value'])->toBe(['high' => 24, 'low' => 15])
+        ->and($hit['value'])->toBe(['high' => 24, 'low' => 15])
         ->and($batchWrites)->toHaveCount(2)
         ->and($batchWrites->pluck('duration_id')->unique())->toHaveCount(1)
         ->and($batchWrites->pluck('batch_size')->unique()->all())->toBe([2])
-        ->and(json_encode($section))->not->toContain(
-            'temples and gardens',
-            'not retained',
-            'A compact autumn itinerary',
-        );
+        ->and($batchWrites->pluck('value')->all())->toBe(['A compact autumn itinerary', true]);
 
     if ($failureCount > 0) {
         expect($items->where('failed', true))->toHaveCount($failureCount);
@@ -493,7 +486,8 @@ it('captures direct Redis commands and removes cache command duplicates', functi
         ])
         ->key->toBe('private-cache-key')
         ->tags->toBe(['tenant:private-clinic', 'patient:private-patient'])
-        ->and(json_encode([$redis, $cache]))->not->toContain(
+        ->and($cache['payload']['items'][0]['value'])->toBe('private-cache-value')
+        ->and(json_encode($redis))->not->toContain(
             'private-cache-value',
             'private-field',
             'private Redis failure',

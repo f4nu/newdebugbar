@@ -193,10 +193,15 @@
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
                             class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.5rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <span
-                                data-ndb-cache-operation
-                                class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                            >{{ $item['operation_label'] }}</span>
+                            <span class="ndb:row-span-2 ndb:flex ndb:min-w-0 ndb:flex-col ndb:self-center">
+                                <span
+                                    data-ndb-cache-operation
+                                    class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >{{ $item['operation_label'] }}</span>
+                                <span class="ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400 ndb:dark:text-zinc-500">
+                                    #{{ $item['execution'] }}
+                                </span>
+                            </span>
                             <code
                                 data-ndb-cache-key
                                 :title="{{ \Illuminate\Support\Js::from($item['key_label']) }}"
@@ -272,7 +277,7 @@
 
                                 <dl
                                     x-show.important="
-                                        selectedCacheOperation.value_type ||
+                                        selectedCacheOperation.has_value ||
                                         ['write', 'write_failed'].includes(selectedCacheOperation.operation) ||
                                         selectedCacheOperation.duration_scope === 'batch' ||
                                         selectedCacheOperation.related_count > 1 ||
@@ -281,14 +286,16 @@
                                     class="ndb:mt-4 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800"
                                 >
                                     <div
-                                        x-show.important="selectedCacheOperation.value_type"
+                                        x-show.important="selectedCacheOperation.has_value"
                                         class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
                                     >
                                         <dt class="ndb:text-xs ndb:font-bold">Value</dt>
-                                        <dd
-                                            class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                                            x-text="selectedCacheOperation.value_label"
-                                        ></dd>
+                                        <dd class="ndb:min-w-0 ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300">
+                                            <pre
+                                                class="ndb:whitespace-pre-wrap ndb:break-words ndb:font-mono"
+                                                x-text="selectedCacheOperation.value_display"
+                                            ></pre>
+                                        </dd>
                                     </div>
                                     <div
                                         x-show.important="
@@ -321,14 +328,29 @@
                                         class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
                                     >
                                         <dt class="ndb:text-xs ndb:font-bold">Related uses</dt>
-                                        <dd
-                                            class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                                            x-text="
-                                                selectedCacheOperation.related_count +
-                                                ' operations for this key in this store, executions ' +
-                                                selectedCacheOperation.related_executions.join(', ')
-                                            "
-                                        ></dd>
+                                        <dd class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300">
+                                            <span
+                                                x-text="
+                                                    selectedCacheOperation.related_count +
+                                                    ' operations for this key in this store:'
+                                                "
+                                            ></span>
+                                            <span class="ndb:ml-1 ndb:inline-flex ndb:flex-wrap ndb:gap-x-2">
+                                                <template
+                                                    x-for="execution in selectedCacheOperation.related_executions"
+                                                    :key="execution"
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        @click="selectRelatedCacheOperation(execution)"
+                                                        :aria-label="'Open cache execution ' + execution"
+                                                        :aria-current="cacheSelected === execution ? 'true' : null"
+                                                        class="ndb:rounded-sm ndb:font-mono ndb:font-semibold ndb:text-indigo-600 ndb:underline ndb:decoration-indigo-300 ndb:underline-offset-2 ndb:hover:text-indigo-800 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:decoration-indigo-700 ndb:dark:hover:text-indigo-200"
+                                                        x-text="'#' + execution"
+                                                    ></button>
+                                                </template>
+                                            </span>
+                                        </dd>
                                     </div>
                                     <div
                                         x-show.important="
@@ -410,7 +432,7 @@
 
                             <div data-ndb-cache-detail-panel="raw" x-show.important="cacheDetailTab === 'raw'">
                                 <p class="ndb:mb-2 ndb:max-w-xl ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    Captured collector fields only. Values are limited to safe metadata.
+                                    Captured collector fields only. Values are bounded and sensitive fields are redacted.
                                 </p>
                                 <pre class="ndb-scrollbar ndb:max-w-full ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatCachePayload(selectedCacheOperation.raw)"></code></pre>
                             </div>

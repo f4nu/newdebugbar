@@ -109,7 +109,8 @@ final class CacheAnalyzer
                 'duration_label' => $this->durationLabel($item['duration_ms'] ?? null),
                 'source_label' => $sourceLabel,
                 'source_short_label' => $this->shortSourceLabel($item['callsite'] ?? null),
-                'value_label' => $this->valueLabel($item),
+                'has_value' => array_key_exists('value', $item),
+                'value_display' => $this->valueDisplay($item),
                 'lifetime_label' => $this->lifetimeLabel($item['seconds'] ?? null, $operation),
                 'related_count' => count($relatedExecutions),
                 'related_executions' => $relatedExecutions,
@@ -252,25 +253,22 @@ final class CacheAnalyzer
     }
 
     /** @param array<string, mixed> $item */
-    private function valueLabel(array $item): string
+    private function valueDisplay(array $item): ?string
     {
-        $type = $this->stringOrNull($item['value_type'] ?? null);
-
-        if ($type === null) {
-            return 'Value metadata unavailable';
+        if (! array_key_exists('value', $item)) {
+            return null;
         }
 
-        if (isset($item['value_size_bytes']) && is_numeric($item['value_size_bytes'])) {
-            return $type.', '.number_format((int) $item['value_size_bytes']).' bytes';
+        if (is_string($item['value'])) {
+            return $item['value'];
         }
 
-        if (isset($item['value_item_count']) && is_numeric($item['value_item_count'])) {
-            return $type.', '.number_format((int) $item['value_item_count']).' items';
-        }
+        $encoded = json_encode(
+            $item['value'],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE,
+        );
 
-        $class = $this->stringOrNull($item['value_class'] ?? null);
-
-        return $class ?? $type;
+        return is_string($encoded) ? $encoded : 'Unavailable';
     }
 
     private function lifetimeLabel(mixed $seconds, string $operation): string

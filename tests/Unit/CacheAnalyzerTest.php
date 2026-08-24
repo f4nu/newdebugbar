@@ -3,6 +3,7 @@
 use NewDebugBar\Analysis\CacheAnalyzer;
 
 it('builds diagnostic cache operations and summaries', function () {
+    $weather = ['high' => 24, 'low' => 15, 'condition' => 'clear', 'updated' => true];
     $analysis = (new CacheAnalyzer(minimumReads: 3, highMissRate: 0.66))->analyze([
         [
             'operation' => 'miss',
@@ -31,8 +32,7 @@ it('builds diagnostic cache operations and summaries', function () {
             'driver' => 'redis',
             'duration_ms' => 0.15,
             'duration_id' => 'read-3',
-            'value_type' => 'array',
-            'value_item_count' => 4,
+            'value' => $weather,
         ],
         [
             'operation' => 'write',
@@ -44,8 +44,7 @@ it('builds diagnostic cache operations and summaries', function () {
             'duration_id' => 'write-batch',
             'duration_scope' => 'batch',
             'seconds' => 3600,
-            'value_type' => 'string',
-            'value_size_bytes' => 240,
+            'value' => 'A compact autumn itinerary',
         ],
         [
             'operation' => 'write',
@@ -118,10 +117,15 @@ it('builds diagnostic cache operations and summaries', function () {
         ->attention->toBeTrue()
         ->and($analysis['items'][2])
         ->key_label->toBe('Protected key weather-1')
-        ->value_label->toBe('array, 4 items')
+        ->has_value->toBeTrue()
+        ->value_display->toBe(json_encode(
+            $weather,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE,
+        ))
         ->and($analysis['items'][3])
         ->lifetime_label->toBe('3,600 seconds')
-        ->value_label->toBe('string, 240 bytes')
+        ->has_value->toBeTrue()
+        ->value_display->toBe('A compact autumn itinerary')
         ->and($analysis['items'][5])
         ->failed->toBeTrue()
         ->result_label->toBe('Failed')
@@ -147,5 +151,24 @@ it('handles empty and missing optional cache data', function () {
         ->key_label->toBe('No key')
         ->duration_label->toBe('—')
         ->source_label->toBe('Source unavailable')
-        ->value_label->toBe('Value metadata unavailable');
+        ->has_value->toBeFalse()
+        ->value_display->toBeNull();
+});
+
+it('distinguishes null and false cache values from unavailable values', function () {
+    $analysis = (new CacheAnalyzer)->analyze([
+        ['operation' => 'hit', 'value' => null],
+        ['operation' => 'hit', 'value' => false],
+        ['operation' => 'miss'],
+    ]);
+
+    expect($analysis['items'][0])
+        ->has_value->toBeTrue()
+        ->value_display->toBe('null')
+        ->and($analysis['items'][1])
+        ->has_value->toBeTrue()
+        ->value_display->toBe('false')
+        ->and($analysis['items'][2])
+        ->has_value->toBeFalse()
+        ->value_display->toBeNull();
 });

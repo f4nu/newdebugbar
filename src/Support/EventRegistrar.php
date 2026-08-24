@@ -722,7 +722,7 @@ final class EventRegistrar
                         'duration_id' => $durationId,
                         'batch_size' => count($keys),
                         'seconds' => property_exists($event, 'seconds') ? $event->seconds : null,
-                        ...$this->cacheValueMetadata($value, $valueExists),
+                        ...$this->cacheValue($value, $valueExists),
                         ...$location,
                     ],
                 );
@@ -761,10 +761,10 @@ final class EventRegistrar
             $key = $event->key ?? null;
             $context = $this->takeCacheOperation($pendingOperation, $storeName, $key);
             $hasValue = property_exists($event, 'value');
-            $valueMetadata = $context === null ? [] : $this->cacheValueMetadataFromContext($context);
+            $capturedValue = $context === null ? [] : $this->cacheValueFromContext($context);
 
-            if ($valueMetadata === []) {
-                $valueMetadata = $this->cacheValueMetadata($hasValue ? $event->value : null, $hasValue);
+            if ($capturedValue === []) {
+                $capturedValue = $this->cacheValue($hasValue ? $event->value : null, $hasValue);
             }
             $location = $context === null ? $this->callSites->capture() : [
                 'callsite' => $context['callsite'] ?? null,
@@ -778,7 +778,7 @@ final class EventRegistrar
                 'driver' => $this->cacheDriver($storeName),
                 ...$this->cacheTags(is_array($event->tags ?? null) ? $event->tags : []),
                 'seconds' => $context['seconds'] ?? (property_exists($event, 'seconds') ? $event->seconds : null),
-                ...$valueMetadata,
+                ...$capturedValue,
                 ...$this->cacheTiming($context),
                 ...$location,
                 'failed' => $failed,
@@ -864,7 +864,7 @@ final class EventRegistrar
             'duration_id' => 'cache-operation-'.(++$this->cacheOperationSequence),
             'batch_size' => 1,
             'seconds' => $seconds,
-            ...$this->cacheValueMetadata($value, $hasValue),
+            ...$this->cacheValue($value, $hasValue),
             ...$this->callSites->capture(),
         ];
     }
@@ -941,34 +941,19 @@ final class EventRegistrar
     }
 
     /** @return array<string, mixed> */
-    private function cacheValueMetadata(mixed $value, bool $hasValue): array
+    private function cacheValue(mixed $value, bool $hasValue): array
     {
         if (! $hasValue) {
             return [];
         }
 
-        $metadata = ['value_type' => get_debug_type($value)];
-
-        if (is_string($value)) {
-            $metadata['value_size_bytes'] = strlen($value);
-        } elseif (is_array($value)) {
-            $metadata['value_item_count'] = count($value);
-        } elseif (is_object($value)) {
-            $metadata['value_class'] = $value::class;
-        }
-
-        return $metadata;
+        return ['value' => $this->redactor->clean($value)];
     }
 
     /** @param array<string, mixed> $context @return array<string, mixed> */
-    private function cacheValueMetadataFromContext(array $context): array
+    private function cacheValueFromContext(array $context): array
     {
-        return array_filter([
-            'value_type' => $context['value_type'] ?? null,
-            'value_size_bytes' => $context['value_size_bytes'] ?? null,
-            'value_item_count' => $context['value_item_count'] ?? null,
-            'value_class' => $context['value_class'] ?? null,
-        ], fn (mixed $value): bool => $value !== null);
+        return array_key_exists('value', $context) ? ['value' => $context['value']] : [];
     }
 
     /** @return array{key_hash: string|null, key: string|null, key_policy: string} */
