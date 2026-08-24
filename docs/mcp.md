@@ -117,18 +117,21 @@ Each client uses a different place or file for this setting. Look for its local 
 
 ## Check the connection
 
-Your coding tool should show these four tools:
+Your coding tool should show these five tools:
 
 - `list-debug-profiles`
 - `get-debug-profile-section`
+- `get-debug-profile-data`
 - `inspect-debug-queries`
 - `get-debug-findings`
 
 Then visit a page in your Laravel app and ask your agent:
 
-> Inspect the latest New Debug Bar profile. Tell me what happened, what looks wrong, and what I should inspect next.
+> Inspect the New Debug Bar profile for the page I just visited. Tell me what happened, what looks wrong, and what I should inspect next.
 
-When the agent can read the page's response headers, `X-NewDebugBar-Profile` points it to the exact profile. Otherwise, it can find the profile from the recent request list.
+When the agent can read the page's response headers, `X-NewDebugBar-Profile` points it to the exact profile. Otherwise, it can find the profile from the recent request list. The newest profile is not always the page you meant because background requests may run after it.
+
+Agents should start with findings and one small section. When they need detail that a focused tool leaves out, `get-debug-profile-data` can read every retained profile value. It starts at `/sections` and returns paths the agent can follow into objects, lists, and exact values. Lists are paged and large strings are split into bounded chunks, so the agent never needs the full profile in one response.
 
 ## Fix common problems
 

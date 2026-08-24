@@ -25,8 +25,9 @@ Use the package's local MCP tools directly to read exact, saved Laravel request 
 3. Otherwise, list recent profiles and match the method, path, status, request kind, and time. Do not trust the newest item when background requests may have run.
 4. Set small limits instead of accepting maximums. Start with 10 profile summaries, 10 findings, and 5 items from a section or query search. Increase a limit or continue from a cursor only when the answer needs more evidence.
 5. Read findings first, then the smallest useful section. Inspect query details only when the request points to a database problem. Prefer `slow` or `repeated`, sort by duration, and return 5 items. Do not request every query by default.
-6. Inspect no more than three profiles deeply unless the user asks for a broader review.
-7. Separate confirmed facts from guesses.
+6. When a focused response omits needed detail, use `get-debug-profile-data` with the same exact profile ID. Start at `/sections`, use a small limit, and follow the returned JSON Pointer paths until the needed object, list, or exact value is reached. Continue from the returned cursor for later items or string chunks.
+7. Inspect no more than three profiles deeply unless the user asks for a broader review.
+8. Separate confirmed facts from guesses.
 
 ## Compare page performance
 
@@ -53,4 +54,4 @@ Answer these questions in order:
 4. Where should the developer look?
 5. What should they inspect or try next?
 
-Prefer a useful summary over a dump of raw profile data. Mention the exact profile, request, and status so the developer knows which request the answer describes. The MCP tools only read saved, redacted profiles; do not claim they changed the app.
+Prefer a useful summary over a dump of raw profile data. Mention the exact profile, request, and status so the developer knows which request the answer describes. The MCP tools only read saved profiles and preserve capture-time redaction; do not claim they changed the app.

@@ -27,7 +27,7 @@
       "Skills"
     ],
     "defaultPrompt": [
-      "Inspect the latest Laravel request and explain what needs attention."
+      "Inspect the Laravel request I just made and explain what needs attention."
     ]
   },
   "mcpServers": "./.mcp.json"

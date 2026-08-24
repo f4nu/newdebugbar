@@ -79,6 +79,9 @@ test('the repository exposes the plugin without adding it to Composer archives',
             'skills' => './skills/',
             'mcpServers' => './.mcp.json',
         ])
+        ->and($manifest['interface']['defaultPrompt'])->toBe([
+            'Inspect the Laravel request I just made and explain what needs attention.',
+        ])
         ->and($marketplace['plugins'][0])
         ->toMatchArray([
             'name' => 'newdebugbar',
@@ -89,4 +92,12 @@ test('the repository exposes the plugin without adding it to Composer archives',
         ])
         ->and($composer['archive']['exclude'])
         ->toContain('/.agents', '/plugins');
+});
+
+test('the plugin teaches agents how to reach complete profile data', function () use ($pluginPath) {
+    $skill = file_get_contents($pluginPath('skills/use-newdebugbar/SKILL.md'));
+
+    expect($skill)
+        ->toContain('get-debug-profile-data', '/sections', 'JSON Pointer', 'exact value')
+        ->toContain('same exact profile ID', 'returned cursor');
 });
