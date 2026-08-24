@@ -9,6 +9,17 @@ final class SectionAnalyzer
 
     private const EVENT_OCCURRENCE_EVIDENCE_LIMIT = 25;
 
+    /** @var list<string> */
+    private const MODEL_CHANGE_EVENTS = ['created', 'updated', 'deleted', 'restored', 'forceDeleted', 'trashed'];
+
+    private const MAX_MODEL_CHANGE_OPERATIONS = 20;
+
+    private const MAX_MODEL_RECORDS = 25;
+
+    private const MAX_MODEL_SOURCES = 8;
+
+    private const MAX_RECORD_SOURCES = 3;
+
     /** @param array<string, mixed> $profile @return array<string, mixed> */
     public function analyze(array $profile): array
     {
@@ -25,9 +36,9 @@ final class SectionAnalyzer
         $groups = [];
         $events = [];
         $modelGroups = [];
-        $changeEvents = ['created', 'updated', 'deleted', 'restored', 'forceDeleted', 'trashed'];
+        $querySources = $this->querySources($profile);
 
-        foreach ($items as $item) {
+        foreach ($items as $index => $item) {
             $key = ($item['model'] ?? 'Unknown').'::'.($item['event'] ?? 'unknown');
             $groups[$key] ??= [
                 'model' => $item['model'] ?? 'Unknown',
@@ -41,54 +52,76 @@ final class SectionAnalyzer
             $events[$event] = ($events[$event] ?? 0) + 1;
 
             $model = (string) ($item['model'] ?? 'Unknown');
-            $modelGroups[$model] ??= [
+            $connection = $item['connection'] ?? null;
+            $table = $item['table'] ?? null;
+            $modelGroupKey = $model."\0".(string) $connection."\0".(string) $table;
+            $modelGroups[$modelGroupKey] ??= [
                 'model' => $model,
-                'connection' => $item['connection'] ?? null,
-                'table' => $item['table'] ?? null,
+                'connection' => $connection,
+                'table' => $table,
                 'load_count' => 0,
                 'record_count' => 0,
                 'unidentified_load_count' => 0,
                 'repeated_load_count' => 0,
                 'change_count' => 0,
                 'change_events' => [],
+                'change_operations' => [],
+                'change_candidates' => [],
                 'total_count' => 0,
                 'first_seen_ms' => null,
                 'last_seen_ms' => null,
                 'records' => [],
-                'items' => [],
+                'lifecycle_events' => [],
+                'sources' => [],
+                'unknown_source_activity_count' => 0,
             ];
-            $modelGroups[$model]['items'][] = $item;
-            $modelGroups[$model]['total_count']++;
-            $this->addModelTiming($modelGroups[$model], $item);
+            $modelGroup = &$modelGroups[$modelGroupKey];
+            $modelGroup['total_count']++;
+            $modelGroup['lifecycle_events'][$event] = ($modelGroup['lifecycle_events'][$event] ?? 0) + 1;
+            $this->addModelTiming($modelGroup, $item);
 
             if ($event === 'retrieved') {
-                $modelGroups[$model]['load_count']++;
+                $modelGroup['load_count']++;
+
+                if (! $this->addModelSource($modelGroup['sources'], $item, 'retrieved', $event)) {
+                    $modelGroup['unknown_source_activity_count']++;
+                }
 
                 if (($item['key'] ?? null) === null) {
-                    $modelGroups[$model]['unidentified_load_count']++;
+                    $modelGroup['unidentified_load_count']++;
+
+                    unset($modelGroup);
 
                     continue;
                 }
 
                 $recordKey = get_debug_type($item['key']).':'.(string) $item['key'];
-                $modelGroups[$model]['records'][$recordKey] ??= [
+                $modelGroup['records'][$recordKey] ??= [
+                    'key_name' => $item['key_name'] ?? 'id',
                     'key' => $item['key'],
                     'loads' => 0,
                     'first_seen_ms' => null,
                     'last_seen_ms' => null,
-                    'items' => [],
+                    'sources' => [],
+                    'unknown_source_count' => 0,
                 ];
-                $record = &$modelGroups[$model]['records'][$recordKey];
+                $record = &$modelGroup['records'][$recordKey];
                 $record['loads']++;
-                $record['items'][] = $item;
                 $this->addModelTiming($record, $item);
+                if (! $this->addModelSource($record['sources'], $item, 'retrieved', $event)) {
+                    $record['unknown_source_count']++;
+                }
                 unset($record);
             }
 
-            if (in_array($event, $changeEvents, true)) {
-                $modelGroups[$model]['change_count']++;
-                $modelGroups[$model]['change_events'][$event] = ($modelGroups[$model]['change_events'][$event] ?? 0) + 1;
+            if (in_array($event, self::MODEL_CHANGE_EVENTS, true)) {
+                $operationKey = isset($item['operation_id']) && is_numeric($item['operation_id'])
+                    ? 'operation:'.(string) $item['operation_id']
+                    : 'event:'.$index;
+                $modelGroup['change_candidates'][$operationKey][] = $item;
             }
+
+            unset($modelGroup);
         }
 
         $groups = array_values($groups);
@@ -97,6 +130,32 @@ final class SectionAnalyzer
             ?: strcasecmp((string) $left['event'], (string) $right['event']));
 
         foreach ($modelGroups as &$modelGroup) {
+            foreach ($modelGroup['change_candidates'] as $candidates) {
+                $operation = $this->modelChangeOperation($candidates);
+                $modelGroup['change_operations'][] = $operation;
+                $modelGroup['change_count']++;
+                $event = $operation['event'];
+                $modelGroup['change_events'][$event] = ($modelGroup['change_events'][$event] ?? 0) + 1;
+
+                if (! $this->addModelSource($modelGroup['sources'], $operation, 'changed', $event)) {
+                    $modelGroup['unknown_source_activity_count']++;
+                }
+            }
+            unset($modelGroup['change_candidates']);
+
+            usort($modelGroup['change_operations'], fn (array $left, array $right): int => ($left['at_ms'] ?? PHP_FLOAT_MAX) <=> ($right['at_ms'] ?? PHP_FLOAT_MAX));
+            $modelGroup['hidden_change_operation_count'] = max(0, count($modelGroup['change_operations']) - self::MAX_MODEL_CHANGE_OPERATIONS);
+            $modelGroup['change_operations'] = array_slice($modelGroup['change_operations'], 0, self::MAX_MODEL_CHANGE_OPERATIONS);
+
+            foreach ($modelGroup['records'] as &$record) {
+                [$record['sources'], $record['source_count'], $record['hidden_source_count']] = $this->finalizeModelSources(
+                    $record['sources'],
+                    $querySources,
+                    self::MAX_RECORD_SOURCES,
+                );
+            }
+            unset($record);
+
             $modelGroup['records'] = array_values($modelGroup['records']);
             $modelGroup['record_count'] = count($modelGroup['records']);
             $modelGroup['repeated_load_count'] = array_sum(array_map(
@@ -106,6 +165,15 @@ final class SectionAnalyzer
             usort($modelGroup['records'], fn (array $left, array $right): int => $right['loads'] <=> $left['loads']
                 ?: ($left['first_seen_ms'] ?? PHP_FLOAT_MAX) <=> ($right['first_seen_ms'] ?? PHP_FLOAT_MAX)
                 ?: strnatcasecmp((string) $left['key'], (string) $right['key']));
+
+            $modelGroup['hidden_record_count'] = max(0, $modelGroup['record_count'] - self::MAX_MODEL_RECORDS);
+            $modelGroup['records'] = array_slice($modelGroup['records'], 0, self::MAX_MODEL_RECORDS);
+            [$modelGroup['sources'], $modelGroup['source_count'], $modelGroup['hidden_source_count'], $modelGroup['related_query_count']] = $this->finalizeModelSources(
+                $modelGroup['sources'],
+                $querySources,
+                self::MAX_MODEL_SOURCES,
+            );
+            $modelGroup['activity_count'] = $modelGroup['load_count'] + $modelGroup['change_count'];
         }
         unset($modelGroup);
 
@@ -115,16 +183,26 @@ final class SectionAnalyzer
             ?: $right['repeated_load_count'] <=> $left['repeated_load_count']
             ?: $right['load_count'] <=> $left['load_count']
             ?: $right['total_count'] <=> $left['total_count']
-            ?: strcasecmp((string) $left['model'], (string) $right['model']));
+            ?: strcasecmp((string) $left['model'], (string) $right['model'])
+            ?: strcasecmp((string) ($left['connection'] ?? ''), (string) ($right['connection'] ?? '')));
 
         if (isset($profile['sections']['models'])) {
             $profile['sections']['models']['summary']['model_classes'] = count(array_unique(array_column($items, 'model')));
+            $profile['sections']['models']['summary']['model_contexts'] = count($modelGroups);
             $profile['sections']['models']['summary']['lifecycle_events'] = $events;
+            $profile['sections']['models']['summary']['retained_lifecycle_event_count'] = count($items);
             $profile['sections']['models']['summary']['retrieval_count'] = array_sum(array_column($modelGroups, 'load_count'));
             $profile['sections']['models']['summary']['distinct_record_count'] = array_sum(array_column($modelGroups, 'record_count'));
             $profile['sections']['models']['summary']['unidentified_load_count'] = array_sum(array_column($modelGroups, 'unidentified_load_count'));
             $profile['sections']['models']['summary']['repeated_load_count'] = array_sum(array_column($modelGroups, 'repeated_load_count'));
             $profile['sections']['models']['summary']['model_change_count'] = array_sum(array_column($modelGroups, 'change_count'));
+            $profile['sections']['models']['summary']['activity_count'] = $profile['sections']['models']['summary']['retrieval_count']
+                + $profile['sections']['models']['summary']['model_change_count'];
+            $profile['sections']['models']['summary']['intermediate_lifecycle_event_count'] = max(
+                0,
+                count($items) - $profile['sections']['models']['summary']['activity_count'],
+            );
+            $profile['sections']['models']['summary']['unknown_source_activity_count'] = array_sum(array_column($modelGroups, 'unknown_source_activity_count'));
             $profile['sections']['models']['summary']['model_change_events'] = array_reduce(
                 $modelGroups,
                 function (array $events, array $group): array {
@@ -141,6 +219,176 @@ final class SectionAnalyzer
         }
 
         return $profile;
+    }
+
+    /** @param array<string, array<string, mixed>> $sources @param array<string, mixed> $item */
+    private function addModelSource(array &$sources, array $item, string $activity, string $event): bool
+    {
+        $callsite = $this->modelCallsite($item['callsite'] ?? null);
+
+        if ($callsite === null) {
+            return false;
+        }
+
+        $key = $this->modelCallsiteKey($callsite);
+        $sources[$key] ??= [
+            'callsite' => $callsite,
+            'activity_count' => 0,
+            'retrieval_count' => 0,
+            'change_count' => 0,
+            'change_events' => [],
+            'first_seen_ms' => null,
+            'last_seen_ms' => null,
+        ];
+        $source = &$sources[$key];
+        $source['activity_count']++;
+
+        if ($activity === 'retrieved') {
+            $source['retrieval_count']++;
+        } else {
+            $source['change_count']++;
+            $source['change_events'][$event] = ($source['change_events'][$event] ?? 0) + 1;
+        }
+
+        $this->addModelTiming($source, $item);
+        unset($source);
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $sources
+     * @param  array<string, array<string, int|float>>  $querySources
+     * @return array{list<array<string, mixed>>, int, int, int}
+     */
+    private function finalizeModelSources(array $sources, array $querySources, int $limit): array
+    {
+        foreach ($sources as $key => &$source) {
+            $queries = $querySources[$key] ?? [];
+            $source['query_count'] = (int) ($queries['count'] ?? 0);
+            $source['query_duration_ms'] = round((float) ($queries['duration_ms'] ?? 0), 2);
+            $source['query_read_count'] = (int) ($queries['read_count'] ?? 0);
+            $source['query_write_count'] = (int) ($queries['write_count'] ?? 0);
+        }
+        unset($source);
+
+        $sources = array_values($sources);
+        usort($sources, fn (array $left, array $right): int => $right['activity_count'] <=> $left['activity_count']
+            ?: $right['query_count'] <=> $left['query_count']
+            ?: strcasecmp($this->modelCallsiteKey($left['callsite']), $this->modelCallsiteKey($right['callsite'])));
+        $total = count($sources);
+        $relatedQueryCount = array_sum(array_column($sources, 'query_count'));
+
+        return [array_slice($sources, 0, $limit), $total, max(0, $total - $limit), $relatedQueryCount];
+    }
+
+    /** @param list<array<string, mixed>> $candidates @return array<string, mixed> */
+    private function modelChangeOperation(array $candidates): array
+    {
+        $event = null;
+
+        foreach ($candidates as $candidate) {
+            $operation = $candidate['operation'] ?? null;
+
+            if (is_string($operation) && in_array($operation, self::MODEL_CHANGE_EVENTS, true)) {
+                $event = $operation;
+            }
+        }
+
+        if ($event === null) {
+            $priority = ['created' => 10, 'updated' => 10, 'deleted' => 10, 'trashed' => 20, 'restored' => 20, 'forceDeleted' => 30];
+            $event = (string) ($candidates[0]['event'] ?? 'changed');
+
+            foreach ($candidates as $candidate) {
+                $candidateEvent = (string) ($candidate['event'] ?? 'changed');
+
+                if (($priority[$candidateEvent] ?? 0) > ($priority[$event] ?? 0)) {
+                    $event = $candidateEvent;
+                }
+            }
+        }
+
+        $selected = $candidates[array_key_last($candidates)];
+        $changes = $selected;
+
+        foreach ($candidates as $candidate) {
+            if (($candidate['event'] ?? null) === $event) {
+                $selected = $candidate;
+            }
+
+            if ((int) ($candidate['change_attribute_count'] ?? 0) > (int) ($changes['change_attribute_count'] ?? 0)) {
+                $changes = $candidate;
+            }
+        }
+
+        $callsite = $this->modelCallsite($selected['callsite'] ?? null);
+
+        if ($callsite === null) {
+            foreach ($candidates as $candidate) {
+                $callsite = $this->modelCallsite($candidate['callsite'] ?? null);
+
+                if ($callsite !== null) {
+                    break;
+                }
+            }
+        }
+
+        return [
+            'event' => $event,
+            'key_name' => $selected['key_name'] ?? 'id',
+            'key' => $selected['key'] ?? null,
+            'at_ms' => $selected['at_ms'] ?? null,
+            'callsite' => $callsite,
+            'change_attribute_count' => (int) ($changes['change_attribute_count'] ?? 0),
+            'changes' => is_array($changes['changes'] ?? null) ? $changes['changes'] : [],
+            'changes_truncated' => (bool) ($changes['changes_truncated'] ?? false),
+            'lifecycle_events' => array_count_values(array_map(
+                fn (array $candidate): string => (string) ($candidate['event'] ?? 'unknown'),
+                $candidates,
+            )),
+        ];
+    }
+
+    /** @return array<string, array<string, int|float>> */
+    private function querySources(array $profile): array
+    {
+        $sources = [];
+
+        foreach ($this->items($profile, 'queries') as $query) {
+            $callsite = $this->modelCallsite($query['callsite'] ?? null);
+
+            if ($callsite === null) {
+                continue;
+            }
+
+            $key = $this->modelCallsiteKey($callsite);
+            $sources[$key] ??= ['count' => 0, 'duration_ms' => 0.0, 'read_count' => 0, 'write_count' => 0];
+            $sources[$key]['count']++;
+            $sources[$key]['duration_ms'] += (float) ($query['duration_ms'] ?? 0);
+            $queryType = ($query['query_type'] ?? null) === 'read' ? 'read_count' : 'write_count';
+            $sources[$key][$queryType]++;
+        }
+
+        return $sources;
+    }
+
+    /** @return array{file: string, line: int}|null */
+    private function modelCallsite(mixed $callsite): ?array
+    {
+        if (! is_array($callsite) || ! isset($callsite['file'], $callsite['line'])) {
+            return null;
+        }
+
+        return [
+            'file' => (string) $callsite['file'],
+            'line' => max(1, (int) $callsite['line']),
+        ];
+    }
+
+    /** @param array{file: string, line: int} $callsite */
+    private function modelCallsiteKey(array $callsite): string
+    {
+        return $callsite['file'].':'.$callsite['line'];
     }
 
     /** @param array<string, mixed> $target @param array<string, mixed> $item */

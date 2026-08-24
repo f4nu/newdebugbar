@@ -324,3 +324,73 @@ it('ranks changed models before repeated retrievals and keeps write events disti
         ->change_events->toBe(['updated' => 1])
         ->total_count->toBe(4);
 });
+
+it('folds duplicate lifecycle callbacks into logical operations and matches queries by exact source', function () {
+    $source = ['file' => 'app/Actions/UpdateClient.php', 'line' => 42];
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'queries' => ['summary' => ['count' => 1], 'payload' => ['items' => [[
+                'duration_ms' => 3.25,
+                'query_type' => 'write',
+                'callsite' => $source,
+            ]]]],
+            'models' => ['summary' => ['count' => 5], 'payload' => ['items' => [
+                ['model' => 'App\\Models\\Client', 'event' => 'updating', 'operation_id' => 7, 'operation' => 'updated', 'key_name' => 'id', 'key' => 4, 'at_ms' => 5, 'callsite' => $source],
+                ['model' => 'App\\Models\\Client', 'event' => 'updated', 'operation_id' => 7, 'operation' => 'updated', 'key_name' => 'id', 'key' => 4, 'at_ms' => 8, 'callsite' => $source, 'change_attribute_count' => 1, 'changes' => ['status' => 'ready']],
+                ['model' => 'App\\Models\\Client', 'event' => 'saved', 'operation_id' => 7, 'operation' => 'updated', 'key_name' => 'id', 'key' => 4, 'at_ms' => 9, 'callsite' => $source],
+                ['model' => 'App\\Models\\Client', 'event' => 'trashed', 'operation_id' => 8, 'operation' => 'trashed', 'key_name' => 'id', 'key' => 4, 'at_ms' => 12, 'callsite' => $source],
+                ['model' => 'App\\Models\\Client', 'event' => 'deleted', 'operation_id' => 8, 'operation' => 'trashed', 'key_name' => 'id', 'key' => 4, 'at_ms' => 13, 'callsite' => $source],
+            ]]],
+        ],
+    ]);
+
+    $models = $profile['sections']['models'];
+    $group = $models['payload']['model_groups'][0];
+
+    expect($models['summary'])
+        ->model_change_count->toBe(2)
+        ->activity_count->toBe(2)
+        ->intermediate_lifecycle_event_count->toBe(3)
+        ->model_change_events->toBe(['updated' => 1, 'trashed' => 1])
+        ->and($group['change_operations'])->toHaveCount(2)
+        ->and(array_column($group['change_operations'], 'event'))->toBe(['updated', 'trashed'])
+        ->and($group['sources'][0])
+        ->activity_count->toBe(2)
+        ->change_count->toBe(2)
+        ->query_count->toBe(1)
+        ->query_duration_ms->toBe(3.25)
+        ->query_write_count->toBe(1)
+        ->query_read_count->toBe(0)
+        ->and($group['related_query_count'])->toBe(1);
+});
+
+it('bounds rendered record and source evidence without changing complete counts', function () {
+    $items = [];
+
+    foreach (range(1, 30) as $key) {
+        $items[] = [
+            'model' => 'App\\Models\\AuditEntry',
+            'event' => 'retrieved',
+            'key_name' => 'uuid',
+            'key' => 'record-'.$key,
+            'at_ms' => $key,
+            'callsite' => ['file' => 'app/Reports/AuditReport.php', 'line' => $key],
+        ];
+    }
+
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'models' => ['summary' => ['count' => count($items)], 'payload' => ['items' => $items]],
+        ],
+    ]);
+    $group = $profile['sections']['models']['payload']['model_groups'][0];
+
+    expect($group)
+        ->record_count->toBe(30)
+        ->hidden_record_count->toBe(5)
+        ->source_count->toBe(30)
+        ->hidden_source_count->toBe(22)
+        ->and($group['records'])->toHaveCount(25)
+        ->and($group['sources'])->toHaveCount(8)
+        ->and($group['records'][0]['key_name'])->toBe('uuid');
+});

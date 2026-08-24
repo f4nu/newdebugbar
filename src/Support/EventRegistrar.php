@@ -67,11 +67,14 @@ use ReflectionFunction;
 use ReflectionMethod;
 use Throwable;
 use UnitEnum;
+use WeakMap;
 
 /** Routes Laravel runtime events into matching collectors and keeps bounded dispatch evidence. */
 final class EventRegistrar
 {
     private const MAX_PENDING_CACHE_OPERATIONS = 500;
+
+    private const MAX_MODEL_CHANGED_ATTRIBUTES = 12;
 
     private const MAX_PENDING_NOTIFICATION_DESTINATIONS = 500;
 
@@ -153,6 +156,11 @@ final class EventRegistrar
 
     /** @var array<string, mixed> */
     private array $notificationDestinations = [];
+
+    /** @var WeakMap<Model, array{id: int, type: string}>|null */
+    private ?WeakMap $modelOperations = null;
+
+    private int $nextModelOperationId = 0;
 
     public function __construct(
         private readonly Dispatcher $events,
@@ -615,13 +623,23 @@ final class EventRegistrar
                 return;
             }
 
+            $location = $this->callSites->capture();
+            $operation = $this->modelOperation($model, $event);
+
             $this->manager()->record('models', [
                 'event' => $event,
                 'model' => $model::class,
                 'connection' => $model->getConnectionName(),
                 'table' => $model->getTable(),
+                'key_name' => $model->getKeyName(),
                 'key' => $this->modelKey($model),
+                'operation_id' => $operation['id'] ?? null,
+                'operation' => $operation['type'] ?? null,
+                ...$this->modelChanges($model, $event),
+                'callsite' => $location['callsite'],
             ]);
+
+            $this->finishModelOperation($model, $event, $operation);
         });
 
         $this->listenForCacheStart(RetrievingKey::class, 'read');
@@ -1025,6 +1043,83 @@ final class EventRegistrar
         $key = $model->getKeyName();
 
         return array_key_exists($key, $attributes) ? $attributes[$key] : null;
+    }
+
+    /** @return array{id: int, type: string}|null */
+    private function modelOperation(Model $model, string $event): ?array
+    {
+        $operations = $this->modelOperations ??= new WeakMap;
+        $active = $operations[$model] ?? null;
+        $startedType = match ($event) {
+            'creating' => 'created',
+            'updating' => 'updated',
+            'deleting' => 'deleted',
+            'restoring' => 'restored',
+            'forceDeleting' => 'forceDeleted',
+            default => null,
+        };
+
+        if ($startedType !== null) {
+            $preserveOuterOperation = is_array($active) && (
+                ($active['type'] === 'restored' && $startedType === 'updated')
+                || ($active['type'] === 'forceDeleted' && $startedType === 'deleted')
+            );
+
+            if (! $preserveOuterOperation) {
+                $active = [
+                    'id' => ++$this->nextModelOperationId,
+                    'type' => $startedType,
+                ];
+                $operations[$model] = $active;
+            }
+        }
+
+        if ($event === 'trashed' && is_array($active) && $active['type'] === 'deleted') {
+            $active['type'] = 'trashed';
+            $operations[$model] = $active;
+        }
+
+        return is_array($active) ? $active : null;
+    }
+
+    /** @param array{id: int, type: string}|null $operation */
+    private function finishModelOperation(Model $model, string $event, ?array $operation): void
+    {
+        if ($operation === null || $this->modelOperations === null) {
+            return;
+        }
+
+        $finished = match ($operation['type']) {
+            'created', 'updated' => $event === 'saved',
+            'deleted', 'trashed' => $event === 'deleted',
+            'restored' => $event === 'restored',
+            'forceDeleted' => $event === 'forceDeleted',
+            default => false,
+        };
+
+        if ($finished) {
+            unset($this->modelOperations[$model]);
+        }
+    }
+
+    /** @return array{change_attribute_count: int, changes: array<string, mixed>, changes_truncated: bool} */
+    private function modelChanges(Model $model, string $event): array
+    {
+        if (! in_array($event, ['created', 'updated', 'deleted', 'restored', 'forceDeleted', 'trashed'], true)) {
+            return [
+                'change_attribute_count' => 0,
+                'changes' => [],
+                'changes_truncated' => false,
+            ];
+        }
+
+        $changes = $model->getChanges();
+
+        return [
+            'change_attribute_count' => count($changes),
+            'changes' => array_slice($changes, 0, self::MAX_MODEL_CHANGED_ATTRIBUTES, true),
+            'changes_truncated' => count($changes) > self::MAX_MODEL_CHANGED_ATTRIBUTES,
+        ];
     }
 
     /** @return array<string, mixed> */

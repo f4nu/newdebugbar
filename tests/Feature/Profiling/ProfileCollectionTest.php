@@ -22,6 +22,7 @@ use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Fixtures\Mail\ProfiledMailable;
+use NewDebugBar\Tests\Fixtures\Models\Client;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
@@ -161,15 +162,64 @@ it('presents model activity as useful record loads', function () {
         ->distinct_record_count->toBe(24)
         ->repeated_load_count->toBe(20)
         ->model_change_count->toBe(0)
+        ->activity_count->toBe(44)
+        ->intermediate_lifecycle_event_count->toBe(0)
+        ->unknown_source_activity_count->toBe(0)
         ->and(array_map(
-            fn (array $group): array => [class_basename($group['model']), $group['load_count'], $group['record_count'], $group['repeated_load_count']],
+            fn (array $group): array => [
+                class_basename($group['model']),
+                $group['load_count'],
+                $group['record_count'],
+                $group['repeated_load_count'],
+                $group['source_count'],
+            ],
             $models['payload']['model_groups'],
         ))->toBe([
-            ['StudioJob', 14, 6, 8],
-            ['Client', 10, 4, 6],
-            ['ProofVersion', 8, 5, 3],
-            ['User', 5, 2, 3],
-            ['JobActivity', 7, 7, 0],
+            ['StudioJob', 14, 6, 8, 1],
+            ['Client', 10, 4, 6, 1],
+            ['ProofVersion', 8, 5, 3, 1],
+            ['User', 5, 2, 3, 1],
+            ['JobActivity', 7, 7, 0, 1],
+        ]);
+});
+
+it('captures model sources and folds lifecycle callbacks into logical write operations', function () {
+    $response = $this->get('/profiled-models?changes=1', ['Accept' => 'text/html'])->assertOk();
+    $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $rawModels = collect($stored['sections']['models']['payload']['items']);
+    $clientLifecycle = $rawModels
+        ->where('model', Client::class)
+        ->whereIn('event', ['updating', 'updated', 'saved'])
+        ->values();
+    $updated = $clientLifecycle->firstWhere('event', 'updated');
+    $models = app(ProfilePresenter::class)->present($stored)['sections']['models'];
+
+    expect($clientLifecycle)->toHaveCount(3)
+        ->and($clientLifecycle->pluck('operation_id')->unique()->filter())->toHaveCount(1)
+        ->and($updated['key_name'])->toBe('id')
+        ->and($updated['changes'])->toBe([
+            'status' => 'approved',
+            'api_token' => '[redacted]',
+        ])
+        ->and($updated['callsite']['file'])->toBe('tests/Support/DefinesTestApplication.php')
+        ->and($updated['callsite']['line'])->toBeInt()
+        ->and($models['summary'])
+        ->retrieval_count->toBe(44)
+        ->model_change_count->toBe(4)
+        ->activity_count->toBe(48)
+        ->intermediate_lifecycle_event_count->toBe(7)
+        ->model_change_events->toBe([
+            'updated' => 1,
+            'created' => 1,
+            'deleted' => 1,
+            'trashed' => 1,
+        ])
+        ->and($models['payload']['model_groups'][0]['change_operations'][0])
+        ->event->toBe('updated')
+        ->change_attribute_count->toBe(2)
+        ->changes->toBe([
+            'status' => 'approved',
+            'api_token' => '[redacted]',
         ]);
 });
 

@@ -254,7 +254,7 @@ trait DefinesTestApplication
                 StudioJob::class => [1, 5, 7, 2, 3, 4, 1, 5, 7, 2, 3, 1, 5, 7],
                 Client::class => [1, 4, 2, 3, 1, 4, 2, 3, 1, 4],
                 ProofVersion::class => [2, 8, 9, 1, 3, 2, 8, 9],
-                JobActivity::class => [1, 2, 3, 4, 5, 6, 7],
+                JobActivity::class => request()->boolean('large') ? range(1, 40) : [1, 2, 3, 4, 5, 6, 7],
                 User::class => [1, 2, 1, 2, 1],
             ];
 
@@ -267,11 +267,44 @@ trait DefinesTestApplication
                 }
             }
 
-            if (request()->boolean('changes')) {
-                $model = new Client;
+            if (request()->boolean('missing')) {
+                $model = new ProfiledModel;
                 $model->setConnection('testing');
-                $model->setRawAttributes(['id' => 4], true);
-                Event::dispatch('eloquent.updated: '.Client::class, [$model]);
+                $model->setRawAttributes(['name' => 'Identifier unavailable'], true);
+                Event::dispatch('eloquent.retrieved: '.ProfiledModel::class, [$model]);
+            }
+
+            if (request()->boolean('changes')) {
+                $client = new Client;
+                $client->setConnection('testing');
+                $client->setRawAttributes(['id' => 4, 'status' => 'draft', 'api_token' => 'private-token'], true);
+                $client->setAttribute('status', 'approved');
+                $client->setAttribute('api_token', 'updated-private-token');
+                $client->syncChanges();
+                Event::dispatch('eloquent.updating: '.Client::class, [$client]);
+                Event::dispatch('eloquent.updated: '.Client::class, [$client]);
+                Event::dispatch('eloquent.saved: '.Client::class, [$client]);
+
+                $proof = new ProofVersion;
+                $proof->setConnection('testing');
+                $proof->setRawAttributes(['id' => 10, 'label' => 'First proof']);
+                $proof->syncChanges();
+                Event::dispatch('eloquent.creating: '.ProofVersion::class, [$proof]);
+                Event::dispatch('eloquent.created: '.ProofVersion::class, [$proof]);
+                Event::dispatch('eloquent.saved: '.ProofVersion::class, [$proof]);
+
+                $user = new User;
+                $user->setConnection('testing');
+                $user->setRawAttributes(['id' => 2], true);
+                Event::dispatch('eloquent.deleting: '.User::class, [$user]);
+                Event::dispatch('eloquent.deleted: '.User::class, [$user]);
+
+                $activity = new JobActivity;
+                $activity->setConnection('testing');
+                $activity->setRawAttributes(['id' => 7], true);
+                Event::dispatch('eloquent.deleting: '.JobActivity::class, [$activity]);
+                Event::dispatch('eloquent.trashed: '.JobActivity::class, [$activity]);
+                Event::dispatch('eloquent.deleted: '.JobActivity::class, [$activity]);
             }
 
             return response(<<<'HTML'
@@ -282,6 +315,11 @@ trait DefinesTestApplication
                 </html>
                 HTML);
         });
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-models-empty',
+            fn () => response('<!doctype html><html><head><title>No model activity</title></head><body><main>No model activity</main></body></html>'),
+        );
 
         $router->middleware(ProfileRequest::class)->get('/profiled-context', function () {
             Gate::define('inspect-profile', fn (mixed $user, ProfiledModel $model): bool => $user === null && $model instanceof ProfiledModel);
