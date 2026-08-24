@@ -171,7 +171,7 @@
                 data-ndb-inspector-content
                 x-ref="content"
                 :inert="mobileSectionsOpen"
-                :class="['authorization', 'cache', 'http_client', 'mail', 'notifications'].includes(selected)
+                :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'notifications'].includes(selected)
                     ? 'ndb:lg:flex ndb:lg:flex-col'
                     : ''"
                 class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
@@ -197,7 +197,9 @@
                 <div
                     data-ndb-section-stage
                     :aria-busy="sectionLoading ? 'true' : 'false'"
-                    :class="['authorization', 'cache', 'http_client', 'mail', 'notifications'].includes(selected)
+                    :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'notifications'].includes(
+                        selected,
+                    )
                         ? 'ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
                         : ''"
                     class="ndb:relative ndb:min-h-64"
@@ -229,7 +231,7 @@
                     <div
                         data-ndb-section-content
                         :class="(sectionTransitioning ? 'ndb:opacity-0' : 'ndb:opacity-100') +
-                        (['authorization', 'cache', 'http_client', 'mail', 'notifications'].includes(selected)
+                        (['authorization', 'cache', 'events', 'http_client', 'mail', 'notifications'].includes(selected)
                             ? ' ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
                             : '')"
                         class="ndb:transition-opacity ndb:duration-150 ndb:ease-out ndb:motion-reduce:transition-none"

@@ -45,6 +45,7 @@ abstract class TestCase extends Orchestra
             'handler' => NullHandler::class,
         ];
         $app['config']->set('logging.channels', $loggingChannels);
+        $app['config']->set('queue.default', 'sync');
     }
 
     protected function setUp(): void

@@ -40,6 +40,208 @@ it('groups models views and event sources', function () {
         ->toBe(['framework', 'application']);
 });
 
+it('groups repeated event signatures while preserving timing sources listeners and payload shape', function () {
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'events' => ['summary' => ['count' => 5, 'retained_count' => 5], 'payload' => ['items' => [
+                [
+                    'name' => 'App\\Events\\TripWorkspaceRefreshed',
+                    'broadcast' => true,
+                    'at_ms' => 10.125,
+                    'callsite' => ['file' => 'app/Actions/RefreshTrip.php', 'line' => 41],
+                    'listeners' => [[
+                        'name' => 'App\\Listeners\\RecordWorkspaceRefresh@handle',
+                        'source' => ['file' => 'app/Listeners/RecordWorkspaceRefresh.php', 'line' => 12],
+                        'queued' => false,
+                        'registrations' => 2,
+                    ]],
+                    'payload_shape' => [[
+                        'position' => 1,
+                        'type' => 'App\\Events\\TripWorkspaceRefreshed',
+                        'fields' => ['tripId'],
+                        'field_count' => 1,
+                        'truncated' => false,
+                    ]],
+                ],
+                [
+                    'name' => 'App\\Events\\TripWorkspaceRefreshed',
+                    'broadcast' => true,
+                    'at_ms' => 18.875,
+                    'callsite' => ['file' => 'app/Jobs/RefreshTrip.php', 'line' => 24],
+                    'listeners' => [[
+                        'name' => 'App\\Listeners\\RecordWorkspaceRefresh@handle',
+                        'source' => ['file' => 'app/Listeners/RecordWorkspaceRefresh.php', 'line' => 12],
+                        'queued' => false,
+                        'registrations' => 2,
+                    ]],
+                    'payload_shape' => [[
+                        'position' => 1,
+                        'type' => 'App\\Events\\TripWorkspaceRefreshed',
+                        'fields' => ['tripId'],
+                        'field_count' => 1,
+                        'truncated' => false,
+                    ]],
+                ],
+                ['name' => 'Illuminate\\Database\\Events\\StatementPrepared', 'at_ms' => 2.5],
+                ['name' => 'Illuminate\\Database\\Events\\StatementPrepared', 'at_ms' => 4.75],
+                ['name' => 'application.ready', 'payload_types' => ['array']],
+            ]]],
+        ],
+    ]);
+
+    $groups = collect($profile['sections']['events']['payload']['groups']);
+    $application = $groups->firstWhere('name', 'App\\Events\\TripWorkspaceRefreshed');
+    $framework = $groups->firstWhere('name', 'Illuminate\\Database\\Events\\StatementPrepared');
+    $untimed = $groups->firstWhere('name', 'application.ready');
+
+    expect($profile['sections']['events']['summary'])
+        ->application_count->toBe(3)
+        ->framework_count->toBe(2)
+        ->group_count->toBe(3)
+        ->application_group_count->toBe(2)
+        ->framework_group_count->toBe(1)
+        ->and(array_column($profile['sections']['events']['payload']['items'], 'sequence'))->toBe([1, 2, 3, 4, 5])
+        ->and($application)
+        ->source->toBe('application')
+        ->display_name->toBe('TripWorkspaceRefreshed')
+        ->namespace->toBe('App\\Events')
+        ->occurrence_count->toBe(2)
+        ->first_sequence->toBe(1)
+        ->last_sequence->toBe(2)
+        ->first_at_ms->toBe(10.125)
+        ->last_at_ms->toBe(18.875)
+        ->span_ms->toBe(8.75)
+        ->listener_count->toBe(2)
+        ->duplicate_registration_count->toBe(1)
+        ->listener_outcome->toBe('completed')
+        ->payload_field_count->toBe(1)
+        ->and($application['payload_shape'][0]['fields'])->toBe(['tripId'])
+        ->and($application['dispatch_sources'])->toHaveCount(2)
+        ->and($application['next_step'])->toContain('registered more than once')
+        ->and($framework)
+        ->source->toBe('framework')
+        ->occurrence_count->toBe(2)
+        ->span_ms->toBe(2.25)
+        ->and(array_column($framework['occurrences'], 'callsite'))->toBe([null, null])
+        ->and($framework['related_section'])->toBe(['key' => 'queries', 'label' => 'Queries'])
+        ->and($untimed['first_at_ms'])->toBeNull()
+        ->and($untimed['payload_shape'][0]['type'])->toBe('array');
+});
+
+it('tailors event guidance to the captured listener state', function () {
+    $listener = static fn (string $name, bool $queued = false, int $registrations = 1): array => [
+        'name' => $name,
+        'queued' => $queued,
+        'registrations' => $registrations,
+    ];
+    $source = static fn (string $file): array => ['file' => $file, 'line' => 12];
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'events' => ['summary' => ['count' => 10], 'payload' => ['items' => [
+                [
+                    'name' => 'App\\Events\\NoListeners',
+                    'callsite' => $source('app/Actions/DispatchWithoutListener.php'),
+                ],
+                [
+                    'name' => 'App\\Events\\OneListener',
+                    'callsite' => $source('app/Actions/DispatchToOne.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleOne@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\ManyListeners',
+                    'callsite' => $source('app/Actions/DispatchToMany.php'),
+                    'listeners' => [
+                        $listener('App\\Listeners\\HandleFirst@handle'),
+                        $listener('App\\Listeners\\HandleSecond@handle'),
+                    ],
+                ],
+                [
+                    'name' => 'App\\Events\\DuplicateListener',
+                    'callsite' => $source('app/Actions/DispatchDuplicate.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleDuplicate@handle', registrations: 2)],
+                ],
+                [
+                    'name' => 'App\\Events\\QueuedListener',
+                    'listeners' => [$listener('App\\Listeners\\HandleQueued@handle', queued: true)],
+                ],
+                [
+                    'name' => 'App\\Events\\OneListenerManySources',
+                    'callsite' => $source('app/Actions/DispatchFirst.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleManySources@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\OneListenerManySources',
+                    'callsite' => $source('app/Actions/DispatchSecond.php'),
+                    'listeners' => [$listener('App\\Listeners\\HandleManySources@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\ListenerWithoutSource',
+                    'listeners' => [$listener('App\\Listeners\\HandleWithoutSource@handle')],
+                ],
+                [
+                    'name' => 'App\\Events\\BroadcastUpdate',
+                    'broadcast' => true,
+                    'listeners' => [$listener('App\\Listeners\\BroadcastUpdate@handle')],
+                ],
+                ['name' => 'Illuminate\\Database\\Events\\StatementPrepared'],
+            ]]],
+        ],
+    ]);
+    $groups = collect($profile['sections']['events']['payload']['groups'])->keyBy('name');
+
+    expect($groups['App\\Events\\NoListeners'])
+        ->listener_outcome_label->toBe('No listeners')
+        ->listener_summary->toBe('No listeners registered.')
+        ->next_step->toBe('Start at the dispatch source, then check listener registration and event discovery.')
+        ->and($groups['App\\Events\\OneListener']['next_step'])
+        ->toBe('Start at the dispatch source, then inspect the registered listener.')
+        ->and($groups['App\\Events\\ManyListeners']['next_step'])
+        ->toBe('Start at the dispatch source, then inspect the registered listeners.')
+        ->and($groups['App\\Events\\DuplicateListener']['next_step'])
+        ->toBe('The same listener is registered more than once. Check explicit registration and event discovery.')
+        ->and($groups['App\\Events\\QueuedListener']['next_step'])
+        ->toBe('Open Queue to confirm the queued listener ran.')
+        ->and($groups['App\\Events\\OneListenerManySources']['next_step'])
+        ->toBe('Compare the dispatch sources, then inspect the registered listener.')
+        ->and($groups['App\\Events\\ListenerWithoutSource']['next_step'])
+        ->toBe('Inspect the listener source when the observed result does not match the event.')
+        ->and($groups['App\\Events\\BroadcastUpdate']['next_step'])
+        ->toBe('Check the broadcast channel and frontend subscription if connected clients did not update.')
+        ->and($groups['Illuminate\\Database\\Events\\StatementPrepared']['next_step'])
+        ->toBe('Use the related collector when this framework event looks unexpected.');
+});
+
+it('bounds grouped event detail while preserving totals and timeline endpoints', function () {
+    $items = array_map(fn (int $sequence): array => [
+        'name' => 'App\\Events\\RepeatedSignal',
+        'at_ms' => $sequence / 10,
+        'callsite' => [
+            'file' => 'app/Signals/Source'.(($sequence - 1) % 15).'.php',
+            'line' => $sequence,
+        ],
+    ], range(1, 40));
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'events' => [
+                'summary' => ['count' => 40, 'retained_count' => 40],
+                'payload' => ['items' => $items],
+            ],
+        ],
+    ]);
+    $group = $profile['sections']['events']['payload']['groups'][0];
+
+    expect($group)
+        ->occurrence_count->toBe(40)
+        ->occurrence_omitted_count->toBe(15)
+        ->dispatch_source_count->toBe(40)
+        ->dispatch_source_omitted_count->toBe(30)
+        ->and($group['occurrences'])->toHaveCount(25)
+        ->and($group['occurrences'][0]['sequence'])->toBe(1)
+        ->and($group['occurrences'][24]['sequence'])->toBe(40)
+        ->and($group['dispatch_sources'])->toHaveCount(10)
+        ->and($profile['sections']['events']['payload']['items'])->toHaveCount(40);
+});
+
 it('sorts model groups by count then by model name', function () {
     $profile = (new SectionAnalyzer)->analyze([
         'sections' => [

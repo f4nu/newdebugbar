@@ -452,5 +452,93 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(review).color !== 'rgb(0, 128, 0)';
             })()
             JS)
+        ->click('[data-ndb-section="events"]')
+        ->assertVisible('[data-ndb-section-panel="events"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-events]');
+                const row = document.querySelector('[data-ndb-event-item]:not([hidden])');
+                const rowName = row.querySelector('[data-ndb-event-list-name]');
+                const listSummary = document.querySelector('[data-ndb-event-visible-summary]');
+                const sort = document.querySelector('[data-ndb-event-sort]');
+                const search = document.querySelector('[data-ndb-event-search]');
+                const inactiveFilter = document.querySelector('[data-ndb-event-source="all"]');
+                const activeFilter = document.querySelector('[data-ndb-event-source="application"]');
+                const overview = document.querySelector('[data-ndb-event-detail-panel="overview"]');
+                const metadataGrid = overview.querySelector('[data-ndb-event-facts]');
+                const metadataFacts = [...overview.querySelectorAll('[data-ndb-event-fact]')];
+                const metadataTerms = [...metadataGrid.querySelectorAll('dt, dd')];
+                const outcome = document.querySelector('[data-ndb-event-listener-outcome]');
+                const nextStep = document.querySelector('[data-ndb-event-next-step]');
+                const listenerRow = document.querySelector('[data-ndb-event-listener-row]');
+                const timeline = document.querySelector('[data-ndb-event-timeline]');
+                const tabs = [...document.querySelectorAll('[data-ndb-event-detail-tab]')];
+                const tabIcons = [...document.querySelectorAll('[data-ndb-event-detail-tab-icon]')];
+                const color = (value) => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+
+                    canvas.width = 1;
+                    canvas.height = 1;
+                    context.fillStyle = value;
+                    context.fillRect(0, 0, 1, 1);
+
+                    return context.getImageData(0, 0, 1, 1).data;
+                };
+                const lightness = (element, property) => {
+                    const [red, green, blue] = color(getComputedStyle(element)[property]);
+
+                    return (red * 0.2126) + (green * 0.7152) + (blue * 0.0722);
+                };
+                const summaryBox = listSummary.getBoundingClientRect();
+                const sortBox = sort.getBoundingClientRect();
+
+                const checks = {
+                    rootAttribute: root.getAttribute('data-events') === null,
+                    rowBorder: getComputedStyle(row).borderLeftWidth === '0px',
+                    rowHeight: row.getBoundingClientRect().height <= 64,
+                    rowNameColor: getComputedStyle(rowName).color === getComputedStyle(root).color,
+                    listHeaderAlignment: Math.abs(
+                        (summaryBox.top + (summaryBox.height / 2)) - (sortBox.top + (sortBox.height / 2)),
+                    ) <= 1,
+                    darkControlSurfaces: [sort, search, inactiveFilter, activeFilter].every(
+                        (element) => lightness(element, 'backgroundColor') < 90,
+                    ),
+                    darkControlText: [sort, search, inactiveFilter, activeFilter].every(
+                        (element) => lightness(element, 'color') > 130,
+                    ),
+                    metadataDisplay: getComputedStyle(metadataGrid).display === 'grid',
+                    metadataBorder: getComputedStyle(metadataGrid).borderTopWidth === '0px',
+                    metadataPadding: Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0,
+                    metadataBackground: getComputedStyle(metadataGrid).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    factBackgrounds: metadataFacts.every(
+                        (fact) => getComputedStyle(fact).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    ),
+                    termBackgrounds: metadataTerms.every(
+                        (term) => getComputedStyle(term).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    ),
+                    termColors: metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)'),
+                    termSize: Number.parseFloat(getComputedStyle(metadataGrid.querySelector('dt')).fontSize) === 11,
+                    outcomeSize: Number.parseFloat(getComputedStyle(outcome).fontSize) === 11,
+                    outcomeBackground: getComputedStyle(outcome).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    nextStepBackground: getComputedStyle(nextStep).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    nextStepPadding: Number.parseFloat(getComputedStyle(nextStep).paddingTop) === 0,
+                    nextStepColor: getComputedStyle(nextStep).color !== 'rgb(0, 128, 0)',
+                    listenerBackground: getComputedStyle(listenerRow).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    listenerPadding: Number.parseFloat(getComputedStyle(listenerRow).paddingLeft) === 0,
+                    timelineBackground: getComputedStyle(timeline).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    timelineBorder: getComputedStyle(timeline).borderLeftWidth === '0px',
+                    timelinePadding: Number.parseFloat(getComputedStyle(timeline).paddingTop) === 0,
+                    tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                    tabIconCount: tabIcons.length === 3,
+                    tabIconSize: tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14),
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Event isolation failed: ' + failures.join(', '));
+
+                return true;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

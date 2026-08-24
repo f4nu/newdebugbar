@@ -1,77 +1,164 @@
-{{-- Renders application and framework events. --}}
-@php($eventItems = $section['payload']['items'] ?? [])
-@php($eventSourceCounts = array_replace(['application' => 0, 'framework' => 0], array_count_values(array_column($eventItems, 'source'))))
-@php($eventSourceCounts['all'] = count($eventItems))
-<div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800">
-    <div class="ndb:flex-1">
-        <p class="ndb:mb-1.5 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-            Source
-        </p>
-        <x-newdebugbar::filter-tabs label="Filter events by source">
-            @foreach (['all' => 'All', 'application' => 'Application', 'framework' => 'Framework'] as $source => $label)
-                <x-newdebugbar::filter-tab
-                    data-ndb-event-source="{{ $source }}"
-                    @click="setEventSource({{ \Illuminate\Support\Js::from($source) }})"
-                    ::aria-pressed="eventSource === {{ \Illuminate\Support\Js::from($source) }}"
-                >
-                    <span>{{ $label }}</span>
-                    <span
-                        data-ndb-event-source-count="{{ $source }}"
-                        class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
-                    >{{ $eventSourceCounts[$source] ?? 0 }}</span>
-                </x-newdebugbar::filter-tab>
-            @endforeach
-        </x-newdebugbar::filter-tabs>
-    </div>
-    <label class="ndb:sm:w-72"
-        ><span
-            class="ndb:mb-1.5 ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
-            >Search</span
-        ><input
-            data-ndb-event-search
-            x-model="eventSearch"
-            @input.debounce.100ms="applyEventFilters()"
-            type="search"
-            placeholder="Event name"
-            class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:outline-none ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-    /></label>
-</div>
-<p class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-    <span data-ndb-event-visible-count x-text="visibleEventCount"></span> events
-    <span x-show.important="eventSource === 'application'">from application code</span>
-</p>
-<div x-ref="eventList" x-init="$nextTick(() => applyEventFilters())" class="ndb:space-y-2">
-    @foreach ($section['payload']['items'] as $index => $item)
-        <details
-            data-ndb-event-item
-            data-source="{{ $item['source'] }}"
-            data-search="{{ mb_strtolower($item['name']) }}"
-            wire:key="event-{{ $index }}"
-            class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:border-zinc-800"
-        >
-            <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3.5 ndb:py-3">
-                <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-xs ndb:font-semibold">{{ $item['name'] }}</span>
-                @if ($item['broadcast'] ?? false)
-                    <span class="ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:dark:text-indigo-300">Broadcast</span>
-                @endif
-                <span class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:text-zinc-400">{{ $item['source'] }}</span
-                ><x-newdebugbar::icon
-                    name="chevron-down"
-                    class="ndb:size-3.5 ndb:text-zinc-400 ndb:transition ndb:group-open:rotate-180"
-                />
-            </summary>
-            <div class="ndb:space-y-2 ndb:border-t ndb:border-zinc-200 ndb:p-3 ndb:dark:border-zinc-800">
-                @forelse ($item['listeners'] ?? [] as $listener)
-                    <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
-                        <code class="ndb:min-w-0 ndb:flex-1 ndb:truncate ndb:text-[11px]">{{ $listener['name'] }}</code>
+{{-- Groups Laravel dispatches into a compact event list with a focused evidence pane. --}}
+@php
+    $eventGroups = array_values($section['payload']['groups'] ?? []);
+    $eventSummary = $section['summary'];
+    $eventSourceCounts = [
+        'all' => (int) ($eventSummary['retained_count'] ?? count($section['payload']['items'] ?? [])),
+        'application' => (int) ($eventSummary['application_count'] ?? 0),
+        'framework' => (int) ($eventSummary['framework_count'] ?? 0),
+    ];
+@endphp
+
+<div
+    data-ndb-events
+    x-init="initializeEvents(JSON.parse(atob($el.querySelector('[data-ndb-event-payload]').textContent.trim())))"
+    class="ndb:space-y-4 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:lg:space-y-0"
+>
+    <script type="application/json" data-ndb-event-payload>
+        {{ base64_encode(\Illuminate\Support\Js::encode($eventGroups)) }}
+    </script>
+
+    @if ($eventGroups !== [])
+        <x-newdebugbar::inspector-workspace data-ndb-event-workspace>
+            <div
+                :class="eventDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
+                class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
+            >
+                <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
+                    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
+                        <p
+                            data-ndb-event-visible-summary
+                            aria-live="polite"
+                            class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                            x-text="visibleEventSummary"
+                        ></p>
+                        <label class="ndb:relative ndb:shrink-0">
+                            <span class="ndb:sr-only">Sort events</span>
+                            <select
+                                data-ndb-event-sort
+                                x-model="eventSort"
+                                @change="setEventSort($event.target.value)"
+                                class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
+                            >
+                                <option value="sequence">First fired</option>
+                                <option value="frequency">Most fired</option>
+                                <option value="latest">Latest fired</option>
+                            </select>
+                            <x-newdebugbar::icon
+                                name="chevron-down"
+                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                            />
+                        </label>
                     </div>
-                @empty
-                    <p class="ndb:text-[11px] ndb:text-zinc-400">No application listener source was exposed.</p>
-                @endforelse
+
+                    <x-newdebugbar::filter-tabs label="Filter events by source" class="ndb:w-full">
+                        @foreach (['all' => 'All', 'application' => 'Application', 'framework' => 'Framework'] as $source => $label)
+                            <x-newdebugbar::filter-tab
+                                data-ndb-event-source="{{ $source }}"
+                                @click="setEventSource({{ \Illuminate\Support\Js::from($source) }})"
+                                ::aria-pressed="eventSource === {{ \Illuminate\Support\Js::from($source) }}"
+                                class="ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
+                            >
+                                <span>{{ $label }}</span>
+                                <span
+                                    data-ndb-event-source-count="{{ $source }}"
+                                    class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
+                                >{{ $eventSourceCounts[$source] }}</span>
+                            </x-newdebugbar::filter-tab>
+                        @endforeach
+                    </x-newdebugbar::filter-tabs>
+
+                    <label class="ndb:relative ndb:block ndb:min-w-0">
+                        <span class="ndb:sr-only">Search events</span>
+                        <input
+                            data-ndb-event-search
+                            x-model="eventSearch"
+                            @input.debounce.100ms="applyEventFilters()"
+                            type="search"
+                            placeholder="Search events, listeners, or payloads"
+                            class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                        />
+                        <x-newdebugbar::icon
+                            name="search"
+                            class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                        />
+                    </label>
+                </div>
+
+                <div
+                    x-ref="eventList"
+                    data-ndb-event-list
+                    aria-label="Laravel events"
+                    class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:overflow-y-auto ndb:dark:divide-zinc-800"
+                >
+                    @foreach ($eventGroups as $event)
+                        @php
+                            $eventListenerActivity = match (true) {
+                                $event['listener_count'] === 0 => 'No listeners',
+                                $event['completed_listener_count'] > 0 && $event['queued_listener_count'] > 0 => number_format($event['completed_listener_count']).' completed, '.number_format($event['queued_listener_count']).' queued',
+                                $event['queued_listener_count'] > 0 => number_format($event['queued_listener_count']).' queued',
+                                default => number_format($event['completed_listener_count']).' completed',
+                            };
+                        @endphp
+                        <button
+                            type="button"
+                            data-ndb-event-item="{{ $event['id'] }}"
+                            data-ndb-event-id="{{ $event['id'] }}"
+                            data-ndb-event-source-value="{{ $event['source'] }}"
+                            data-ndb-event-search-value="{{ $event['search'] }}"
+                            data-ndb-event-occurrence-count="{{ $event['occurrence_count'] }}"
+                            data-ndb-event-first-sequence="{{ $event['first_sequence'] }}"
+                            data-ndb-event-last-sequence="{{ $event['last_sequence'] }}"
+                            @click="selectEvent({{ $event['id'] }}, $el)"
+                            :aria-pressed="eventSelected === {{ $event['id'] }}"
+                            :class="eventSelected === {{ $event['id'] }}
+                                ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
+                                : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_8rem] ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                        >
+                            <span
+                                data-ndb-event-list-name
+                                class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100"
+                            >{{ $event['display_name'] }}</span>
+                            <span
+                                class="ndb:col-start-2 ndb:row-start-1 ndb:w-full ndb:truncate ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                title="{{ $eventListenerActivity }}"
+                            >{{ $eventListenerActivity }}</span>
+                            <span class="ndb:col-start-1 ndb:row-start-2 ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-2 ndb:overflow-hidden ndb:text-[11px] ndb:text-zinc-400">
+                                <span
+                                    x-show.important="eventSource === 'all' || {{ $event['namespace'] === null ? 'true' : 'false' }}"
+                                    class="ndb:shrink-0 ndb:font-semibold"
+                                >{{ $event['source'] === 'application' ? 'Application' : 'Framework' }}</span>
+                                @if ($event['namespace'] !== null)
+                                    <code
+                                        data-ndb-event-list-namespace
+                                        class="ndb:min-w-0 ndb:truncate ndb:font-mono ndb:text-[11px]"
+                                    >{{ $event['namespace'] }}</code>
+                                @endif
+                            </span>
+                            <span @class([
+                                'ndb:col-start-2 ndb:row-start-2 ndb:w-full ndb:truncate ndb:text-right ndb:text-[11px] ndb:font-semibold',
+                                'ndb:text-amber-600 ndb:dark:text-amber-300' => $event['duplicate_registration_count'] > 0,
+                                'ndb:tabular-nums ndb:text-zinc-400' => $event['duplicate_registration_count'] === 0,
+                            ])>
+                                @if ($event['duplicate_registration_count'] > 0)
+                                    Duplicate registration
+                                @else
+                                    {{ number_format($event['occurrence_count']) }} {{ \Illuminate\Support\Str::plural('dispatch', $event['occurrence_count']) }}
+                                @endif
+                            </span>
+                        </button>
+                    @endforeach
+                </div>
+
+                <div data-ndb-event-empty x-show.important="visibleEventGroupCount === 0" class="ndb:p-3">
+                    <x-newdebugbar::empty-state label="No events match this source and search." />
+                </div>
             </div>
-        </details>
-    @endforeach
-</div>
-<div x-show.important="visibleEventCount === 0">
-    <x-newdebugbar::empty-state label="No events match these filters." />
+
+            <x-newdebugbar::event-detail />
+        </x-newdebugbar::inspector-workspace>
+    @else
+        <x-newdebugbar::empty-state label="No Laravel events were captured." />
+    @endif
 </div>
