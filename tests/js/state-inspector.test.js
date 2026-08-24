@@ -277,22 +277,36 @@ test('modal focus wraps at both edges', () => {
   assert.equal(prevented, 2);
 });
 
-test('clipboard failures stay inside the debug bar', async () => {
+test('copying text reports success', async () => {
   let copied = null;
   const browser = runtime();
   browser.writeClipboard = async (value) => {
     copied = value;
+    return true;
+  };
+  const state = createNewDebugBar(summary, browser);
+
+  assert.equal(await state.copyText('https://api.example.test/items/42'), true);
+  assert.equal(copied, 'https://api.example.test/items/42');
+});
+
+test('clipboard failures stay inside the debug bar', async () => {
+  const browser = runtime();
+  browser.writeClipboard = async () => {
     throw new Error('Clipboard permission denied');
   };
   const state = createNewDebugBar(summary, browser);
 
-  state.copyText('select 1');
-
-  await new Promise((resolve) => setTimeout(resolve));
-  assert.equal(copied, 'select 1');
+  assert.equal(await state.copyText('select 1'), false);
 
   browser.writeClipboard = () => {
     throw new Error('Clipboard is unavailable');
   };
-  state.copyText('select 2');
+  assert.equal(await state.copyText('select 2'), false);
+
+  browser.writeClipboard = () => false;
+  assert.equal(await state.copyText('select 3'), false);
+
+  delete browser.writeClipboard;
+  assert.equal(await state.copyText('select 4'), false);
 });

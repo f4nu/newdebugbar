@@ -71,6 +71,8 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                     && methods.every((method) => getComputedStyle(method).backgroundColor !== 'rgba(0, 0, 0, 0)')
                     && outcomes.every((outcome) => getComputedStyle(outcome).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && outcomes.every((outcome) => getComputedStyle(outcome).borderWidth === '0px')
+                    && [...document.querySelectorAll('[data-ndb-http-client-item]')]
+                        .every((item) => ! /#\d{2}/.test(item.textContent))
                     && Math.abs(firstMethod.top - firstHost.top) <= 3
                     && Math.abs(firstMethod.top - firstOutcome.top) <= 3
                     && getComputedStyle(detail).overflowY === 'auto'
@@ -105,8 +107,65 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
         ->click('[data-ndb-http-client-detail-tab="source"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="source"]')
         ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
+
+                window.newdebugbarExpectedClipboard = {
+                    curl: state?.selectedHttpClientRequest?.curl,
+                    url: state?.selectedHttpClientRequest?.url,
+                    actionWidths: [...document.querySelectorAll('[data-ndb-http-client-actions] button')]
+                        .map((button) => button.getBoundingClientRect().width),
+                };
+                window.newdebugbarClipboardWrites = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarClipboardWrites.push(value),
+                    },
+                });
+
+                return window.newdebugbarExpectedClipboard.url === 'https://api.error.test/v1/stale-cache/very-long-resource-identifier';
+            })()
+            JS)
         ->click('[data-ndb-http-client-copy-curl]')
+        ->wait(0.05)
         ->click('[data-ndb-http-client-copy-url]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            (() => {
+                const [curl, url] = window.newdebugbarClipboardWrites;
+                const actionWidths = [...document.querySelectorAll('[data-ndb-http-client-actions] button')]
+                    .map((button) => button.getBoundingClientRect().width);
+
+                return window.newdebugbarClipboardWrites.length === 2
+                    && curl === window.newdebugbarExpectedClipboard.curl
+                    && url === window.newdebugbarExpectedClipboard.url
+                    && actionWidths.every((width, index) => Math.abs(width - window.newdebugbarExpectedClipboard.actionWidths[index]) <= 1)
+                    && curl.includes("--request 'DELETE'")
+                    && curl.includes("'https://api.error.test/v1/stale-cache/very-long-resource-identifier'")
+                    && url === 'https://api.error.test/v1/stale-cache/very-long-resource-identifier';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                window.navigator.clipboard.writeText = async () => {
+                    throw new Error('Clipboard permission denied');
+                };
+                document.execCommand = (command) => {
+                    window.newdebugbarFallbackClipboard = command === 'copy'
+                        ? document.activeElement?.value
+                        : null;
+
+                    return command === 'copy';
+                };
+
+                return true;
+            })()
+            JS)
+        ->click('[data-ndb-http-client-copy-curl]')
+        ->wait(0.05)
+        ->assertScript('window.newdebugbarFallbackClipboard === window.newdebugbarExpectedClipboard.curl')
         ->click('[data-ndb-http-client-filter="all"]')
         ->assertAttribute('[data-ndb-http-client-filter="all"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 6)

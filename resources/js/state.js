@@ -48,6 +48,65 @@ const livewireValueSummary = (value) => {
   return String(value);
 };
 
+const writeTextToClipboard = async (value) => {
+  if (typeof window.navigator.clipboard?.writeText === 'function') {
+    try {
+      await window.navigator.clipboard.writeText(value);
+
+      return true;
+    } catch {
+      // Fall back to the synchronous copy path below.
+    }
+  }
+
+  const target = document.createElement('textarea');
+  const activeElement = document.activeElement;
+  const selection = document.getSelection();
+  const selectedRanges = selection
+    ? Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index))
+    : [];
+
+  target.value = value;
+  target.readOnly = true;
+  target.tabIndex = -1;
+  target.style.setProperty('all', 'initial', 'important');
+  target.style.setProperty('display', 'block', 'important');
+  target.style.setProperty('position', 'fixed', 'important');
+  target.style.setProperty('inset', '0 auto auto 0', 'important');
+  target.style.setProperty('width', '1px', 'important');
+  target.style.setProperty('height', '1px', 'important');
+  target.style.setProperty('padding', '0', 'important');
+  target.style.setProperty('border', '0', 'important');
+  target.style.setProperty('opacity', '0', 'important');
+  target.style.setProperty('pointer-events', 'none', 'important');
+
+  document.body.append(target);
+  target.focus({ preventScroll: true });
+  target.select();
+
+  let copied = false;
+
+  try {
+    copied = document.execCommand?.('copy') === true;
+  } catch {
+    // Clipboard policies must never break the host page.
+  } finally {
+    target.remove();
+    activeElement?.focus?.({ preventScroll: true });
+
+    if (selection) {
+      try {
+        selection.removeAllRanges();
+        selectedRanges.forEach((range) => selection.addRange(range));
+      } catch {
+        // The host selection may have changed while copying.
+      }
+    }
+  }
+
+  return copied;
+};
+
 const defaultRuntime = () => ({
   storage: {
     getItem: (key) => window.localStorage.getItem(key),
@@ -56,7 +115,7 @@ const defaultRuntime = () => ({
   matchMedia: (query) => window.matchMedia(query),
   activeElement: () => document.activeElement,
   queryAll: (selector) => document.querySelectorAll(selector),
-  writeClipboard: (value) => window.navigator.clipboard?.writeText(value),
+  writeClipboard: writeTextToClipboard,
   highlight: () => window.newDebugBarHighlight?.(document.getElementById('newdebugbar')),
   afterPaint: (callback) => window.requestAnimationFrame(() => window.requestAnimationFrame(callback)),
   nextFrame: (callback) => window.requestAnimationFrame(callback),
@@ -2290,11 +2349,17 @@ export function createNewDebugBar(
       }
     },
 
-    copyText(value) {
+    async copyText(value) {
+      if (value === null || value === undefined || typeof browser.writeClipboard !== 'function') return false;
+
       try {
-        Promise.resolve(browser.writeClipboard?.(value)).catch(() => {});
+        const copied = await browser.writeClipboard(String(value));
+
+        return copied !== false;
       } catch {
         // Clipboard policies must never break the host page.
+
+        return false;
       }
     },
 
