@@ -118,7 +118,7 @@
                         >
                             <span
                                 data-ndb-event-list-name
-                                class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
+                                class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100"
                             >{{ $event['display_name'] }}</span>
                             <span
                                 class="ndb:col-start-2 ndb:row-start-1 ndb:w-full ndb:truncate ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"

@@ -392,6 +392,7 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const root = document.querySelector('[data-ndb-events]');
                 const row = document.querySelector('[data-ndb-event-item]:not([hidden])');
+                const rowName = row.querySelector('[data-ndb-event-list-name]');
                 const overview = document.querySelector('[data-ndb-event-detail-panel="overview"]');
                 const metadataGrid = overview.querySelector('[data-ndb-event-facts]');
                 const metadataFacts = [...overview.querySelectorAll('[data-ndb-event-fact]')];
@@ -407,6 +408,7 @@ it('keeps host styles and package styles isolated', function () {
                     rootAttribute: root.getAttribute('data-events') === null,
                     rowBorder: getComputedStyle(row).borderLeftWidth === '0px',
                     rowHeight: row.getBoundingClientRect().height <= 64,
+                    rowNameColor: getComputedStyle(rowName).color === getComputedStyle(root).color,
                     metadataDisplay: getComputedStyle(metadataGrid).display === 'grid',
                     metadataBorder: getComputedStyle(metadataGrid).borderTopWidth === '0px',
                     metadataPadding: Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0,
