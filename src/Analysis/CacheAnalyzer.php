@@ -87,6 +87,10 @@ final class CacheAnalyzer
             $attention = $failed
                 || $operation === 'flush'
                 || ($operation === 'miss' && $repeatMissCount > 1);
+            $keyLabel = $this->keyLabel($item);
+            $sourceLabel = $this->sourceLabel($item['callsite'] ?? null);
+            $storeLabel = $this->stringOrNull($item['store'] ?? null) ?? 'Default store';
+            $driverLabel = $this->stringOrNull($item['driver'] ?? null);
 
             $presentedItems[] = [
                 ...$item,
@@ -99,11 +103,13 @@ final class CacheAnalyzer
                 'category' => $definition['category'],
                 'failed' => $failed,
                 'attention' => $attention,
-                'key_label' => $this->keyLabel($item),
-                'store_label' => $this->stringOrNull($item['store'] ?? null) ?? 'Default store',
-                'driver_label' => $this->stringOrNull($item['driver'] ?? null),
+                'key_label' => $keyLabel,
+                'copy_key' => $this->stringOrNull($item['key'] ?? null) ?? $this->stringOrNull($item['key_hash'] ?? null),
+                'store_label' => $storeLabel,
+                'driver_label' => $driverLabel,
                 'duration_label' => $this->durationLabel($item['duration_ms'] ?? null),
-                'source_label' => $this->sourceLabel($item['callsite'] ?? null),
+                'source_label' => $sourceLabel,
+                'source_short_label' => $this->shortSourceLabel($item['callsite'] ?? null),
                 'value_label' => $this->valueLabel($item),
                 'lifetime_label' => $this->lifetimeLabel($item['seconds'] ?? null, $operation),
                 'related_count' => count($relatedExecutions),
@@ -112,6 +118,17 @@ final class CacheAnalyzer
                 'what_happened' => $this->whatHappened($definition, $item),
                 'why_it_matters' => $this->whyItMatters($operation, $repeatMissCount),
                 'check_next' => $this->checkNext($operation, $repeatMissCount, $item),
+                'search' => mb_strtolower(implode(' ', array_filter([
+                    $definition['operation_label'],
+                    $definition['result_label'],
+                    $keyLabel,
+                    $storeLabel,
+                    $driverLabel,
+                    $sourceLabel,
+                    $item['exception_class'] ?? null,
+                    $item['exception_message'] ?? null,
+                    ...is_array($item['tags'] ?? null) ? $item['tags'] : [],
+                ], fn (mixed $value): bool => is_scalar($value) && (string) $value !== ''))),
                 'raw' => $item,
             ];
         }
@@ -224,6 +241,15 @@ final class CacheAnalyzer
         }
 
         return $callsite['file'].':'.max(1, (int) ($callsite['line'] ?? 1));
+    }
+
+    private function shortSourceLabel(mixed $callsite): string
+    {
+        if (! is_array($callsite) || ! is_string($callsite['file'] ?? null)) {
+            return 'Source unavailable';
+        }
+
+        return basename(str_replace('\\', '/', $callsite['file'])).':'.max(1, (int) ($callsite['line'] ?? 1));
     }
 
     /** @param array<string, mixed> $item */

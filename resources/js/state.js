@@ -375,6 +375,14 @@ export function createNewDebugBar(
     favoriteDrag: null,
     favoriteDrop: null,
     favoriteDropAfter: false,
+    cacheOperations: [],
+    cacheFilter: 'all',
+    cacheSearch: '',
+    cacheSort: 'execution',
+    cacheSelected: null,
+    cacheDetailOpen: false,
+    cacheDetailTab: 'overview',
+    visibleCacheCount: summary.section_counts?.cache ?? 0,
     httpClientRequests: [],
     httpClientFilter: 'all',
     httpClientSearch: '',
@@ -669,6 +677,10 @@ export function createNewDebugBar(
 
     get selectedHttpClientRequest() {
       return this.httpClientRequests.find((request) => request.execution === this.httpClientSelected) ?? null;
+    },
+
+    get selectedCacheOperation() {
+      return this.cacheOperations.find((operation) => operation.execution === this.cacheSelected) ?? null;
     },
 
     get selectedMailMessage() {
@@ -1816,6 +1828,14 @@ export function createNewDebugBar(
       this.sectionTransitioning = false;
       this.sectionError = false;
       this.selected = selected;
+      this.cacheOperations = [];
+      this.cacheFilter = 'all';
+      this.cacheSearch = '';
+      this.cacheSort = 'execution';
+      this.cacheSelected = null;
+      this.cacheDetailOpen = false;
+      this.cacheDetailTab = 'overview';
+      this.visibleCacheCount = 0;
       this.httpClientRequests = [];
       this.httpClientFilter = 'all';
       this.httpClientSearch = '';
@@ -2361,6 +2381,117 @@ export function createNewDebugBar(
 
         return false;
       }
+    },
+
+    initializeCache(operations) {
+      this.cacheOperations = Array.isArray(operations) ? operations : [];
+      this.cacheFilter = 'all';
+      this.cacheSearch = '';
+      this.cacheSort = 'execution';
+      this.cacheDetailOpen = false;
+      this.cacheDetailTab = 'overview';
+      this.cacheSelected = this.cacheOperations[0]?.execution ?? null;
+
+      if (this.cacheOperations.length === 0) {
+        this.visibleCacheCount = 0;
+
+        return;
+      }
+
+      this.$nextTick?.(() => this.applyCacheView());
+    },
+
+    setCacheFilter(filter) {
+      if (!['all', 'reads', 'writes', 'deletes', 'failed'].includes(filter)) return;
+
+      this.cacheFilter = filter;
+      this.applyCacheView();
+    },
+
+    setCacheSort(sort) {
+      if (!['execution', 'duration', 'key'].includes(sort)) return;
+
+      this.cacheSort = sort;
+      this.applyCacheView();
+    },
+
+    selectCacheOperation(execution) {
+      if (!this.cacheOperations.some((operation) => operation.execution === execution)) return;
+
+      this.cacheSelected = execution;
+      this.cacheDetailOpen = true;
+      this.cacheDetailTab = 'overview';
+    },
+
+    setCacheDetailTab(tab) {
+      if (!['overview', 'source', 'raw'].includes(tab)) return;
+
+      this.cacheDetailTab = tab;
+      this.$nextTick?.(() => this.$refs?.cacheDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+    },
+
+    applyCacheView() {
+      const list = this.$refs?.cacheList;
+      const search = this.cacheSearch.toLowerCase().trim();
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      [...(list?.children ?? [])]
+        .sort((left, right) => {
+          if (this.cacheSort === 'duration') {
+            return (
+              Number(right.dataset.ndbCacheTimed === 'true') - Number(left.dataset.ndbCacheTimed === 'true') ||
+              Number(right.dataset.ndbCacheDuration ?? 0) - Number(left.dataset.ndbCacheDuration ?? 0) ||
+              Number(left.dataset.ndbCacheExecution ?? 0) - Number(right.dataset.ndbCacheExecution ?? 0)
+            );
+          }
+
+          if (this.cacheSort === 'key') {
+            return (
+              String(left.dataset.ndbCacheKey ?? '').localeCompare(String(right.dataset.ndbCacheKey ?? '')) ||
+              Number(left.dataset.ndbCacheExecution ?? 0) - Number(right.dataset.ndbCacheExecution ?? 0)
+            );
+          }
+
+          return Number(left.dataset.ndbCacheExecution ?? 0) - Number(right.dataset.ndbCacheExecution ?? 0);
+        })
+        .forEach((item) => {
+          const matchesFilter =
+            this.cacheFilter === 'all' ||
+            (this.cacheFilter === 'reads' && item.dataset.ndbCacheCategory === 'read') ||
+            (this.cacheFilter === 'writes' && item.dataset.ndbCacheCategory === 'write') ||
+            (this.cacheFilter === 'deletes' && item.dataset.ndbCacheCategory === 'delete') ||
+            (this.cacheFilter === 'failed' && item.dataset.ndbCacheFailed === 'true');
+          const matches = matchesFilter && (search === '' || item.dataset.ndbCacheSearchText?.includes(search));
+          item.hidden = !matches;
+
+          if (matches) {
+            item.style.removeProperty('display');
+          } else {
+            item.style.setProperty('display', 'none', 'important');
+          }
+
+          if (matches) {
+            const execution = Number(item.dataset.ndbCacheExecution);
+            firstVisible ??= execution;
+            selectedVisible ||= execution === this.cacheSelected;
+            visible++;
+          }
+
+          list?.appendChild?.(item);
+        });
+
+      this.visibleCacheCount = visible;
+
+      if (!selectedVisible) {
+        this.cacheSelected = firstVisible;
+        this.cacheDetailTab = 'overview';
+      }
+    },
+
+    formatCachePayload(value) {
+      return JSON.stringify(value ?? {}, null, 2);
     },
 
     initializeHttpClient(requests) {

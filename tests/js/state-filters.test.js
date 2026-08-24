@@ -4,6 +4,106 @@ import test from 'node:test';
 import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
+test('Cache filters searches sorts and keeps a visible operation selected', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const appended = [];
+  let detailResets = 0;
+  const element = (execution, duration, timed, category, failed, key, search) => ({
+    dataset: {
+      ndbCacheExecution: String(execution),
+      ndbCacheDuration: String(duration),
+      ndbCacheTimed: String(timed),
+      ndbCacheCategory: category,
+      ndbCacheFailed: String(failed),
+      ndbCacheKey: key,
+      ndbCacheSearchText: search,
+    },
+    hidden: false,
+    style: {
+      display: '',
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+  });
+  const first = element(1, 0.4, true, 'read', false, 'trip:alpha', 'get hit trip alpha array');
+  const second = element(2, 2.1, true, 'write', false, 'trip:beta', 'put stored trip beta redis');
+  const third = element(3, 0, false, 'delete', true, 'trip:stale', 'forget failed trip stale database');
+  state.$refs = {
+    cacheList: {
+      children: [first, second, third],
+      appendChild: (child) => appended.push(child),
+    },
+    cacheDetail: { scrollTo: () => detailResets++ },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.initializeCache([
+    { execution: 1, key: 'trip:alpha' },
+    { execution: 2, key: 'trip:beta' },
+    { execution: 3, key: 'trip:stale', failed: true },
+  ]);
+  assert.equal(state.cacheFilter, 'all');
+  assert.equal(state.cacheSelected, 1);
+  assert.equal(state.cacheDetailOpen, false);
+  assert.equal(state.selectedCacheOperation.key, 'trip:alpha');
+  assert.equal(state.visibleCacheCount, 3);
+
+  state.setCacheFilter('failed');
+  assert.equal(first.hidden, true);
+  assert.equal(second.hidden, true);
+  assert.equal(third.hidden, false);
+  assert.equal(state.cacheSelected, 3);
+  assert.equal(state.visibleCacheCount, 1);
+
+  state.setCacheFilter('writes');
+  assert.equal(second.hidden, false);
+  assert.equal(state.cacheSelected, 2);
+
+  state.setCacheFilter('all');
+  state.cacheSearch = 'alpha';
+  state.applyCacheView();
+  assert.equal(first.hidden, false);
+  assert.equal(second.hidden, true);
+  assert.equal(third.hidden, true);
+  assert.equal(state.cacheSelected, 1);
+
+  state.cacheSearch = '';
+  appended.length = 0;
+  state.setCacheSort('duration');
+  assert.deepEqual(appended, [second, first, third]);
+
+  appended.length = 0;
+  state.setCacheSort('key');
+  assert.deepEqual(appended, [first, second, third]);
+
+  state.selectCacheOperation(3);
+  assert.equal(state.cacheSelected, 3);
+  assert.equal(state.cacheDetailOpen, true);
+  assert.equal(state.cacheDetailTab, 'overview');
+
+  state.setCacheDetailTab('source');
+  assert.equal(detailResets, 1);
+  state.setCacheDetailTab('raw');
+  state.setCacheDetailTab('invalid');
+  state.setCacheFilter('invalid');
+  state.setCacheSort('invalid');
+  state.selectCacheOperation(99);
+  assert.equal(state.cacheDetailTab, 'raw');
+  assert.equal(state.cacheFilter, 'all');
+  assert.equal(state.cacheSort, 'key');
+  assert.equal(state.cacheSelected, 3);
+  assert.equal(state.formatCachePayload({ key: 'trip:alpha' }), '{\n  "key": "trip:alpha"\n}');
+
+  state.initializeCache('invalid');
+  assert.deepEqual(state.cacheOperations, []);
+  assert.equal(state.cacheSelected, null);
+  assert.equal(state.cacheDetailOpen, false);
+});
+
 test('HTTP client filters failures and slow requests while keeping one selected', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);

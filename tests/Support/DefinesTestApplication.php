@@ -322,6 +322,11 @@ trait DefinesTestApplication
             foreach (['alpha', 'beta', 'gamma'] as $value) {
                 DB::select('select ? as hostile_value', [$value]);
             }
+            Cache::put('hostile-cache-key', ['ready' => true], 60);
+            Cache::get('hostile-cache-key');
+            Cache::get('hostile-cache-missing');
+            Cache::put('hostile-cache-stale', 'stale', 60);
+            Cache::forget('hostile-cache-stale');
             Mail::raw('Hostile style mail body', fn ($message) => $message
                 ->from('sender@example.test')
                 ->to('recipient@example.test')
@@ -392,6 +397,7 @@ trait DefinesTestApplication
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
+                            [data-cache], [data-cache-item], [data-cache-result], [data-cache-filter], [data-cache-search], [data-cache-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-status], [data-ndb-notification-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }

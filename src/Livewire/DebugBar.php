@@ -22,7 +22,7 @@ final class DebugBar extends Component
     private const SECTION_DESCRIPTIONS = [
         'overview' => 'Review the important request activity and the runtime behind it.',
         'authorization' => 'Review authorization decisions, their results, handlers, and call sites.',
-        'cache' => 'Review cache reads and writes, including hits, misses, keys, and timing.',
+        'cache' => 'Review cache reads, writes, deletes, stores, results, timing, and source.',
         'events' => 'See which events Laravel dispatched, where they came from, and how they were handled.',
         'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',
         'http_client' => 'Review outbound HTTP requests, responses, timing, and their source.',

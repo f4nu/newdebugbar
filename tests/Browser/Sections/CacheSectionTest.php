@@ -1,14 +1,261 @@
 <?php
 
-it('uses light dividers above expanded cache JSON details', function () {
-    $page = visit('/profiled');
-    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
+use NewDebugBar\Tests\Support\DebugBarBrowser;
+
+it('filters sorts selects and inspects rich cache diagnostics', function () {
+    $preferences = json_encode(['theme' => 'light', 'favorites' => []], JSON_THROW_ON_ERROR);
+    $page = visit('/profiled-cache-rich')->resize(1440, 900);
 
     $page
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
         ->refresh()
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->click('[data-ndb-select-section="cache"]')
-        ->click('[data-ndb-section-panel="cache"] details:first-of-type summary')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"cache\\"] details pre")).borderTopColor === getComputedStyle(document.querySelector("[data-ndb-section-panel=\\"cache\\"] details")).borderTopColor')
+        ->click('[data-ndb-select-section="cache"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-cache-workspace]');
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
+        ->assertSee('Cache needs attention')
+        ->assertSee('17')
+        ->assertSee('40.0%')
+        ->assertAttribute('[data-ndb-cache-filter="all"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-cache-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 17)
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-cache-workspace]');
+                const [list, detail] = workspace.children;
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const rows = [...document.querySelectorAll('[data-ndb-cache-item]')];
+                const selected = document.querySelector('[data-ndb-cache-item][aria-pressed="true"]');
+                const detailTabs = [...document.querySelectorAll('[data-ndb-cache-detail-tab]')];
+                const actions = [...document.querySelectorAll('[data-ndb-cache-actions] button')];
+                const keys = rows.map((row) => row.querySelector('[data-ndb-cache-key]'));
+                const results = rows.map((row) => row.querySelector('[data-ndb-cache-result]'));
+                const operationWidths = rows.map((row) => row.querySelector('[data-ndb-cache-operation]').getBoundingClientRect().width);
+
+                return getComputedStyle(workspace).display === 'grid'
+                    && workspace.getBoundingClientRect().height > 320
+                    && workspace.getBoundingClientRect().bottom <= content.getBoundingClientRect().bottom + 1
+                    && Math.abs(list.getBoundingClientRect().right - detail.getBoundingClientRect().left) <= 1
+                    && detail.getBoundingClientRect().width > list.getBoundingClientRect().width * 1.6
+                    && selected.dataset.ndbCacheItem === '1'
+                    && detailTabs.length === 3
+                    && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
+                    && actions.length === 2
+                    && actions.every((action) => action.getBoundingClientRect().height >= 32)
+                    && new Set(operationWidths.map(Math.round)).size === 1
+                    && keys.every((key) => key.clientWidth <= key.parentElement.getBoundingClientRect().width)
+                    && keys.every((key) => getComputedStyle(key).textOverflow === 'ellipsis')
+                    && results.every((result) => getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && getComputedStyle(list.querySelector('[data-ndb-cache-list]')).overflowY === 'auto'
+                    && getComputedStyle(detail).overflowY === 'auto'
+                    && detail.tabIndex === 0
+                    && content.scrollHeight <= content.clientHeight + 2
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && !document.querySelector('[data-ndb-cache]').textContent.includes('•')
+                    && !document.querySelector('[data-ndb-cache]').textContent.includes('·');
+            })()
+            JS)
+        ->click('[data-ndb-cache-filter="failed"]')
+        ->assertAttribute('[data-ndb-cache-filter="failed"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 3)
+        ->keys('[data-ndb-cache-item="15"]', 'Enter')
+        ->assertAttribute('[data-ndb-cache-item="15"]', 'aria-pressed', 'true')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-cache-item=\\"15\\"]")')
+        ->assertSee('Failed')
+        ->assertSee('The app may be doing extra work')
+        ->assertSee('Check the store connection')
+        ->click('[data-ndb-cache-detail-tab="source"]')
+        ->assertAttribute('[data-ndb-cache-detail-tab="source"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-cache-detail-panel="source"]')
+        ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->click('[data-ndb-cache-detail-tab="raw"]')
+        ->assertVisible('[data-ndb-cache-detail-panel="raw"]')
+        ->assertSee('Captured collector fields only')
+        ->assertDontSee('not retained')
+        ->assertDontSee('temples and gardens')
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
+
+                window.newdebugbarCacheExpectedClipboard = {
+                    key: state?.selectedCacheOperation?.copy_key,
+                    raw: state?.formatCachePayload(state?.selectedCacheOperation?.raw),
+                };
+                window.newdebugbarCacheClipboardWrites = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarCacheClipboardWrites.push(value),
+                    },
+                });
+
+                return window.newdebugbarCacheExpectedClipboard.key === 'trip:kyoto:failed-write';
+            })()
+            JS)
+        ->click('[data-ndb-cache-copy-key]')
+        ->wait(0.05)
+        ->click('[data-ndb-cache-copy-raw]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            (() => {
+                const [key, raw] = window.newdebugbarCacheClipboardWrites;
+
+                return key === window.newdebugbarCacheExpectedClipboard.key
+                    && raw === window.newdebugbarCacheExpectedClipboard.raw
+                    && raw.includes('"operation": "write_failed"')
+                    && !raw.includes('not retained');
+            })()
+            JS)
+        ->click('[data-ndb-cache-filter="all"]')
+        ->select('[data-ndb-cache-sort]', 'duration')
+        ->assertValue('[data-ndb-cache-sort]', 'duration')
+        ->assertScript(<<<'JS'
+            (() => {
+                const visible = [...document.querySelectorAll('[data-ndb-cache-item]:not([hidden])')];
+                const timed = visible.filter((item) => item.dataset.ndbCacheTimed === 'true');
+                const untimed = visible.filter((item) => item.dataset.ndbCacheTimed === 'false');
+                const durations = timed.map((item) => Number(item.dataset.ndbCacheDuration));
+
+                return visible.indexOf(untimed[0]) >= timed.length
+                    && durations.every((duration, index) => index === 0 || durations[index - 1] >= duration);
+            })()
+            JS)
+        ->type('[data-ndb-cache-search]', 'missing-note')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 1)
+        ->assertSee('trip:kyoto:missing-note')
+        ->type('[data-ndb-cache-search]', ' no operation matches')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 0)
+        ->assertSee('No cache operations match these controls.')
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-cache-workspace]');
+
+    $page
+        ->assertValue('[data-ndb-cache-search]', ' no operation matches')
+        ->assertSee('No cache operations match these controls.')
+        ->refresh()
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="cache"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-cache-workspace]');
+
+    $page
+        ->assertAttribute('[data-ndb-cache-filter="all"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-cache-search]', '')
+        ->assertValue('[data-ndb-cache-sort]', 'execution')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 17)
+        ->assertNoJavaScriptErrors();
+});
+
+it('drills into cache detail on mobile in dark mode', function () {
+    $preferences = json_encode(['theme' => 'dark', 'favorites' => []], JSON_THROW_ON_ERROR);
+    $page = visit('/profiled-cache-rich')->resize(390, 844);
+
+    $page
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
+        ->refresh()
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="cache"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-cache-workspace]');
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
+        ->assertScript(<<<'JS'
+            (() => {
+                const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const workspace = document.querySelector('[data-ndb-cache-workspace]');
+                const [list, detail] = workspace.children;
+                const rows = [...document.querySelectorAll('[data-ndb-cache-item]')];
+
+                return dialog.scrollWidth <= dialog.clientWidth + 1
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && getComputedStyle(workspace).display !== 'grid'
+                    && getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && rows.every((row) => row.scrollWidth <= row.clientWidth + 1)
+                    && document.querySelector('[data-ndb-cache-summary]').getBoundingClientRect().width <= workspace.getBoundingClientRect().width + 1;
+            })()
+            JS)
+        ->click('[data-ndb-cache-filter="failed"]')
+        ->click('[data-ndb-cache-item="15"]')
+        ->assertAttribute('[data-ndb-cache-item="15"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-cache-detail]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-cache-workspace]');
+                const [list, detail] = workspace.children;
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const back = document.querySelector('[data-ndb-cache-detail-back]');
+                const tabs = [...document.querySelectorAll('[data-ndb-cache-detail-tab]')];
+                const labels = tabs.map((tab) => tab.querySelector('span'));
+                const actions = [...document.querySelectorAll('[data-ndb-cache-actions] button')];
+
+                return getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && content.scrollWidth <= content.clientWidth + 1
+                    && back.getClientRects().length > 0
+                    && back.textContent.trim() === 'Operations'
+                    && tabs.length === 3
+                    && tabs.map((tab) => tab.getAttribute('aria-label')).join('|') === 'Overview|Source|Raw'
+                    && labels.every((label) => getComputedStyle(label).display === 'none')
+                    && actions.length === 2
+                    && actions.every((action) => action.getBoundingClientRect().height >= 32);
+            })()
+            JS)
+        ->click('[data-ndb-cache-detail-tab="raw"]')
+        ->assertVisible('[data-ndb-cache-detail-panel="raw"]')
+        ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=raw]").scrollWidth <= document.querySelector("[data-ndb-cache-detail]").clientWidth + 1')
+        ->click('[data-ndb-cache-detail-back]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-cache-workspace]');
+                const [list, detail] = workspace.children;
+                const selected = document.querySelector('[data-ndb-cache-item="15"]');
+
+                return getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && selected.getAttribute('aria-pressed') === 'true';
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows a clear empty Cache state', function () {
+    $page = visit('/profiled-cache-empty')->resize(1180, 720);
+
+    $page
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
+
+    DebugBarBrowser::selectSectionViaPalette($page, 'cache');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-cache-empty]');
+
+    $page
+        ->assertSee('No cache operations were captured for this request.')
+        ->assertSee('Reads, writes, deletes, and store flushes will appear here')
+        ->assertScript('document.querySelector("[data-ndb-cache-workspace]") === null')
+        ->assertScript('document.querySelector("[data-ndb-cache-empty]").scrollWidth <= document.querySelector("[data-ndb-inspector-content]").clientWidth + 1')
         ->assertNoJavaScriptErrors();
 });

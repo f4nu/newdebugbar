@@ -109,6 +109,37 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(keyword).color === 'rgb(196, 181, 253)';
             })()
             JS)
+        ->click('[data-ndb-section="cache"]')
+        ->assertVisible('[data-ndb-section-panel="cache"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-cache]');
+                const row = document.querySelector('[data-ndb-cache-item]');
+                const result = document.querySelector('[data-ndb-cache-result]');
+                const filter = document.querySelector('[data-ndb-cache-filter]');
+                const search = document.querySelector('[data-ndb-cache-search]');
+                const detail = document.querySelector('[data-ndb-cache-detail]');
+                const summaryTerm = document.querySelector('[data-ndb-cache-summary] dt');
+
+                return [
+                    root.getAttribute('data-cache'),
+                    row.getAttribute('data-cache-item'),
+                    result.getAttribute('data-cache-result'),
+                    filter.getAttribute('data-cache-filter'),
+                    search.getAttribute('data-cache-search'),
+                    row.getAttribute('data-cache-search-text'),
+                    getComputedStyle(root).borderLeftWidth === '0px',
+                    getComputedStyle(row).borderLeftWidth === '0px',
+                    row.getBoundingClientRect().height < 91,
+                    getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    filter.getBoundingClientRect().height < 91,
+                    getComputedStyle(detail).borderLeftWidth === '0px',
+                    Number.parseFloat(getComputedStyle(summaryTerm).fontSize) === 11,
+                    getComputedStyle(summaryTerm).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    getComputedStyle(summaryTerm).color !== 'rgb(0, 128, 0)',
+                ];
+            })()
+            JS, [null, null, null, null, null, null, true, true, true, true, true, true, true, true, true])
         ->click('[data-ndb-section="mail"]')
         ->assertVisible('[data-ndb-section-panel="mail"]')
         ->assertScript(<<<'JS'
