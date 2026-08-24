@@ -218,7 +218,7 @@
                         >
                             <span
                                 data-ndb-cache-operation
-                                class="ndb:flex ndb:w-full ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-zinc-100/75 ndb:py-0.5 ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-600 ndb:dark:bg-white/10 ndb:dark:text-zinc-200"
+                                class="ndb:flex ndb:w-full ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-zinc-100/75 ndb:py-0.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-600 ndb:dark:bg-white/10 ndb:dark:text-zinc-200"
                                 >{{ $item['operation_label'] }}</span
                             >
                             <code
@@ -239,7 +239,7 @@
                                 >{{ $item['result_label'] }}</span
                             >
                             <span
-                                class="ndb:col-start-2 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:text-[10px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                class="ndb:col-start-2 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
                             >
                                 <span class="ndb:truncate">Store {{ $item['store_label'] }}</span>
                                 @if (($item['related_count'] ?? 0) > 1)
@@ -250,7 +250,7 @@
                             </span>
                             <span
                                 data-ndb-cache-list-duration
-                                class="ndb:col-start-3 ndb:text-right ndb:text-[10px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                class="ndb:col-start-3 ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                 >{{ $item['duration_label'] }}</span
                             >
                         </button>
