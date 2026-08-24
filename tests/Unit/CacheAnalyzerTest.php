@@ -145,7 +145,7 @@ it('handles empty and missing optional cache data', function () {
         ->and($missing['items'][0])
         ->operation->toBe('unknown')
         ->key_label->toBe('No key')
-        ->duration_label->toBe('Timing unavailable')
+        ->duration_label->toBe('—')
         ->source_label->toBe('Source unavailable')
         ->value_label->toBe('Value metadata unavailable');
 });

@@ -104,7 +104,6 @@ final class CacheAnalyzer
                 'failed' => $failed,
                 'attention' => $attention,
                 'key_label' => $keyLabel,
-                'copy_key' => $this->stringOrNull($item['key'] ?? null) ?? $this->stringOrNull($item['key_hash'] ?? null),
                 'store_label' => $storeLabel,
                 'driver_label' => $driverLabel,
                 'duration_label' => $this->durationLabel($item['duration_ms'] ?? null),
@@ -224,7 +223,7 @@ final class CacheAnalyzer
     private function durationLabel(mixed $duration): string
     {
         if (! is_numeric($duration)) {
-            return 'Timing unavailable';
+            return '—';
         }
 
         $duration = max(0.0, (float) $duration);

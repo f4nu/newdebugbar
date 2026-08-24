@@ -54,7 +54,7 @@
     class="ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
 >
     <script type="application/json" data-ndb-cache-payload>
-        {{ base64_encode(\Illuminate\Support\Js::encode($cacheItems)) }}
+        {{ base64_encode(json_encode($cacheItems, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE)) }}
     </script>
 
     @if ($cacheItems !== [])
@@ -191,7 +191,7 @@
                             :class="cacheSelected === {{ $item['execution'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.5rem_minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.5rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span
                                 data-ndb-cache-operation
@@ -205,14 +205,14 @@
                             <span
                                 data-ndb-cache-result
                                 @class([
-                                    'ndb:text-[11px] ndb:font-bold',
+                                    'ndb:w-full ndb:text-right ndb:text-[11px] ndb:font-bold',
                                     'ndb:text-red-600 ndb:dark:text-red-300' => $item['failed'] ?? false,
                                     'ndb:text-amber-600 ndb:dark:text-amber-300' => ! ($item['failed'] ?? false) && in_array($item['result'], ['miss', 'flushed'], true),
                                     'ndb:text-zinc-500 ndb:dark:text-zinc-400' => ! ($item['failed'] ?? false) && ! in_array($item['result'], ['miss', 'flushed'], true),
                                 ])
                             >{{ $item['result_label'] }}</span>
                             <span class="ndb:col-start-2 ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                {{ $item['store_label'] }} store
+                                {{ $item['store_label'] }}
                             </span>
                             <span
                                 data-ndb-cache-list-duration
@@ -268,6 +268,8 @@
                                 data-ndb-cache-detail-panel="overview"
                                 x-show.important="cacheDetailTab === 'overview'"
                             >
+                                <x-newdebugbar::cache-overview-facts />
+
                                 <dl
                                     x-show.important="
                                         selectedCacheOperation.value_type ||
@@ -276,7 +278,7 @@
                                         selectedCacheOperation.related_count > 1 ||
                                         (selectedCacheOperation.failed && selectedCacheOperation.exception_message)
                                     "
-                                    class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800"
+                                    class="ndb:mt-4 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800"
                                 >
                                     <div
                                         x-show.important="selectedCacheOperation.value_type"
@@ -346,14 +348,7 @@
 
                                 <div
                                     data-ndb-cache-guidance
-                                    :class="selectedCacheOperation.value_type ||
-                                    ['write', 'write_failed'].includes(selectedCacheOperation.operation) ||
-                                    selectedCacheOperation.duration_scope === 'batch' ||
-                                    selectedCacheOperation.related_count > 1 ||
-                                    (selectedCacheOperation.failed && selectedCacheOperation.exception_message)
-                                        ? 'ndb:mt-6'
-                                        : ''"
-                                    class="ndb:space-y-5"
+                                    class="ndb:mt-6 ndb:space-y-5"
                                 >
                                     <section>
                                         <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
@@ -414,20 +409,9 @@
                             </div>
 
                             <div data-ndb-cache-detail-panel="raw" x-show.important="cacheDetailTab === 'raw'">
-                                <div class="ndb:mb-2 ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
-                                    <p class="ndb:max-w-xl ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                        Captured collector fields only. Values are limited to safe metadata.
-                                    </p>
-                                    <button
-                                        type="button"
-                                        data-ndb-cache-copy-raw
-                                        @click="copyText(formatCachePayload(selectedCacheOperation.raw))"
-                                        class="ndb:inline-flex ndb:h-auto ndb:min-h-8 ndb:shrink-0 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
-                                    >
-                                        <x-newdebugbar::icon name="copy" size="3.5" />
-                                        Copy JSON
-                                    </button>
-                                </div>
+                                <p class="ndb:mb-2 ndb:max-w-xl ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    Captured collector fields only. Values are limited to safe metadata.
+                                </p>
                                 <pre class="ndb-scrollbar ndb:max-w-full ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatCachePayload(selectedCacheOperation.raw)"></code></pre>
                             </div>
                         </div>
