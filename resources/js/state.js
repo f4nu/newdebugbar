@@ -416,6 +416,9 @@ export function createNewDebugBar(
     viewSort: 'name',
     viewSortDirection: 'asc',
     visibleQueryCount: summary.query_count ?? 0,
+    modelGroupCount: 0,
+    modelSelected: null,
+    modelListScrollTop: 0,
     authorizationDecisions: [],
     authorizationFilter: 'all',
     authorizationSearch: '',
@@ -696,6 +699,12 @@ export function createNewDebugBar(
 
     get selectedCacheOperation() {
       return this.cacheOperations.find((operation) => operation.execution === this.cacheSelected) ?? null;
+    },
+
+    get modelDetailOpen() {
+      return (
+        Number.isInteger(this.modelSelected) && this.modelSelected >= 0 && this.modelSelected < this.modelGroupCount
+      );
     },
 
     get selectedMailMessage() {
@@ -1904,6 +1913,9 @@ export function createNewDebugBar(
       this.querySort = 'execution';
       this.viewSort = 'name';
       this.viewSortDirection = 'asc';
+      this.modelGroupCount = 0;
+      this.modelSelected = null;
+      this.modelListScrollTop = 0;
       this.authorizationDecisions = [];
       this.authorizationFilter = 'all';
       this.authorizationSearch = '';
@@ -2437,6 +2449,47 @@ export function createNewDebugBar(
 
         return false;
       }
+    },
+
+    initializeModels(count) {
+      const normalized = Number(count);
+
+      this.modelGroupCount = Number.isInteger(normalized) && normalized > 0 ? normalized : 0;
+      this.modelSelected = null;
+      this.modelListScrollTop = 0;
+    },
+
+    selectModelGroup(index) {
+      const selected = Number(index);
+
+      if (!Number.isInteger(selected) || selected < 0 || selected >= this.modelGroupCount) return;
+
+      this.modelListScrollTop = Number(this.$refs?.content?.scrollTop ?? 0);
+      this.modelSelected = selected;
+      this.$nextTick?.(() => {
+        this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
+        const focus = () => this.$refs?.modelDetail?.focus?.({ preventScroll: true });
+
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    closeModelDetail() {
+      const selected = this.modelSelected;
+
+      if (!Number.isInteger(selected)) return;
+
+      this.modelSelected = null;
+      this.$nextTick?.(() => {
+        this.$refs?.content?.scrollTo?.({
+          top: this.modelListScrollTop,
+          behavior: 'instant',
+        });
+        const focus = () =>
+          this.$root?.querySelectorAll?.('[data-ndb-model-group]')?.[selected]?.focus?.({ preventScroll: true });
+
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
     },
 
     initializeCache(operations) {

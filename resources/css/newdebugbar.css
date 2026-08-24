@@ -214,7 +214,11 @@
         [data-ndb-model-write-column],
         [data-ndb-model-extra-column],
         [data-ndb-model-source-column],
-        [data-ndb-model-view-queries]
+        [data-ndb-model-view-queries],
+        [data-ndb-inspector-focus-list],
+        [data-ndb-inspector-focus-detail],
+        [data-ndb-inspector-focus-back],
+        #newdebugbar-model-detail
     ) {
     background: transparent;
     border-left-width: 0;

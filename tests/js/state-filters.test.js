@@ -4,6 +4,73 @@ import test from 'node:test';
 import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
+test('Models opens one focused detail and restores list scroll and focus', () => {
+  const browser = runtime();
+  const state = createNewDebugBar(summary, browser);
+  const scrolls = [];
+  const detailFocus = [];
+  const rowFocus = [];
+  let scrollTop = 184;
+  const rows = [
+    { focus: (options) => rowFocus.push([0, options]) },
+    { focus: (options) => rowFocus.push([1, options]) },
+  ];
+
+  state.$refs = {
+    content: {
+      get scrollTop() {
+        return scrollTop;
+      },
+      scrollTo(options) {
+        scrolls.push(options);
+        scrollTop = options.top;
+      },
+    },
+    modelDetail: { focus: (options) => detailFocus.push(options) },
+  };
+  state.$root = {
+    querySelectorAll: (selector) => (selector === '[data-ndb-model-group]' ? rows : []),
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.initializeModels(2);
+  assert.equal(state.modelGroupCount, 2);
+  assert.equal(state.modelSelected, null);
+  assert.equal(state.modelDetailOpen, false);
+
+  state.selectModelGroup(1);
+  assert.equal(state.modelSelected, 1);
+  assert.equal(state.modelDetailOpen, true);
+  assert.equal(state.modelListScrollTop, 184);
+  assert.deepEqual(scrolls, [{ top: 0, behavior: 'instant' }]);
+  assert.deepEqual(detailFocus, [{ preventScroll: true }]);
+
+  state.selectModelGroup(-1);
+  state.selectModelGroup(0.5);
+  state.selectModelGroup(2);
+  assert.equal(state.modelSelected, 1);
+
+  browser.afterPaint = null;
+  state.closeModelDetail();
+  assert.equal(state.modelSelected, null);
+  assert.equal(state.modelDetailOpen, false);
+  assert.deepEqual(scrolls, [
+    { top: 0, behavior: 'instant' },
+    { top: 184, behavior: 'instant' },
+  ]);
+  assert.deepEqual(rowFocus, [[1, { preventScroll: true }]]);
+  state.closeModelDetail();
+  assert.deepEqual(rowFocus, [[1, { preventScroll: true }]]);
+
+  state.initializeModels(0);
+  assert.equal(state.modelGroupCount, 0);
+  state.initializeModels('invalid');
+  assert.equal(state.modelGroupCount, 0);
+  assert.equal(state.modelSelected, null);
+  state.selectModelGroup(0);
+  assert.equal(state.modelDetailOpen, false);
+});
+
 test('Cache filters searches sorts and keeps a visible operation selected', () => {
   const state = createNewDebugBar(summary, runtime());
   const appended = [];

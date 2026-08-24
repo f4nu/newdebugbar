@@ -539,27 +539,28 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->click('[data-ndb-section="models"]')
         ->assertVisible('[data-ndb-section-panel="models"]')
-        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
-        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->keys('[data-ndb-model-group]:first-of-type', 'Enter')
+        ->assertVisible('[data-ndb-inspector-focus-detail]')
+        ->assertVisible('[data-ndb-inspector-focus-back]')
         ->assertVisible('[data-ndb-model-operation]')
-        ->assertVisible('[data-ndb-model-group]:first-of-type [data-ndb-model-source]:first-of-type')
-        ->assertVisible('[data-ndb-model-group]:first-of-type [data-ndb-model-record]:first-of-type')
+        ->assertVisible('[data-ndb-model-source]:first-of-type')
+        ->assertVisible('[data-ndb-model-record]:first-of-type')
         ->keys('[data-ndb-model-operation-changes] > summary', 'Enter')
         ->assertAttribute('[data-ndb-model-operation-changes]', 'open', '')
         ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
                 .every((selector) => getComputedStyle(document.querySelector(selector)).backgroundColor !== 'rgb(255, 0, 0)')
             JS)
         ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
                 .every((selector) => getComputedStyle(document.querySelector(selector)).borderLeftWidth !== '20px')
             JS)
         ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
                 .every((selector) => getComputedStyle(document.querySelector(selector)).color !== 'rgb(0, 128, 0)')
             JS)
         ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
                 .every((selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize) < 42)
             JS)
         ->assertScript(<<<'JS'
@@ -578,6 +579,7 @@ it('keeps host styles and package styles isolated', function () {
                 const operation = document.querySelector('[data-ndb-model-operation]');
                 const changes = document.querySelector('[data-ndb-model-changes]');
                 const action = document.querySelector('[data-ndb-model-view-queries]');
+                const focusBack = document.querySelector('[data-ndb-inspector-focus-back]');
 
                 return Number.parseFloat(getComputedStyle(detail).paddingTop) === 0
                     && getComputedStyle(facts).display === 'grid'
@@ -586,7 +588,10 @@ it('keeps host styles and package styles isolated', function () {
                     && Number.parseFloat(getComputedStyle(changes).paddingTop) === 0
                     && action.getBoundingClientRect().height < 91
                     && getComputedStyle(action).backgroundColor !== 'rgb(255, 0, 255)'
-                    && getComputedStyle(action).color !== 'rgb(0, 128, 0)';
+                    && getComputedStyle(action).color !== 'rgb(0, 128, 0)'
+                    && focusBack.getBoundingClientRect().height < 91
+                    && getComputedStyle(focusBack).backgroundColor !== 'rgb(255, 0, 255)'
+                    && getComputedStyle(focusBack).color !== 'rgb(0, 128, 0)';
             })()
             JS)
         ->assertNoJavaScriptErrors();

@@ -103,6 +103,36 @@ final class DebugBarBrowser
             JS);
     }
 
+    public static function waitForFocus(mixed $page, string $selector): void
+    {
+        $encodedSelector = json_encode($selector, JSON_THROW_ON_ERROR);
+
+        $page->script(<<<JS
+            new Promise((resolve, reject) => {
+                const selector = {$encodedSelector};
+                const deadline = performance.now() + 10000;
+
+                const check = () => {
+                    if (document.activeElement?.matches(selector)) {
+                        resolve(true);
+
+                        return;
+                    }
+
+                    if (performance.now() >= deadline) {
+                        reject(new Error('Timed out waiting for focus: ' + selector));
+
+                        return;
+                    }
+
+                    requestAnimationFrame(check);
+                };
+
+                check();
+            })
+            JS);
+    }
+
     public static function waitForDetails(mixed $page): void
     {
         $page->script(<<<'JS'
