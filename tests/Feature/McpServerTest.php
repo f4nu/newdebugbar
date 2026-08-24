@@ -5,6 +5,7 @@ use Illuminate\Support\Str;
 use Laravel\Mcp\Facades\Mcp;
 use NewDebugBar\Mcp\NewDebugBarServer;
 use NewDebugBar\Mcp\Tools\GetDebugFindings;
+use NewDebugBar\Mcp\Tools\GetDebugProfileData;
 use NewDebugBar\Mcp\Tools\GetDebugProfileSection;
 use NewDebugBar\Mcp\Tools\InspectDebugQueries;
 use NewDebugBar\Mcp\Tools\ListDebugProfiles;
@@ -14,17 +15,40 @@ use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Tests\Support\McpResponse;
 
-it('registers one local read only server with four schema backed tools', function () {
+function profilePointerToValue(mixed $value, mixed $target, string $path = ''): ?string
+{
+    if ($value === $target) {
+        return $path;
+    }
+
+    if (! is_array($value)) {
+        return null;
+    }
+
+    foreach ($value as $key => $item) {
+        $segment = str_replace(['~', '/'], ['~0', '~1'], (string) $key);
+        $pointer = profilePointerToValue($item, $target, $path.'/'.$segment);
+
+        if ($pointer !== null) {
+            return $pointer;
+        }
+    }
+
+    return null;
+}
+
+it('registers one local read only server with five schema backed tools', function () {
     $version = (new ReflectionClass(NewDebugBarServer::class))->getDefaultProperties()['version'];
 
     expect(Mcp::getLocalServer('newdebugbar'))->toBeCallable()
         ->and(Mcp::getWebServer('newdebugbar'))->toBeNull()
         ->and(Mcp::servers())->toHaveKey('newdebugbar')
-        ->and($version)->toBe('1.0.0');
+        ->and($version)->toBe('1.1.0');
 
     foreach ([
         ListDebugProfiles::class => 'list-debug-profiles',
         GetDebugProfileSection::class => 'get-debug-profile-section',
+        GetDebugProfileData::class => 'get-debug-profile-data',
         InspectDebugQueries::class => 'inspect-debug-queries',
         GetDebugFindings::class => 'get-debug-findings',
     ] as $toolClass => $name) {
@@ -38,6 +62,13 @@ it('registers one local read only server with four schema backed tools', functio
                 'openWorldHint' => false,
             ]);
     }
+
+    $dataSchema = app(GetDebugProfileData::class)->toArray();
+
+    expect($dataSchema['inputSchema']['properties']['path']['default'])->toBe('/sections')
+        ->and($dataSchema['inputSchema']['properties']['limit']['default'])->toBe(10)
+        ->and($dataSchema['outputSchema']['properties']['data']['properties'])
+        ->toHaveKeys(['profile_id', 'path', 'type', 'entries', 'value', 'pagination']);
 });
 
 it('correlates the exact response profile while unrelated profiles exist', function () {
@@ -89,7 +120,204 @@ it('lists and filters bounded profile summaries', function () {
         ->and($failed['data']['profiles'][0])
         ->path->toBe('/failed-html')
         ->status->toBe(422)
-        ->warning->toBeTrue();
+        ->warning->toBeTrue()
+        ->and($failed['data']['profiles'][0]['available_sections'])
+        ->toContain('overview', 'request', 'timeline', 'livewire')
+        ->and($failed['data']['profiles'][0]['data_path'])->toBe('');
+});
+
+it('keeps every presented section reachable through MCP', function () {
+    $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
+    $profile = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($profileId));
+    $presentedSections = array_keys($profile['sections']);
+    $mcpSections = app(McpProfilePresenter::class)->sectionNames();
+
+    sort($presentedSections);
+    sort($mcpSections);
+
+    expect($mcpSections)->toBe($presentedSections);
+
+    foreach ($presentedSections as $section) {
+        $focused = app(McpProfilePresenter::class)->section($profileId, $section, 0, 1);
+        $complete = app(McpProfilePresenter::class)->data(
+            $profileId,
+            '/sections/'.str_replace(['~', '/'], ['~0', '~1'], $section),
+            0,
+            1,
+        );
+
+        expect($focused['status'])->toBe('ok')
+            ->and($complete['status'])->toBe('ok');
+    }
+});
+
+it('walks exact retained values that focused MCP responses intentionally omit', function () {
+    $profiles = [
+        [$this->get('/profiled-private-query', ['Accept' => 'text/html'])->assertOk(), 'private-alpha'],
+        [$this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk(), 'view-data-value'],
+        [$this->get('/profiled-messages', ['Accept' => 'text/html'])->assertOk(), 'private body'],
+        [$this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk(), 'Host counter'],
+    ];
+
+    foreach ($profiles as [$response, $expected]) {
+        $profileId = $response->headers->get('X-NewDebugBar-Profile');
+        $profile = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($profileId));
+        $path = profilePointerToValue($profile, $expected);
+
+        expect($path)->not->toBeNull();
+
+        $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+            'profile_id' => $profileId,
+            'path' => $path,
+        ])->assertOk());
+
+        expect($content['status'])->toBe('ok')
+            ->and($content['data']['path'])->toBe($path)
+            ->and($content['data']['value'])->toBe($expected);
+    }
+});
+
+it('discovers and pages nested profile data with JSON Pointer paths', function () {
+    $response = $this->get('/profiled-livewire', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
+
+    $sections = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $profileId,
+        'path' => '/sections',
+        'limit' => 2,
+    ])->assertOk());
+    $components = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $profileId,
+        'path' => '/sections/livewire/payload/components',
+        'limit' => 1,
+    ])->assertOk());
+
+    expect($sections['data'])
+        ->type->toBe('object')
+        ->count->toBeGreaterThan(2)
+        ->and($sections['data']['entries'])->toHaveCount(2)
+        ->and($sections['data']['pagination'])
+        ->returned->toBe(2)
+        ->truncated->toBeTrue()
+        ->next_cursor->toBe(2)
+        ->and($components['data'])
+        ->type->toBe('list')
+        ->count->toBe(1)
+        ->and($components['data']['entries'][0])
+        ->path->toBe('/sections/livewire/payload/components/0')
+        ->type->toBe('object');
+});
+
+it('resolves escaped JSON Pointer keys without changing retained values', function () {
+    $profileId = (string) Str::uuid();
+    $absoluteFile = '/private/project/app/Exact.php';
+    app(ProfileStore::class)->put([
+        'schema_version' => 1,
+        'id' => $profileId,
+        'metrics' => ['duration_ms' => 1],
+        'custom/key~name' => [
+            'exact' => 'reachable-value',
+            'file' => $absoluteFile,
+        ],
+        'sections' => [],
+    ]);
+
+    $exact = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $profileId,
+        'path' => '/custom~1key~0name/exact',
+    ])->assertOk());
+    $missing = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $profileId,
+        'path' => '/custom~1key~0name/missing',
+    ])->assertOk());
+    $file = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $profileId,
+        'path' => '/custom~1key~0name/file',
+    ])->assertOk());
+
+    expect($exact['data']['value'])->toBe('reachable-value')
+        ->and($file['data']['value'])->toBe($absoluteFile)
+        ->and($missing)->toBe([
+            'version' => 1,
+            'status' => 'not_found',
+            'data' => [
+                'profile_id' => $profileId,
+                'path' => '/custom~1key~0name/missing',
+            ],
+        ]);
+});
+
+it('keeps oversized retained strings reachable in bounded chunks', function () {
+    config()->set('newdebugbar.mcp.max_bytes', 10_000);
+    app()->forgetInstance(McpProfilePresenter::class);
+    $profileId = (string) Str::uuid();
+    $value = str_repeat('chunk-', 2_000);
+    app(ProfileStore::class)->put([
+        'schema_version' => 1,
+        'id' => $profileId,
+        'metrics' => ['duration_ms' => 1],
+        'large_value' => $value,
+        'sections' => [],
+    ]);
+
+    $responses = [];
+    $chunks = [];
+    $cursor = 0;
+
+    do {
+        $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+            'profile_id' => $profileId,
+            'path' => '/large_value',
+            'cursor' => $cursor,
+            'limit' => 2,
+        ])->assertOk());
+        $responses[] = $content;
+        $chunks = [...$chunks, ...$content['data']['chunks']];
+        $cursor = $content['data']['pagination']['next_cursor'];
+
+        expect(strlen(json_encode($content, JSON_UNESCAPED_UNICODE)))->toBeLessThanOrEqual(10_000);
+    } while ($cursor !== null);
+
+    expect($responses[0]['data'])
+        ->type->toBe('string')
+        ->chunked->toBeTrue()
+        ->length_bytes->toBe(strlen($value))
+        ->and($responses[0]['data']['pagination']['truncated'])->toBeTrue()
+        ->and($responses[array_key_last($responses)]['data']['pagination']['truncated'])->toBeFalse()
+        ->and(implode('', $chunks))->toBe($value);
+});
+
+it('keeps string chunks reachable under the smallest supported response budget', function () {
+    config()->set('newdebugbar.mcp.max_bytes', 700);
+    app()->forgetInstance(McpProfilePresenter::class);
+    $profileId = (string) Str::uuid();
+    $value = str_repeat('é漢🙂-', 80);
+    app(ProfileStore::class)->put([
+        'schema_version' => 1,
+        'id' => $profileId,
+        'metrics' => ['duration_ms' => 1],
+        'large_value' => $value,
+        'sections' => [],
+    ]);
+
+    $chunks = [];
+    $cursor = 0;
+
+    do {
+        $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+            'profile_id' => $profileId,
+            'path' => '/large_value',
+            'cursor' => $cursor,
+            'limit' => 10,
+        ])->assertOk());
+        $chunks = [...$chunks, ...$content['data']['chunks']];
+        $cursor = $content['data']['pagination']['next_cursor'];
+
+        expect(strlen(json_encode($content, JSON_UNESCAPED_UNICODE)))->toBeLessThanOrEqual(700);
+    } while ($cursor !== null);
+
+    expect(implode('', $chunks))->toBe($value);
 });
 
 it('exposes queued communication facts and correlated worker outcomes through MCP', function () {
@@ -202,6 +430,7 @@ it('masks full query bindings and log labels again at the MCP boundary', functio
     $timeline = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
         'profile_id' => $profileId,
         'section' => 'timeline',
+        'limit' => 50,
     ])->assertOk()
         ->assertDontSee('private timeline log message'));
 
@@ -412,7 +641,7 @@ it('falls back to bounded identity metadata when section metadata is oversized',
         ->and($content['data']['pagination']['truncated'])->toBeTrue();
 });
 
-it('bounds deeply nested MCP values and treats malformed profiles as missing', function () {
+it('bounds deeply nested focused values and surfaces malformed profile processing errors', function () {
     $profileId = (string) Str::uuid();
     app(ProfileStore::class)->put([
         'schema_version' => 1,
@@ -442,9 +671,8 @@ it('bounds deeply nested MCP values and treats malformed profiles as missing', f
         'id' => $malformedId,
         'sections' => ['queries' => ['payload' => ['items' => ['not-an-item']]]],
     ]));
-    $missing = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
+    NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $malformedId,
-    ])->assertOk());
-
-    expect($missing['status'])->toBe('not_found');
+    ])->assertHasErrors();
+    NewDebugBarServer::tool(ListDebugProfiles::class)->assertHasErrors();
 });

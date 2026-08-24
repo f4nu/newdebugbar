@@ -15,7 +15,9 @@ use NewDebugBar\Storage\ProfileStore;
 #[IsOpenWorld(false)]
 final class GetDebugProfileSection extends DebugTool
 {
-    protected const DESCRIPTION = 'Read one bounded, redacted section from an exact debug profile.';
+    private const DEFAULT_LIMIT = 5;
+
+    protected const DESCRIPTION = 'Read one focused section from an exact debug profile. Use get-debug-profile-data when the section response omits a deeper collection or value.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
 
@@ -26,7 +28,7 @@ final class GetDebugProfileSection extends DebugTool
             'profile_id' => $schema->string()->format('uuid')->required(),
             'section' => $schema->string()->enum($this->profiles->sectionNames())->required(),
             'cursor' => $schema->integer()->min(0)->default(0),
-            'limit' => $schema->integer()->min(1)->max($this->profiles->maxItems())->default($this->profiles->maxItems()),
+            'limit' => $schema->integer()->min(1)->max($this->profiles->maxItems())->default($this->defaultLimit()),
         ];
     }
 
@@ -43,7 +45,12 @@ final class GetDebugProfileSection extends DebugTool
             $input['profile_id'],
             $input['section'],
             (int) ($input['cursor'] ?? 0),
-            (int) ($input['limit'] ?? $this->profiles->maxItems()),
+            (int) ($input['limit'] ?? $this->defaultLimit()),
         ));
+    }
+
+    private function defaultLimit(): int
+    {
+        return min(self::DEFAULT_LIMIT, $this->profiles->maxItems());
     }
 }

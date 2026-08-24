@@ -15,6 +15,8 @@ use NewDebugBar\Storage\ProfileStore;
 #[IsOpenWorld(false)]
 final class GetDebugFindings extends DebugTool
 {
+    private const DEFAULT_LIMIT = 10;
+
     protected const DESCRIPTION = 'Return deterministic finding rule IDs and supporting evidence for one debug profile.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
@@ -25,7 +27,7 @@ final class GetDebugFindings extends DebugTool
         return [
             'profile_id' => $schema->string()->format('uuid')->required(),
             'cursor' => $schema->integer()->min(0)->default(0),
-            'limit' => $schema->integer()->min(1)->max($this->profiles->maxItems())->default($this->profiles->maxItems()),
+            'limit' => $schema->integer()->min(1)->max($this->profiles->maxItems())->default($this->defaultLimit()),
         ];
     }
 
@@ -40,7 +42,12 @@ final class GetDebugFindings extends DebugTool
         return $this->response($this->profiles->findings(
             $input['profile_id'],
             (int) ($input['cursor'] ?? 0),
-            (int) ($input['limit'] ?? $this->profiles->maxItems()),
+            (int) ($input['limit'] ?? $this->defaultLimit()),
         ));
+    }
+
+    private function defaultLimit(): int
+    {
+        return min(self::DEFAULT_LIMIT, $this->profiles->maxItems());
     }
 }

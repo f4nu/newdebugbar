@@ -15,6 +15,8 @@ use NewDebugBar\Storage\ProfileStore;
 #[IsOpenWorld(false)]
 final class InspectDebugQueries extends DebugTool
 {
+    private const DEFAULT_LIMIT = 5;
+
     protected const DESCRIPTION = 'Inspect bounded query evidence using the same grouping and filters as the browser inspector.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
@@ -28,7 +30,7 @@ final class InspectDebugQueries extends DebugTool
             'search' => $schema->string()->max(200)->default(''),
             'sort' => $schema->string()->enum(['execution', 'duration'])->default('execution'),
             'cursor' => $schema->integer()->min(0)->default(0),
-            'limit' => $schema->integer()->min(1)->max($this->profiles->maxItems())->default($this->profiles->maxItems()),
+            'limit' => $schema->integer()->min(1)->max($this->profiles->maxItems())->default($this->defaultLimit()),
         ];
     }
 
@@ -49,7 +51,12 @@ final class InspectDebugQueries extends DebugTool
             $input['search'] ?? '',
             $input['sort'] ?? 'execution',
             (int) ($input['cursor'] ?? 0),
-            (int) ($input['limit'] ?? $this->profiles->maxItems()),
+            (int) ($input['limit'] ?? $this->defaultLimit()),
         ));
+    }
+
+    private function defaultLimit(): int
+    {
+        return min(self::DEFAULT_LIMIT, $this->profiles->maxItems());
     }
 }

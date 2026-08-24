@@ -2,9 +2,9 @@
 
 namespace NewDebugBar\Presentation;
 
+use InvalidArgumentException;
 use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\Redactor;
-use Throwable;
 
 /** Builds the bounded, versioned contract exposed through local MCP tools. */
 final class McpProfilePresenter
@@ -31,6 +31,7 @@ final class McpProfilePresenter
         'messages',
         'logs',
         'exceptions',
+        'livewire',
     ];
 
     public function __construct(
@@ -52,11 +53,10 @@ final class McpProfilePresenter
         $matching = [];
 
         foreach ($this->store->recent($this->store->maxProfiles()) as $profile) {
-            try {
-                $summary = $this->summaries->present($this->profiles->present($profile));
-            } catch (Throwable) {
-                continue;
-            }
+            $presented = $this->profiles->present($profile);
+            $summary = $this->summaries->present($presented);
+            $summary['available_sections'] = array_values(array_keys($presented['sections'] ?? []));
+            $summary['data_path'] = '';
 
             if (! $this->matchesFilters($summary, $filters)) {
                 continue;
@@ -199,6 +199,65 @@ final class McpProfilePresenter
         );
     }
 
+    /** @return array<string, mixed> */
+    public function data(string $profileId, string $path, int $cursor, int $limit): array
+    {
+        $profile = $this->find($profileId);
+
+        if ($profile === null) {
+            return $this->response([
+                'profile_id' => $profileId,
+                'path' => $path,
+            ], 'not_found');
+        }
+
+        [$found, $value] = $this->valueAtPointer($profile, $path);
+
+        if (! $found) {
+            return $this->response([
+                'profile_id' => $profileId,
+                'path' => $path,
+            ], 'not_found');
+        }
+
+        $type = $this->nodeType($value);
+
+        if (! is_array($value)) {
+            $response = $this->response([
+                'profile_id' => $profileId,
+                'path' => $path,
+                'type' => $type,
+                'value' => $value,
+            ]);
+
+            if ($type !== 'string' || $this->byteLength($response) <= $this->maxBytes) {
+                return $response;
+            }
+
+            return $this->chunkedStringResponse($profileId, $path, $value, $cursor, $limit);
+        }
+
+        $entries = [];
+
+        foreach ($value as $key => $item) {
+            $entries[] = $this->dataEntry($profileId, $path, (string) $key, $item);
+        }
+
+        return $this->paginatedResponse(
+            $entries,
+            $cursor,
+            $limit,
+            fn (array $page, array $pagination): array => [
+                'profile_id' => $profileId,
+                'path' => $path,
+                'type' => $type,
+                'count' => count($value),
+                'entries' => $page,
+                'pagination' => $pagination,
+            ],
+        );
+    }
+
     /** @return list<string> */
     public function sectionNames(): array
     {
@@ -213,17 +272,17 @@ final class McpProfilePresenter
     /** @return array<string, mixed>|null */
     private function find(string $profileId): ?array
     {
-        try {
-            $profile = $this->store->get($profileId);
-
-            if ($profile === null) {
-                return null;
-            }
-
-            return $this->profiles->present($profile);
-        } catch (Throwable) {
+        if (! ProfileStore::validId($profileId)) {
             return null;
         }
+
+        $profile = $this->store->get($profileId);
+
+        if ($profile === null) {
+            return null;
+        }
+
+        return $this->profiles->present($profile);
     }
 
     /** @param array<string, mixed> $summary @param array<string, mixed> $filters */
@@ -254,6 +313,8 @@ final class McpProfilePresenter
                 $payload['model_groups'],
                 $payload['repeated_groups'],
                 $payload['repeated_misses'],
+                $payload['activity'],
+                $payload['components'],
             );
 
             return $this->clean($payload);
@@ -390,6 +451,163 @@ final class McpProfilePresenter
         return (int) ($item['execution'] ?? $item['executions'][0]['execution'] ?? 0);
     }
 
+    /** @return array{0: bool, 1: mixed} */
+    private function valueAtPointer(array $profile, string $path): array
+    {
+        $value = $profile;
+
+        foreach ($this->pointerSegments($path) as $segment) {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                return [false, null];
+            }
+
+            $value = $value[$segment];
+        }
+
+        return [true, $value];
+    }
+
+    /** @return list<string> */
+    private function pointerSegments(string $path): array
+    {
+        if ($path === '') {
+            return [];
+        }
+
+        if (! str_starts_with($path, '/')) {
+            throw new InvalidArgumentException('The profile data path must be an empty string or a JSON Pointer beginning with /.');
+        }
+
+        return array_map(function (string $segment): string {
+            if (preg_match('/~(?![01])/', $segment) === 1) {
+                throw new InvalidArgumentException('The profile data path contains an invalid JSON Pointer escape.');
+            }
+
+            return str_replace(['~1', '~0'], ['/', '~'], $segment);
+        }, explode('/', substr($path, 1)));
+    }
+
+    /** @return array<string, mixed> */
+    private function dataEntry(string $profileId, string $parentPath, string $key, mixed $value): array
+    {
+        $path = $parentPath.'/'.$this->escapePointerSegment($key);
+        $type = $this->nodeType($value);
+        $entry = [
+            'key' => $key,
+            'path' => $path,
+            'type' => $type,
+        ];
+
+        if (is_array($value)) {
+            $entry['count'] = count($value);
+
+            return $entry;
+        }
+
+        if (is_string($value) && $this->byteLength($this->response([
+            'profile_id' => $profileId,
+            'path' => $path,
+            'type' => 'string',
+            'value' => $value,
+        ])) > $this->maxBytes) {
+            $entry['length_bytes'] = strlen($value);
+            $entry['chunked'] = true;
+
+            return $entry;
+        }
+
+        $entry['value'] = $value;
+
+        return $entry;
+    }
+
+    private function escapePointerSegment(string $segment): string
+    {
+        return str_replace(['~', '/'], ['~0', '~1'], $segment);
+    }
+
+    private function nodeType(mixed $value): string
+    {
+        return match (true) {
+            is_array($value) => array_is_list($value) ? 'list' : 'object',
+            is_string($value) => 'string',
+            is_int($value) => 'integer',
+            is_float($value) => 'number',
+            is_bool($value) => 'boolean',
+            $value === null => 'null',
+            default => 'unknown',
+        };
+    }
+
+    /** @return array<string, mixed> */
+    private function chunkedStringResponse(
+        string $profileId,
+        string $path,
+        string $value,
+        int $cursor,
+        int $limit,
+    ): array {
+        $cursor = max(0, $cursor);
+        $limit = max(1, min($limit, $this->maxItems));
+        $page = [];
+        $offset = 0;
+        $index = 0;
+        $length = strlen($value);
+        $chunkBytes = $this->dataChunkBytes($profileId, $path, $length);
+
+        while ($offset < $length) {
+            $chunk = mb_strcut($value, $offset, $chunkBytes, 'UTF-8');
+
+            if ($chunk === '') {
+                break;
+            }
+
+            if ($index >= $cursor && count($page) < $limit) {
+                $page[] = $chunk;
+            }
+
+            $offset += strlen($chunk);
+            $index++;
+        }
+
+        return $this->boundedPaginatedResponse(
+            $page,
+            $cursor,
+            $index,
+            fn (array $page, array $pagination): array => [
+                'profile_id' => $profileId,
+                'path' => $path,
+                'type' => 'string',
+                'length_bytes' => $length,
+                'chunked' => true,
+                'chunks' => $page,
+                'pagination' => $pagination,
+            ],
+        );
+    }
+
+    private function dataChunkBytes(string $profileId, string $path, int $length): int
+    {
+        $envelope = $this->response([
+            'profile_id' => $profileId,
+            'path' => $path,
+            'type' => 'string',
+            'length_bytes' => $length,
+            'chunked' => true,
+            'chunks' => [''],
+            'pagination' => [
+                'cursor' => PHP_INT_MAX,
+                'returned' => 1,
+                'total' => PHP_INT_MAX,
+                'truncated' => true,
+                'next_cursor' => PHP_INT_MAX,
+            ],
+        ]);
+        $availableBytes = max(1, $this->maxBytes - $this->byteLength($envelope) - 16);
+
+        return max(4, min(4_000, intdiv($availableBytes, 6)));
+    }
+
     /** @param list<array<string, mixed>> $profiles @return array<string, mixed> */
     private function profileListResponse(array $profiles, int $total, bool $truncated): array
     {
@@ -411,21 +629,32 @@ final class McpProfilePresenter
         $cursor = max(0, $cursor);
         $limit = max(1, min($limit, $this->maxItems));
         $page = array_values(array_slice($all, $cursor, $limit));
+
+        return $this->boundedPaginatedResponse($page, $cursor, count($all), $build);
+    }
+
+    /**
+     * @param  list<mixed>  $page
+     * @param  callable(list<mixed>, array<string, mixed>): array<string, mixed>  $build
+     * @return array<string, mixed>
+     */
+    private function boundedPaginatedResponse(array $page, int $cursor, int $total, callable $build): array
+    {
         $requestedCount = count($page);
-        $truncated = $cursor + count($page) < count($all);
-        $response = $this->response($build($page, $this->pagination($cursor, count($page), count($all), $truncated)));
+        $truncated = $cursor + count($page) < $total;
+        $response = $this->response($build($page, $this->pagination($cursor, count($page), $total, $truncated)));
 
         while ($this->byteLength($response) > $this->maxBytes && $page !== []) {
             array_pop($page);
             $truncated = true;
-            $response = $this->response($build($page, $this->pagination($cursor, count($page), count($all), true)));
+            $response = $this->response($build($page, $this->pagination($cursor, count($page), $total, true)));
         }
 
         if ($requestedCount > 0 && $page === []) {
             $response = $this->response($build([], $this->pagination(
                 $cursor,
                 0,
-                count($all),
+                $total,
                 true,
                 omittedDueToBytes: 1,
             )));
@@ -468,7 +697,7 @@ final class McpProfilePresenter
         $data = is_array($response['data'] ?? null) ? $response['data'] : [];
         $minimal = [];
 
-        foreach (['profile_id', 'section', 'filter', 'search', 'sort'] as $key) {
+        foreach (['profile_id', 'section', 'filter', 'search', 'sort', 'path', 'type'] as $key) {
             if (array_key_exists($key, $data)) {
                 $minimal[$key] = $data[$key];
             }

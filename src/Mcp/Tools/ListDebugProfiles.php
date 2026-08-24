@@ -15,7 +15,9 @@ use NewDebugBar\Storage\ProfileStore;
 #[IsOpenWorld(false)]
 final class ListDebugProfiles extends DebugTool
 {
-    protected const DESCRIPTION = 'List recent redacted debug profile summaries with optional request filters.';
+    private const DEFAULT_LIMIT = 10;
+
+    protected const DESCRIPTION = 'List recent debug profile summaries. Prefer an exact X-NewDebugBar-Profile ID; otherwise match the request method, path, status, kind, and recorded time.';
 
     public function __construct(
         private readonly McpProfilePresenter $profiles,
@@ -30,7 +32,7 @@ final class ListDebugProfiles extends DebugTool
             'path' => $schema->string()->max(200)->description('Case-sensitive path fragment.'),
             'status' => $schema->integer()->min(100)->max(599)->description('Exact HTTP status.'),
             'warning' => $schema->boolean()->description('Only profiles with or without findings.'),
-            'limit' => $schema->integer()->min(1)->max($this->store->maxProfiles())->default($this->store->maxProfiles()),
+            'limit' => $schema->integer()->min(1)->max($this->store->maxProfiles())->default($this->defaultLimit()),
         ];
     }
 
@@ -49,6 +51,11 @@ final class ListDebugProfiles extends DebugTool
             'path' => $input['path'] ?? null,
             'status' => $input['status'] ?? null,
             'warning' => $input['warning'] ?? null,
-        ], (int) ($input['limit'] ?? $this->store->maxProfiles())));
+        ], (int) ($input['limit'] ?? $this->defaultLimit())));
+    }
+
+    private function defaultLimit(): int
+    {
+        return min(self::DEFAULT_LIMIT, $this->store->maxProfiles());
     }
 }
