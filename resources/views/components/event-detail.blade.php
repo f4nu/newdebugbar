@@ -394,7 +394,11 @@
                                 <code
                                     x-show.important="occurrence.callsite"
                                     class="ndb:min-w-0 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:text-zinc-400"
-                                    x-text="occurrence.callsite.file + ':' + occurrence.callsite.line"
+                                    x-text="
+                                        occurrence.callsite
+                                            ? occurrence.callsite.file + ':' + occurrence.callsite.line
+                                            : ''
+                                    "
                                 ></code>
                                 <span
                                     x-show.important="! occurrence.callsite"

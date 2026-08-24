@@ -122,6 +122,7 @@ it('groups repeated event signatures while preserving timing sources listeners a
         ->source->toBe('framework')
         ->occurrence_count->toBe(2)
         ->span_ms->toBe(2.25)
+        ->and(array_column($framework['occurrences'], 'callsite'))->toBe([null, null])
         ->and($framework['related_section'])->toBe(['key' => 'queries', 'label' => 'Queries'])
         ->and($untimed['first_at_ms'])->toBeNull()
         ->and($untimed['payload_shape'][0]['type'])->toBe('array');
