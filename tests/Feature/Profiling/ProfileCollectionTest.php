@@ -299,8 +299,10 @@ it('captures mail previews and notification shape by default', function () {
         ->preview->to->toBe(['private-recipient@example.test'])
         ->preview->cc->toBe(['private-copy@example.test'])
         ->preview->text->toBe('private body')
-        ->preview->attachments_omitted->toBe(1)
+        ->preview->attachments_omitted->toBe(0)
         ->preview->attachments->toHaveCount(1)
+        ->preview->attachments->{0}->size_bytes->toBe(18)
+        ->preview->attachments->{0}->body_base64->toBe(base64_encode('private attachment'))
         ->and($notifications['summary'])
         ->count->toBe(2)
         ->notification_count->toBe(1)
@@ -320,9 +322,7 @@ it('captures mail previews and notification shape by default', function () {
         ->channel->toBe('slack')
         ->failure_data->toBe(['private' => 'failure data'])
         ->group_id->toBe($notifications['payload']['items'][0]['group_id'])
-        ->and(json_encode([$mail, $notifications]))->not->toContain(
-            'private attachment',
-        );
+        ->and(json_encode([$mail, $notifications]))->toContain(base64_encode('private attachment'));
 });
 
 it('groups notification channel attempts and keeps delivery evidence', function () {

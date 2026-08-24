@@ -268,7 +268,8 @@ trait DefinesTestApplication
             Mail::raw('Hostile style mail body', fn ($message) => $message
                 ->from('sender@example.test')
                 ->to('recipient@example.test')
-                ->subject('Hostile style mail'));
+                ->subject('Hostile style mail')
+                ->attachData('hostile attachment', 'hostile.txt', ['mime' => 'text/plain']));
             $queuedMailable = (new ProfiledMailable(
                 subjectLine: 'Hostile queued mail',
                 heading: 'Hostile queued heading',
@@ -338,6 +339,9 @@ trait DefinesTestApplication
                             [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-status], [data-ndb-notification-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-mail-facts], [data-ndb-notification-facts] { background: rgb(255, 0, 0); border-top: 20px solid rgb(255, 0, 0); display: block; padding: 50px; }
+                            [data-ndb-mail-fact], [data-ndb-notification-fact] { background: rgb(255, 0, 0); }
+                            [data-ndb-mail-attachment-download] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                         </style>
                     </head>

@@ -4,25 +4,14 @@ namespace NewDebugBar\Http\Controllers;
 
 use Illuminate\Http\Response;
 use NewDebugBar\Storage\ProfileStore;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
-/** Serves retained mail previews from local profile storage. */
+/** Serves retained mail previews and attachments from local profile storage. */
 final class MailPreviewController
 {
     public function __invoke(string $profile, int $index, string $format, ProfileStore $store): Response
     {
-        $environments = config('newdebugbar.environments', ['local']);
-
-        if (! is_array($environments)
-            || ! app()->environment($environments)) {
-            abort(404);
-        }
-
-        $stored = $store->get($profile);
-        $preview = $stored['sections']['mail']['payload']['items'][$index]['preview'] ?? null;
-
-        if (! is_array($preview)) {
-            abort(404);
-        }
+        $preview = $this->preview($profile, $index, $store);
 
         $content = $preview[$format] ?? null;
 
@@ -30,12 +19,7 @@ final class MailPreviewController
             abort(404);
         }
 
-        $headers = [
-            'Cache-Control' => 'no-store, private',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Frame-Options' => 'SAMEORIGIN',
-            'Referrer-Policy' => 'no-referrer',
-        ];
+        $headers = $this->privateHeaders();
 
         if (in_array($format, ['html', 'text'], true)) {
             $nonce = bin2hex(random_bytes(16));
@@ -55,6 +39,99 @@ final class MailPreviewController
             'Content-Type' => 'message/rfc822',
             'Content-Disposition' => 'attachment; filename="message-'.($index + 1).'.eml"',
         ]);
+    }
+
+    public function attachment(
+        string $profile,
+        int $index,
+        int $attachment,
+        ProfileStore $store,
+    ): Response {
+        $preview = $this->preview($profile, $index, $store);
+        $retained = $preview['attachments'][$attachment] ?? null;
+
+        if (! is_array($retained) || ! is_string($retained['body_base64'] ?? null)) {
+            abort(404);
+        }
+
+        $content = base64_decode($retained['body_base64'], true);
+
+        if (! is_string($content)) {
+            abort(404);
+        }
+
+        $filename = $this->attachmentFilename($retained['name'] ?? null, $attachment);
+        $contentType = $this->attachmentContentType($retained['content_type'] ?? null);
+
+        return response($content, 200, [
+            ...$this->privateHeaders(),
+            'Content-Type' => $contentType,
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                $filename,
+                $this->attachmentFallbackFilename($filename, $attachment),
+            ),
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function preview(string $profile, int $index, ProfileStore $store): array
+    {
+        $environments = config('newdebugbar.environments', ['local']);
+
+        if (! is_array($environments) || ! app()->environment($environments)) {
+            abort(404);
+        }
+
+        $stored = $store->get($profile);
+        $preview = $stored['sections']['mail']['payload']['items'][$index]['preview'] ?? null;
+
+        if (! is_array($preview)) {
+            abort(404);
+        }
+
+        return $preview;
+    }
+
+    /** @return array<string, string> */
+    private function privateHeaders(): array
+    {
+        return [
+            'Cache-Control' => 'no-store, private',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'Referrer-Policy' => 'no-referrer',
+        ];
+    }
+
+    private function attachmentFilename(mixed $name, int $index): string
+    {
+        $filename = is_string($name) ? basename(str_replace('\\', '/', trim($name))) : '';
+        $filename = preg_replace('/[\x00-\x1F\x7F%]/u', '', $filename) ?? '';
+
+        return $filename === '' ? 'attachment-'.($index + 1) : $filename;
+    }
+
+    private function attachmentContentType(mixed $contentType): string
+    {
+        if (is_string($contentType)
+            && preg_match('/\A[a-z0-9][a-z0-9.+-]*\/[a-z0-9][a-z0-9.+-]*\z/i', $contentType) === 1) {
+            return $contentType;
+        }
+
+        return 'application/octet-stream';
+    }
+
+    private function attachmentFallbackFilename(string $filename, int $index): string
+    {
+        if (preg_match('/\A[\x20-\x7E]+\z/', $filename) === 1) {
+            return $filename;
+        }
+
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+        $extension = preg_match('/\A[a-z0-9]+\z/i', $extension) === 1 ? '.'.$extension : '';
+
+        return 'attachment-'.($index + 1).$extension;
     }
 
     private function withHeightReporter(string $content, string $nonce): string

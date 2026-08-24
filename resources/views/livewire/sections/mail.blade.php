@@ -2,11 +2,49 @@
 @php
     $capturedMailItems = $section['payload']['items'] ?? [];
     $mailSummary = $section['summary'];
+    $formatMailBytes = static fn (int $bytes): string => match (true) {
+        $bytes >= 1024 * 1024 => number_format($bytes / (1024 * 1024), 2).' MB',
+        $bytes >= 1024 => number_format($bytes / 1024, 2).' KB',
+        default => number_format($bytes).' B',
+    };
     $mailItems = collect($capturedMailItems)
         ->values()
-        ->map(function (array $item, int $index) use ($profileId): array {
+        ->map(function (array $item, int $index) use ($formatMailBytes, $profileId): array {
             $preview = is_array($item['preview'] ?? null) ? $item['preview'] : [];
-            $attachments = array_values(is_array($preview['attachments'] ?? null) ? $preview['attachments'] : []);
+            $attachments = collect(is_array($preview['attachments'] ?? null) ? $preview['attachments'] : [])
+                ->values()
+                ->map(function (mixed $attachment, int $attachmentIndex) use ($formatMailBytes, $index, $profileId): array {
+                    $attachment = is_array($attachment) ? $attachment : [];
+                    $sizeBytes = is_numeric($attachment['size_bytes'] ?? null)
+                        ? max(0, (int) $attachment['size_bytes'])
+                        : null;
+                    $downloadable = is_string($attachment['body_base64'] ?? null);
+
+                    return [
+                        'name' => is_string($attachment['name'] ?? null) && $attachment['name'] !== ''
+                            ? $attachment['name']
+                            : 'Attachment '.($attachmentIndex + 1),
+                        'content_type' => is_string($attachment['content_type'] ?? null)
+                            ? $attachment['content_type']
+                            : 'application/octet-stream',
+                        'disposition' => is_string($attachment['disposition'] ?? null)
+                            ? $attachment['disposition']
+                            : 'attachment',
+                        'content_id' => is_string($attachment['content_id'] ?? null)
+                            ? $attachment['content_id']
+                            : null,
+                        'size_bytes' => $sizeBytes,
+                        'size_label' => $sizeBytes === null ? 'Size unavailable' : $formatMailBytes($sizeBytes),
+                        'download_url' => $downloadable
+                            ? route('newdebugbar.mail-attachment', [
+                                'profile' => $profileId,
+                                'index' => $index,
+                                'attachment' => $attachmentIndex,
+                            ])
+                            : null,
+                    ];
+                })
+                ->all();
             $to = array_values(is_array($preview['to'] ?? null) ? $preview['to'] : []);
             $cc = array_values(is_array($preview['cc'] ?? null) ? $preview['cc'] : []);
             $bcc = array_values(is_array($preview['bcc'] ?? null) ? $preview['bcc'] : []);
@@ -59,6 +97,17 @@
             $relatedProfileId = $isOrigin ? ($item['worker_profile_id'] ?? null) : ($item['origin_profile_id'] ?? null);
             $relatedProfileId = is_string($relatedProfileId) && $relatedProfileId !== $profileId ? $relatedProfileId : null;
             $relatedSection = $isOrigin && $status === 'sent' ? 'mail' : 'queue';
+            $attachmentCount = (int) ($item['attachment_count'] ?? count($attachments));
+            $downloadableAttachmentCount = count(array_filter(
+                $attachments,
+                static fn (array $attachment): bool => is_string($attachment['download_url']),
+            ));
+            $attachmentSummaryLabel = match (true) {
+                $attachmentCount === 0 => 'None',
+                $downloadableAttachmentCount === $attachmentCount => $attachmentCount.' available',
+                $downloadableAttachmentCount > 0 => $downloadableAttachmentCount.' of '.$attachmentCount.' available',
+                default => $attachmentCount.' not retained',
+            };
 
             return [
                 'execution' => $execution,
@@ -102,7 +151,9 @@
                 'stack' => $stack,
                 'headers' => is_string($preview['headers'] ?? null) ? $preview['headers'] : '',
                 'attachments' => $attachments,
-                'attachment_count' => (int) ($item['attachment_count'] ?? count($attachments)),
+                'attachment_count' => $attachmentCount,
+                'downloadable_attachment_count' => $downloadableAttachmentCount,
+                'attachment_summary_label' => $attachmentSummaryLabel,
                 'attachment_bodies_omitted' => (int) ($preview['attachments_omitted'] ?? 0),
                 'attachment_metadata_omitted' => (int) ($preview['attachment_metadata_omitted'] ?? 0),
                 'addresses_omitted' => (int) ($preview['addresses_omitted'] ?? 0),

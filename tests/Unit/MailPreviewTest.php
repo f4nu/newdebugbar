@@ -3,7 +3,7 @@
 use NewDebugBar\Support\MailPreview;
 use Symfony\Component\Mime\Email;
 
-it('builds bounded attachment free html text and eml previews', function () {
+it('builds bounded html text eml and attachment previews', function () {
     $message = (new Email)
         ->from('sender@example.test')
         ->to('recipient@example.test')
@@ -20,7 +20,7 @@ it('builds bounded attachment free html text and eml previews', function () {
         ->to->toBe(['recipient@example.test'])
         ->text->toBe('Plain preview')
         ->html->toBe('<h1>HTML preview</h1>')
-        ->attachments_omitted->toBe(1)
+        ->attachments_omitted->toBe(0)
         ->attachment_metadata_omitted->toBe(0)
         ->headers->toContain('X-Application-Trace: checkout-ready')
         ->attachments->toBe([[
@@ -28,12 +28,43 @@ it('builds bounded attachment free html text and eml previews', function () {
             'content_type' => 'text/plain',
             'disposition' => 'attachment',
             'content_id' => null,
+            'size_bytes' => 18,
+            'body_base64' => base64_encode('private attachment'),
         ]])
         ->and($preview['eml'])
-        ->toContain('Plain preview', 'HTML preview', 'X-NewDebugBar-Attachments-Omitted: 1')
-        ->not->toContain('private attachment', 'private.txt');
+        ->toContain('Plain preview', 'HTML preview', 'private.txt', base64_encode('private attachment'))
+        ->not->toContain('X-NewDebugBar-Attachments-Omitted');
 
     expect($preview['eml'])->toEndWith("\r\n");
+});
+
+it('keeps attachment metadata when the message exceeds its attachment budget', function () {
+    $message = (new Email)
+        ->from('sender@example.test')
+        ->to('recipient@example.test')
+        ->subject('Budgeted attachments')
+        ->attach('first body', 'first.txt', 'text/plain')
+        ->attach('second body', 'second.txt', 'text/plain');
+
+    $preview = (new MailPreview(
+        maxBodyBytes: 1_000,
+        maxRecipients: 10,
+        maxAttachmentBytes: strlen('first body'),
+    ))->capture($message);
+
+    expect($preview)
+        ->attachments_omitted->toBe(1)
+        ->attachment_metadata_omitted->toBe(0)
+        ->attachments->toHaveCount(2)
+        ->and($preview['attachments'][0])
+        ->size_bytes->toBe(strlen('first body'))
+        ->body_base64->toBe(base64_encode('first body'))
+        ->and($preview['attachments'][1])
+        ->size_bytes->toBe(strlen('second body'))
+        ->body_base64->toBeNull()
+        ->and($preview['eml'])
+        ->toContain('first.txt', base64_encode('first body'), 'X-NewDebugBar-Attachments-Omitted: 1')
+        ->not->toContain('second.txt', base64_encode('second body'));
 });
 
 it('bounds the inputs without cutting the serialized mime message', function () {

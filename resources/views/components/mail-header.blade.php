@@ -49,46 +49,64 @@
         </dl>
     </x-slot:identity>
 
-    <x-slot:metadata data-ndb-mail-metadata>
-        <div x-show.important="selectedMailMessage.attachment_count > 0">
-            <dt class="ndb:sr-only">Attachments</dt>
-            <dd
-                data-ndb-mail-attachment-badge
-                class="ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                x-text="
-                    selectedMailMessage.attachment_count +
-                    (selectedMailMessage.attachment_count === 1 ? ' attachment' : ' attachments')
-                "
-            ></dd>
-        </div>
-        <div>
-            <dt class="ndb:sr-only">Runtime</dt>
-            <dd
-                class="ndb:font-semibold ndb:tabular-nums"
-                x-text="
-                    selectedMailMessage.status === 'sent'
-                        ? selectedMailMessage.duration_ms.toFixed(2) + ' ms'
-                        : selectedMailMessage.delay_seconds > 0
-                          ? selectedMailMessage.delay_seconds + ' s delay'
-                          : selectedMailMessage.status_label
-                "
-            ></dd>
-        </div>
-        <div class="ndb:min-w-0">
-            <dt class="ndb:sr-only">Delivery</dt>
-            <dd
-                :title="selectedMailMessage.delivery_label"
-                class="ndb:truncate ndb:font-semibold"
-                x-text="selectedMailMessage.delivery_label"
-            ></dd>
-        </div>
-        <div class="ndb:min-w-0">
-            <dt class="ndb:sr-only">Source</dt>
-            <dd
-                :title="selectedMailMessage.callsite_label"
-                class="ndb:truncate ndb:font-mono ndb:font-medium"
-                x-text="selectedMailMessage.callsite_short_label"
-            ></dd>
+    <x-slot:metadata data-ndb-mail-metadata class="ndb:w-full">
+        <div
+            data-ndb-mail-facts
+            class="ndb:grid ndb:w-full ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4"
+        >
+            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                    Attachments
+                </dt>
+                <dd class="ndb:mt-0.5 ndb:min-w-0">
+                    <button
+                        type="button"
+                        x-show.important="selectedMailMessage.attachment_count > 0"
+                        @click="setMailDetailTab('message')"
+                        class="ndb:max-w-full ndb:truncate ndb:text-left ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:underline-offset-2 ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                        x-text="selectedMailMessage.attachment_summary_label"
+                    ></button>
+                    <span
+                        x-show.important="selectedMailMessage.attachment_count === 0"
+                        class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                    >None</span>
+                </dd>
+            </div>
+            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                    Duration
+                </dt>
+                <dd
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="
+                        selectedMailMessage.status === 'sent'
+                            ? selectedMailMessage.duration_ms.toFixed(2) + ' ms'
+                            : selectedMailMessage.delay_seconds > 0
+                              ? selectedMailMessage.delay_seconds + ' s delay'
+                              : selectedMailMessage.status_label
+                    "
+                ></dd>
+            </div>
+            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Driver</dt>
+                <dd
+                    :title="selectedMailMessage.delivery_label"
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="selectedMailMessage.delivery_label"
+                ></dd>
+            </div>
+            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
+                <dd class="ndb:mt-0.5 ndb:min-w-0">
+                    <button
+                        type="button"
+                        :title="selectedMailMessage.callsite_label"
+                        @click="setMailDetailTab('source')"
+                        class="ndb:block ndb:max-w-full ndb:truncate ndb:text-left ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:underline-offset-2 ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                        x-text="selectedMailMessage.callsite_short_label"
+                    ></button>
+                </dd>
+            </div>
         </div>
     </x-slot:metadata>
 </x-newdebugbar::inspector-detail-header>

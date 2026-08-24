@@ -67,14 +67,17 @@ return [
     |--------------------------------------------------------------------------
     |
     | Mail previews are captured automatically. "max_body_bytes" limits each
-    | retained HTML and text body to 50,000 bytes so normal messages stay useful
-    | without letting one message dominate a profile. Attachments are omitted.
-    | The limit stays configurable because applications send different mail.
+    | retained HTML and text body to 50,000 bytes. "max_attachment_bytes" keeps
+    | up to 2 MB of attachment bodies per message so normal files can be opened
+    | without letting one message dominate a profile. Metadata remains visible
+    | for files beyond that budget. Applications send different mail, so both
+    | limits remain configurable.
     |
     */
 
     'mail_preview' => [
         'max_body_bytes' => 50_000,
+        'max_attachment_bytes' => 2_000_000,
     ],
 
     /*

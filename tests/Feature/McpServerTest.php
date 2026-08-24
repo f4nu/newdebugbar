@@ -172,6 +172,7 @@ it('keeps captured mail content out of MCP responses', function () {
             'private-sender@example.test',
             'private-recipient@example.test',
             'private-copy@example.test',
+            base64_encode('private attachment'),
         ]);
     $content = McpResponse::structuredContent($mail);
 
@@ -181,7 +182,7 @@ it('keeps captured mail content out of MCP responses', function () {
         'text_available' => true,
         'eml_available' => true,
         'truncated' => false,
-        'attachments_omitted' => 1,
+        'attachments_omitted' => 0,
         'addresses_omitted' => 0,
     ]);
 });

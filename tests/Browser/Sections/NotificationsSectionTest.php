@@ -74,7 +74,9 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const summaryRuntime = document.querySelector('[data-ndb-notification-summary-runtime]');
                 const filter = document.querySelector('[data-ndb-notification-filter]');
                 const metadata = document.querySelector('[data-ndb-notification-metadata]');
-                const metadataFacts = [...metadata.children];
+                const metadataGrid = metadata.querySelector('[data-ndb-notification-facts]');
+                const metadataFacts = [...metadata.querySelectorAll('[data-ndb-notification-fact]')];
+                const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
                 const recipient = document.querySelector('[data-ndb-notification-recipient]');
                 const deliveries = [...document.querySelectorAll('[data-ndb-notification-delivery]')];
                 const channelControl = document.querySelector('[data-ndb-notification-channel-control]');
@@ -94,6 +96,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && Math.abs(listTitle.getBoundingClientRect().left - listRecipient.getBoundingClientRect().left) <= 1
                     && Math.abs(listStatus.getBoundingClientRect().right - listActivity.getBoundingClientRect().right) <= 1
                     && getComputedStyle(listStatus).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(listStatus).color !== getComputedStyle(listTitle).color
                     && selected.querySelector('[data-ndb-notification-outcomes]') === null
                     && summary.parentElement.contains(filter)
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
@@ -103,6 +106,9 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && tabs[0].parentElement === channelControl.parentElement
                     && getComputedStyle(channelControl).display === 'none'
                     && metadataFacts.length === 4
+                    && metadataLabels.join('|') === 'Channels|Duration|Execution|Source'
+                    && getComputedStyle(metadataGrid).display === 'grid'
+                    && getComputedStyle(metadataGrid).borderTopWidth === '0px'
                     && metadata.querySelectorAll('svg').length === 0
                     && metadata.scrollWidth <= metadata.clientWidth + 1
                     && recipient.textContent.includes('Recipient')
@@ -123,7 +129,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->assertValue('[data-ndb-notification-channel]', 'profiled-sms')
         ->assertSee('RuntimeException')
         ->assertSee('No provider response was captured.')
-        ->click('[data-ndb-notification-detail-tab="source"]')
+        ->click('[data-ndb-notification-fact]:last-child button')
         ->assertVisible('[data-ndb-notification-detail-panel="source"]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-notification-channel-control]")).display === "none"')
         ->assertSee('NewDebugBar\\Tests\\Fixtures\\Notifications\\ProfiledNotification')

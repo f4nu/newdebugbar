@@ -91,39 +91,58 @@
         </dl>
     </x-slot:identity>
 
-    <x-slot:metadata data-ndb-notification-metadata>
-        <div>
-            <dt class="ndb:sr-only ndb:text-zinc-400">Channels</dt>
-            <dd
-                class="ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                x-text="selectedNotification.channel_count_label"
-            ></dd>
-        </div>
-        <div>
-            <dt class="ndb:sr-only ndb:text-zinc-400">Activity</dt>
-            <dd
-                class="ndb:font-semibold ndb:tabular-nums"
-                x-text="
-                    ['sent', 'failed', 'partial'].includes(selectedNotification.status) ||
-                    selectedNotification.duration_ms > 0
-                        ? selectedNotification.duration_ms.toFixed(2) + ' ms'
-                        : selectedNotification.delay_seconds > 0
-                          ? selectedNotification.delay_seconds + ' s delay'
-                          : selectedNotification.status_label
-                "
-            ></dd>
-        </div>
-        <div>
-            <dt class="ndb:sr-only ndb:text-zinc-400">Execution mode</dt>
-            <dd class="ndb:font-semibold" x-text="selectedNotification.execution_mode_label"></dd>
-        </div>
-        <div class="ndb:min-w-0">
-            <dt class="ndb:sr-only ndb:text-zinc-400">Source</dt>
-            <dd
-                :title="selectedNotification.callsite_label"
-                class="ndb:truncate ndb:font-mono ndb:font-medium"
-                x-text="selectedNotification.callsite_short_label"
-            ></dd>
+    <x-slot:metadata data-ndb-notification-metadata class="ndb:w-full">
+        <div
+            data-ndb-notification-facts
+            class="ndb:grid ndb:w-full ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4"
+        >
+            <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                    Channels
+                </dt>
+                <dd
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="selectedNotification.channel_count_label"
+                ></dd>
+            </div>
+            <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                    Duration
+                </dt>
+                <dd
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="
+                        ['sent', 'failed', 'partial'].includes(selectedNotification.status) ||
+                        selectedNotification.duration_ms > 0
+                            ? selectedNotification.duration_ms.toFixed(2) + ' ms'
+                            : selectedNotification.delay_seconds > 0
+                              ? selectedNotification.delay_seconds + ' s delay'
+                              : selectedNotification.status_label
+                    "
+                ></dd>
+            </div>
+            <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                    Execution
+                </dt>
+                <dd
+                    :title="selectedNotification.execution_mode_label"
+                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                    x-text="selectedNotification.execution_mode_label"
+                ></dd>
+            </div>
+            <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
+                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
+                <dd class="ndb:mt-0.5 ndb:min-w-0">
+                    <button
+                        type="button"
+                        :title="selectedNotification.callsite_label"
+                        @click="setNotificationDetailTab('source')"
+                        class="ndb:block ndb:max-w-full ndb:truncate ndb:text-left ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:underline-offset-2 ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
+                        x-text="selectedNotification.callsite_short_label"
+                    ></button>
+                </dd>
+            </div>
         </div>
     </x-slot:metadata>
 </x-newdebugbar::inspector-detail-header>

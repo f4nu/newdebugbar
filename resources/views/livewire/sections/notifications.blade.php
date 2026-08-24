@@ -412,10 +412,9 @@
                                 @class([
                                     'ndb:justify-self-end ndb:text-[11px] ndb:font-bold',
                                     'ndb:text-emerald-600 ndb:dark:text-emerald-300' => $notification['status'] === 'sent',
-                                    'ndb:text-amber-600 ndb:dark:text-amber-300' => $notification['status'] === 'partial',
+                                    'ndb:text-amber-600 ndb:dark:text-amber-300' => in_array($notification['status'], ['partial', 'delayed', 'waiting'], true),
                                     'ndb:text-red-600 ndb:dark:text-red-300' => $notification['status'] === 'failed',
                                     'ndb:text-sky-600 ndb:dark:text-sky-300' => $notification['status'] === 'queued',
-                                    'ndb:text-amber-600 ndb:dark:text-amber-300' => in_array($notification['status'], ['delayed', 'waiting'], true),
                                     'ndb:text-indigo-600 ndb:dark:text-indigo-300' => $notification['status'] === 'processing',
                                 ])
                             >

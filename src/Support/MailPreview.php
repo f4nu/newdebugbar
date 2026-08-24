@@ -5,13 +5,15 @@ namespace NewDebugBar\Support;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Part\DataPart;
+use Throwable;
 
-/** Builds a bounded, attachment-free local mail preview. */
+/** Builds bounded local mail previews with downloadable attachment data. */
 final class MailPreview
 {
     public function __construct(
         private readonly int $maxBodyBytes,
         private readonly int $maxRecipients,
+        private readonly int $maxAttachmentBytes = 2_000_000,
     ) {}
 
     /** @return array<string, mixed>|null */
@@ -26,8 +28,8 @@ final class MailPreview
         [$text, $textTruncated] = $this->bounded($message->getTextBody());
         [$headers, $headersTruncated] = $this->bounded($message->getHeaders()->toString());
         $addressesOmitted = $this->addressesOmitted($message);
-        $attachments = array_slice($message->getAttachments(), 0, $this->maxRecipients);
-        $copy = $this->attachmentFreeCopy($message, $subject, $html, $text);
+        [$attachments, $attachmentsOmitted] = $this->attachments($message->getAttachments());
+        $copy = $this->boundedCopy($message, $subject, $html, $text, $attachments, $attachmentsOmitted);
 
         return [
             'subject' => $subject,
@@ -41,32 +43,70 @@ final class MailPreview
             'date' => $message->getDate()?->format(DATE_ATOM),
             'priority' => $message->getPriority(),
             'headers' => $headers,
-            'attachments' => array_map($this->attachment(...), $attachments),
+            'attachments' => $attachments,
             'html' => $html,
             'text' => $text,
             // The inputs are bounded before serialization so the MIME document
             // stays valid instead of being cut through a header or body part.
             'eml' => $copy->toString(),
             'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated || $headersTruncated || $addressesOmitted > 0,
-            'attachments_omitted' => count($message->getAttachments()),
+            'attachments_omitted' => $attachmentsOmitted,
             'attachment_metadata_omitted' => max(0, count($message->getAttachments()) - count($attachments)),
             'addresses_omitted' => $addressesOmitted,
         ];
     }
 
-    /** @return array{name: string, content_type: string, disposition: string, content_id: ?string} */
-    private function attachment(DataPart $attachment): array
+    /**
+     * @param  list<DataPart>  $attachments
+     * @return array{0: list<array{name: string, content_type: string, disposition: string, content_id: ?string, size_bytes: ?int, body_base64: ?string}>, 1: int}
+     */
+    private function attachments(array $attachments): array
     {
-        return [
-            'name' => $attachment->getFilename() ?? $attachment->getName() ?? 'Attachment',
-            'content_type' => $attachment->getContentType(),
-            'disposition' => $attachment->getDisposition() ?? 'attachment',
-            'content_id' => $attachment->hasContentId() ? $attachment->getContentId() : null,
-        ];
+        $remainingBytes = max(0, $this->maxAttachmentBytes);
+        $capturedBodies = 0;
+        $capturedAttachments = [];
+
+        foreach (array_slice($attachments, 0, $this->maxRecipients) as $attachment) {
+            $body = null;
+            $sizeBytes = null;
+
+            try {
+                $candidate = $attachment->getBody();
+                $sizeBytes = strlen($candidate);
+
+                if ($sizeBytes <= $remainingBytes) {
+                    $body = $candidate;
+                    $remainingBytes -= $sizeBytes;
+                    $capturedBodies++;
+                }
+            } catch (Throwable) {
+                // Keep useful metadata when Symfony cannot read the attachment body.
+            }
+
+            $capturedAttachments[] = [
+                'name' => $attachment->getFilename() ?? $attachment->getName() ?? 'Attachment',
+                'content_type' => $attachment->getContentType(),
+                'disposition' => $attachment->getDisposition() ?? 'attachment',
+                'content_id' => $attachment->hasContentId() ? $attachment->getContentId() : null,
+                'size_bytes' => $sizeBytes,
+                'body_base64' => $body === null ? null : base64_encode($body),
+            ];
+        }
+
+        return [$capturedAttachments, count($attachments) - $capturedBodies];
     }
 
-    private function attachmentFreeCopy(Email $message, ?string $subject, ?string $html, ?string $text): Email
-    {
+    /**
+     * @param  list<array{name: string, content_type: string, disposition: string, content_id: ?string, size_bytes: ?int, body_base64: ?string}>  $attachments
+     */
+    private function boundedCopy(
+        Email $message,
+        ?string $subject,
+        ?string $html,
+        ?string $text,
+        array $attachments,
+        int $attachmentsOmitted,
+    ): Email {
         $copy = (new Email)->subject($subject ?? '');
 
         foreach (array_slice($message->getFrom(), 0, $this->maxRecipients) as $address) {
@@ -97,10 +137,34 @@ final class MailPreview
             $copy->html($html);
         }
 
-        if ($message->getAttachments() !== []) {
+        foreach ($attachments as $attachment) {
+            if (! is_string($attachment['body_base64'])) {
+                continue;
+            }
+
+            $body = base64_decode($attachment['body_base64'], true);
+
+            if (! is_string($body)) {
+                continue;
+            }
+
+            $part = new DataPart($body, $attachment['name'], $attachment['content_type']);
+
+            if ($attachment['disposition'] === 'inline') {
+                $part->asInline();
+            }
+
+            if (is_string($attachment['content_id'])) {
+                $part->setContentId($attachment['content_id']);
+            }
+
+            $copy->addPart($part);
+        }
+
+        if ($attachmentsOmitted > 0) {
             $copy->getHeaders()->addTextHeader(
                 'X-NewDebugBar-Attachments-Omitted',
-                (string) count($message->getAttachments()),
+                (string) $attachmentsOmitted,
             );
         }
 

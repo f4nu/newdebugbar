@@ -117,6 +117,8 @@ it('keeps host styles and package styles isolated', function () {
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
                 const actions = document.querySelector('[data-ndb-mail-actions]');
                 const metadata = document.querySelector('[data-ndb-mail-metadata]');
+                const metadataGrid = metadata.querySelector('[data-ndb-mail-facts]');
+                const metadataFacts = [...metadata.querySelectorAll('[data-ndb-mail-fact]')];
                 const metadataLabel = metadata.querySelector('dt');
                 const backIcon = document.querySelector('[data-ndb-mail-detail-back] svg');
                 const tabIcons = [...document.querySelectorAll('[data-ndb-mail-detail-tab-icon]')];
@@ -127,7 +129,12 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(actions).borderLeftWidth === '0px'
                     && getComputedStyle(actions).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
-                    && Number.parseFloat(getComputedStyle(metadataLabel).fontSize) === 11
+                    && getComputedStyle(metadataGrid).display === 'grid'
+                    && getComputedStyle(metadataGrid).borderTopWidth === '0px'
+                    && Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0
+                    && getComputedStyle(metadataGrid).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && metadataFacts.every((fact) => getComputedStyle(fact).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && Number.parseFloat(getComputedStyle(metadataLabel).fontSize) === 10
                     && getComputedStyle(metadataLabel).color !== 'rgb(0, 128, 0)'
                     && Number.parseFloat(getComputedStyle(backIcon).width) === 14
                     && tabIcons.length === 3
@@ -150,9 +157,14 @@ it('keeps host styles and package styles isolated', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const summary = document.querySelector('[data-ndb-mail-headers] summary');
+                const download = document.querySelector('[data-ndb-mail-attachment-download]');
                 const style = getComputedStyle(summary);
 
-                return style.fontSize === '12px' && style.color !== 'rgb(255, 0, 0)';
+                return style.fontSize === '12px'
+                    && style.color !== 'rgb(255, 0, 0)'
+                    && download.getBoundingClientRect().height < 91
+                    && getComputedStyle(download).backgroundColor !== 'rgb(255, 0, 255)'
+                    && getComputedStyle(download).textDecorationLine === 'none';
             })()
             JS)
         ->click('[data-ndb-mail-item="2"]')
@@ -212,6 +224,8 @@ it('keeps host styles and package styles isolated', function () {
                 const row = document.querySelector('[data-ndb-notification-item]');
                 const detail = document.querySelector('[data-ndb-notification-detail]');
                 const metadata = document.querySelector('[data-ndb-notification-metadata]');
+                const metadataGrid = metadata.querySelector('[data-ndb-notification-facts]');
+                const metadataFacts = [...metadata.querySelectorAll('[data-ndb-notification-fact]')];
                 const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
                 const status = document.querySelector('[data-ndb-notification-status]');
                 const link = document.querySelector('[data-ndb-notification-profile-link]');
@@ -225,9 +239,14 @@ it('keeps host styles and package styles isolated', function () {
                     && row.getBoundingClientRect().height < 91
                     && getComputedStyle(detail).borderLeftWidth === '0px'
                     && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(metadataGrid).display === 'grid'
+                    && getComputedStyle(metadataGrid).borderTopWidth === '0px'
+                    && Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0
+                    && getComputedStyle(metadataGrid).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && metadataFacts.every((fact) => getComputedStyle(fact).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && metadataTerms.every((term) => getComputedStyle(term).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)')
-                    && Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 11
+                    && Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 10
                     && Number.parseFloat(getComputedStyle(status).fontSize) === 11
                     && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
                     && link.getBoundingClientRect().height < 91

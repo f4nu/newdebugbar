@@ -58,7 +58,6 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const previewControls = document.querySelector('[data-ndb-mail-preview-controls]');
                 const previewSurface = document.querySelector('[data-ndb-mail-preview-surface]');
                 const previewCanvas = document.querySelector('[data-ndb-mail-preview-canvas]');
-                const attachmentBadge = document.querySelector('[data-ndb-mail-attachment-badge]');
                 const summary = document.querySelector('[data-ndb-mail-summary]');
                 const summaryCount = document.querySelector('[data-ndb-mail-summary-count]');
                 const summaryRuntime = document.querySelector('[data-ndb-mail-summary-runtime]');
@@ -71,7 +70,9 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const subject = header.querySelector('[data-ndb-mail-detail-subject]');
                 const identity = header.querySelector('[data-ndb-mail-recipient]');
                 const metadata = header.querySelector('[data-ndb-mail-metadata]');
-                const metadataFacts = [...metadata.children];
+                const metadataGrid = metadata.querySelector('[data-ndb-mail-facts]');
+                const metadataFacts = [...metadata.querySelectorAll('[data-ndb-mail-fact]')];
+                const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
                 const addressGroups = [...identity.querySelector('dl').children];
                 const headerTop = header.getBoundingClientRect().top;
                 const availableScroll = Math.max(0, detail.scrollHeight - detail.clientHeight);
@@ -99,18 +100,16 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && viewportButtons.every((button) => button.querySelector('svg').getBoundingClientRect().width <= 12.5)
                     && formatControl.getBoundingClientRect().left > viewportControl.getBoundingClientRect().right
                     && tabs[0].parentElement === previewControls.parentElement
-                    && attachmentBadge.closest('header') === header
                     && actions.open === false
                     && visibleHeaderActions.length === 1
                     && visibleHeaderActions[0] === actions
                     && subject.closest('[data-ndb-inspector-detail-header-primary]') === primary
                     && header.querySelector('[data-ndb-mail-status]') === null
                     && metadataFacts.length === 4
+                    && metadataLabels.join('|') === 'Attachments|Duration|Driver|Source'
+                    && getComputedStyle(metadataGrid).display === 'grid'
+                    && getComputedStyle(metadataGrid).borderTopWidth === '0px'
                     && ! header.textContent.includes('Sent')
-                    && metadata.textContent.includes('Attachments')
-                    && metadata.textContent.includes('Runtime')
-                    && metadata.textContent.includes('Delivery')
-                    && metadata.textContent.includes('Source')
                     && metadata.querySelectorAll('svg').length === 0
                     && header.querySelector('[data-ndb-mail-actions-trigger]').textContent.trim() === ''
                     && identity.textContent.includes('Recipients')
@@ -224,12 +223,25 @@ it('selects and inspects mail with a real in-panel preview', function () {
         ->select('[data-ndb-mail-preview-format]', 'html')
         ->assertAttribute('[data-ndb-mail-preview-viewport="mobile"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-mail-preview-canvas]").getBoundingClientRect().width <= 376')
-        ->click('[data-ndb-mail-detail-tab="message"]')
+        ->click('[data-ndb-mail-fact]:first-child button')
         ->assertAttribute('[data-ndb-mail-detail-tab="message"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-mail-detail-panel="message"]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-mail-preview-controls]")).display === "none"')
         ->assertSee('receipt-NS-1042.pdf')
         ->assertSee('application/pdf')
+        ->assertSee('Download')
+        ->assertVisible('[data-ndb-mail-attachment-download]')
+        ->assertAttribute('[data-ndb-mail-attachment-download]', 'download', 'receipt-NS-1042.pdf')
+        ->assertScript('document.querySelector("[data-ndb-mail-attachment-download]").getAttribute("href").endsWith("/0/attachment/0")')
+        ->assertScript(<<<'JS'
+            (() => {
+                const labels = [...document.querySelectorAll('[data-ndb-mail-detail-panel="message"] dt')]
+                    .map((label) => label.textContent.trim());
+
+                return ['BCC', 'Sender', 'Return path', 'Date']
+                    .every((emptyLabel) => !labels.includes(emptyLabel));
+            })()
+            JS)
         ->assertSee('Default mailer')
         ->click('[data-ndb-mail-headers] summary')
         ->assertSee('X-Northstar-Flow: profiled-mail')
@@ -294,6 +306,7 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
                 const previewCanvas = document.querySelector('[data-ndb-mail-preview-canvas]');
                 const metadata = document.querySelector('[data-ndb-mail-metadata]');
+                const metadataFacts = [...metadata.querySelectorAll('[data-ndb-mail-fact]')];
                 const identity = document.querySelector('[data-ndb-mail-recipient]');
                 const primary = document.querySelector('[data-ndb-inspector-detail-header-primary]');
                 const workspace = document.querySelector('[data-ndb-mail-workspace]');
@@ -314,7 +327,8 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                     && primary.scrollWidth <= primary.clientWidth + 1
                     && identity.scrollWidth <= identity.clientWidth + 1
                     && metadata.scrollWidth <= metadata.clientWidth + 1
-                    && [...metadata.children].filter((fact) => getComputedStyle(fact).display !== 'none').length === 3
+                    && metadataFacts.length === 4
+                    && metadataFacts.every((fact) => getComputedStyle(fact).display !== 'none')
                     && back.getClientRects().length > 0
                     && back.textContent.trim() === 'Messages'
                     && tabs.length === 3

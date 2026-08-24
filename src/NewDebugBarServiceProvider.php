@@ -106,6 +106,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $this->app->singleton(MailPreview::class, fn (): MailPreview => new MailPreview(
             maxBodyBytes: (int) config('newdebugbar.mail_preview.max_body_bytes', 50_000),
             maxRecipients: (int) config('newdebugbar.collection.max_items_per_array', 100),
+            maxAttachmentBytes: (int) config('newdebugbar.mail_preview.max_attachment_bytes', 2_000_000),
         ));
         $this->app->scoped(RuntimeProfiler::class);
         $this->app->singleton(RuntimeContext::class);
@@ -229,6 +230,14 @@ final class NewDebugBarServiceProvider extends ServiceProvider
             ->whereNumber('index')
             ->whereIn('format', ['html', 'text', 'eml'])
             ->name('newdebugbar.mail-preview');
+        $router->get(
+            '/__newdebugbar/mail/{profile}/{index}/attachment/{attachment}',
+            [MailPreviewController::class, 'attachment'],
+        )
+            ->where('profile', ProfileStore::ID_PATTERN)
+            ->whereNumber('index')
+            ->whereNumber('attachment')
+            ->name('newdebugbar.mail-attachment');
         $kernel = $this->app->make(HttpKernel::class);
 
         if (method_exists($kernel, 'pushMiddleware')) {
