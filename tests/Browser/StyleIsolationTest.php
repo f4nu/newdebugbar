@@ -140,6 +140,54 @@ it('keeps host styles and package styles isolated', function () {
                 ];
             })()
             JS, [null, null, null, null, null, null, true, true, true, true, true, true, true, true, true])
+        ->click('[data-ndb-section="http_client"]')
+        ->assertVisible('[data-ndb-section-panel="http_client"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-http-client]');
+                const row = document.querySelector('[data-ndb-http-client-item]');
+                const method = document.querySelector('[data-ndb-http-client-method]');
+                const header = document.querySelector('[data-ndb-http-client-header]');
+                const path = header.querySelector('[data-ndb-http-client-detail-path]');
+                const facts = document.querySelector('[data-ndb-http-client-facts]');
+                const factElements = [...facts.querySelectorAll('dl, dt, dd')];
+                const copyUrl = document.querySelector('[data-ndb-http-client-copy-url]');
+                const sourceLink = document.querySelector('[data-ndb-http-client-source-link]');
+                const listFilters = [...document.querySelectorAll('[data-ndb-http-client-filter]')];
+                const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
+
+                return [
+                    root.getAttribute('data-http-client'),
+                    row.getAttribute('data-http-client-item'),
+                    method.getAttribute('data-method'),
+                    getComputedStyle(root).borderLeftWidth === '0px',
+                    getComputedStyle(row).borderLeftWidth === '0px',
+                    row.getBoundingClientRect().height < 91,
+                    Math.round(method.getBoundingClientRect().width) === 48,
+                    getComputedStyle(method).backgroundColor !== 'rgb(255, 0, 0)',
+                    getComputedStyle(path).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    getComputedStyle(path).color !== 'rgb(0, 0, 0)',
+                    getComputedStyle(facts).display === 'grid',
+                    getComputedStyle(facts).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    factElements.every((element) => getComputedStyle(element).backgroundColor === 'rgba(0, 0, 0, 0)'),
+                    factElements.every((element) => getComputedStyle(element).color !== 'rgb(0, 128, 0)'),
+                    copyUrl.getBoundingClientRect().height < 91,
+                    getComputedStyle(copyUrl).backgroundColor !== 'rgb(255, 0, 0)',
+                    sourceLink.getBoundingClientRect().height < 91,
+                    listFilters.every((filter) => filter.getBoundingClientRect().height < 91),
+                    detailTabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                ];
+            })()
+            JS, [null, null, null, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true])
+        ->click('[data-ndb-http-client-detail-tab="request"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const copyCurl = document.querySelector('[data-ndb-http-client-copy-curl]');
+
+                return copyCurl.getBoundingClientRect().height < 91
+                    && getComputedStyle(copyCurl).backgroundColor !== 'rgb(255, 0, 0)';
+            })()
+            JS)
         ->click('[data-ndb-section="mail"]')
         ->assertVisible('[data-ndb-section-panel="mail"]')
         ->assertScript(<<<'JS'
