@@ -41,7 +41,6 @@
     if ($cacheFlushes > 0) {
         $cacheAttentionParts[] = number_format($cacheFlushes).' store '.\Illuminate\Support\Str::plural('flush', $cacheFlushes);
     }
-
 @endphp
 
 <div
