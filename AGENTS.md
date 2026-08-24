@@ -19,6 +19,14 @@
 - Keep client-specific MCP setup in `docs/mcp.md`. Link to it from the README.
 - Keep test reports, support tables, and long setup notes out of the README.
 
+## MCP parity
+
+- Treat the local MCP server as a full diagnostic interface, not a smaller copy of the browser inspector. Every captured, analyzed, grouped, or displayed profile field must be reachable through a bounded MCP request.
+- Keep focused tools concise, and expose deeper or newly shaped evidence through the generic profile-data tool instead of dropping it from MCP.
+- When a collector, analyzer, presenter, finding, or inspector changes profile data, update the MCP contract, tool guidance, and parity tests in the same change.
+- Never report a profile as missing when loading or presenting it failed. Return a visible tool error so agents can distinguish expired data from broken processing.
+- Preserve capture-time redaction and MCP response limits while keeping every retained profile value requestable.
+
 ## Interface priorities
 
 - Keep the bar visually quiet until something needs attention. It should feel at home on the page while a developer works.
