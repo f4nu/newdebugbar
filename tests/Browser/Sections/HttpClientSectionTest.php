@@ -19,6 +19,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 const workspace = document.querySelector('[data-ndb-http-client-workspace]');
                 const [list, detail] = workspace.children;
                 const sectionNavigation = document.querySelector('#newdebugbar-section-navigation');
+                const inspectorContent = document.querySelector('[data-ndb-inspector-content]');
                 const rows = [...document.querySelectorAll('[data-ndb-http-client-item]')];
                 const methods = rows.map((row) => row.querySelector('[data-ndb-http-client-method]'));
                 const hosts = rows.map((row) => row.querySelector('[data-ndb-http-client-host]'));
@@ -28,6 +29,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
                 const facts = document.querySelector('[data-ndb-http-client-facts]');
                 const search = document.querySelector('[data-ndb-http-client-search]');
+                const searchIcon = search.parentElement.querySelector('svg');
                 const sort = document.querySelector('[data-ndb-http-client-sort]');
                 const filters = document.querySelector('[data-ndb-filter-tabs][aria-label="Filter outbound HTTP requests"]');
                 const filterButtons = [...filters.querySelectorAll('[data-ndb-filter-tab]')];
@@ -58,6 +60,12 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 return getComputedStyle(workspace).display === 'grid'
                     && workspace.getBoundingClientRect().height > 500
                     && Math.abs(workspace.getBoundingClientRect().left - sectionNavigation.getBoundingClientRect().right) <= 1
+                    && Math.abs(workspace.getBoundingClientRect().right - inspectorContent.getBoundingClientRect().right) <= 1
+                    && getComputedStyle(workspace).borderTopWidth === '1px'
+                    && getComputedStyle(workspace).borderRightWidth === '0px'
+                    && getComputedStyle(workspace).borderBottomWidth === '0px'
+                    && getComputedStyle(workspace).borderLeftWidth === '0px'
+                    && getComputedStyle(workspace).borderRadius === '0px'
                     && detail.getBoundingClientRect().width > list.getBoundingClientRect().width * 1.6
                     && document.querySelector('[data-ndb-http-client-item][aria-pressed="true"]').dataset.ndbHttpClientItem === '1'
                     && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px')
@@ -74,6 +82,10 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     ]))
                     && Math.abs(search.getBoundingClientRect().top - sort.getBoundingClientRect().top) <= 1
                     && search.getBoundingClientRect().right < sort.getBoundingClientRect().left
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left >= 10
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left <= 14
+                    && searchIcon.getBoundingClientRect().right
+                        <= search.getBoundingClientRect().left + parseFloat(getComputedStyle(search).paddingLeft)
                     && filters.getBoundingClientRect().top > search.getBoundingClientRect().bottom
                     && filters.dataset.ndbFilterTabsVariant === 'segmented'
                     && getComputedStyle(filters).display === 'grid'

@@ -10,7 +10,7 @@
             : ''"
         @class([
             'ndb:p-4 ndb:sm:p-6' => $sectionKey !== 'http_client',
-            'ndb:p-4 ndb:sm:pt-6 ndb:sm:pr-6 ndb:sm:pb-6 ndb:sm:pl-0' => $sectionKey === 'http_client',
+            'ndb:p-4 ndb:sm:px-0 ndb:sm:py-6' => $sectionKey === 'http_client',
         ])
     >
         <section
