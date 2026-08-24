@@ -36,7 +36,10 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                 const identity = header.querySelector('[data-ndb-http-client-identity]');
                 const metadata = header.querySelector('[data-ndb-http-client-metadata]');
                 const actions = header.querySelector('[data-ndb-http-client-actions]');
+                const actionIcons = [...actions.querySelectorAll('svg')];
+                const urlIcon = actions.querySelector('[data-ndb-http-client-copy-url] svg');
                 const methods = [...document.querySelectorAll('[data-ndb-http-client-method]')];
+                const hosts = [...document.querySelectorAll('[data-ndb-http-client-host]')];
                 const outcomes = [...document.querySelectorAll('[data-ndb-http-client-list-outcome]')];
                 const firstMethod = methods[0].getBoundingClientRect();
                 const firstHost = document.querySelector('[data-ndb-http-client-item="1"] [data-ndb-http-client-host]').getBoundingClientRect();
@@ -61,6 +64,9 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                     && identity.textContent.includes('Request')
                     && !identity.textContent.includes('Result')
                     && actions.querySelectorAll('button').length === 2
+                    && actionIcons.every((icon) => icon.getBoundingClientRect().width === 14)
+                    && urlIcon.querySelectorAll('path').length === 2
+                    && urlIcon.querySelector('rect') === null
                     && detail.querySelector('footer') === null
                     && metadata.children.length === 3
                     && metadata.querySelectorAll('svg').length === 0
@@ -69,6 +75,8 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                     && new Set(methods.map((method) => Math.round(method.getBoundingClientRect().width))).size === 1
                     && methods.every((method) => Math.round(method.getBoundingClientRect().width) === 48)
                     && methods.every((method) => getComputedStyle(method).backgroundColor !== 'rgba(0, 0, 0, 0)')
+                    && hosts.every((host, index) => Math.abs(host.getBoundingClientRect().left - methods[index].getBoundingClientRect().right - 4) <= 1)
+                    && new Set(hosts.map((host) => Math.round(host.getBoundingClientRect().left))).size === 1
                     && outcomes.every((outcome) => getComputedStyle(outcome).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && outcomes.every((outcome) => getComputedStyle(outcome).borderWidth === '0px')
                     && [...document.querySelectorAll('[data-ndb-http-client-item]')]
@@ -217,13 +225,17 @@ it('drills into outbound HTTP request details on mobile in dark mode', function 
                 const workspace = document.querySelector('[data-ndb-http-client-workspace]');
                 const [list, detail] = workspace.children;
                 const rows = [...document.querySelectorAll('[data-ndb-http-client-item]')];
+                const methods = rows.map((row) => row.querySelector('[data-ndb-http-client-method]'));
+                const hosts = rows.map((row) => row.querySelector('[data-ndb-http-client-host]'));
 
                 return dialog.scrollWidth <= dialog.clientWidth + 1
                     && workspace.scrollWidth <= workspace.clientWidth + 1
                     && getComputedStyle(workspace).display !== 'grid'
                     && getComputedStyle(list).display === 'flex'
                     && getComputedStyle(detail).display === 'none'
-                    && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px');
+                    && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px')
+                    && hosts.every((host, index) => Math.abs(host.getBoundingClientRect().left - methods[index].getBoundingClientRect().right - 4) <= 1)
+                    && new Set(hosts.map((host) => Math.round(host.getBoundingClientRect().left))).size === 1;
             })()
             JS)
         ->click('[data-ndb-http-client-item="5"]')
