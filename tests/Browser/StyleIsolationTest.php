@@ -287,5 +287,52 @@ it('keeps host styles and package styles isolated', function () {
                     && tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14);
             })()
             JS)
+        ->click('[data-ndb-section="authorization"]')
+        ->assertVisible('[data-ndb-section-panel="authorization"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-authorization]');
+                const row = document.querySelector('[data-ndb-authorization-item]');
+
+                return root.getAttribute('data-authorization') === null
+                    && row.getAttribute('data-result') === null
+                    && row.getAttribute('data-search') === null;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const row = document.querySelector('[data-ndb-authorization-item]');
+                const style = getComputedStyle(row);
+
+                return style.borderLeftWidth === '0px'
+                    && style.backgroundColor !== 'rgb(255, 0, 0)';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            document.querySelector('[data-ndb-authorization-item]').getBoundingClientRect().height !== 91
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const result = document.querySelector('[data-ndb-authorization-result-label]');
+                const detailResult = document.querySelector('[data-ndb-authorization-detail-result]');
+
+                return Number.parseFloat(getComputedStyle(result).fontSize) === 11
+                    && getComputedStyle(result).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(detailResult).fontSize) === 11
+                    && getComputedStyle(detailResult).backgroundColor !== 'rgb(255, 0, 0)';
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const detail = document.querySelector('[data-ndb-authorization-detail]');
+                const metadata = document.querySelector('[data-ndb-authorization-metadata]');
+                const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
+
+                return getComputedStyle(detail).borderLeftWidth === '0px'
+                    && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
+                    && tabs.length === 2
+                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

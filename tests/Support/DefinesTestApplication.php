@@ -4,6 +4,8 @@ namespace NewDebugBar\Tests\Support;
 
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Promise\Create;
+use Illuminate\Auth\Access\Response as AuthorizationResponse;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Cache\Events\CacheEvent;
 use Illuminate\Cache\Events\CacheFailedOver;
 use Illuminate\Cache\Events\CacheFlushed;
@@ -55,6 +57,7 @@ use NewDebugBar\Tests\Fixtures\Models\User;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotificationChannel;
+use NewDebugBar\Tests\Fixtures\Policies\ProfiledAuthorizationPolicy;
 use NewDebugBar\Tests\Fixtures\Redis\ProfiledRedisConnection;
 
 trait DefinesTestApplication
@@ -282,6 +285,60 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>'.$view.'</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-authorization-rich', function () {
+            $profile = new ProfiledModel;
+            $profile->setRawAttributes(['id' => 84, 'name' => 'Kyoto autumn planning profile'], true);
+            $studioJob = new StudioJob;
+            $studioJob->setRawAttributes(['id' => 42, 'name' => 'Kyoto autumn workspace'], true);
+            $planner = new User;
+            $planner->setRawAttributes([
+                'id' => 7,
+                'name' => 'Mara Voss with an intentionally long diagnostic actor name',
+            ], true);
+
+            Gate::policy(ProfiledModel::class, ProfiledAuthorizationPolicy::class);
+            $policyGate = Gate::forUser(new GenericUser(['id' => 'planner-8']));
+            $policyGate->allows('view', $profile);
+            $policyGate->allows('refund', $profile);
+
+            Gate::define(
+                'create-studio-job',
+                fn (mixed $user, string $class): bool => $user === null && $class === StudioJob::class,
+            );
+            Gate::allows('create-studio-job', StudioJob::class);
+
+            Gate::define(
+                'revise-an-intentionally-long-kyoto-autumn-workspace-ability',
+                fn (mixed $user, StudioJob $job, string $scope, int $revision): bool => $user === $planner
+                    && $job === $studioJob
+                    && $scope === 'lodging-and-transport'
+                    && $revision === 3,
+            );
+            Gate::forUser($planner)->allows(
+                'revise-an-intentionally-long-kyoto-autumn-workspace-ability',
+                [$studioJob, 'lodging-and-transport', 3],
+            );
+
+            Gate::define(
+                'access-private-planning-notes',
+                fn (mixed $user): AuthorizationResponse => AuthorizationResponse::deny(
+                    'Guests cannot open private planning notes.',
+                    'guest_private_notes',
+                ),
+            );
+            Gate::allows('access-private-planning-notes');
+
+            Gate::define('view-public-weather-note', fn (mixed $user): bool => true);
+            Gate::allows('view-public-weather-note');
+
+            return response('<!doctype html><html><body><h1>Rich authorization fixture</h1></body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-authorization-empty',
+            fn () => response('<!doctype html><html><body><h1>Empty authorization fixture</h1></body></html>'),
+        );
+
         $router->middleware(ProfileRequest::class)->get('/profiled-views', function () {
             $context = view('context', [
                 'label' => 'Context view',
@@ -327,6 +384,10 @@ trait DefinesTestApplication
             Cache::get('hostile-cache-missing');
             Cache::put('hostile-cache-stale', 'stale', 60);
             Cache::forget('hostile-cache-stale');
+            Gate::define('inspect-hostile-profile', fn (mixed $user, ProfiledModel $model): bool => $model instanceof ProfiledModel);
+            Gate::define('delete-hostile-profile', fn (): bool => false);
+            Gate::allows('inspect-hostile-profile', [new ProfiledModel]);
+            Gate::allows('delete-hostile-profile', [new ProfiledModel]);
             Mail::raw('Hostile style mail body', fn ($message) => $message
                 ->from('sender@example.test')
                 ->to('recipient@example.test')
@@ -405,6 +466,9 @@ trait DefinesTestApplication
                             [data-ndb-mail-facts], [data-ndb-notification-facts] { background: rgb(255, 0, 0); border-top: 20px solid rgb(255, 0, 0); display: block; padding: 50px; }
                             [data-ndb-mail-fact], [data-ndb-notification-fact] { background: rgb(255, 0, 0); }
                             [data-ndb-mail-attachment-download] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
+                            [data-ndb-authorization-item] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); height: 91px; }
+                            [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                         </style>
                     </head>

@@ -416,7 +416,12 @@ export function createNewDebugBar(
     viewSort: 'name',
     viewSortDirection: 'asc',
     visibleQueryCount: summary.query_count ?? 0,
+    authorizationDecisions: [],
     authorizationFilter: 'all',
+    authorizationSearch: '',
+    authorizationSelected: null,
+    authorizationDetailOpen: false,
+    authorizationDetailTab: 'decision',
     visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
     timelineFilter: 'key',
     timelineSearch: '',
@@ -697,6 +702,12 @@ export function createNewDebugBar(
       const deliveries = this.selectedNotification?.deliveries ?? [];
 
       return deliveries.find((delivery) => delivery.channel === this.notificationChannel) ?? deliveries[0] ?? null;
+    },
+
+    get selectedAuthorizationDecision() {
+      return (
+        this.authorizationDecisions.find((decision) => decision.execution === this.authorizationSelected) ?? null
+      );
     },
 
     get livewireComponents() {
@@ -1064,7 +1075,7 @@ export function createNewDebugBar(
         if (this.selected === 'http_client') this.applyHttpClientView();
         if (this.selected === 'notifications') this.applyNotificationView();
         if (this.selected === 'views') this.applyViewSort();
-        if (this.selected === 'authorization') this.applyAuthorizationFilters();
+        if (this.selected === 'authorization') this.applyAuthorizationView();
         if (this.selected === 'timeline') this.applyTimelineFilters();
         if (this.selected === 'events') this.applyEventFilters();
         if (this.selected === 'logs') this.applyLogFilters();
@@ -1867,7 +1878,13 @@ export function createNewDebugBar(
       this.querySort = 'execution';
       this.viewSort = 'name';
       this.viewSortDirection = 'asc';
+      this.authorizationDecisions = [];
       this.authorizationFilter = 'all';
+      this.authorizationSearch = '';
+      this.authorizationSelected = null;
+      this.authorizationDetailOpen = false;
+      this.authorizationDetailTab = 'decision';
+      this.visibleAuthorizationCount = 0;
       this.eventSource = 'application';
       this.eventSearch = '';
       if (this.inspectorOpen || selectedFromPicker || selectedFromRelation) {
@@ -3087,31 +3104,106 @@ export function createNewDebugBar(
         .forEach((group) => groups.appendChild?.(group));
     },
 
+    initializeAuthorization(decisions) {
+      this.authorizationDecisions = Array.isArray(decisions) ? decisions : [];
+      this.authorizationFilter = 'all';
+      this.authorizationSearch = '';
+      this.authorizationSelected = this.authorizationDecisions[0]?.execution ?? null;
+      this.authorizationDetailOpen = false;
+      this.resetAuthorizationDetail();
+      this.$nextTick?.(() => this.applyAuthorizationView());
+    },
+
     setAuthorizationFilter(filter) {
       if (!['all', 'allowed', 'denied'].includes(filter)) return;
 
       this.authorizationFilter = filter;
-      this.applyAuthorizationFilters();
+      this.applyAuthorizationView();
     },
 
-    applyAuthorizationFilters() {
-      const list = this.$refs?.authorizationItems ?? this.$root?.querySelector?.('[x-ref="authorizationItems"]');
+    selectAuthorizationDecision(execution) {
+      if (!this.authorizationDecisions.some((decision) => decision.execution === execution)) return;
 
-      if (!list?.children) {
+      this.authorizationSelected = execution;
+      this.authorizationDetailOpen = true;
+      this.resetAuthorizationDetail();
+      this.$nextTick?.(() => {
+        const detail = this.$refs?.authorizationDetail;
+        const mobile = globalThis.matchMedia?.('(max-width: 1023px)')?.matches ?? false;
+
+        if (mobile) detail?.focus?.();
+      });
+    },
+
+    closeAuthorizationDetail() {
+      const execution = this.authorizationSelected;
+      this.authorizationDetailOpen = false;
+      this.$nextTick?.(() => {
+        this.$root?.querySelector?.(`[data-ndb-authorization-item="${execution}"]`)?.focus?.();
+      });
+    },
+
+    setAuthorizationDetailTab(tab) {
+      if (!['decision', 'source'].includes(tab)) return;
+
+      this.authorizationDetailTab = tab;
+      this.$nextTick?.(() => this.$refs?.authorizationDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+    },
+
+    resetAuthorizationDetail() {
+      this.authorizationDetailTab = 'decision';
+      this.$nextTick?.(() => this.$refs?.authorizationDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+    },
+
+    applyAuthorizationView() {
+      const list = this.$refs?.authorizationList;
+      const search = this.authorizationSearch.toLowerCase().trim();
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      if (this.authorizationDecisions.length === 0) {
         this.visibleAuthorizationCount = 0;
+        this.authorizationSelected = null;
+        this.authorizationDetailOpen = false;
 
         return;
       }
 
-      let visible = 0;
+      if (!list?.children) {
+        this.visibleAuthorizationCount = this.authorizationDecisions.length;
+
+        return;
+      }
 
       [...list.children].forEach((item) => {
-        const matches = this.authorizationFilter === 'all' || item.dataset.result === this.authorizationFilter;
+        const matches =
+          (this.authorizationFilter === 'all' ||
+            item.dataset.ndbAuthorizationResult === this.authorizationFilter) &&
+          (search === '' || item.dataset.ndbAuthorizationSearchValue?.includes(search));
         item.hidden = !matches;
-        if (matches) visible++;
+        if (matches) {
+          item.style?.removeProperty?.('display');
+          const execution = Number(item.dataset.ndbAuthorizationExecution);
+          firstVisible ??= execution;
+          selectedVisible ||= execution === this.authorizationSelected;
+          visible++;
+        } else {
+          item.style?.setProperty?.('display', 'none', 'important');
+        }
       });
 
       this.visibleAuthorizationCount = visible;
+
+      if (!selectedVisible) {
+        this.authorizationSelected = firstVisible;
+        this.authorizationDetailOpen = firstVisible !== null && this.authorizationDetailOpen;
+        this.resetAuthorizationDetail();
+      }
+    },
+
+    applyAuthorizationFilters() {
+      this.applyAuthorizationView();
     },
 
     setTimelineFilter(filter) {

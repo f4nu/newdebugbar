@@ -1,9 +1,57 @@
 <?php
 
-it('filters authorization decisions with the keyboard', function () {
-    $page = visit('/profiled-context')
+use NewDebugBar\Tests\Support\DebugBarBrowser;
+
+it('scans filters searches and inspects authorization evidence on desktop', function () {
+    $page = visit('/profiled-authorization-rich')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->click('[data-ndb-select-section="authorization"]');
+        ->click('[data-ndb-select-section="authorization"]')
+        ->waitForText('6 decisions');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
+        ->assertAttribute('[data-ndb-authorization-filter="all"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 6)
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-authorization-workspace]');
+                const [listPane, detail] = workspace.children;
+                const list = document.querySelector('[data-ndb-authorization-list]');
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const abilities = [...document.querySelectorAll('[data-ndb-authorization-ability]')];
+                const results = [...document.querySelectorAll('[data-ndb-authorization-result-label]')];
+
+                return getComputedStyle(workspace).display === 'grid'
+                    && getComputedStyle(listPane).display === 'flex'
+                    && getComputedStyle(detail).display === 'flex'
+                    && getComputedStyle(list).overflowY === 'auto'
+                    && getComputedStyle(detail).overflowY === 'auto'
+                    && content.scrollHeight <= content.clientHeight + 1
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && abilities.every((ability) => Number.parseFloat(getComputedStyle(ability).fontSize) === 12)
+                    && results.every((result) => Number.parseFloat(getComputedStyle(result).fontSize) === 11)
+                    && document.querySelector('[data-ndb-authorization-item][aria-pressed="true"]') !== null;
+            })()
+            JS);
+
+    foreach ([[1440, 700], [1440, 1000]] as [$width, $height]) {
+        $page
+            ->resize($width, $height)
+            ->assertScript(<<<'JS'
+                (() => {
+                    const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                    const workspace = document.querySelector('[data-ndb-authorization-workspace]');
+                    const content = document.querySelector('[data-ndb-inspector-content]');
+
+                    return workspace.getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom + 1
+                        && workspace.getBoundingClientRect().height > 300
+                        && workspace.scrollWidth <= workspace.clientWidth + 1
+                        && content.scrollHeight <= content.clientHeight + 1;
+                })()
+                JS)
+            ->assertNoJavaScriptErrors();
+    }
 
     $page
         ->assertScript(<<<'JS'
@@ -16,46 +64,174 @@ it('filters authorization decisions with the keyboard', function () {
             JS)
         ->keys('[data-ndb-authorization-filter="denied"]', 'Enter')
         ->assertAttribute('[data-ndb-authorization-filter="denied"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 2)
+        ->assertScript(<<<'JS'
+            [...document.querySelectorAll('[data-ndb-authorization-item]:not([hidden])')]
+                .every((item) => item.dataset.ndbAuthorizationResult === 'denied')
+            JS)
+        ->assertScript("document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim() === 'refund'")
+        ->click('[data-ndb-authorization-filter="all"]')
+        ->type('[data-ndb-authorization-search]', 'private planning notes')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
-        ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.result === "denied"')
+        ->click('[data-ndb-authorization-item]:not([hidden])')
+        ->assertScript("document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim() === 'access-private-planning-notes'")
+        ->assertScript("document.querySelector('[data-ndb-authorization-detail-result]').textContent.trim() === 'Denied'")
+        ->assertSee('Guests cannot open private planning notes.')
+        ->assertSee('No target or additional arguments were supplied.')
         ->assertScript(<<<'JS'
             (() => {
-                const button = document.querySelector('[data-ndb-authorization-filter="allowed"]');
-                button.focus();
+                const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
 
-                return document.activeElement === button;
+                window.newdebugbarAuthorizationClipboard = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarAuthorizationClipboard.push(value),
+                    },
+                });
+
+                return state?.selectedAuthorizationDecision?.ability === 'access-private-planning-notes';
             })()
             JS)
-        ->keys('[data-ndb-authorization-filter="allowed"]', 'Enter')
-        ->assertAttribute('[data-ndb-authorization-filter="allowed"]', 'aria-pressed', 'true')
-        ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
-        ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.result === "allowed"')
+        ->click('[data-ndb-authorization-copy-handler]')
+        ->wait(0.05)
+        ->click('[data-ndb-authorization-detail-tab="source"]')
+        ->assertVisible('[data-ndb-authorization-detail-panel="source"]')
+        ->click('[data-ndb-authorization-copy-evidence]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            (() => {
+                const [handler, evidence] = window.newdebugbarAuthorizationClipboard;
+                const parsed = JSON.parse(evidence);
+
+                return window.newdebugbarAuthorizationClipboard.length === 2
+                    && handler === 'Gate callback'
+                    && parsed.ability === 'access-private-planning-notes'
+                    && parsed.result === 'denied'
+                    && parsed.result_reason.code === 'guest_private_notes';
+            })()
+            JS)
+        ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
+        ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->assertVisible('[data-ndb-authorization-detail]')
+        ->assertScript("document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim() === 'access-private-planning-notes'")
+        ->refresh()
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="authorization"]')
+        ->waitForText('6 decisions')
+        ->assertAttribute('[data-ndb-authorization-filter="all"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-authorization-search]', '')
         ->assertNoJavaScriptErrors();
 });
 
-it('uses the full width for authorization traces at every breakpoint', function () {
-    $page = visit('/profiled-context')
+it('drills into authorization evidence on 390 pixel mobile in dark mode', function () {
+    $preferences = json_encode([
+        'theme' => 'dark',
+        'favorites' => [],
+    ], JSON_THROW_ON_ERROR);
+
+    $page = visit('/profiled-authorization-rich')
+        ->resize(390, 844)
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
+        ->refresh()
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="authorization"]')
+        ->waitForText('6 decisions');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
+        ->assertScript(<<<'JS'
+            (() => {
+                const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const workspace = document.querySelector('[data-ndb-authorization-workspace]');
+                const [list, detail] = workspace.children;
+                const rows = [...document.querySelectorAll('[data-ndb-authorization-item]')];
+
+                return dialog.scrollWidth <= dialog.clientWidth + 1
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && getComputedStyle(workspace).display !== 'grid'
+                    && getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && rows.every((row) => row.scrollWidth <= row.clientWidth + 1);
+            })()
+            JS)
+        ->click('[data-ndb-authorization-item]:nth-child(4)')
+        ->assertVisible('[data-ndb-authorization-detail]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const detail = document.querySelector('[data-ndb-authorization-detail]');
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const workspace = document.querySelector('[data-ndb-authorization-workspace]');
+                const list = workspace.firstElementChild;
+                const back = document.querySelector('[data-ndb-authorization-detail-back]');
+                const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
+
+                return getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && document.activeElement === detail
+                    && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && getComputedStyle(detail).overflowY !== 'auto'
+                    && getComputedStyle(content).overflowY === 'auto'
+                    && back.getClientRects().length > 0
+                    && back.textContent.trim() === 'Decisions'
+                    && tabs.length === 2
+                    && tabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
+                    && tabs.every((tab) => tab.textContent.trim().length > 0)
+                    && content.scrollWidth <= content.clientWidth + 1;
+            })()
+            JS)
+        ->click('[data-ndb-authorization-detail-tab="source"]')
+        ->assertVisible('[data-ndb-authorization-detail-panel="source"]')
+        ->click('[data-ndb-authorization-detail-back]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-authorization-workspace]');
+                const [list, detail] = workspace.children;
+                const selected = document.querySelector('[data-ndb-authorization-item][aria-pressed="true"]');
+
+                return getComputedStyle(list).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && selected !== null
+                    && document.activeElement === selected;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows an empty authorization state without list controls', function () {
+    $page = visit('/profiled-authorization-empty')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->click('[data-ndb-select-section="authorization"]');
+        ->assertScript(<<<'JS'
+            document.getElementById('newdebugbar')._x_dataStack?.[0]?.sectionKeys?.includes('authorization') === true
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const state = document.getElementById('newdebugbar')._x_dataStack[0];
+                state.navigateToSection('authorization');
 
-    foreach ([320, 390, 639, 640, 1024] as $width) {
-        $page
-            ->resize($width, 844)
-            ->assertScript(<<<'JS'
-                (() => {
-                    const chain = document.querySelector('[data-ndb-authorization-chain]');
-                    const item = chain.closest('[data-ndb-authorization-item]');
-                    const connectors = [...chain.querySelectorAll('[data-ndb-authorization-connector]')];
-                    const chainRect = chain.getBoundingClientRect();
-                    const itemRect = item.getBoundingClientRect();
+                return state.selected === 'authorization';
+            })()
+            JS)
+        ->waitForText('No authorization decisions were captured.');
 
-                    return getComputedStyle(chain).display === 'grid'
-                        && Math.abs(chainRect.left - itemRect.left) < 1
-                        && Math.abs(chainRect.right - itemRect.right) < 1
-                        && chain.scrollWidth <= chain.clientWidth
-                        && connectors.every(connector => connector.getBoundingClientRect().width >= 24);
-                })()
-                JS)
-            ->assertNoJavaScriptErrors();
-    }
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
+        ->assertVisible('[data-ndb-authorization]')
+        ->assertMissing('[data-ndb-authorization-workspace]')
+        ->assertMissing('[data-ndb-authorization-filter]')
+        ->assertNoJavaScriptErrors();
 });

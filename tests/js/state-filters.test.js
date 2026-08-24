@@ -802,7 +802,7 @@ test('query controls filter search and sort captured evidence', () => {
   assert.equal(state.querySort, 'duration');
 });
 
-test('authorization controls filter decisions and overview navigation opens denied results', () => {
+test('authorization controls filter search selection detail and overview navigation', () => {
   const browser = runtime();
   const state = createNewDebugBar({
     sections: [
@@ -811,19 +811,72 @@ test('authorization controls filter decisions and overview navigation opens deni
     ],
   }, browser);
   let headingFocused = 0;
-  const allowed = { dataset: { result: 'allowed' }, hidden: false };
-  const denied = { dataset: { result: 'denied' }, hidden: false };
-  state.$root = { querySelectorAll: () => [] };
+  let selectedFocused = 0;
+  let detailScrolled = 0;
+  const style = () => ({ removeProperty() {}, setProperty() {} });
+  const allowed = {
+    dataset: {
+      ndbAuthorizationExecution: '1',
+      ndbAuthorizationResult: 'allowed',
+      ndbAuthorizationSearchValue: 'inspect-profile mara trip',
+    },
+    hidden: false,
+    style: style(),
+    focus: () => selectedFocused++,
+  };
+  const denied = {
+    dataset: {
+      ndbAuthorizationExecution: '2',
+      ndbAuthorizationResult: 'denied',
+      ndbAuthorizationSearchValue: 'delete-profile guest model',
+    },
+    hidden: false,
+    style: style(),
+    focus: () => selectedFocused++,
+  };
+  state.$root = {
+    querySelectorAll: () => [],
+    querySelector: (selector) => (selector.includes('="2"') ? denied : allowed),
+  };
   state.$refs = {
-    authorizationItems: { children: [allowed, denied] },
+    authorizationList: { children: [allowed, denied] },
+    authorizationDetail: { scrollTo: () => detailScrolled++ },
     sectionHeading: { focus: () => headingFocused++ },
   };
   state.$nextTick = (callback) => callback();
+
+  state.initializeAuthorization([
+    { execution: 1, result: 'allowed', ability: 'inspect-profile' },
+    { execution: 2, result: 'denied', ability: 'delete-profile' },
+  ]);
+  assert.equal(state.authorizationSelected, 1);
+  assert.equal(state.selectedAuthorizationDecision.ability, 'inspect-profile');
 
   state.setAuthorizationFilter('allowed');
   assert.equal(allowed.hidden, false);
   assert.equal(denied.hidden, true);
   assert.equal(state.visibleAuthorizationCount, 1);
+
+  state.authorizationSearch = 'guest';
+  state.applyAuthorizationView();
+  assert.equal(allowed.hidden, true);
+  assert.equal(denied.hidden, true);
+  assert.equal(state.visibleAuthorizationCount, 0);
+  assert.equal(state.authorizationSelected, null);
+
+  state.authorizationSearch = '';
+  state.setAuthorizationFilter('all');
+  state.selectAuthorizationDecision(2);
+  assert.equal(state.authorizationSelected, 2);
+  assert.equal(state.authorizationDetailOpen, true);
+  assert.equal(state.authorizationDetailTab, 'decision');
+
+  state.setAuthorizationDetailTab('source');
+  assert.equal(state.authorizationDetailTab, 'source');
+  assert.equal(detailScrolled > 0, true);
+  state.closeAuthorizationDetail();
+  assert.equal(state.authorizationDetailOpen, false);
+  assert.equal(selectedFocused, 1);
 
   state.navigateToSection('authorization', 'denied');
   assert.equal(state.selected, 'authorization');

@@ -1,29 +1,11 @@
 <?php
 
-it('renders authorization decisions from actor through target with useful context', function () {
+function authorizationSectionDocument(array $items): array
+{
     $section = [
-        'payload' => [
-            'items' => [
-                [
-                    'result' => 'allowed',
-                    'ability' => 'view',
-                    'handler' => 'App\\Policies\\StudioJobPolicy@view',
-                    'user_type' => 'App\\Models\\User',
-                    'argument_types' => ['App\\Models\\StudioJob', 'string'],
-                    'callsite' => ['copy' => 'app/Http/Controllers/StudioJobController.php:99'],
-                ],
-                [
-                    'result' => 'denied',
-                    'ability' => 'access-studio',
-                    'handler' => 'callback',
-                    'user_type' => null,
-                    'argument_types' => [],
-                    'callsite' => ['file' => 'app/Providers/AuthServiceProvider.php', 'line' => 31],
-                ],
-            ],
-        ],
+        'summary' => ['count' => count($items)],
+        'payload' => ['items' => $items],
     ];
-
     $html = view('newdebugbar::livewire.sections.authorization', compact('section'))->render();
     $document = new DOMDocument;
     $previousLibxmlState = libxml_use_internal_errors(true);
@@ -32,7 +14,60 @@ it('renders authorization decisions from actor through target with useful contex
     libxml_clear_errors();
     libxml_use_internal_errors($previousLibxmlState);
 
-    $xpath = new DOMXPath($document);
+    return [$html, new DOMXPath($document)];
+}
+
+it('renders decisions for scanning and keeps structured evidence in the inspector', function () {
+    [$html, $xpath] = authorizationSectionDocument([
+        [
+            'execution' => 7,
+            'result' => 'allowed',
+            'ability' => 'revise-itinerary',
+            'result_message' => 'The planner owns this trip.',
+            'result_code' => 'trip_owner',
+            'handler' => 'App\\Policies\\TripPolicy@reviseItinerary',
+            'handler_kind' => 'policy',
+            'handler_name' => 'App\\Policies\\TripPolicy@reviseItinerary',
+            'handler_source' => ['file' => 'app/Policies/TripPolicy.php', 'line' => 27],
+            'actor' => [
+                'type' => 'App\\Models\\User',
+                'identifier_name' => 'id',
+                'identifier' => 42,
+                'name' => 'Mara Voss',
+            ],
+            'arguments' => [
+                [
+                    'position' => 1,
+                    'kind' => 'model',
+                    'type' => 'App\\Models\\Trip',
+                    'identifier' => 9,
+                    'route_key_name' => 'slug',
+                    'route_key' => 'kyoto-autumn',
+                    'name' => 'Kyoto in autumn',
+                ],
+                ['position' => 2, 'kind' => 'value', 'type' => 'string', 'value' => 'lodging'],
+                ['position' => 3, 'kind' => 'value', 'type' => 'int', 'value' => 3],
+            ],
+            'callsite' => ['file' => 'app/Actions/Trips/RefreshTripWorkspace.php', 'line' => 41],
+            'stack' => [[
+                'file' => 'app/Actions/Trips/RefreshTripWorkspace.php',
+                'line' => 41,
+                'function' => 'Gate::allows',
+            ]],
+        ],
+        [
+            'execution' => 8,
+            'result' => 'denied',
+            'ability' => 'access-private-planning-notes',
+            'result_message' => 'Guests cannot open private notes.',
+            'handler' => 'callback',
+            'handler_kind' => 'callback',
+            'handler_name' => 'Gate callback',
+            'actor' => null,
+            'arguments' => [],
+            'callsite' => ['file' => 'app/Providers/AuthServiceProvider.php', 'line' => 31],
+        ],
+    ]);
     $items = $xpath->query('//*[@data-ndb-authorization-item]');
     $first = $items->item(0);
     $second = $items->item(1);
@@ -40,26 +75,44 @@ it('renders authorization decisions from actor through target with useful contex
         "string(.//*[@{$attribute}])",
         $context,
     ));
+    $filters = $xpath->query('//*[@data-ndb-authorization-filter]');
+    $payload = trim((string) $xpath->evaluate('string(//*[@data-ndb-authorization-payload])'));
+    $decoded = json_decode(base64_decode($payload, true), true, flags: JSON_THROW_ON_ERROR);
 
     expect($items->length)->toBe(2)
+        ->and($filters->length)->toBe(3)
+        ->and($filters->item(0)?->attributes?->getNamedItem('data-ndb-authorization-filter')?->nodeValue)->toBe('all')
+        ->and($filters->item(1)?->attributes?->getNamedItem('data-ndb-authorization-filter')?->nodeValue)->toBe('denied')
         ->and($first)->toBeInstanceOf(DOMElement::class)
-        ->and($text($first, 'data-ndb-authorization-source'))->toBe('User')
-        ->and($text($first, 'data-ndb-authorization-result'))->toBe('allowed')
-        ->and($text($first, 'data-ndb-authorization-ability'))->toBe('view')
-        ->and($text($first, 'data-ndb-authorization-target'))->toBe('StudioJob, string')
-        ->and($text($first, 'data-ndb-authorization-callsite'))->toBe('app/Http/Controllers/StudioJobController.php:99')
-        ->and($text($first, 'data-ndb-authorization-handler'))->toBe('via StudioJobPolicy@view')
-        ->and($xpath->evaluate('string(.//*[@data-ndb-authorization-source]/@title)', $first))->toBe('App\\Models\\User')
-        ->and($xpath->evaluate('string(.//*[@data-ndb-authorization-target]/@title)', $first))->toBe('App\\Models\\StudioJob, string')
-        ->and($xpath->evaluate('string(.//*[@data-ndb-authorization-handler]/@title)', $first))->toBe('App\\Policies\\StudioJobPolicy@view')
-        ->and($xpath->query('.//*[@data-ndb-authorization-connector]', $first)->length)->toBe(3)
+        ->and($first?->getAttribute('data-ndb-authorization-result'))->toBe('allowed')
+        ->and($first?->hasAttribute('data-result'))->toBeFalse()
+        ->and($text($first, 'data-ndb-authorization-ability'))->toBe('revise-itinerary')
+        ->and($text($first, 'data-ndb-authorization-result-label'))->toBe('Allowed')
+        ->and($text($first, 'data-ndb-authorization-actor'))->toContain('Mara Voss')
+        ->and($text($first, 'data-ndb-authorization-target'))->toContain('Kyoto in autumn and 2 more')
         ->and($second)->toBeInstanceOf(DOMElement::class)
-        ->and($text($second, 'data-ndb-authorization-source'))->toBe('Guest')
-        ->and($text($second, 'data-ndb-authorization-result'))->toBe('denied')
-        ->and($text($second, 'data-ndb-authorization-ability'))->toBe('access-studio')
-        ->and($text($second, 'data-ndb-authorization-callsite'))->toBe('app/Providers/AuthServiceProvider.php:31')
-        ->and($xpath->query('.//*[@data-ndb-authorization-connector]', $second)->length)->toBe(2)
-        ->and($xpath->query('.//*[@data-ndb-authorization-target]', $second)->length)->toBe(0)
-        ->and($xpath->query('.//*[@data-ndb-authorization-handler]', $second)->length)->toBe(0)
+        ->and($second?->getAttribute('data-ndb-authorization-result'))->toBe('denied')
+        ->and($text($second, 'data-ndb-authorization-actor'))->toContain('Guest')
+        ->and($text($second, 'data-ndb-authorization-target'))->toContain('No target or arguments')
+        ->and($xpath->query('//*[@data-ndb-authorization-detail]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-ndb-authorization-detail-tab="decision"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-ndb-authorization-detail-tab="source"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-ndb-authorization-connector]')->length)->toBe(0)
+        ->and($decoded[0]['actor_label'])->toBe('Mara Voss')
+        ->and($decoded[0]['argument_summary'])->toBe('Kyoto in autumn and 2 more')
+        ->and($decoded[0]['handler_short_name'])->toBe('TripPolicy@reviseItinerary')
+        ->and($decoded[0]['result_message'])->toBe('The planner owns this trip.')
+        ->and($decoded[1]['actor_label'])->toBe('Guest')
+        ->and($decoded[1]['arguments'])->toBe([])
+        ->and($html)->toContain('Check next')
+        ->and($html)->toContain('Laravel reports the final result.')
         ->and($html)->not->toContain('→');
+});
+
+it('renders a clear empty authorization state', function () {
+    [$html, $xpath] = authorizationSectionDocument([]);
+
+    expect($xpath->query('//*[@data-ndb-authorization-workspace]')->length)->toBe(0)
+        ->and($xpath->query('//*[@data-ndb-authorization-item]')->length)->toBe(0)
+        ->and($html)->toContain('No authorization decisions were captured.');
 });

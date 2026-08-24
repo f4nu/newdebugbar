@@ -93,11 +93,11 @@ it('presents Laravel decisions messages and source context without editor links'
         ->click('[data-ndb-authorization-filter="denied"]')
         ->assertAttribute('[data-ndb-authorization-filter="denied"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
-        ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.result === "denied"')
+        ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.ndbAuthorizationResult === "denied"')
         ->assertSee('delete-profile')
         ->click('[data-ndb-authorization-filter="allowed"]')
         ->assertAttribute('[data-ndb-authorization-filter="allowed"]', 'aria-pressed', 'true')
-        ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.result === "allowed"')
+        ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.ndbAuthorizationResult === "allowed"')
         ->assertSee('inspect-profile');
 
     $page
