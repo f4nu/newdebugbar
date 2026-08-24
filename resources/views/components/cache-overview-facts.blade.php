@@ -3,9 +3,7 @@
     class="ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800 ndb:sm:grid-cols-4"
 >
     <div class="ndb:min-w-0">
-        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-            Result
-        </dt>
+        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Result</dt>
         <dd
             :class="selectedCacheOperation.failed
                 ? 'ndb:text-red-700 ndb:dark:text-red-300'
@@ -17,18 +15,14 @@
         ></dd>
     </div>
     <div class="ndb:min-w-0">
-        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-            Runtime
-        </dt>
+        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Runtime</dt>
         <dd
             class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
             x-text="selectedCacheOperation.duration_label"
         ></dd>
     </div>
     <div class="ndb:min-w-0">
-        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-            Store
-        </dt>
+        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Store</dt>
         <dd
             :title="selectedCacheOperation.store_label"
             class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
@@ -36,9 +30,7 @@
         ></dd>
     </div>
     <div x-show.important="selectedCacheOperation.driver_label" class="ndb:min-w-0">
-        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-            Driver
-        </dt>
+        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Driver</dt>
         <dd
             :title="selectedCacheOperation.driver_label"
             class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
@@ -49,9 +41,7 @@
         x-show.important="selectedCacheOperation.source_label !== 'Source unavailable'"
         class="ndb:col-span-2 ndb:min-w-0 ndb:sm:col-span-4"
     >
-        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-            Source
-        </dt>
+        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
         <dd class="ndb:mt-0.5 ndb:min-w-0">
             <button
                 type="button"

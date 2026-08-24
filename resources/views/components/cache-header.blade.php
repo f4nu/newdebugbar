@@ -1,7 +1,4 @@
-<header
-    data-ndb-cache-header
-    class="ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800"
->
+<header data-ndb-cache-header class="ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800">
     <h3
         data-ndb-cache-detail-operation
         class="ndb:text-base ndb:font-bold ndb:leading-6"

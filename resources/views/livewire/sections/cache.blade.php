@@ -364,10 +364,7 @@
                                     </div>
                                 </dl>
 
-                                <div
-                                    data-ndb-cache-guidance
-                                    class="ndb:mt-6 ndb:space-y-5"
-                                >
+                                <div data-ndb-cache-guidance class="ndb:mt-6 ndb:space-y-5">
                                     <section>
                                         <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                             What happened
@@ -428,7 +425,8 @@
 
                             <div data-ndb-cache-detail-panel="raw" x-show.important="cacheDetailTab === 'raw'">
                                 <p class="ndb:mb-2 ndb:max-w-xl ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    Captured collector fields only. Values are bounded and sensitive fields are redacted.
+                                    Captured collector fields only. Values are bounded and sensitive fields are
+                                    redacted.
                                 </p>
                                 <pre class="ndb-scrollbar ndb:max-w-full ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatCachePayload(selectedCacheOperation.raw)"></code></pre>
                             </div>
