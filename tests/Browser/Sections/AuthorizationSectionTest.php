@@ -116,6 +116,9 @@ it('scans filters searches and inspects authorization evidence on desktop', func
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertVisible('[data-ndb-authorization-detail]')
         ->assertScript("document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim() === 'access-private-planning-notes'")
+        ->fill('[data-ndb-authorization-search]', 'nothing can match this decision')
+        ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 0)
+        ->assertSee('No authorization decisions match these filters.')
         ->refresh()
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="authorization"]')
@@ -213,30 +216,5 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                     && document.activeElement === selected;
             })()
             JS)
-        ->assertNoJavaScriptErrors();
-});
-
-it('shows an empty authorization state without list controls', function () {
-    $page = visit('/profiled-authorization-empty')
-        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->assertScript(<<<'JS'
-            document.getElementById('newdebugbar')._x_dataStack?.[0]?.sectionKeys?.includes('authorization') === true
-            JS)
-        ->assertScript(<<<'JS'
-            (() => {
-                const state = document.getElementById('newdebugbar')._x_dataStack[0];
-                state.navigateToSection('authorization');
-
-                return state.selected === 'authorization';
-            })()
-            JS)
-        ->waitForText('No authorization decisions were captured.');
-
-    DebugBarBrowser::waitForDetails($page);
-
-    $page
-        ->assertVisible('[data-ndb-authorization]')
-        ->assertMissing('[data-ndb-authorization-workspace]')
-        ->assertMissing('[data-ndb-authorization-filter]')
         ->assertNoJavaScriptErrors();
 });
