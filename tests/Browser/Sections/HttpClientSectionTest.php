@@ -26,8 +26,13 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 const header = document.querySelector('[data-ndb-http-client-header]');
                 const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
                 const facts = document.querySelector('[data-ndb-http-client-facts]');
+                const search = document.querySelector('[data-ndb-http-client-search]');
+                const sort = document.querySelector('[data-ndb-http-client-sort]');
+                const filters = document.querySelector('[data-ndb-filter-tabs][aria-label="Filter outbound HTTP requests"]');
                 const urlAction = header.querySelector('[data-ndb-http-client-copy-url]');
                 const urlIcon = urlAction.querySelector('svg');
+                const headerMethod = header.querySelector('[data-ndb-http-client-detail-method]');
+                const headerPath = header.querySelector('[data-ndb-http-client-detail-path]');
                 const successStatus = document.querySelector('[data-ndb-http-client-item="2"] [data-ndb-http-client-list-status]');
                 const failedStatus = document.querySelector('[data-ndb-http-client-item="6"] [data-ndb-http-client-list-status]');
                 const slowDuration = document.querySelector('[data-ndb-http-client-item="1"] [data-ndb-http-client-list-duration] > span');
@@ -35,6 +40,16 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 const aligned = (elements, edge) => new Set(
                     elements.map((element) => Math.round(element.getBoundingClientRect()[edge])),
                 ).size === 1;
+                const centerY = (element) => {
+                    const bounds = element.getBoundingClientRect();
+
+                    return bounds.top + bounds.height / 2;
+                };
+                const verticallyAligned = (elements) => {
+                    const centers = elements.map(centerY);
+
+                    return Math.max(...centers) - Math.min(...centers) <= 1;
+                };
 
                 return getComputedStyle(workspace).display === 'grid'
                     && workspace.getBoundingClientRect().height > 500
@@ -46,6 +61,15 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && aligned(hosts, 'left')
                     && aligned(statuses, 'left')
                     && aligned(durations, 'left')
+                    && rows.every((row, index) => verticallyAligned([
+                        methods[index],
+                        hosts[index].parentElement,
+                        statuses[index],
+                        durations[index],
+                    ]))
+                    && Math.abs(search.getBoundingClientRect().top - sort.getBoundingClientRect().top) <= 1
+                    && search.getBoundingClientRect().right < sort.getBoundingClientRect().left
+                    && filters.getBoundingClientRect().top > search.getBoundingClientRect().bottom
                     && hosts.every((host, index) => {
                         const gap = host.getBoundingClientRect().left - methods[index].getBoundingClientRect().right;
 
@@ -57,6 +81,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && !header.textContent.includes('ms')
                     && facts && !header.contains(facts)
                     && header.querySelectorAll('button').length === 1
+                    && verticallyAligned([headerMethod, headerPath, urlAction])
                     && urlAction.textContent.trim() === 'Copy URL'
                     && urlIcon.querySelectorAll('path').length === 2
                     && urlIcon.querySelector('rect') === null

@@ -66,40 +66,26 @@
                         </span>
                     </p>
 
-                    @if (count($httpItems) >= 5)
-                        <label class="ndb:relative ndb:block ndb:min-w-0">
-                            <span class="ndb:sr-only">Search outbound HTTP requests</span>
-                            <input
-                                data-ndb-http-client-search
-                                x-model="httpClientSearch"
-                                @input.debounce.100ms="applyHttpClientView()"
-                                type="search"
-                                placeholder="Search requests"
-                                class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                            />
-                            <x-newdebugbar::icon
-                                name="search"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                            />
-                        </label>
-                    @endif
-
                     <div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_8.75rem] ndb:gap-2">
-                        <x-newdebugbar::filter-tabs label="Filter outbound HTTP requests" class="ndb:w-full">
-                            @foreach ($httpFilters as $filter => [$label, $count])
-                                <x-newdebugbar::filter-tab
-                                    data-ndb-http-client-filter="{{ $filter }}"
-                                    @click="setHttpClientFilter({{ \Illuminate\Support\Js::from($filter) }})"
-                                    ::aria-pressed="httpClientFilter === {{ \Illuminate\Support\Js::from($filter) }}"
-                                    class="ndb:h-auto ndb:min-w-0 ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
-                                >
-                                    <span>{{ $label }}</span>
-                                    <span class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70">{{ $count }}</span>
-                                </x-newdebugbar::filter-tab>
-                            @endforeach
-                        </x-newdebugbar::filter-tabs>
+                        @if (count($httpItems) >= 5)
+                            <label class="ndb:relative ndb:block ndb:min-w-0">
+                                <span class="ndb:sr-only">Search outbound HTTP requests</span>
+                                <input
+                                    data-ndb-http-client-search
+                                    x-model="httpClientSearch"
+                                    @input.debounce.100ms="applyHttpClientView()"
+                                    type="search"
+                                    placeholder="Search requests"
+                                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                />
+                                <x-newdebugbar::icon
+                                    name="search"
+                                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                                />
+                            </label>
+                        @endif
 
-                        <label class="ndb:relative ndb:block">
+                        <label @class(['ndb:relative ndb:block', 'ndb:col-span-2' => count($httpItems) < 5])>
                             <span class="ndb:sr-only">Sort outbound HTTP requests</span>
                             <select
                                 data-ndb-http-client-sort
@@ -116,6 +102,20 @@
                             />
                         </label>
                     </div>
+
+                    <x-newdebugbar::filter-tabs label="Filter outbound HTTP requests" class="ndb:w-full">
+                        @foreach ($httpFilters as $filter => [$label, $count])
+                            <x-newdebugbar::filter-tab
+                                data-ndb-http-client-filter="{{ $filter }}"
+                                @click="setHttpClientFilter({{ \Illuminate\Support\Js::from($filter) }})"
+                                ::aria-pressed="httpClientFilter === {{ \Illuminate\Support\Js::from($filter) }}"
+                                class="ndb:h-auto ndb:min-w-0 ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
+                            >
+                                <span>{{ $label }}</span>
+                                <span class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70">{{ $count }}</span>
+                            </x-newdebugbar::filter-tab>
+                        @endforeach
+                    </x-newdebugbar::filter-tabs>
                 </div>
 
                 <div
@@ -158,22 +158,20 @@
                                     'ndb:text-zinc-500 ndb:dark:text-zinc-400' => ! ($item['failed'] ?? false),
                                 ])
                             >{{ $item['list_status_label'] }}</span>
-                            <span data-ndb-http-client-list-duration class="ndb:grid ndb:min-w-0 ndb:justify-items-end">
+                            <span
+                                data-ndb-http-client-list-duration
+                                class="ndb:flex ndb:min-w-0 ndb:items-center ndb:justify-end"
+                            >
                                 <span
                                     @class([
-                                        'ndb:text-[11px] ndb:font-semibold ndb:tabular-nums',
+                                        'ndb:whitespace-nowrap ndb:text-[11px] ndb:font-semibold ndb:tabular-nums',
                                         'ndb:text-amber-600 ndb:dark:text-amber-300' => $item['slow'] ?? false,
                                         'ndb:text-zinc-500 ndb:dark:text-zinc-400' => ! ($item['slow'] ?? false),
                                     ])
                                 >{{ $item['duration_label'] }}</span>
-                                <span
-                                    aria-hidden="{{ ($item['slow'] ?? false) ? 'false' : 'true' }}"
-                                    @class([
-                                        'ndb:text-[11px] ndb:font-bold ndb:leading-3',
-                                        'ndb:text-amber-600 ndb:dark:text-amber-300' => $item['slow'] ?? false,
-                                        'ndb:invisible' => ! ($item['slow'] ?? false),
-                                    ])
-                                >Slow</span>
+                                @if ($item['slow'] ?? false)
+                                    <span class="ndb:sr-only">Slow request</span>
+                                @endif
                             </span>
                         </button>
                     @endforeach
