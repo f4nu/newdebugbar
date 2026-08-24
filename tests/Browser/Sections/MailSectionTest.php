@@ -46,6 +46,10 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const listBox = list.getBoundingClientRect();
                 const detailBox = detail.getBoundingClientRect();
                 const selected = document.querySelector('[data-ndb-mail-item][aria-pressed="true"]');
+                const listTitle = selected.querySelector('[data-ndb-mail-list-title]');
+                const listStatus = selected.querySelector('[data-ndb-mail-list-status]');
+                const listRecipient = selected.querySelector('[data-ndb-mail-list-recipient]');
+                const listActivity = selected.querySelector('[data-ndb-mail-list-activity]');
                 const tabs = [...document.querySelectorAll('[data-ndb-mail] [data-ndb-filter-tabs]')];
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
                 const viewportButtons = [...document.querySelectorAll('[data-ndb-mail-preview-viewport]')];
@@ -82,6 +86,12 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && Math.abs(listBox.top - detailBox.top) <= 1
                     && selected.dataset.ndbMailItem === '1'
                     && getComputedStyle(selected).borderLeftWidth === '0px'
+                    && selected.children.length === 4
+                    && selected.getBoundingClientRect().height <= 68
+                    && Math.abs(listTitle.getBoundingClientRect().left - listRecipient.getBoundingClientRect().left) <= 1
+                    && Math.abs(listStatus.getBoundingClientRect().right - listActivity.getBoundingClientRect().right) <= 1
+                    && getComputedStyle(listStatus).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(listStatus).borderWidth === '0px'
                     && tabs.length === 1
                     && viewportButtons.length === 2
                     && viewportButtons.every((button) => button.querySelector('svg'))
@@ -123,7 +133,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && Math.abs(frame.getBoundingClientRect().height - previewCanvas.getBoundingClientRect().height) <= 1
                     && frame.getBoundingClientRect().width > 500
                     && frame.clientHeight > 320
-                    && !document.querySelector('[data-ndb-mail]').textContent.includes('•');
+                    && !['•', '·'].some((separator) => document.querySelector('[data-ndb-mail]').textContent.includes(separator));
             })()
             JS)
         ->click('[data-ndb-mail-actions-trigger]')
@@ -267,7 +277,8 @@ it('drills into mail details with compact icon tabs on mobile', function () {
                     && getComputedStyle(detail).display === 'none'
                     && listBox.width > 0
                     && detailBox.width === 0
-                    && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px');
+                    && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px')
+                    && rows.every((row) => row.getBoundingClientRect().height <= 68);
             })()
             JS)
         ->click('[data-ndb-mail-item="2"]')

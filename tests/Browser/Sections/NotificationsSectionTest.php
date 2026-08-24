@@ -65,6 +65,10 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const listBox = list.getBoundingClientRect();
                 const detailBox = detail.getBoundingClientRect();
                 const selected = document.querySelector('[data-ndb-notification-item][aria-pressed="true"]');
+                const listTitle = selected.querySelector('[data-ndb-notification-list-title]');
+                const listStatus = selected.querySelector('[data-ndb-notification-list-status]');
+                const listRecipient = selected.querySelector('[data-ndb-notification-list-recipient]');
+                const listActivity = selected.querySelector('[data-ndb-notification-list-activity]');
                 const summary = document.querySelector('[data-ndb-notification-summary]');
                 const summaryCount = document.querySelector('[data-ndb-notification-summary-count]');
                 const summaryRuntime = document.querySelector('[data-ndb-notification-summary-runtime]');
@@ -85,6 +89,12 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && selected.dataset.ndbNotificationItem === '1'
                     && selected.getAttribute('aria-pressed') === 'true'
                     && getComputedStyle(selected).borderLeftWidth === '0px'
+                    && selected.children.length === 4
+                    && selected.getBoundingClientRect().height <= 68
+                    && Math.abs(listTitle.getBoundingClientRect().left - listRecipient.getBoundingClientRect().left) <= 1
+                    && Math.abs(listStatus.getBoundingClientRect().right - listActivity.getBoundingClientRect().right) <= 1
+                    && getComputedStyle(listStatus).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && selected.querySelector('[data-ndb-notification-outcomes]') === null
                     && summary.parentElement.contains(filter)
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
@@ -102,7 +112,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && detail.tabIndex === 0
                     && !text.includes('Attempts')
                     && !text.includes('Delivered successfully')
-                    && !text.includes('•');
+                    && !['•', '·'].some((separator) => text.includes(separator));
             })()
             JS)
         ->click('[data-ndb-notification-detail-tab="payload"]')
@@ -222,7 +232,8 @@ it('drills into notification details with icon tabs on mobile', function () {
                     && getComputedStyle(workspace).display !== 'grid'
                     && getComputedStyle(list).display === 'flex'
                     && getComputedStyle(detail).display === 'none'
-                    && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px');
+                    && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px')
+                    && rows.every((row) => row.getBoundingClientRect().height <= 68);
             })()
             JS)
         ->click('[data-ndb-notification-item="1"]')

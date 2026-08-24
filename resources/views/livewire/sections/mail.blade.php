@@ -34,6 +34,14 @@
                 'failed' => 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300',
                 'waiting' => 'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
             ][$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300';
+            $statusTextClass = [
+                'queued' => 'ndb:text-sky-600 ndb:dark:text-sky-300',
+                'delayed' => 'ndb:text-amber-600 ndb:dark:text-amber-300',
+                'processing' => 'ndb:text-indigo-600 ndb:dark:text-indigo-300',
+                'sent' => 'ndb:text-emerald-600 ndb:dark:text-emerald-300',
+                'failed' => 'ndb:text-red-600 ndb:dark:text-red-300',
+                'waiting' => 'ndb:text-amber-600 ndb:dark:text-amber-300',
+            ][$status] ?? 'ndb:text-zinc-600 ndb:dark:text-zinc-300';
             $subject = is_string($preview['subject'] ?? null) && $preview['subject'] !== ''
                 ? $preview['subject']
                 : ($source === null ? '(No subject)' : class_basename($source));
@@ -52,7 +60,7 @@
             }
 
             if ($mailer === null && $transport === null && ($item['connection'] ?? null) !== null) {
-                $deliveryLabel = $item['connection'].' · '.(($item['queue'] ?? null) ?: 'default queue');
+                $deliveryLabel = $item['connection'].' on '.(($item['queue'] ?? null) ?: 'default queue');
             }
 
             $isOrigin = (bool) ($item['is_origin'] ?? false);
@@ -79,6 +87,7 @@
                 'status' => $status,
                 'status_label' => $statusLabel,
                 'status_class' => $statusClass,
+                'status_text_class' => $statusTextClass,
                 'duration_ms' => (float) ($item['duration_ms'] ?? 0),
                 'mailer' => $mailer,
                 'transport' => $transport,
@@ -224,36 +233,37 @@
                             :class="mailSelected === {{ $message['execution'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-3 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <span class="ndb:min-w-0">
-                                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $message['subject'] }}</span>
-                                <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    To {{ $message['primary_recipient'] }}
-                                </span>
-                                <span class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400">
-                                    {{ $message['source_label'] }}
-                                </span>
+                            <span
+                                data-ndb-mail-list-title
+                                class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
+                            >{{ $message['subject'] }}</span>
+                            <span
+                                data-ndb-mail-list-status
+                                class="ndb:justify-self-end ndb:text-[11px] ndb:font-bold {{ $message['status_text_class'] }}"
+                            >{{ $message['status_label'] }}</span>
+                            <span
+                                data-ndb-mail-list-recipient
+                                class="ndb:col-start-1 ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            >
+                                To {{ $message['primary_recipient'] }}
                             </span>
-                            <span class="ndb:text-right">
-                                <span class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold {{ $message['status_class'] }}">
-                                    {{ $message['status_label'] }}
+                            @if (in_array($message['status'], ['sent', 'failed'], true))
+                                <span
+                                    data-ndb-mail-list-activity
+                                    class="ndb:col-start-2 ndb:justify-self-end ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >
+                                    {{ number_format($message['duration_ms'], 2) }} ms
                                 </span>
-                                @if ($message['status'] === 'sent')
-                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                        {{ number_format($message['duration_ms'], 2) }} ms
-                                    </span>
-                                @elseif (($message['delay_seconds'] ?? null) > 0)
-                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-                                        {{ $message['delay_seconds'] }} s delay
-                                    </span>
-                                @endif
-                                @if ($message['attachment_count'] > 0)
-                                    <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-                                        {{ $message['attachment_count'] }} {{ \Illuminate\Support\Str::plural('file', $message['attachment_count']) }}
-                                    </span>
-                                @endif
-                            </span>
+                            @elseif (($message['delay_seconds'] ?? null) > 0)
+                                <span
+                                    data-ndb-mail-list-activity
+                                    class="ndb:col-start-2 ndb:justify-self-end ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                                >
+                                    {{ $message['delay_seconds'] }} s delay
+                                </span>
+                            @endif
                         </button>
                     @endforeach
                 </div>

@@ -401,56 +401,41 @@
                             :class="notificationSelected === {{ $notification['execution'] }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-3 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <span class="ndb:min-w-0">
-                                <span class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $notification['label'] }}</span>
-                                <span class="ndb:mt-1 ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-1.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    <span class="ndb:truncate">To {{ $notification['recipient_label'] }}</span>
-                                    @if ($notification['recipient_context_label'] !== null)
-                                        <span class="ndb:shrink-0 ndb:text-zinc-400">
-                                            {{ $notification['recipient_context_label'] }}
-                                        </span>
-                                    @endif
-                                </span>
-                                <span
-                                    data-ndb-notification-outcomes
-                                    class="ndb:mt-1 ndb:flex ndb:flex-wrap ndb:gap-x-2 ndb:gap-y-0.5 ndb:text-[11px]"
-                                >
-                                    @foreach ($notification['deliveries'] as $delivery)
-                                        <span @class(['ndb:font-medium',
-                                            'ndb:text-zinc-400' => $delivery['status'] === 'sent',
-                                            'ndb:text-red-600 ndb:dark:text-red-300' => $delivery['status'] === 'failed',
-                                            'ndb:text-sky-600 ndb:dark:text-sky-300' => $delivery['status'] === 'queued',
-                                            'ndb:text-amber-600 ndb:dark:text-amber-300' => in_array($delivery['status'], ['delayed', 'waiting'], true),
-                                            'ndb:text-indigo-600 ndb:dark:text-indigo-300' => $delivery['status'] === 'processing',
-                                        ])>
-                                            {{ $delivery['channel_label'] }} · {{ $delivery['status_label'] }}
-                                        </span>
-                                    @endforeach
-                                </span>
-                            </span>
-                            <span class="ndb:text-right">
-                                <span @class([
-                                    'ndb:block ndb:text-[11px] ndb:font-bold',
+                            <span
+                                data-ndb-notification-list-title
+                                class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold"
+                            >{{ $notification['label'] }}</span>
+                            <span
+                                data-ndb-notification-list-status
+                                @class([
+                                    'ndb:justify-self-end ndb:text-[11px] ndb:font-bold',
                                     'ndb:text-emerald-600 ndb:dark:text-emerald-300' => $notification['status'] === 'sent',
                                     'ndb:text-amber-600 ndb:dark:text-amber-300' => $notification['status'] === 'partial',
                                     'ndb:text-red-600 ndb:dark:text-red-300' => $notification['status'] === 'failed',
                                     'ndb:text-sky-600 ndb:dark:text-sky-300' => $notification['status'] === 'queued',
                                     'ndb:text-amber-600 ndb:dark:text-amber-300' => in_array($notification['status'], ['delayed', 'waiting'], true),
                                     'ndb:text-indigo-600 ndb:dark:text-indigo-300' => $notification['status'] === 'processing',
-                                ])>
-                                    {{ $notification['status_label'] }}
-                                </span>
-                                <span class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
-                                    @if ($notification['duration_ms'] > 0 || in_array($notification['status'], ['sent', 'failed', 'partial'], true))
-                                        {{ number_format($notification['duration_ms'], 2) }} ms
-                                    @elseif (($notification['delay_seconds'] ?? null) > 0)
-                                        {{ $notification['delay_seconds'] }} s delay
-                                    @else
-                                        Waiting for worker
-                                    @endif
-                                </span>
+                                ])
+                            >
+                                {{ $notification['status_label'] }}
+                            </span>
+                            <span
+                                data-ndb-notification-list-recipient
+                                class="ndb:col-start-1 ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            >To {{ $notification['recipient_label'] }}</span>
+                            <span
+                                data-ndb-notification-list-activity
+                                class="ndb:col-start-2 ndb:justify-self-end ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
+                            >
+                                @if ($notification['duration_ms'] > 0 || in_array($notification['status'], ['sent', 'failed', 'partial'], true))
+                                    {{ number_format($notification['duration_ms'], 2) }} ms
+                                @elseif (($notification['delay_seconds'] ?? null) > 0)
+                                    {{ $notification['delay_seconds'] }} s delay
+                                @else
+                                    Waiting for worker
+                                @endif
                             </span>
                         </button>
                     @endforeach

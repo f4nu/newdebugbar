@@ -74,6 +74,15 @@
             $relatedLabel = $isOrigin
                 ? ($relatedSection === 'mail' ? 'Open mail preview' : 'Open worker')
                 : 'Open request';
+            $communicationType = is_string($item['communication_type'] ?? null)
+                ? $item['communication_type']
+                : null;
+            $communicationChannels = array_values(array_filter(
+                (array) ($item['channels'] ?? []),
+                static fn (mixed $channel): bool => is_string($channel) && $channel !== '',
+            ));
+            $showCommunicationChannels = $communicationChannels !== []
+                && $communicationChannels !== [$communicationType];
         @endphp
         <article
             wire:key="queue-{{ $item['correlation_key'] ?? $index }}-{{ $index }}"
@@ -114,18 +123,38 @@
                 @endif
             </div>
 
-            @if (($item['communication_type'] ?? null) !== null || $relatedProfileId !== null)
+            @if ($communicationType !== null || $relatedProfileId !== null)
                 <div class="ndb:mt-3 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2 ndb:border-t ndb:border-zinc-200/80 ndb:pt-3 ndb:dark:border-zinc-800">
-                    @if (($item['communication_type'] ?? null) !== null)
-                        <span class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                            {{ ucfirst($item['communication_type']) }}
-                            @if (($item['channels'] ?? []) !== [])
-                                · {{ implode(', ', $item['channels']) }}
+                    @if ($communicationType !== null)
+                        <dl
+                            data-ndb-queue-communication
+                            class="ndb:flex ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px]"
+                        >
+                            <div class="ndb:inline-flex ndb:items-baseline ndb:gap-1">
+                                <dt class="ndb:text-zinc-400">Type</dt>
+                                <dd class="ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">
+                                    {{ ucfirst($communicationType) }}
+                                </dd>
+                            </div>
+                            @if ($showCommunicationChannels)
+                                <div class="ndb:inline-flex ndb:items-baseline ndb:gap-1">
+                                    <dt class="ndb:text-zinc-400">
+                                        {{ \Illuminate\Support\Str::plural('Channel', count($communicationChannels)) }}
+                                    </dt>
+                                    <dd class="ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">
+                                        {{ implode(', ', $communicationChannels) }}
+                                    </dd>
+                                </div>
                             @endif
                             @if (($item['notifiable_count'] ?? 0) > 0)
-                                · {{ $item['notifiable_count'] }} {{ \Illuminate\Support\Str::plural('notifiable', $item['notifiable_count']) }}
+                                <div class="ndb:inline-flex ndb:items-baseline ndb:gap-1">
+                                    <dt class="ndb:text-zinc-400">Targets</dt>
+                                    <dd class="ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">
+                                        {{ $item['notifiable_count'] }} {{ \Illuminate\Support\Str::plural('notifiable', $item['notifiable_count']) }}
+                                    </dd>
+                                </div>
                             @endif
-                        </span>
+                        </dl>
                     @endif
                     @if ($relatedProfileId !== null)
                         <button

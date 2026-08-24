@@ -76,6 +76,23 @@ it('uses one filter tab treatment across inspector sections', function () {
     }
 });
 
+it('uses layout instead of punctuation to separate interface facts', function () {
+    $resources = dirname(__DIR__, 2).'/resources';
+    $offenders = [];
+
+    foreach (ProjectFiles::filesIn($resources) as $file) {
+        $contents = file_get_contents($file->getPathname());
+
+        foreach (['•', '·', '&bull;', '&middot;', '&#8226;', '&#183;', '&#x2022;', '&#xB7;'] as $separator) {
+            if (str_contains($contents, $separator)) {
+                $offenders[] = ProjectFiles::relativePath($file, $resources).': '.$separator;
+            }
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
+
 it('respects reduced motion for toolbar drag animations', function () {
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/newdebugbar.css');
 

@@ -181,12 +181,27 @@ it('keeps host styles and package styles isolated', function () {
                 const badge = item.querySelector('span');
                 const refresh = document.querySelector('[data-ndb-background-refresh]');
                 const link = document.querySelector('[data-ndb-queue-profile-link]');
+                const communications = [...document.querySelectorAll('[data-ndb-queue-communication]')];
+                const communicationsAreStructured = communications.every((communication) => {
+                    const terms = [...communication.querySelectorAll('dt')].map((term) => term.textContent.trim());
+                    const values = [...communication.querySelectorAll('dd')].map((value) => value.textContent.trim());
+                    const typeIndex = terms.indexOf('Type');
+                    const channelIndex = terms.findIndex((term) => term.startsWith('Channel'));
+
+                    return typeIndex !== -1
+                        && terms.length >= 1
+                        && terms.length === values.length
+                        && !['•', '·'].some((separator) => communication.textContent.includes(separator))
+                        && (channelIndex === -1 || values[typeIndex].toLowerCase() !== values[channelIndex].toLowerCase());
+                });
 
                 return getComputedStyle(item).borderLeftWidth !== '20px'
                     && Number.parseFloat(getComputedStyle(badge).fontSize) === 11
                     && getComputedStyle(item).backgroundColor !== 'rgb(255, 0, 0)'
                     && refresh.getBoundingClientRect().height < 91
-                    && link.getBoundingClientRect().height < 91;
+                    && link.getBoundingClientRect().height < 91
+                    && communications.length >= 1
+                    && communicationsAreStructured;
             })()
             JS)
         ->click('[data-ndb-section="notifications"]')
