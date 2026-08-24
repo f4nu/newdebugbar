@@ -509,9 +509,10 @@ trait DefinesTestApplication
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-log-entry], [data-ndb-log-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); padding: 24px; }
-                            [data-ndb-log-severity], [data-ndb-log-context-preview] > span { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
-                            [data-ndb-log-actions] button, [data-ndb-log-review-exception] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
-                            [data-ndb-log-context], [data-ndb-log-timing], [data-ndb-log-source], [data-ndb-log-raw] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
+                            [data-ndb-log-level-select] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-log-severity], [data-ndb-log-attention-label], [data-ndb-log-repeat-label] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-log-review-exception] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-log-context], [data-ndb-log-timing], [data-ndb-log-source], [data-ndb-log-raw], [data-ndb-log-related-exception] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
                         </style>
                     </head>
                     <body>

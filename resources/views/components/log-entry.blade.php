@@ -9,15 +9,10 @@
     $firstAt = $entry['first_at_ms'] ?? $entry['at_ms'] ?? null;
     $lastAt = $entry['last_at_ms'] ?? $firstAt;
     $contextFields = array_values($entry['context_fields'] ?? []);
-    $contextPreview = array_slice($contextFields, 0, 3);
     $callsite = is_array($entry['callsite'] ?? null) ? $entry['callsite'] : null;
     $relatedException = is_array($entry['related_exception'] ?? null) ? $entry['related_exception'] : null;
     $stack = array_values(is_array($entry['stack'] ?? null) ? $entry['stack'] : []);
     $occurrences = array_values(is_array($entry['occurrences'] ?? null) ? $entry['occurrences'] : []);
-    $contextJson = json_encode(
-        $entry['context'] ?? [],
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE,
-    ) ?: '{}';
     $rawRecord = array_intersect_key($entry, array_flip([
         'level',
         'message',
@@ -34,13 +29,22 @@
         $rawRecord,
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE,
     ) ?: '{}';
-    $sourceLabel = $callsite === null ? null : $callsite['file'].':'.$callsite['line'];
+    $sourceLabel = isset($callsite['file'], $callsite['line']) ? $callsite['file'].':'.$callsite['line'] : null;
+    $sourceShortLabel = $sourceLabel === null
+        ? '—'
+        : basename(str_replace('\\', '/', (string) $callsite['file'])).':'.$callsite['line'];
+    $channelLabel = is_string($entry['channel_label'] ?? null) && $entry['channel_label'] !== ''
+        ? $entry['channel_label']
+        : '—';
     $recordLabel = $repeatCount === 1 ? '#'.$firstSequence : '#'.$firstSequence.'–#'.$lastSequence;
     $requestTimeLabel = $firstAt === null
-        ? 'Not captured'
+        ? '—'
         : '+'.number_format((float) $firstAt, 3).' ms';
+    $lastRequestTimeLabel = $lastAt === null
+        ? '—'
+        : '+'.number_format((float) $lastAt, 3).' ms';
     $requestTimeRange = $repeatCount > 1 && $lastAt !== null && $lastAt !== $firstAt
-        ? $requestTimeLabel.' to +'.number_format((float) $lastAt, 3).' ms'
+        ? $requestTimeLabel.' to '.$lastRequestTimeLabel
         : $requestTimeLabel;
     $wallTime = null;
 
@@ -52,18 +56,12 @@
         }
     }
 
-    $rowClasses = match ($level) {
-        'warning' => 'ndb:border-amber-200 ndb:bg-amber-50/25 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/10',
-        'error', 'critical', 'alert', 'emergency' => 'ndb:border-red-200 ndb:bg-red-50/25 ndb:dark:border-red-950 ndb:dark:bg-red-950/10',
-        default => 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/25',
-    };
-    $badgeClasses = match ($level) {
-        'debug' => 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300',
-        'info' => 'ndb:bg-blue-50 ndb:text-blue-700 ndb:dark:bg-blue-950/70 ndb:dark:text-blue-300',
-        'notice' => 'ndb:bg-violet-50 ndb:text-violet-700 ndb:dark:bg-violet-950/70 ndb:dark:text-violet-300',
-        'warning' => 'ndb:bg-amber-100 ndb:text-amber-800 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
-        'error', 'critical', 'alert', 'emergency' => 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300',
-        default => 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300',
+    $severityClasses = match ($level) {
+        'info' => 'ndb:text-blue-700 ndb:dark:text-blue-300',
+        'notice' => 'ndb:text-violet-700 ndb:dark:text-violet-300',
+        'warning' => 'ndb:text-amber-700 ndb:dark:text-amber-300',
+        'error', 'critical', 'alert', 'emergency' => 'ndb:text-red-700 ndb:dark:text-red-300',
+        default => 'ndb:text-zinc-500 ndb:dark:text-zinc-400',
     };
 @endphp
 
@@ -76,168 +74,79 @@
     data-ndb-log-record-count="{{ $repeatCount }}"
     data-ndb-log-first-sequence="{{ $firstSequence }}"
     wire:key="log-entry-{{ $firstSequence }}"
-    class="ndb:group ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:p-0 {{ $rowClasses }}"
+    class="ndb:group ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:transition-colors ndb:open:bg-indigo-50/45 ndb:dark:open:bg-indigo-950/20"
 >
     <summary
         data-ndb-log-summary
-        class="ndb:grid ndb:cursor-pointer ndb:list-none ndb:grid-cols-[auto_minmax(0,1fr)_auto] ndb:items-start ndb:gap-x-3 ndb:px-3 ndb:py-3 ndb:text-xs ndb:text-zinc-900 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-[-2px] ndb:focus-visible:outline-indigo-500 ndb:sm:px-4 ndb:dark:text-zinc-100"
+        class="ndb:grid ndb:cursor-pointer ndb:list-none ndb:grid-cols-[4.75rem_minmax(0,1fr)_auto] ndb:items-start ndb:gap-x-3 ndb:px-3 ndb:py-3 ndb:text-xs ndb:text-zinc-900 ndb:transition-colors ndb:hover:bg-zinc-50/75 ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-[-2px] ndb:focus-visible:outline-indigo-500 ndb:sm:grid-cols-[5.5rem_minmax(0,1fr)_9.5rem_11rem_auto] ndb:sm:px-4 ndb:sm:py-3.5 ndb:dark:text-zinc-100 ndb:dark:hover:bg-zinc-900/55"
     >
-        <span
-            data-ndb-log-severity
-            class="ndb:mt-0.5 ndb:inline-flex ndb:min-w-16 ndb:justify-center ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-[0.08em] {{ $badgeClasses }}"
-        >
-            {{ $entry['level_label'] ?? ucfirst($level) }}
+        <span class="ndb:row-span-3 ndb:min-w-0 ndb:sm:row-span-1">
+            <span
+                data-ndb-log-severity
+                class="ndb:block ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:leading-4 ndb:tracking-[0.08em] {{ $severityClasses }}"
+            >{{ $entry['level_label'] ?? ucfirst($level) }}</span>
+            @if ($attention)
+                <span
+                    data-ndb-log-attention-label
+                    class="ndb:mt-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300"
+                >Needs attention</span>
+            @endif
         </span>
 
-        <span class="ndb:min-w-0">
+        <span
+            data-ndb-log-message
+            class="ndb:col-start-2 ndb:block ndb:min-w-0 ndb:whitespace-pre-wrap ndb:break-words ndb:text-xs ndb:font-semibold ndb:leading-5 ndb:[overflow-wrap:anywhere] ndb:sm:row-start-1 ndb:sm:text-[13px]"
+        >{{ ($entry['message'] ?? '') === '' ? '—' : $entry['message'] }}</span>
+
+        <span class="ndb:col-start-2 ndb:row-start-2 ndb:mt-1.5 ndb:min-w-0 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-3 ndb:sm:row-start-1 ndb:sm:mt-0 ndb:dark:text-zinc-400">
+            <span class="ndb:block ndb:font-mono ndb:font-semibold ndb:tabular-nums ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $recordLabel }}</span>
+            <span class="ndb:mt-0.5 ndb:block ndb:tabular-nums">{{ $requestTimeLabel }}</span>
+            @if ($repeatCount > 1 && $lastAt !== null && $lastAt !== $firstAt)
+                <span class="ndb:block ndb:tabular-nums">to {{ $lastRequestTimeLabel }}</span>
+            @endif
+            @if ($repeatCount > 1)
+                <span data-ndb-log-repeat-label class="ndb:mt-0.5 ndb:block ndb:font-medium">
+                    {{ $repeatCount }} records
+                </span>
+            @endif
+        </span>
+
+        <span class="ndb:col-start-2 ndb:row-start-3 ndb:mt-1.5 ndb:min-w-0 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-4 ndb:sm:row-start-1 ndb:sm:mt-0 ndb:dark:text-zinc-400">
             <span
-                data-ndb-log-message
-                class="ndb:block ndb:whitespace-pre-wrap ndb:break-words ndb:text-xs ndb:font-semibold ndb:leading-5 ndb:[overflow-wrap:anywhere] ndb:sm:text-[13px]"
-            >{{ $entry['message'] === '' ? 'No message was captured.' : $entry['message'] }}</span>
-
-            <span class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-x-4 ndb:gap-y-1 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                <span><span class="ndb:font-semibold ndb:text-zinc-400">Record</span> {{ $recordLabel }}</span>
-                <span><span class="ndb:font-semibold ndb:text-zinc-400">Request</span> {{ $requestTimeRange }}</span>
-                <span><span class="ndb:font-semibold ndb:text-zinc-400">Channel</span>
-                    {{ $entry['channel_label'] }}</span>
-                <span class="ndb:min-w-0">
-                    <span class="ndb:font-semibold ndb:text-zinc-400">Source</span>
-                    <span
-                        class="ndb:break-all"
-                        title="{{ $entry['callsite_label'] }}"
-                    >{{ $entry['callsite_short_label'] }}</span>
-                </span>
-            </span>
-
-            @if ($contextPreview !== [])
-                <span data-ndb-log-context-preview class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-1.5">
-                    @foreach ($contextPreview as $field)
-                        <span class="ndb:max-w-full ndb:rounded-md ndb:bg-zinc-100/80 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:text-zinc-600 ndb:dark:bg-zinc-900/80 ndb:dark:text-zinc-300">
-                            <span class="ndb:font-mono ndb:font-semibold">{{ $field['key'] }}</span>
-                            <span class="ndb:break-words ndb:[overflow-wrap:anywhere]">{{ $field['preview'] }}</span>
-                        </span>
-                    @endforeach
-                    @if (count($contextFields) > count($contextPreview))
-                        <span class="ndb:rounded-md ndb:bg-zinc-100/80 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:bg-zinc-900/80 ndb:dark:text-zinc-400">
-                            {{ count($contextFields) - count($contextPreview) }} more
-                        </span>
-                    @endif
-                </span>
-            @endif
-
-            @if ($attention || $repeatCount > 1)
-                <span class="ndb:mt-2 ndb:flex ndb:flex-wrap ndb:gap-1.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-[0.08em]">
-                    @if ($attention)
-                        <span
-                            data-ndb-log-attention-label
-                            class="ndb:rounded-md ndb:bg-amber-100 ndb:px-2 ndb:py-1 ndb:text-amber-800 ndb:dark:bg-amber-950 ndb:dark:text-amber-300"
-                        >
-                            Needs attention
-                        </span>
-                    @endif
-                    @if ($repeatCount > 1)
-                        <span
-                            data-ndb-log-repeat-label
-                            class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-2 ndb:py-1 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"
-                        >
-                            {{ $repeatCount }} records
-                        </span>
-                    @endif
-                </span>
-            @endif
+                class="ndb:block ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                title="{{ $channelLabel }}"
+            >{{ $channelLabel }}</span>
+            <span
+                class="ndb:mt-0.5 ndb:block ndb:break-words ndb:[overflow-wrap:anywhere]"
+                title="{{ $sourceLabel ?? '—' }}"
+            >{{ $sourceShortLabel }}</span>
         </span>
 
         <x-newdebugbar::icon
             name="chevron-down"
-            class="ndb-details-chevron ndb:mt-1 ndb:size-3.5 ndb:text-zinc-400 ndb:transition-transform"
+            class="ndb-details-chevron ndb:col-start-3 ndb:row-start-1 ndb:mt-0.5 ndb:size-3.5 ndb:text-zinc-400 ndb:transition-transform ndb:sm:col-start-5"
         />
     </summary>
 
-    <div
-        data-ndb-log-detail
-        class="ndb:border-t ndb:border-zinc-200 ndb:bg-white/50 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/35"
-    >
-        <div
-            data-ndb-log-actions
-            class="ndb:flex ndb:flex-wrap ndb:gap-2 ndb:border-b ndb:border-zinc-200 ndb:px-3 ndb:py-2.5 ndb:dark:border-zinc-800 ndb:sm:px-4"
-        >
-            <button
-                type="button"
-                data-ndb-copy-log-message="{{ $firstSequence }}"
-                @click="copyText(@js($entry['message']))"
-                class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:hover:bg-zinc-200 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-800"
-            >
-                <x-newdebugbar::icon name="copy" size="3.5" /> Copy message
-            </button>
-            <button
-                type="button"
-                data-ndb-copy-log-context="{{ $firstSequence }}"
-                @click="copyText(@js($contextJson))"
-                class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:hover:bg-zinc-200 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-800"
-            >
-                <x-newdebugbar::icon name="copy" size="3.5" /> Copy context
-            </button>
-            @if ($sourceLabel !== null)
-                <button
-                    type="button"
-                    data-ndb-copy-log-source="{{ $firstSequence }}"
-                    @click="copyText(@js($sourceLabel))"
-                    class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:bg-zinc-100 ndb:px-2.5 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:hover:bg-zinc-200 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300 ndb:dark:hover:bg-zinc-800"
-                >
-                    <x-newdebugbar::icon name="copy" size="3.5" /> Copy source
-                </button>
-            @endif
-        </div>
-
-        <div class="ndb:space-y-5 ndb:px-3 ndb:py-4 ndb:sm:px-4">
-            <section data-ndb-log-context class="ndb:bg-transparent ndb:p-0 ndb:text-inherit" aria-label="Log context">
-                <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    Context
-                </h3>
-                @if ($contextFields !== [])
-                    <dl class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200 ndb:overflow-hidden ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                        @foreach ($contextFields as $field)
-                            <div class="ndb:grid ndb:min-w-0 ndb:gap-1.5 ndb:px-3 ndb:py-2.5 ndb:sm:grid-cols-[minmax(8rem,0.6fr)_minmax(0,1.8fr)] ndb:sm:gap-4">
-                                <dt class="ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    {{ $field['key'] }}
-                                </dt>
-                                <dd class="ndb:min-w-0 ndb:text-xs ndb:leading-5">
-                                    @if ($field['structured'])
-                                        <pre class="ndb-scrollbar ndb:overflow-x-auto ndb:whitespace-pre ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-2.5 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code>{{ json_encode($field['value'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) }}</code></pre>
-                                    @else
-                                        <span class="ndb:whitespace-pre-wrap ndb:break-words ndb:[overflow-wrap:anywhere]">{{ $field['preview'] }}</span>
-                                    @endif
-                                </dd>
-                            </div>
-                        @endforeach
-                    </dl>
-                @else
-                    <p data-ndb-log-context-empty class="ndb:mt-2 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        No context was captured for this record.
-                    </p>
-                @endif
-            </section>
-
+    <div data-ndb-log-detail class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
+        <div class="ndb:space-y-5 ndb:px-3 ndb:py-4 ndb:sm:px-4 ndb:sm:py-5">
             @if ($relatedException !== null)
                 @php($exceptionSource = isset($relatedException['file'], $relatedException['line']) ? $relatedException['file'].':'.$relatedException['line'] : null)
                 <section
                     data-ndb-log-related-exception
-                    class="ndb:rounded-xl ndb:border ndb:border-red-200 ndb:bg-red-50/60 ndb:p-3 ndb:dark:border-red-950 ndb:dark:bg-red-950/20"
+                    class="ndb:border-y ndb:border-red-200/80 ndb:bg-transparent ndb:py-3 ndb:dark:border-red-950"
                     aria-label="Related exception"
                 >
-                    <div class="ndb:flex ndb:flex-wrap ndb:items-start ndb:gap-3">
-                        <span class="ndb:grid ndb:size-8 ndb:shrink-0 ndb:place-items-center ndb:rounded-lg ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300">
-                            <x-newdebugbar::icon name="warning" size="4" />
-                        </span>
-                        <div class="ndb:min-w-0 ndb:flex-1">
-                            <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-red-700 ndb:dark:text-red-300">
-                                Related exception
-                            </h3>
-                            <p class="ndb:mt-1 ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold">
-                                {{ $relatedException['class'] ?? 'Exception class unavailable' }}
+                    <div class="ndb:grid ndb:min-w-0 ndb:gap-2.5 ndb:sm:grid-cols-[8.5rem_minmax(0,1fr)_auto] ndb:sm:gap-4">
+                        <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-red-700 ndb:dark:text-red-300">
+                            Related exception
+                        </h3>
+                        <div class="ndb:min-w-0">
+                            <p class="ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold">
+                                {{ $relatedException['class'] ?? '—' }}
                             </p>
                             <p class="ndb:mt-1 ndb:whitespace-pre-wrap ndb:break-words ndb:text-xs ndb:font-medium ndb:leading-5 ndb:[overflow-wrap:anywhere]">
-                                {{ $relatedException['message'] ?? 'No exception message was captured.' }}
+                                {{ ($relatedException['message'] ?? '') === '' ? '—' : $relatedException['message'] }}
                             </p>
                             @if ($exceptionSource !== null)
                                 <p class="ndb:mt-1 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
@@ -249,7 +158,7 @@
                             type="button"
                             data-ndb-log-review-exception
                             @click="navigateToSection('exceptions')"
-                            class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:rounded-lg ndb:bg-red-100 ndb:px-2.5 ndb:text-[11px] ndb:font-bold ndb:text-red-700 ndb:hover:bg-red-200 ndb:focus-visible:outline-2 ndb:focus-visible:outline-red-500 ndb:dark:bg-red-950 ndb:dark:text-red-300"
+                            class="ndb:inline-flex ndb:h-8 ndb:items-center ndb:self-start ndb:bg-transparent ndb:px-0 ndb:text-xs ndb:font-bold ndb:text-indigo-700 ndb:underline-offset-4 ndb:hover:bg-transparent ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
                         >
                             Review in Exceptions
                         </button>
@@ -257,54 +166,80 @@
                 </section>
             @endif
 
+            @if ($contextFields !== [])
+                <section
+                    data-ndb-log-context
+                    class="ndb:bg-transparent ndb:p-0 ndb:text-inherit"
+                    aria-label="Log context"
+                >
+                    <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        Context
+                    </h3>
+                    <dl class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                        @foreach ($contextFields as $field)
+                            <div class="ndb:grid ndb:min-w-0 ndb:gap-1.5 ndb:py-2.5 ndb:sm:grid-cols-[minmax(8rem,0.6fr)_minmax(0,1.8fr)] ndb:sm:gap-4">
+                                <dt class="ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    {{ $field['key'] }}
+                                </dt>
+                                <dd class="ndb:min-w-0 ndb:text-xs ndb:leading-5">
+                                    @if ($field['structured'])
+                                        <pre class="ndb-code ndb-scrollbar ndb:max-w-full"><code>{{ json_encode($field['value'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) }}</code></pre>
+                                    @else
+                                        <span class="ndb:whitespace-pre-wrap ndb:break-words ndb:[overflow-wrap:anywhere]">{{ $field['preview'] }}</span>
+                                    @endif
+                                </dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                </section>
+            @endif
+
             <section data-ndb-log-timing class="ndb:bg-transparent ndb:p-0 ndb:text-inherit" aria-label="Log timing">
                 <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                     Order and time
                 </h3>
-                <dl class="ndb:mt-2 ndb:grid ndb:gap-2 ndb:text-xs ndb:sm:grid-cols-3">
-                    <div class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70">
-                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                            Record
+                <dl class="ndb:mt-2 ndb:grid ndb:gap-x-6 ndb:gap-y-3 ndb:text-xs ndb:sm:grid-cols-3">
+                    <div>
+                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                            Order
                         </dt>
                         <dd class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums">{{ $recordLabel }}</dd>
                     </div>
-                    <div class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70">
-                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                    <div>
+                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             From request start
                         </dt>
                         <dd class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums">{{ $requestTimeRange }}</dd>
                     </div>
-                    <div class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:dark:bg-zinc-900/70">
-                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                    <div>
+                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             Captured at
                         </dt>
                         <dd
                             class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums"
                             @if ($wallTime !== null) title="{{ $wallTime->format(DateTimeInterface::ATOM) }}" @endif
                         >
-                            {{ $wallTime?->format('H:i:s.v') ?? 'Not captured' }}
+                            {{ $wallTime?->format('H:i:s.v') ?? '—' }}
                         </dd>
                     </div>
                 </dl>
             </section>
 
             <section data-ndb-log-source class="ndb:bg-transparent ndb:p-0 ndb:text-inherit" aria-label="Log source">
-                <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    Application source
-                </h3>
-                @if ($sourceLabel !== null)
-                    <p class="ndb:mt-2 ndb:break-all ndb:font-mono ndb:text-xs ndb:font-semibold">{{ $sourceLabel }}</p>
-                @else
-                    <p class="ndb:mt-2 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        No application source was captured.
-                    </p>
-                @endif
+                <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Source</h3>
+                <p class="ndb:mt-2 ndb:break-all ndb:font-mono ndb:text-xs ndb:font-semibold">
+                    {{ $sourceLabel ?? '—' }}
+                </p>
                 @if ($stack !== [])
-                    <ol class="ndb:mt-2 ndb:list-none ndb:space-y-1.5 ndb:p-0">
+                    <p class="ndb:mt-3 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        Call stack
+                    </p>
+                    <ol class="ndb:mt-1.5 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                         @foreach ($stack as $frame)
-                            <li class="ndb:grid ndb:min-w-0 ndb:gap-1 ndb:rounded-lg ndb:bg-zinc-100/60 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:sm:grid-cols-[minmax(0,1.5fr)_minmax(7rem,0.7fr)] ndb:sm:gap-3 ndb:dark:bg-zinc-900/60">
-                                <code class="ndb:break-all">{{ ($frame['file'] ?? 'Unknown file').':'.($frame['line'] ?? '?') }}</code>
-                                <span class="ndb:break-words ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $frame['function'] ?? 'Unknown function' }}</span>
+                            @php($frameSource = isset($frame['file'], $frame['line']) ? $frame['file'].':'.$frame['line'] : ($frame['file'] ?? '—'))
+                            <li class="ndb:grid ndb:min-w-0 ndb:gap-1 ndb:py-2 ndb:text-[11px] ndb:sm:grid-cols-[minmax(0,1.5fr)_minmax(7rem,0.7fr)] ndb:sm:gap-3">
+                                <code class="ndb:break-all">{{ $frameSource }}</code>
+                                <span class="ndb:break-words ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $frame['function'] ?? '—' }}</span>
                             </li>
                         @endforeach
                     </ol>
@@ -316,12 +251,12 @@
                     <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                         Occurrences
                     </h3>
-                    <ol class="ndb:mt-2 ndb:grid ndb:list-none ndb:gap-2 ndb:p-0 ndb:sm:grid-cols-2 ndb:lg:grid-cols-3">
+                    <ol class="ndb:mt-2 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                         @foreach ($occurrences as $occurrence)
-                            <li class="ndb:rounded-lg ndb:bg-zinc-100/70 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:dark:bg-zinc-900/70">
-                                <span class="ndb:font-semibold">Record #{{ $occurrence['sequence'] }}</span>
-                                <span class="ndb:mt-0.5 ndb:block ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    {{ $occurrence['at_ms'] === null ? 'Request time not captured' : '+'.number_format((float) $occurrence['at_ms'], 3).' ms' }}
+                            <li class="ndb:grid ndb:grid-cols-[5rem_minmax(0,1fr)] ndb:gap-3 ndb:py-2 ndb:text-[11px]">
+                                <span class="ndb:font-mono ndb:font-semibold">#{{ $occurrence['sequence'] }}</span>
+                                <span class="ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    {{ $occurrence['at_ms'] === null ? '—' : '+'.number_format((float) $occurrence['at_ms'], 3).' ms' }}
                                 </span>
                             </li>
                         @endforeach
@@ -331,10 +266,10 @@
 
             <details
                 data-ndb-log-raw
-                class="ndb:group/raw ndb:border-t ndb:border-zinc-200 ndb:bg-transparent ndb:p-0 ndb:pt-3 ndb:dark:border-zinc-800"
+                class="ndb:group/raw ndb:border-0 ndb:border-t ndb:border-zinc-200/90 ndb:bg-transparent ndb:p-0 ndb:pt-3 ndb:dark:border-zinc-800"
             >
                 <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-2 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500">
-                    <span class="ndb:flex-1">Raw captured record</span>
+                    <span class="ndb:flex-1">Raw evidence</span>
                     <x-newdebugbar::icon
                         name="chevron-down"
                         class="ndb-details-chevron ndb:size-3.5 ndb:transition-transform"

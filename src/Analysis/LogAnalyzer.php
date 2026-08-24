@@ -105,15 +105,15 @@ final class LogAnalyzer
             'attention' => in_array($level, self::ATTENTION_LEVELS, true),
             'message' => $message,
             'channel' => $channel,
-            'channel_label' => $channel ?? 'Channel unavailable',
+            'channel_label' => $channel ?? '—',
             'channel_filter' => $channel ?? '__unknown__',
             'context' => $context,
             'context_fields' => $this->contextFields($context),
             'context_json' => $this->json($context),
             'callsite' => $callsite,
-            'callsite_label' => $callsiteLabel ?? 'Source unavailable',
+            'callsite_label' => $callsiteLabel ?? '—',
             'callsite_short_label' => $callsiteLabel === null
-                ? 'Source unavailable'
+                ? '—'
                 : basename(str_replace('\\', '/', (string) $callsite['file'])).':'.$callsite['line'],
             'related_exception' => $relatedException,
             'occurred_at' => is_string($item['occurred_at'] ?? null) ? $item['occurred_at'] : null,

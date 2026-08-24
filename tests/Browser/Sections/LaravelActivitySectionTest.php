@@ -53,14 +53,17 @@ it('presents grouped Laravel activity with useful controls', function () {
         ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length', 1)
         ->click('[data-ndb-select-section="logs"]')
         ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-log-filter]')).every((button) => {
-                const style = getComputedStyle(button);
+            (() => {
+                const select = document.querySelector('[data-ndb-log-level-select]');
+                const values = Array.from(select.options).map((option) => option.value);
 
-                return parseFloat(style.borderBottomLeftRadius) > 0
-                    && style.borderTopColor === style.borderBottomColor;
-            })
+                return values.includes('all')
+                    && values.includes('attention')
+                    && values.includes('info')
+                    && select.getBoundingClientRect().height === 36;
+            })()
             JS)
-        ->click('[data-ndb-log-filter="info"]')
+        ->select('[data-ndb-log-level-select]', 'info')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-log-entry]:not([hidden])'))
                 .every((item) => item.dataset.ndbLogLevel === 'info')

@@ -12,7 +12,7 @@
     $channelLabels = [];
 
     foreach ($groups as $entry) {
-        $channelLabels[$entry['channel_filter'] ?? '__unknown__'] = $entry['channel_label'] ?? 'Channel unavailable';
+        $channelLabels[$entry['channel_filter'] ?? '__unknown__'] = $entry['channel_label'] ?? '—';
     }
 
     uksort($channelCounts, static fn (string $left, string $right): int => strnatcasecmp(
@@ -22,58 +22,13 @@
 @endphp
 
 @if ($groups !== [])
-    <div x-init="initializeLogs()" class="ndb:space-y-3">
+    <div x-init="initializeLogs()">
         <div
             data-ndb-log-controls
-            class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200 ndb:pb-3 ndb:dark:border-zinc-800"
+            class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-3 ndb:dark:border-zinc-800"
         >
-            <div>
-                <p class="ndb:mb-1.5 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                    Severity
-                </p>
-                <x-newdebugbar::filter-tabs label="Filter logs by severity">
-                    <x-newdebugbar::filter-tab
-                        data-ndb-log-filter="all"
-                        @click="setLogLevel('all')"
-                        ::aria-pressed="logLevel === 'all'"
-                    >
-                        All
-                        <span
-                            data-ndb-log-filter-count="all"
-                            class="ndb:text-[11px] ndb:tabular-nums ndb:opacity-70"
-                        >{{ $summary['count'] ?? count($groups) }}</span>
-                    </x-newdebugbar::filter-tab>
-                    @if (($summary['attention_count'] ?? 0) > 0)
-                        <x-newdebugbar::filter-tab
-                            data-ndb-log-filter="attention"
-                            @click="setLogLevel('attention')"
-                            ::aria-pressed="logLevel === 'attention'"
-                        >
-                            Needs attention
-                            <span
-                                data-ndb-log-filter-count="attention"
-                                class="ndb:text-[11px] ndb:tabular-nums ndb:opacity-70"
-                            >{{ $summary['attention_count'] }}</span>
-                        </x-newdebugbar::filter-tab>
-                    @endif
-                    @foreach ($logLevels as $level)
-                        <x-newdebugbar::filter-tab
-                            data-ndb-log-filter="{{ $level }}"
-                            @click="setLogLevel({{ \Illuminate\Support\Js::from($level) }})"
-                            ::aria-pressed="logLevel === {{ \Illuminate\Support\Js::from($level) }}"
-                        >
-                            {{ ucfirst($level) }}
-                            <span
-                                data-ndb-log-filter-count="{{ $level }}"
-                                class="ndb:text-[11px] ndb:tabular-nums ndb:opacity-70"
-                            >{{ $levelCounts[$level] }}</span>
-                        </x-newdebugbar::filter-tab>
-                    @endforeach
-                </x-newdebugbar::filter-tabs>
-            </div>
-
-            <div class="ndb:grid ndb:gap-3 ndb:sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.4fr)] ndb:sm:items-end">
-                <label class="ndb:min-w-0">
+            <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2 ndb:sm:grid-cols-[minmax(16rem,1fr)_minmax(10rem,0.36fr)_minmax(10rem,0.36fr)] ndb:sm:items-end ndb:sm:gap-3">
+                <label class="ndb:col-span-2 ndb:min-w-0 ndb:sm:col-span-1">
                     <span class="ndb:mb-1.5 ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Search logs</span>
                     <span class="ndb:relative ndb:block">
                         <x-newdebugbar::icon
@@ -92,20 +47,47 @@
                     </span>
                 </label>
                 <label class="ndb:min-w-0">
+                    <span class="ndb:mb-1.5 ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Severity</span>
+                    <span class="ndb:relative ndb:block">
+                        <select
+                            data-ndb-log-level-select
+                            x-model="logLevel"
+                            @change="setLogLevel($event.target.value)"
+                            class="ndb:h-9 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70 ndb:dark:text-zinc-300"
+                        >
+                            <option value="all">All severities ({{ $summary['count'] ?? count($groups) }})</option>
+                            <option value="attention">Needs attention ({{ $summary['attention_count'] ?? 0 }})</option>
+                            @foreach ($logLevels as $level)
+                                <option value="{{ $level }}">{{ ucfirst($level) }} ({{ $levelCounts[$level] }})</option>
+                            @endforeach
+                        </select>
+                        <x-newdebugbar::icon
+                            name="chevron-down"
+                            class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                        />
+                    </span>
+                </label>
+                <label class="ndb:min-w-0">
                     <span class="ndb:mb-1.5 ndb:block ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">Channel</span>
-                    <select
-                        data-ndb-log-channel-select
-                        x-model="logChannel"
-                        @change="setLogChannel($event.target.value)"
-                        class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:px-3 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:outline-none ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-100 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70 ndb:dark:text-zinc-300 ndb:dark:focus:border-indigo-600 ndb:dark:focus:ring-indigo-950"
-                    >
-                        <option value="all">All channels ({{ $summary['count'] ?? count($groups) }})</option>
-                        @foreach ($channelCounts as $channel => $count)
-                            <option value="{{ $channel }}">
-                                {{ $channelLabels[$channel] ?? $channel }} ({{ $count }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <span class="ndb:relative ndb:block">
+                        <select
+                            data-ndb-log-channel-select
+                            x-model="logChannel"
+                            @change="setLogChannel($event.target.value)"
+                            class="ndb:h-9 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70 ndb:dark:text-zinc-300"
+                        >
+                            <option value="all">All channels ({{ $summary['count'] ?? count($groups) }})</option>
+                            @foreach ($channelCounts as $channel => $count)
+                                <option value="{{ $channel }}">
+                                    {{ $channelLabels[$channel] ?? $channel }} ({{ $count }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-newdebugbar::icon
+                            name="chevron-down"
+                            class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                        />
+                    </span>
                 </label>
             </div>
 
@@ -121,13 +103,28 @@
             </div>
         </div>
 
-        <div x-ref="logList" data-ndb-log-list class="ndb:space-y-2.5">
+        <div
+            aria-hidden="true"
+            class="ndb:hidden ndb:grid-cols-[5.5rem_minmax(0,1fr)_9.5rem_11rem_1rem] ndb:gap-x-3 ndb:px-4 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:sm:grid"
+        >
+            <span>Severity</span>
+            <span>Message</span>
+            <span>Order and time</span>
+            <span>Channel and source</span>
+            <span></span>
+        </div>
+
+        <div
+            x-ref="logList"
+            data-ndb-log-list
+            class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
+        >
             @foreach ($groups as $entry)
                 <x-newdebugbar::log-entry :entry="$entry" />
             @endforeach
         </div>
 
-        <div x-cloak x-show.important="visibleLogGroupCount === 0" data-ndb-log-filter-empty>
+        <div x-cloak x-show.important="visibleLogGroupCount === 0" data-ndb-log-filter-empty class="ndb:pt-3">
             <x-newdebugbar::empty-state label="No logs match these filters." />
         </div>
     </div>

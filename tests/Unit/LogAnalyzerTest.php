@@ -96,9 +96,9 @@ it('keeps malformed or unavailable optional log facts explicit', function () {
     expect($entry)
         ->level->toBe('log')
         ->channel->toBeNull()
-        ->channel_label->toBe('Channel unavailable')
+        ->channel_label->toBe('—')
         ->callsite->toBeNull()
-        ->callsite_label->toBe('Source unavailable')
+        ->callsite_label->toBe('—')
         ->context->toBe([])
         ->at_ms->toBeNull();
 });

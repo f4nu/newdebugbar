@@ -392,17 +392,24 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const entry = document.querySelector('[data-ndb-log-entry]');
                 const severity = entry?.querySelector('[data-ndb-log-severity]');
-                const preview = entry?.querySelector('[data-ndb-log-context-preview] > span');
+                const attention = document.querySelector('[data-ndb-log-attention-label]');
+                const repeat = document.querySelector('[data-ndb-log-repeat-label]');
+                const levelSelect = document.querySelector('[data-ndb-log-level-select]');
                 const summary = entry?.querySelector(':scope > summary');
 
-                if (! entry || ! severity || ! preview || ! summary) return false;
+                if (! entry || ! severity || ! attention || ! repeat || ! levelSelect || ! summary) return false;
 
                 return getComputedStyle(entry).borderLeftWidth !== '20px'
                     && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(entry).paddingLeft === '0px'
                     && Number.parseFloat(getComputedStyle(severity).fontSize) === 11
-                    && getComputedStyle(severity).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(preview).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(severity).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(severity).borderRadius === '0px'
+                    && getComputedStyle(attention).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(repeat).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && levelSelect.getBoundingClientRect().height === 36
+                    && getComputedStyle(levelSelect).borderLeftWidth === '1px'
+                    && getComputedStyle(levelSelect).backgroundColor !== 'rgb(255, 0, 0)'
                     && Number.parseFloat(getComputedStyle(summary).fontSize) === 12
                     && getComputedStyle(summary).color !== 'rgb(255, 0, 0)';
             })()
@@ -412,25 +419,25 @@ it('keeps host styles and package styles isolated', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const entry = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="error"]');
-                const actions = [...entry.querySelectorAll('[data-ndb-log-actions] button')];
+                const actions = entry.querySelector('[data-ndb-log-actions]');
                 const context = entry.querySelector('[data-ndb-log-context]');
                 const contextTerm = context.querySelector('dt');
                 const raw = entry.querySelector('[data-ndb-log-raw]');
                 const exception = entry.querySelector('[data-ndb-log-related-exception]');
                 const review = entry.querySelector('[data-ndb-log-review-exception]');
 
-                return actions.length === 3
-                    && actions.every((button) => button.getBoundingClientRect().height === 32)
-                    && actions.every((button) => getComputedStyle(button).backgroundColor !== 'rgb(255, 0, 255)')
+                return actions === null
                     && getComputedStyle(context).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(context).paddingLeft === '0px'
                     && Number.parseFloat(getComputedStyle(contextTerm).fontSize) === 11
                     && getComputedStyle(contextTerm).color !== 'rgb(0, 128, 0)'
                     && getComputedStyle(raw).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(raw).paddingLeft === '0px'
-                    && getComputedStyle(exception).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(exception).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(exception).borderRadius === '0px'
                     && review.getBoundingClientRect().height === 32
-                    && getComputedStyle(review).borderRadius === '8px';
+                    && getComputedStyle(review).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(review).color !== 'rgb(0, 128, 0)';
             })()
             JS)
         ->assertNoJavaScriptErrors();

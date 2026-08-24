@@ -19,7 +19,8 @@ it('presents a chronological diagnostic stream with useful filters and details',
         ->assertScript(<<<'JS'
             ['debug', 'info', 'notice', 'warning', 'error', 'critical'].every((level) =>
                 document.querySelector(`[data-ndb-log-entry][data-ndb-log-level="${level}"]`)
-                    && document.querySelector(`[data-ndb-log-filter="${level}"]`)
+                    && Array.from(document.querySelector('[data-ndb-log-level-select]').options)
+                        .some((option) => option.value === level)
             )
             JS)
         ->assertScript(<<<'JS'
@@ -39,6 +40,7 @@ it('presents a chronological diagnostic stream with useful filters and details',
 
                 return repeated?.dataset.ndbLogLevel === 'warning'
                     && repeated.querySelector('[data-ndb-log-repeat-label]').textContent.includes('3 records')
+                    && getComputedStyle(repeated.querySelector('[data-ndb-log-repeat-label]')).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && repeated.querySelector('[data-ndb-log-message]').textContent.includes('needs attention');
             })()
             JS)
@@ -57,24 +59,24 @@ it('presents a chronological diagnostic stream with useful filters and details',
         ->assertAttribute('[data-ndb-log-entry][data-ndb-log-record-count="3"]', 'open', '')
         ->assertCount('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-log-occurrences] li', 3)
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-log-context]')
-        ->assertPresent('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-message]')
-        ->assertPresent('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-context]')
-        ->assertPresent('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-source]')
-        ->click('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-message]')
+        ->assertMissing('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-log-actions]')
+        ->assertMissing('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-message]')
+        ->assertMissing('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-context]')
+        ->assertMissing('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-copy-log-source]')
         ->click('[data-ndb-log-entry][data-ndb-log-level="error"] > summary')
         ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="error"]', 'open', '')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-related-exception]')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-review-exception]')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-source]')
         ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-raw]')
-        ->keys('[data-ndb-log-filter="attention"]', 'Enter')
-        ->assertAttribute('[data-ndb-log-filter="attention"]', 'aria-pressed', 'true')
+        ->select('[data-ndb-log-level-select]', 'attention')
+        ->assertScript('document.querySelector("[data-ndb-log-level-select]").value === "attention"')
         ->assertCount('[data-ndb-log-entry]:not([hidden])', 3)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-log-entry]:not([hidden])'))
                 .reduce((count, entry) => count + Number(entry.dataset.ndbLogRecordCount), 0)
             JS, 5)
-        ->keys('[data-ndb-log-filter="all"]', 'Enter')
+        ->select('[data-ndb-log-level-select]', 'all')
         ->select('[data-ndb-log-channel-select]', 'newdebugbar-audit')
         ->assertCount('[data-ndb-log-entry]:not([hidden])', 1)
         ->assertScript('document.querySelector("[data-ndb-log-entry]:not([hidden])").dataset.ndbLogLevel === "info"')
@@ -105,18 +107,19 @@ it('keeps log reading usable on mobile dark mode empty results and reopen', func
                 const controls = document.querySelector('[data-ndb-log-controls]');
                 const entries = Array.from(document.querySelectorAll('[data-ndb-log-entry]'));
                 const input = document.querySelector('[data-ndb-log-search]');
-                const select = document.querySelector('[data-ndb-log-channel-select]');
+                const selects = [...document.querySelectorAll('[data-ndb-log-level-select], [data-ndb-log-channel-select]')];
 
                 return content.scrollWidth <= content.clientWidth
                     && controls.scrollWidth <= controls.clientWidth
                     && input.getBoundingClientRect().width <= controls.getBoundingClientRect().width
-                    && select.getBoundingClientRect().width <= controls.getBoundingClientRect().width
+                    && selects.every((select) => select.getBoundingClientRect().width <= controls.getBoundingClientRect().width)
                     && entries.every((entry) => entry.scrollWidth <= entry.clientWidth);
             })()
             JS)
         ->keys('[data-ndb-log-entry][data-ndb-log-level="notice"] > summary', 'Enter')
         ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="notice"]', 'open', '')
-        ->assertPresent('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-context-empty]')
+        ->assertMissing('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-context]')
+        ->assertMissing('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-context-empty]')
         ->assertScript(<<<'JS'
             (() => {
                 const content = document.querySelector('[data-ndb-inspector-content]');
@@ -156,7 +159,7 @@ it('keeps log reading usable on mobile dark mode empty results and reopen', func
 
     $page
         ->assertCount('[data-ndb-log-entry]', 24)
-        ->assertAttribute('[data-ndb-log-filter="all"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelector("[data-ndb-log-level-select]").value === "all"')
         ->assertScript('document.querySelector("[data-ndb-log-channel-select]").value === "all"')
         ->assertNoJavaScriptErrors();
 });

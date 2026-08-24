@@ -34,13 +34,20 @@ it('renders structured log evidence before the raw record', function () {
             'data-ndb-log-entry',
             'data-ndb-log-level="error"',
             'data-ndb-log-channel="morrow-audit"',
-            'data-ndb-log-context-preview',
+            'data-ndb-log-level-select',
+            'data-ndb-log-attention-label',
             'data-ndb-log-related-exception',
             'data-ndb-log-source',
             'data-ndb-log-raw',
             'Review in Exceptions',
         )
-        ->not->toContain('data-ndb-log-empty');
+        ->not->toContain(
+            'data-ndb-log-empty',
+            'data-ndb-log-context-preview',
+            'data-ndb-log-actions',
+            'data-ndb-copy-log-',
+            'data-ndb-log-filter=',
+        );
 });
 
 it('renders a truthful empty state when no log records were captured', function () {
