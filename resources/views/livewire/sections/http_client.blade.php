@@ -24,15 +24,6 @@
         'failed' => ['Failed', $httpFailedCount],
         'slow' => ['Slow', $httpSlowCount],
     ];
-    $httpAttentionParts = [];
-
-    if ($httpFailedCount > 0) {
-        $httpAttentionParts[] = number_format($httpFailedCount).' failed '.\Illuminate\Support\Str::plural('request', $httpFailedCount);
-    }
-
-    if ($httpSlowCount > 0) {
-        $httpAttentionParts[] = number_format($httpSlowCount).' slow '.\Illuminate\Support\Str::plural('request', $httpSlowCount);
-    }
 @endphp
 
 <div
@@ -74,24 +65,6 @@
                             {{ number_format((float) ($httpSummary['duration_ms'] ?? 0), 2) }} ms total
                         </span>
                     </p>
-
-                    @if ($httpAttentionParts !== [])
-                        <p
-                            data-ndb-http-client-attention
-                            role="status"
-                            @class([
-                                'ndb:flex ndb:items-start ndb:gap-2 ndb:text-[11px] ndb:font-medium ndb:leading-4',
-                                'ndb:text-red-700 ndb:dark:text-red-300' => $httpFailedCount > 0,
-                                'ndb:text-amber-700 ndb:dark:text-amber-300' => $httpFailedCount === 0,
-                            ])
-                        >
-                            <x-newdebugbar::icon name="warning" class="ndb:mt-px ndb:size-3.5 ndb:shrink-0" />
-                            <span>
-                                <strong class="ndb:font-bold">HTTP client needs attention.</strong>
-                                {{ ucfirst(implode(', ', $httpAttentionParts)) }}.
-                            </span>
-                        </p>
-                    @endif
 
                     @if (count($httpItems) >= 5)
                         <label class="ndb:relative ndb:block ndb:min-w-0">
