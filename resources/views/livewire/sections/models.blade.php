@@ -52,7 +52,7 @@
                         ['Extra retrievals', $repeatCount, $repeatCount > 0],
                     ] as [$label, $value, $attention])
                         <div class="ndb:min-w-0">
-                            <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                            <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                 {{ $label }}
                             </dt>
                             <dd @class([
@@ -82,7 +82,7 @@
             <div
                 data-ndb-model-list-heading
                 aria-hidden="true"
-                class="ndb:hidden ndb:grid-cols-[minmax(10rem,1.35fr)_5.5rem_4.75rem_7rem_minmax(8rem,1fr)_1rem] ndb:gap-3 ndb:border-t ndb:border-zinc-200/90 ndb:px-4 ndb:py-2 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid"
+                class="ndb:hidden ndb:grid-cols-[minmax(10rem,1.35fr)_5.5rem_4.75rem_7rem_minmax(8rem,1fr)_1rem] ndb:gap-3 ndb:border-t ndb:border-zinc-200/90 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid"
             >
                 <span>Model</span>
                 <span class="ndb:text-right">Retrieved</span>
