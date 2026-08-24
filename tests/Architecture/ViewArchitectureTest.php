@@ -107,6 +107,7 @@ it('composes the HTTP Client workspace from focused view components', function (
 
     expect($workspace)
         ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('frame="top"')
         ->toContain('<x-newdebugbar::inspector-list-panel')
         ->toContain('<x-newdebugbar::http-client-controls')
         ->toContain('<x-newdebugbar::http-client-list-item')
@@ -164,6 +165,7 @@ it('composes the Cache workspace from the shared inspector components', function
 
     expect($workspace)
         ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('frame="top"')
         ->toContain('<x-newdebugbar::inspector-list-panel')
         ->toContain('<x-newdebugbar::cache-controls')
         ->toContain('<x-newdebugbar::cache-list-item')

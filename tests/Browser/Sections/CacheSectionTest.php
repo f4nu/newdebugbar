@@ -33,6 +33,8 @@ it('filters selects and inspects rich cache diagnostics', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-cache-workspace]');
+                const loadedSection = document.querySelector('[data-ndb-loaded-section="cache"]');
+                const stage = document.querySelector('[data-ndb-section-stage]');
                 const [list, detail] = workspace.children;
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const rows = [...document.querySelectorAll('[data-ndb-cache-item]')];
@@ -69,6 +71,15 @@ it('filters selects and inspects rich cache diagnostics', function () {
                 return getComputedStyle(workspace).display === 'grid'
                     && workspace.getBoundingClientRect().height > 320
                     && workspace.getBoundingClientRect().bottom <= content.getBoundingClientRect().bottom + 1
+                    && getComputedStyle(loadedSection).paddingLeft === '0px'
+                    && getComputedStyle(loadedSection).paddingRight === '0px'
+                    && Math.abs(workspace.getBoundingClientRect().left - stage.getBoundingClientRect().left) <= 1
+                    && Math.abs(workspace.getBoundingClientRect().right - stage.getBoundingClientRect().right) <= 1
+                    && getComputedStyle(workspace).borderTopWidth === '1px'
+                    && getComputedStyle(workspace).borderRightWidth === '0px'
+                    && getComputedStyle(workspace).borderBottomWidth === '0px'
+                    && getComputedStyle(workspace).borderLeftWidth === '0px'
+                    && getComputedStyle(workspace).borderRadius === '0px'
                     && Math.abs(list.getBoundingClientRect().right - detail.getBoundingClientRect().left) <= 1
                     && detail.getBoundingClientRect().width > list.getBoundingClientRect().width * 1.6
                     && selected.dataset.ndbCacheItem === '1'
