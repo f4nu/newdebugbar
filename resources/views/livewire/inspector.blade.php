@@ -197,7 +197,9 @@
                 <div
                     data-ndb-section-stage
                     :aria-busy="sectionLoading ? 'true' : 'false'"
-                    :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'notifications'].includes(selected)
+                    :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'notifications'].includes(
+                        selected,
+                    )
                         ? 'ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
                         : ''"
                     class="ndb:relative ndb:min-h-64"

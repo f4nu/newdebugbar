@@ -95,10 +95,8 @@
                         @php
                             $eventListenerActivity = match (true) {
                                 $event['listener_count'] === 0 => 'No listeners',
-                                $event['completed_listener_count'] > 0 && $event['queued_listener_count'] > 0 =>
-                                    number_format($event['completed_listener_count']).' completed, '.number_format($event['queued_listener_count']).' queued',
-                                $event['queued_listener_count'] > 0 =>
-                                    number_format($event['queued_listener_count']).' queued',
+                                $event['completed_listener_count'] > 0 && $event['queued_listener_count'] > 0 => number_format($event['completed_listener_count']).' completed, '.number_format($event['queued_listener_count']).' queued',
+                                $event['queued_listener_count'] > 0 => number_format($event['queued_listener_count']).' queued',
                                 default => number_format($event['completed_listener_count']).' completed',
                             };
                         @endphp
@@ -138,13 +136,11 @@
                                     >{{ $event['namespace'] }}</code>
                                 @endif
                             </span>
-                            <span
-                                @class([
-                                    'ndb:col-start-2 ndb:row-start-2 ndb:w-full ndb:truncate ndb:text-right ndb:text-[11px] ndb:font-semibold',
-                                    'ndb:text-amber-600 ndb:dark:text-amber-300' => $event['duplicate_registration_count'] > 0,
-                                    'ndb:tabular-nums ndb:text-zinc-400' => $event['duplicate_registration_count'] === 0,
-                                ])
-                            >
+                            <span @class([
+                                'ndb:col-start-2 ndb:row-start-2 ndb:w-full ndb:truncate ndb:text-right ndb:text-[11px] ndb:font-semibold',
+                                'ndb:text-amber-600 ndb:dark:text-amber-300' => $event['duplicate_registration_count'] > 0,
+                                'ndb:tabular-nums ndb:text-zinc-400' => $event['duplicate_registration_count'] === 0,
+                            ])>
                                 @if ($event['duplicate_registration_count'] > 0)
                                     Duplicate registration
                                 @else
