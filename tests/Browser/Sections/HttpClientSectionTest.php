@@ -82,8 +82,9 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     ]))
                     && Math.abs(search.getBoundingClientRect().top - sort.getBoundingClientRect().top) <= 1
                     && search.getBoundingClientRect().right < sort.getBoundingClientRect().left
-                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left >= 10
-                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left <= 14
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left >= 7
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left <= 9
+                    && Math.round(searchIcon.getBoundingClientRect().width) === 12
                     && searchIcon.getBoundingClientRect().right
                         <= search.getBoundingClientRect().left + parseFloat(getComputedStyle(search).paddingLeft)
                     && filters.getBoundingClientRect().top > search.getBoundingClientRect().bottom
