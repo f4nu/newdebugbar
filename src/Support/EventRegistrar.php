@@ -4,6 +4,7 @@ namespace NewDebugBar\Support;
 
 use Closure;
 use Illuminate\Auth\Access\Events\GateEvaluated;
+use Illuminate\Auth\Access\Response as AuthorizationResponse;
 use Illuminate\Bus\Queueable;
 use Illuminate\Cache\Events\CacheFailedOver;
 use Illuminate\Cache\Events\CacheFlushed;
@@ -22,6 +23,8 @@ use Illuminate\Cache\Events\WritingKey;
 use Illuminate\Cache\Events\WritingManyKeys;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -56,12 +59,14 @@ use Illuminate\Routing\Events\PreparingResponse;
 use Illuminate\Routing\Events\ResponsePrepared;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Events\Routing;
+use Illuminate\Support\Str;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\BackgroundActivityStore;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
 use Throwable;
+use UnitEnum;
 
 /** Routes Laravel runtime events into their matching request collectors. */
 final class EventRegistrar
@@ -164,16 +169,32 @@ final class EventRegistrar
     {
         $this->listen(GateEvaluated::class, function (GateEvaluated $event): void {
             $location = $this->callSites->capture();
+            $handler = $this->authorizationHandler($event);
+            $response = $event->result instanceof AuthorizationResponse ? $event->result : null;
+            $arguments = array_values($event->arguments);
             $this->manager()->record('authorization', [
                 'ability' => $event->ability,
-                'result' => $event->result === true ? 'allowed' : 'denied',
-                'handler' => $this->authorizationHandler($event),
+                'result' => ($response?->allowed() ?? $event->result === true) ? 'allowed' : 'denied',
+                'result_message' => $response?->message(),
+                'result_code' => $response === null ? null : $this->redactor->clean($response->code()),
+                'result_status' => $response?->status(),
+                'handler' => $handler['legacy'],
+                'handler_kind' => $handler['kind'],
+                'handler_name' => $handler['name'],
+                'handler_source' => $handler['source'],
+                'actor' => $this->authorizationActor($event->user),
                 'user_type' => is_object($event->user) ? $event->user::class : null,
+                'arguments' => array_values(array_map(
+                    fn (mixed $argument, int $index): array => $this->authorizationArgument($argument, $index + 1),
+                    $arguments,
+                    array_keys($arguments),
+                )),
                 'argument_types' => array_values(array_map(
                     fn (mixed $argument): string => $this->authorizationArgumentType($argument),
-                    $event->arguments,
+                    $arguments,
                 )),
                 'callsite' => $location['callsite'],
+                'stack' => $location['stack'],
             ]);
         });
 
@@ -1039,7 +1060,7 @@ final class EventRegistrar
             'channel' => $channel,
             'notifiable_type' => $notifiableType,
             'notifiable_id' => $notifiableId,
-            'notifiable_name' => $this->notificationNotifiableName($notifiable),
+            'notifiable_name' => $this->objectDisplayName($notifiable),
             'notifiable_object_id' => $notifiableObjectId,
             'destination' => $this->notificationDestinationForAttempt(
                 $attemptId,
@@ -1067,17 +1088,20 @@ final class EventRegistrar
         }
     }
 
-    private function notificationNotifiableName(mixed $notifiable): ?string
-    {
-        if (! is_object($notifiable)) {
+    /** @param list<string> $attributes */
+    private function objectDisplayName(
+        mixed $value,
+        array $attributes = ['name', 'full_name', 'display_name'],
+    ): ?string {
+        if (! is_object($value)) {
             return null;
         }
 
-        $values = $notifiable instanceof Model
-            ? $notifiable->getAttributes()
-            : get_object_vars($notifiable);
+        $values = $value instanceof Model
+            ? $value->getAttributes()
+            : get_object_vars($value);
 
-        foreach (['name', 'full_name', 'display_name'] as $attribute) {
+        foreach ($attributes as $attribute) {
             $value = $values[$attribute] ?? null;
 
             if (is_string($value) && trim($value) !== '') {
@@ -1124,7 +1148,7 @@ final class EventRegistrar
             return [
                 'type' => $notifiable::class,
                 'id' => $this->notificationNotifiableId($notifiable),
-                'name' => $this->notificationNotifiableName($notifiable),
+                'name' => $this->objectDisplayName($notifiable),
             ];
         }
 
@@ -1451,27 +1475,129 @@ final class EventRegistrar
         return get_debug_type($argument);
     }
 
-    private function authorizationHandler(GateEvaluated $event): string
+    /** @return array{type: class-string, identifier_name: string|null, identifier: scalar|null, name: string|null}|null */
+    private function authorizationActor(mixed $user): ?array
     {
+        if (! is_object($user)) {
+            return null;
+        }
+
+        $identifierName = null;
+        $identifier = null;
+
+        if ($user instanceof Authenticatable) {
+            try {
+                $identifierName = $user->getAuthIdentifierName();
+                $identifier = $user->getAuthIdentifier();
+            } catch (Throwable) {
+                $identifierName = null;
+                $identifier = null;
+            }
+        }
+
+        return [
+            'type' => $user::class,
+            'identifier_name' => is_string($identifierName) && $identifierName !== '' ? $identifierName : null,
+            'identifier' => is_scalar($identifier) ? $identifier : null,
+            'name' => $this->objectDisplayName($user),
+        ];
+    }
+
+    /** @return array{position: int, kind: string, type: string, identifier?: scalar|null, name?: string|null, value?: mixed} */
+    private function authorizationArgument(mixed $argument, int $position): array
+    {
+        $type = $this->authorizationArgumentType($argument);
+
+        if ($argument instanceof Model) {
+            try {
+                $routeKeyName = $argument->getRouteKeyName();
+                $routeKey = $argument->getRouteKey();
+            } catch (Throwable) {
+                $routeKeyName = null;
+                $routeKey = null;
+            }
+
+            return [
+                'position' => $position,
+                'kind' => 'model',
+                'type' => $type,
+                'identifier' => $this->modelKey($argument),
+                'route_key_name' => is_string($routeKeyName) && $routeKeyName !== '' ? $routeKeyName : null,
+                'route_key' => is_scalar($routeKey) ? $routeKey : null,
+                'name' => $this->objectDisplayName($argument, ['name', 'full_name', 'display_name', 'title', 'label']),
+            ];
+        }
+
+        if (is_string($argument) && (class_exists($argument) || interface_exists($argument) || enum_exists($argument))) {
+            return [
+                'position' => $position,
+                'kind' => 'class',
+                'type' => $type,
+            ];
+        }
+
+        if (is_object($argument) && ! $argument instanceof UnitEnum) {
+            return [
+                'position' => $position,
+                'kind' => 'object',
+                'type' => $type,
+            ];
+        }
+
+        return [
+            'position' => $position,
+            'kind' => 'value',
+            'type' => $type,
+            'value' => $this->redactor->clean($argument),
+        ];
+    }
+
+    /** @return array{legacy: string, kind: 'policy'|'callback', name: string, source: array{file: string, line: int}|null} */
+    private function authorizationHandler(GateEvaluated $event): array
+    {
+        $fallback = [
+            'legacy' => 'callback',
+            'kind' => 'callback',
+            'name' => 'Gate callback',
+            'source' => null,
+        ];
+
         try {
-            $gate = $this->container->make('gate');
+            $gate = $this->container->make(GateContract::class);
+            $argument = $event->arguments[0] ?? null;
 
-            foreach ($event->arguments as $argument) {
-                if (! is_object($argument) && ! is_string($argument)) {
-                    continue;
-                }
-
+            if (is_object($argument) || is_string($argument)) {
                 $policy = $gate->getPolicyFor($argument);
 
                 if (is_object($policy) || is_string($policy)) {
-                    return (is_object($policy) ? $policy::class : $policy).'@'.$event->ability;
+                    $class = is_object($policy) ? $policy::class : $policy;
+                    $method = str_contains($event->ability, '-') ? Str::camel($event->ability) : $event->ability;
+                    $name = $class.'@'.$method;
+
+                    return [
+                        'legacy' => $name,
+                        'kind' => 'policy',
+                        'name' => $name,
+                        'source' => $this->methodLocation($class, $method),
+                    ];
                 }
             }
+
+            $abilities = method_exists($gate, 'abilities') ? $gate->abilities() : [];
+            $detail = $this->listenerDetail($abilities[$event->ability] ?? null);
+
+            if ($detail !== null) {
+                return [
+                    ...$fallback,
+                    'name' => $detail['name'] === 'Closure' ? 'Gate callback' : $detail['name'],
+                    'source' => $detail['source'] ?? null,
+                ];
+            }
         } catch (Throwable) {
-            // Fall through to the honest callback label.
+            // Fall through to the honest generic callback label.
         }
 
-        return 'callback';
+        return $fallback;
     }
 
     /** @return list<array<string, mixed>> */
