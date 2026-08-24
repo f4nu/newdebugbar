@@ -61,3 +61,23 @@ it('builds a focused overview without standalone counts', function () {
             ['name' => 'Scout', 'value' => 'v10.0.0'],
         ]);
 });
+
+it('describes the logical model activity count', function () {
+    $overview = app(OverviewPresenter::class)->present([
+        'sections' => [
+            'overview' => ['payload' => []],
+            'models' => [
+                'summary' => ['count' => 35, 'activity_count' => 32],
+                'payload' => ['items' => []],
+            ],
+        ],
+    ], [[
+        'key' => 'models',
+        'label' => 'Models',
+        'count' => 32,
+        'active' => true,
+        'attention' => false,
+    ]]);
+
+    expect($overview['activity'][0]['description'])->toBe('32 model activities');
+});

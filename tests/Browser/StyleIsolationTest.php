@@ -537,5 +537,37 @@ it('keeps host styles and package styles isolated', function () {
                 return true;
             })()
             JS)
+        ->click('[data-ndb-section="models"]')
+        ->assertVisible('[data-ndb-section-panel="models"]')
+        ->keys('[data-ndb-model-group]:first-of-type > summary', 'Enter')
+        ->assertAttribute('[data-ndb-model-group]:first-of-type', 'open', '')
+        ->assertVisible('[data-ndb-model-operation]')
+        ->assertVisible('[data-ndb-model-group]:first-of-type [data-ndb-model-source]:first-of-type')
+        ->assertVisible('[data-ndb-model-group]:first-of-type [data-ndb-model-record]:first-of-type')
+        ->assertScript(<<<'JS'
+            ['[data-ndb-model-summary]', '[data-ndb-model-group]', '[data-ndb-model-operation]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+                .every((selector) => getComputedStyle(document.querySelector(selector)).backgroundColor !== 'rgb(255, 0, 0)')
+            JS)
+        ->assertScript(<<<'JS'
+            ['[data-ndb-model-summary]', '[data-ndb-model-group]', '[data-ndb-model-operation]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+                .every((selector) => getComputedStyle(document.querySelector(selector)).borderLeftWidth !== '20px')
+            JS)
+        ->assertScript(<<<'JS'
+            ['[data-ndb-model-summary]', '[data-ndb-model-group]', '[data-ndb-model-operation]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+                .every((selector) => getComputedStyle(document.querySelector(selector)).color !== 'rgb(0, 128, 0)')
+            JS)
+        ->assertScript(<<<'JS'
+            ['[data-ndb-model-summary]', '[data-ndb-model-group]', '[data-ndb-model-operation]', '[data-ndb-model-source]', '[data-ndb-model-record]']
+                .every((selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize) < 42)
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const style = getComputedStyle(document.querySelector('[data-ndb-model-summary] dt'));
+
+                return style.backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && style.color !== 'rgb(0, 128, 0)'
+                    && Number.parseFloat(style.fontSize) === 10;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

@@ -267,6 +267,14 @@ trait DefinesTestApplication
                 }
             }
 
+            if (request()->boolean('queries')) {
+                $model = new JobActivity;
+                $model->setConnection('testing');
+                $model->setRawAttributes(['id' => 99], true);
+                $modelEvent = 'eloquent.retrieved: '.JobActivity::class;
+                [DB::select('select 99 as id'), Event::dispatch($modelEvent, [$model])];
+            }
+
             if (request()->boolean('missing')) {
                 $model = new ProfiledModel;
                 $model->setConnection('testing');
@@ -496,6 +504,16 @@ trait DefinesTestApplication
             Gate::define('delete-hostile-profile', fn (): bool => false);
             Gate::allows('inspect-hostile-profile', [new ProfiledModel]);
             Gate::allows('delete-hostile-profile', [new ProfiledModel]);
+            $hostileModel = new Client;
+            $hostileModel->setConnection('testing');
+            $hostileModel->setRawAttributes(['id' => 7, 'status' => 'draft'], true);
+            Event::dispatch('eloquent.retrieved: '.Client::class, [$hostileModel]);
+            Event::dispatch('eloquent.retrieved: '.Client::class, [$hostileModel]);
+            $hostileModel->setAttribute('status', 'approved');
+            $hostileModel->syncChanges();
+            Event::dispatch('eloquent.updating: '.Client::class, [$hostileModel]);
+            Event::dispatch('eloquent.updated: '.Client::class, [$hostileModel]);
+            Event::dispatch('eloquent.saved: '.Client::class, [$hostileModel]);
             Mail::raw('Hostile style mail body', fn ($message) => $message
                 ->from('sender@example.test')
                 ->to('recipient@example.test')
@@ -603,6 +621,7 @@ trait DefinesTestApplication
                             [data-ndb-event-detail-tab] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-event-listener-row] { background: rgb(255, 0, 0); padding: 50px; }
                             [data-ndb-event-timeline] { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
+                            [data-ndb-model-summary], [data-ndb-model-group], [data-ndb-model-operation], [data-ndb-model-source], [data-ndb-model-record] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                         </style>
                     </head>
                     <body>

@@ -114,7 +114,7 @@ final class OverviewPresenter
             'queue' => $this->counted($count, 'queue event'),
             'cache' => $this->counted($count, 'cache operation'),
             'redis' => $this->counted($count, 'Redis command'),
-            'models' => $this->counted($count, 'model event'),
+            'models' => $this->counted($count, 'model activity', 'model activities'),
             'views' => $this->counted($count, 'view').' rendered',
             'mail' => $this->counted($count, 'mail event'),
             'notifications' => $this->counted($count, 'notification'),

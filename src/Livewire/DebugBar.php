@@ -30,7 +30,7 @@ final class DebugBar extends Component
         'livewire' => 'Inspect Livewire activity and mounted components.',
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
         'messages' => 'Review developer messages, their context, and when they were recorded.',
-        'models' => 'See which Eloquent models this request loaded or changed. Find repeated record loads, unexpected writes, and when the work happened. Repeated means extra retrievals after a record’s first load.',
+        'models' => 'See which Eloquent models were retrieved or changed, where the activity started, and which records may deserve a closer look. The count is retrieved instances plus logical writes.',
         'notifications' => 'Inspect notification recipients, channel deliveries, failures, payloads, and source code.',
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
         'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',
@@ -310,9 +310,11 @@ final class DebugBar extends Component
             $label = $key === 'request'
                 ? 'Requests'
                 : (string) ($section['label'] ?? ucfirst($key));
-            $count = $key === 'notifications'
-                ? ($section['summary']['notification_count'] ?? $section['summary']['count'] ?? null)
-                : ($section['summary']['count'] ?? null);
+            $count = match ($key) {
+                'models' => $section['summary']['activity_count'] ?? $section['summary']['count'] ?? null,
+                'notifications' => $section['summary']['notification_count'] ?? $section['summary']['count'] ?? null,
+                default => $section['summary']['count'] ?? null,
+            };
             $dropped = (int) ($section['summary']['dropped_count'] ?? 0);
             $secondaryDropped = (int) ($section['summary']['transaction_dropped_count'] ?? 0);
             $truncated = (bool) ($section['summary']['truncated'] ?? false)
