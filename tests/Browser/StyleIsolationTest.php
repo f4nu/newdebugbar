@@ -566,7 +566,7 @@ it('keeps host styles and package styles isolated', function () {
 
                 return style.backgroundColor === 'rgba(0, 0, 0, 0)'
                     && style.color !== 'rgb(0, 128, 0)'
-                    && Number.parseFloat(style.fontSize) === 10;
+                    && Number.parseFloat(style.fontSize) === 11;
             })()
             JS)
         ->assertNoJavaScriptErrors();
