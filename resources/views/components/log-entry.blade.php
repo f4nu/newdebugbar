@@ -200,19 +200,19 @@
                 </h3>
                 <dl class="ndb:mt-2 ndb:grid ndb:gap-x-6 ndb:gap-y-3 ndb:text-xs ndb:sm:grid-cols-3">
                     <div>
-                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             Order
                         </dt>
                         <dd class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums">{{ $recordLabel }}</dd>
                     </div>
                     <div>
-                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             From request start
                         </dt>
                         <dd class="ndb:mt-1 ndb:font-semibold ndb:tabular-nums">{{ $requestTimeRange }}</dd>
                     </div>
                     <div>
-                        <dt class="ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                        <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                             Captured at
                         </dt>
                         <dd
@@ -231,7 +231,7 @@
                     {{ $sourceLabel ?? '—' }}
                 </p>
                 @if ($stack !== [])
-                    <p class="ndb:mt-3 ndb:text-[10px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
+                    <p class="ndb:mt-3 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                         Call stack
                     </p>
                     <ol class="ndb:mt-1.5 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
