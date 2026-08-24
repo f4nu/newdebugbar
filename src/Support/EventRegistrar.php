@@ -68,7 +68,7 @@ use ReflectionMethod;
 use Throwable;
 use UnitEnum;
 
-/** Routes Laravel runtime events into their matching request collectors. */
+/** Routes Laravel runtime events into matching collectors and keeps bounded dispatch evidence. */
 final class EventRegistrar
 {
     private const MAX_PENDING_CACHE_OPERATIONS = 500;
@@ -677,6 +677,8 @@ final class EventRegistrar
                 return;
             }
 
+            $location = $this->callSites->capture();
+
             $this->manager()->record('events', [
                 'name' => $name,
                 'listeners' => $this->listenerDetails($name),
@@ -685,6 +687,8 @@ final class EventRegistrar
                     fn (mixed $item): string => is_object($item) ? $item::class : get_debug_type($item),
                     $payload,
                 ),
+                'payload_shape' => $this->eventPayloadShape($payload),
+                ...$location,
             ]);
         });
     }
@@ -1617,11 +1621,28 @@ final class EventRegistrar
             $detail = $this->listenerDetail($listener);
 
             if ($detail !== null) {
-                $listeners[] = $detail;
+                $signature = json_encode([
+                    $detail['name'],
+                    $detail['source'] ?? null,
+                    $detail['queued'],
+                ]);
+                $key = is_string($signature) ? $signature : $detail['name'];
+
+                if (isset($listeners[$key])) {
+                    $listeners[$key]['registrations']++;
+
+                    continue;
+                }
+
+                $listeners[$key] = [
+                    ...$detail,
+                    'registrations' => 1,
+                    'outcome' => $detail['queued'] ? 'queued' : 'completed',
+                ];
             }
         }
 
-        return array_slice($listeners, 0, 25);
+        return array_slice(array_values($listeners), 0, 25);
     }
 
     /** @return array<string, mixed>|null */
@@ -1636,14 +1657,22 @@ final class EventRegistrar
                 ? explode('@', $listener, 2)
                 : [$listener, method_exists($listener, 'handle') ? 'handle' : '__invoke'];
 
-            return ['name' => $class.'@'.$method, 'source' => $this->methodLocation($class, $method)];
+            return [
+                'name' => $class.'@'.$method,
+                'source' => $this->methodLocation($class, $method),
+                'queued' => is_a($class, ShouldQueue::class, true),
+            ];
         }
 
         if (is_array($listener) && count($listener) >= 2) {
             $class = is_object($listener[0]) ? $listener[0]::class : (string) $listener[0];
             $method = (string) $listener[1];
 
-            return ['name' => $class.'@'.$method, 'source' => $this->methodLocation($class, $method)];
+            return [
+                'name' => $class.'@'.$method,
+                'source' => $this->methodLocation($class, $method),
+                'queued' => is_a($class, ShouldQueue::class, true),
+            ];
         }
 
         if ($listener instanceof Closure) {
@@ -1651,14 +1680,43 @@ final class EventRegistrar
             $file = $reflection->getFileName();
             $source = is_string($file) ? $this->callSites->location($file, $reflection->getStartLine()) : null;
 
-            return $source === null ? null : ['name' => 'Closure', 'source' => $source];
+            return $source === null ? null : ['name' => 'Closure', 'source' => $source, 'queued' => false];
         }
 
         if (is_object($listener)) {
-            return ['name' => $listener::class, 'source' => $this->methodLocation($listener::class, '__invoke')];
+            return [
+                'name' => $listener::class,
+                'source' => $this->methodLocation($listener::class, '__invoke'),
+                'queued' => $listener instanceof ShouldQueue,
+            ];
         }
 
         return null;
+    }
+
+    /** @param list<mixed> $payload @return list<array<string, mixed>> */
+    private function eventPayloadShape(array $payload): array
+    {
+        $shape = [];
+
+        foreach (array_slice($payload, 0, 10) as $index => $item) {
+            $fields = match (true) {
+                is_array($item) => array_keys($item),
+                is_object($item) => array_keys(get_object_vars($item)),
+                default => [],
+            };
+            $fieldCount = count($fields);
+
+            $shape[] = [
+                'position' => $index + 1,
+                'type' => is_object($item) ? $item::class : get_debug_type($item),
+                'fields' => array_values(array_map('strval', array_slice($fields, 0, 25))),
+                'field_count' => $fieldCount,
+                'truncated' => $fieldCount > 25,
+            ];
+        }
+
+        return $shape;
     }
 
     /** @return array{file: string, line: int}|null */

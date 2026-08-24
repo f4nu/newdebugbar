@@ -14,6 +14,7 @@ use NewDebugBar\Storage\ProfileStore;
 use NewDebugBar\Support\RequestContext;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationEvent;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
+use NewDebugBar\Tests\Fixtures\Events\ProfiledQueuedApplicationListener;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 
 it('captures Laravel decisions sources transactions and redacted messages', function () {
@@ -53,7 +54,17 @@ it('captures Laravel decisions sources transactions and redacted messages', func
     expect($event)->not->toBeNull()
         ->and($event['broadcast'])->toBeFalse()
         ->and($event['listeners'][0]['name'])->toBe(ProfiledApplicationListener::class.'@handle')
-        ->and($event['listeners'][0]['source']['file'])->toBe('tests/Fixtures/Events/ProfiledApplicationListener.php');
+        ->and($event['listeners'][0]['source']['file'])->toBe('tests/Fixtures/Events/ProfiledApplicationListener.php')
+        ->and($event['listeners'][0]['registrations'])->toBe(2)
+        ->and($event['listeners'][0]['outcome'])->toBe('completed')
+        ->and($event['listeners'][1]['name'])->toBe(ProfiledQueuedApplicationListener::class.'@handle')
+        ->and($event['listeners'][1]['registrations'])->toBe(1)
+        ->and($event['listeners'][1]['outcome'])->toBe('queued')
+        ->and($event['payload_shape'][0]['type'])->toBe(ProfiledApplicationEvent::class)
+        ->and($event['payload_shape'][0]['fields'])->toBe(['trip', 'changes'])
+        ->and($event['callsite']['file'])->toBe('tests/Support/DefinesTestApplication.php')
+        ->and($event['callsite']['line'])->toBeGreaterThan(0)
+        ->and(json_encode($event))->not->toContain('kyoto-autumn', 'itinerary', 'bookings');
 });
 
 it('captures validation field and rule names with the rendered redirect status', function () {

@@ -41,6 +41,7 @@ use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationEvent;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
+use NewDebugBar\Tests\Fixtures\Events\ProfiledQueuedApplicationListener;
 use NewDebugBar\Tests\Fixtures\HostCounter;
 use NewDebugBar\Tests\Fixtures\HostCounterGroup;
 use NewDebugBar\Tests\Fixtures\HostValidationForm;
@@ -267,6 +268,8 @@ trait DefinesTestApplication
                 'token' => 'private-developer-token',
             ]);
             Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
+            Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
+            Event::listen(ProfiledApplicationEvent::class, ProfiledQueuedApplicationListener::class);
             Event::dispatch(new ProfiledApplicationEvent);
             DB::beginTransaction();
             DB::rollBack();

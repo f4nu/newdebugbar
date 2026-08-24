@@ -185,15 +185,345 @@ final class SectionAnalyzer
             return $profile;
         }
 
-        foreach ($profile['sections']['events']['payload']['items'] as $index => $item) {
-            $name = (string) ($item['name'] ?? '');
-            $profile['sections']['events']['payload']['items'][$index]['source'] = preg_match(
-                '/^(Illuminate|Laravel|Livewire|Symfony)\\\\/',
-                $name,
-            ) === 1 ? 'framework' : 'application';
+        $items = $this->items($profile, 'events');
+        $groups = [];
+        $sourceCounts = ['application' => 0, 'framework' => 0];
+
+        foreach ($items as $index => $item) {
+            $item = $this->normalizeEvent($item, $index + 1);
+            $profile['sections']['events']['payload']['items'][$index] = $item;
+            $sourceCounts[$item['source']]++;
+            $signature = $this->eventSignature($item);
+
+            if (! isset($groups[$signature])) {
+                $groups[$signature] = [
+                    ...$item,
+                    'id' => $item['sequence'],
+                    'occurrence_count' => 0,
+                    'first_sequence' => $item['sequence'],
+                    'last_sequence' => $item['sequence'],
+                    'first_at_ms' => null,
+                    'last_at_ms' => null,
+                    'span_ms' => 0.0,
+                    'occurrences' => [],
+                    'dispatch_sources' => [],
+                ];
+            }
+
+            $group = &$groups[$signature];
+            $group['occurrence_count']++;
+            $group['last_sequence'] = $item['sequence'];
+            $group['occurrences'][] = [
+                'sequence' => $item['sequence'],
+                'at_ms' => $item['at_ms'],
+                'lifecycle' => $item['lifecycle'] ?? null,
+                'after_response_ms' => isset($item['after_response_ms']) && is_numeric($item['after_response_ms'])
+                    ? round((float) $item['after_response_ms'], 3)
+                    : null,
+                'callsite' => $item['callsite'],
+            ];
+            $this->addEventTiming($group, $item);
+            $this->addEventDispatchSource($group, $item);
+            unset($group);
         }
 
+        foreach ($groups as &$group) {
+            $group['dispatch_sources'] = array_values($group['dispatch_sources']);
+            $group['span_ms'] = $group['first_at_ms'] !== null && $group['last_at_ms'] !== null
+                ? round($group['last_at_ms'] - $group['first_at_ms'], 3)
+                : 0.0;
+            $group['search'] = $this->eventSearchText($group);
+            $group['next_step'] = $this->eventNextStep($group);
+            $group['related_section'] = $this->relatedEventSection($group['name']);
+        }
+        unset($group);
+
+        $groups = array_values($groups);
+
+        $profile['sections']['events']['summary'] = [
+            ...($profile['sections']['events']['summary'] ?? []),
+            'application_count' => $sourceCounts['application'],
+            'framework_count' => $sourceCounts['framework'],
+            'group_count' => count($groups),
+            'application_group_count' => count(array_filter(
+                $groups,
+                fn (array $group): bool => $group['source'] === 'application',
+            )),
+            'framework_group_count' => count(array_filter(
+                $groups,
+                fn (array $group): bool => $group['source'] === 'framework',
+            )),
+        ];
+        $profile['sections']['events']['payload']['groups'] = $groups;
+
         return $profile;
+    }
+
+    /** @param array<string, mixed> $item @return array<string, mixed> */
+    private function normalizeEvent(array $item, int $sequence): array
+    {
+        $name = trim((string) ($item['name'] ?? ''));
+        $name = $name === '' ? 'Unknown event' : $name;
+        $separator = strrpos($name, '\\');
+        $listeners = array_values(array_filter(
+            is_array($item['listeners'] ?? null) ? $item['listeners'] : [],
+            'is_array',
+        ));
+
+        foreach ($listeners as &$listener) {
+            $listener['name'] = trim((string) ($listener['name'] ?? 'Listener')) ?: 'Listener';
+            $listener['registrations'] = max(1, (int) ($listener['registrations'] ?? 1));
+            $listener['queued'] = (bool) ($listener['queued'] ?? false);
+            $listener['outcome'] = $listener['queued'] ? 'queued' : 'completed';
+            $listener['source'] = is_array($listener['source'] ?? null) ? $listener['source'] : null;
+        }
+        unset($listener);
+
+        $listenerCount = array_sum(array_column($listeners, 'registrations'));
+        $queuedCount = array_sum(array_map(
+            fn (array $listener): int => $listener['queued'] ? $listener['registrations'] : 0,
+            $listeners,
+        ));
+        $completedCount = $listenerCount - $queuedCount;
+        $payloadShape = $this->eventPayloadShape($item);
+        $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
+
+        return [
+            ...$item,
+            'name' => $name,
+            'display_name' => $separator === false ? $name : substr($name, $separator + 1),
+            'namespace' => $separator === false ? null : substr($name, 0, $separator),
+            'sequence' => $sequence,
+            'source' => preg_match('/^(Illuminate|Laravel|Livewire|Symfony)\\\\/', $name) === 1
+                ? 'framework'
+                : 'application',
+            'listeners' => $listeners,
+            'listener_count' => $listenerCount,
+            'listener_group_count' => count($listeners),
+            'queued_listener_count' => $queuedCount,
+            'completed_listener_count' => $completedCount,
+            'duplicate_registration_count' => array_sum(array_map(
+                fn (array $listener): int => max(0, $listener['registrations'] - 1),
+                $listeners,
+            )),
+            'listener_outcome' => match (true) {
+                $listenerCount === 0 => 'observed',
+                $queuedCount === $listenerCount => 'queued',
+                $queuedCount > 0 => 'mixed',
+                default => 'completed',
+            },
+            'listener_outcome_label' => match (true) {
+                $listenerCount === 0 => 'Observed',
+                $queuedCount === $listenerCount => 'Queued',
+                $queuedCount > 0 => 'Completed and queued',
+                default => 'Completed',
+            },
+            'listener_summary' => $this->eventListenerSummary($completedCount, $queuedCount),
+            'payload_shape' => $payloadShape,
+            'payload_field_count' => array_sum(array_column($payloadShape, 'field_count')),
+            'callsite' => $callsite,
+            'stack' => array_values(array_filter(
+                is_array($item['stack'] ?? null) ? $item['stack'] : [],
+                'is_array',
+            )),
+            'at_ms' => isset($item['at_ms']) && is_numeric($item['at_ms'])
+                ? round((float) $item['at_ms'], 3)
+                : null,
+        ];
+    }
+
+    /** @param array<string, mixed> $item @return list<array<string, mixed>> */
+    private function eventPayloadShape(array $item): array
+    {
+        $shape = array_values(array_filter(
+            is_array($item['payload_shape'] ?? null) ? $item['payload_shape'] : [],
+            'is_array',
+        ));
+
+        if ($shape === []) {
+            $types = array_values(array_filter(
+                is_array($item['payload_types'] ?? null) ? $item['payload_types'] : [],
+                'is_string',
+            ));
+            $shape = array_map(
+                fn (string $type, int $index): array => [
+                    'position' => $index + 1,
+                    'type' => $type,
+                    'fields' => [],
+                    'field_count' => 0,
+                    'truncated' => false,
+                ],
+                $types,
+                array_keys($types),
+            );
+        }
+
+        return array_map(function (array $entry, int $index): array {
+            $fields = array_values(array_map(
+                'strval',
+                array_slice(is_array($entry['fields'] ?? null) ? $entry['fields'] : [], 0, 25),
+            ));
+
+            return [
+                'position' => max(1, (int) ($entry['position'] ?? $index + 1)),
+                'type' => trim((string) ($entry['type'] ?? 'mixed')) ?: 'mixed',
+                'fields' => $fields,
+                'field_count' => max(count($fields), (int) ($entry['field_count'] ?? count($fields))),
+                'truncated' => (bool) ($entry['truncated'] ?? false),
+            ];
+        }, array_slice($shape, 0, 10), array_keys(array_slice($shape, 0, 10)));
+    }
+
+    private function eventListenerSummary(int $completed, int $queued): string
+    {
+        if ($completed === 0 && $queued === 0) {
+            return 'No application listener was registered.';
+        }
+
+        if ($queued === 0) {
+            return $completed.' listener '.($completed === 1 ? 'registration completed.' : 'registrations completed.');
+        }
+
+        if ($completed === 0) {
+            return $queued.' queued listener '.($queued === 1 ? 'registration was handed off.' : 'registrations were handed off.');
+        }
+
+        return $completed.' completed, '.$queued.' queued.';
+    }
+
+    /** @param array<string, mixed> $item */
+    private function eventSignature(array $item): string
+    {
+        $signature = json_encode([
+            $item['name'],
+            $item['source'],
+            $item['broadcast'] ?? false,
+            array_map(fn (array $listener): array => [
+                $listener['name'],
+                $listener['registrations'],
+                $listener['queued'],
+            ], $item['listeners']),
+            array_map(fn (array $entry): array => [
+                $entry['type'],
+                $entry['fields'],
+                $entry['field_count'],
+            ], $item['payload_shape']),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return hash('sha256', is_string($signature) ? $signature : $item['name']);
+    }
+
+    /** @param array<string, mixed> $group @param array<string, mixed> $item */
+    private function addEventTiming(array &$group, array $item): void
+    {
+        if ($item['at_ms'] === null) {
+            return;
+        }
+
+        $group['first_at_ms'] = $group['first_at_ms'] === null
+            ? $item['at_ms']
+            : min($group['first_at_ms'], $item['at_ms']);
+        $group['last_at_ms'] = $group['last_at_ms'] === null
+            ? $item['at_ms']
+            : max($group['last_at_ms'], $item['at_ms']);
+    }
+
+    /** @param array<string, mixed> $group @param array<string, mixed> $item */
+    private function addEventDispatchSource(array &$group, array $item): void
+    {
+        if ($item['callsite'] === null) {
+            return;
+        }
+
+        $file = (string) ($item['callsite']['file'] ?? '');
+        $line = (int) ($item['callsite']['line'] ?? 0);
+
+        if ($file === '' || $line < 1) {
+            return;
+        }
+
+        $key = $file.':'.$line;
+        $group['dispatch_sources'][$key] ??= [
+            'file' => $file,
+            'line' => $line,
+            'count' => 0,
+            'sequences' => [],
+        ];
+        $group['dispatch_sources'][$key]['count']++;
+        $group['dispatch_sources'][$key]['sequences'][] = $item['sequence'];
+    }
+
+    /** @param array<string, mixed> $group */
+    private function eventSearchText(array $group): string
+    {
+        $parts = [
+            $group['name'],
+            $group['display_name'],
+            $group['namespace'],
+            $group['source'],
+            $group['listener_outcome_label'],
+            ...array_column($group['listeners'], 'name'),
+            ...array_column($group['dispatch_sources'], 'file'),
+        ];
+
+        foreach ($group['payload_shape'] as $entry) {
+            $parts[] = $entry['type'];
+            array_push($parts, ...$entry['fields']);
+        }
+
+        return mb_strtolower(implode(' ', array_filter($parts, fn (mixed $part): bool => is_scalar($part))));
+    }
+
+    /** @param array<string, mixed> $group */
+    private function eventNextStep(array $group): string
+    {
+        if ($group['duplicate_registration_count'] > 0) {
+            return 'The same listener is registered more than once. Check explicit registration and event discovery.';
+        }
+
+        if ($group['queued_listener_count'] > 0) {
+            return 'Open Queue to confirm the worker ran each queued listener.';
+        }
+
+        if (($group['broadcast'] ?? false) === true) {
+            return 'Check the broadcast channel and frontend subscription if connected clients did not update.';
+        }
+
+        if (count($group['dispatch_sources']) > 1) {
+            return 'Compare the dispatch sources, then inspect the registered listeners.';
+        }
+
+        if ($group['source'] === 'application' && $group['dispatch_sources'] !== []) {
+            return 'Start at the dispatch source, then inspect each registered listener.';
+        }
+
+        if ($group['listener_count'] === 0) {
+            return $group['source'] === 'framework'
+                ? 'Use the related collector for deeper evidence when this framework event looks unexpected.'
+                : 'Confirm whether this event is observation-only or missing an application listener.';
+        }
+
+        return 'Inspect the listener source when the observed result does not match the event.';
+    }
+
+    /** @return array{key: string, label: string}|null */
+    private function relatedEventSection(string $name): ?array
+    {
+        foreach ([
+            'Illuminate\\Database\\' => ['queries', 'Queries'],
+            'Illuminate\\Cache\\' => ['cache', 'Cache'],
+            'Illuminate\\Queue\\' => ['queue', 'Queue'],
+            'Illuminate\\Mail\\' => ['mail', 'Mail'],
+            'Illuminate\\Notifications\\' => ['notifications', 'Notifications'],
+            'Illuminate\\Http\\Client\\' => ['http_client', 'HTTP Client'],
+            'Illuminate\\Auth\\Access\\' => ['authorization', 'Authorization'],
+        ] as $prefix => [$key, $label]) {
+            if (str_starts_with($name, $prefix)) {
+                return ['key' => $key, 'label' => $label];
+            }
+        }
+
+        return null;
     }
 
     /** @param array<string, mixed> $profile @return list<array<string, mixed>> */

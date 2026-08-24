@@ -40,6 +40,93 @@ it('groups models views and event sources', function () {
         ->toBe(['framework', 'application']);
 });
 
+it('groups repeated event signatures while preserving timing sources listeners and payload shape', function () {
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'events' => ['summary' => ['count' => 5, 'retained_count' => 5], 'payload' => ['items' => [
+                [
+                    'name' => 'App\\Events\\TripWorkspaceRefreshed',
+                    'broadcast' => true,
+                    'at_ms' => 10.125,
+                    'callsite' => ['file' => 'app/Actions/RefreshTrip.php', 'line' => 41],
+                    'listeners' => [[
+                        'name' => 'App\\Listeners\\RecordWorkspaceRefresh@handle',
+                        'source' => ['file' => 'app/Listeners/RecordWorkspaceRefresh.php', 'line' => 12],
+                        'queued' => false,
+                        'registrations' => 2,
+                    ]],
+                    'payload_shape' => [[
+                        'position' => 1,
+                        'type' => 'App\\Events\\TripWorkspaceRefreshed',
+                        'fields' => ['tripId'],
+                        'field_count' => 1,
+                        'truncated' => false,
+                    ]],
+                ],
+                [
+                    'name' => 'App\\Events\\TripWorkspaceRefreshed',
+                    'broadcast' => true,
+                    'at_ms' => 18.875,
+                    'callsite' => ['file' => 'app/Jobs/RefreshTrip.php', 'line' => 24],
+                    'listeners' => [[
+                        'name' => 'App\\Listeners\\RecordWorkspaceRefresh@handle',
+                        'source' => ['file' => 'app/Listeners/RecordWorkspaceRefresh.php', 'line' => 12],
+                        'queued' => false,
+                        'registrations' => 2,
+                    ]],
+                    'payload_shape' => [[
+                        'position' => 1,
+                        'type' => 'App\\Events\\TripWorkspaceRefreshed',
+                        'fields' => ['tripId'],
+                        'field_count' => 1,
+                        'truncated' => false,
+                    ]],
+                ],
+                ['name' => 'Illuminate\\Database\\Events\\StatementPrepared', 'at_ms' => 2.5],
+                ['name' => 'Illuminate\\Database\\Events\\StatementPrepared', 'at_ms' => 4.75],
+                ['name' => 'application.ready', 'payload_types' => ['array']],
+            ]]],
+        ],
+    ]);
+
+    $groups = collect($profile['sections']['events']['payload']['groups']);
+    $application = $groups->firstWhere('name', 'App\\Events\\TripWorkspaceRefreshed');
+    $framework = $groups->firstWhere('name', 'Illuminate\\Database\\Events\\StatementPrepared');
+    $untimed = $groups->firstWhere('name', 'application.ready');
+
+    expect($profile['sections']['events']['summary'])
+        ->application_count->toBe(3)
+        ->framework_count->toBe(2)
+        ->group_count->toBe(3)
+        ->application_group_count->toBe(2)
+        ->framework_group_count->toBe(1)
+        ->and(array_column($profile['sections']['events']['payload']['items'], 'sequence'))->toBe([1, 2, 3, 4, 5])
+        ->and($application)
+        ->source->toBe('application')
+        ->display_name->toBe('TripWorkspaceRefreshed')
+        ->namespace->toBe('App\\Events')
+        ->occurrence_count->toBe(2)
+        ->first_sequence->toBe(1)
+        ->last_sequence->toBe(2)
+        ->first_at_ms->toBe(10.125)
+        ->last_at_ms->toBe(18.875)
+        ->span_ms->toBe(8.75)
+        ->listener_count->toBe(2)
+        ->duplicate_registration_count->toBe(1)
+        ->listener_outcome->toBe('completed')
+        ->payload_field_count->toBe(1)
+        ->and($application['payload_shape'][0]['fields'])->toBe(['tripId'])
+        ->and($application['dispatch_sources'])->toHaveCount(2)
+        ->and($application['next_step'])->toContain('registered more than once')
+        ->and($framework)
+        ->source->toBe('framework')
+        ->occurrence_count->toBe(2)
+        ->span_ms->toBe(2.25)
+        ->and($framework['related_section'])->toBe(['key' => 'queries', 'label' => 'Queries'])
+        ->and($untimed['first_at_ms'])->toBeNull()
+        ->and($untimed['payload_shape'][0]['type'])->toBe('array');
+});
+
 it('sorts model groups by count then by model name', function () {
     $profile = (new SectionAnalyzer)->analyze([
         'sections' => [
