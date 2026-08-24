@@ -26,14 +26,6 @@
                 'failed' => 'Failed',
                 'waiting' => 'Waiting for worker',
             ][$status] ?? ucfirst($status);
-            $statusClass = [
-                'queued' => 'ndb:bg-sky-100 ndb:text-sky-700 ndb:dark:bg-sky-950 ndb:dark:text-sky-300',
-                'delayed' => 'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
-                'processing' => 'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300',
-                'sent' => 'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300',
-                'failed' => 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300',
-                'waiting' => 'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
-            ][$status] ?? 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300';
             $statusTextClass = [
                 'queued' => 'ndb:text-sky-600 ndb:dark:text-sky-300',
                 'delayed' => 'ndb:text-amber-600 ndb:dark:text-amber-300',
@@ -86,7 +78,6 @@
                         : 'Recipient resolved by worker'),
                 'status' => $status,
                 'status_label' => $statusLabel,
-                'status_class' => $statusClass,
                 'status_text_class' => $statusTextClass,
                 'duration_ms' => (float) ($item['duration_ms'] ?? 0),
                 'mailer' => $mailer,

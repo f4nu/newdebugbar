@@ -336,7 +336,7 @@ trait DefinesTestApplication
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-item], [data-ndb-notification-item] { border-left: 20px solid rgb(255, 0, 0); }
-                            [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-mail-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-queue-status], [data-ndb-notification-status] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                         </style>

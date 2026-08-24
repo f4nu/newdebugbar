@@ -65,9 +65,10 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const filter = document.querySelector('[data-ndb-mail-filter]');
                 const header = detail.querySelector('header');
                 const actions = header.querySelector('[data-ndb-mail-actions]');
+                const visibleHeaderActions = [...actions.parentElement.children]
+                    .filter((element) => getComputedStyle(element).display !== 'none');
                 const primary = header.querySelector('[data-ndb-inspector-detail-header-primary]');
                 const subject = header.querySelector('[data-ndb-mail-detail-subject]');
-                const status = header.querySelector('[data-ndb-mail-status]');
                 const identity = header.querySelector('[data-ndb-mail-recipient]');
                 const metadata = header.querySelector('[data-ndb-mail-metadata]');
                 const metadataFacts = [...metadata.children];
@@ -100,10 +101,12 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && tabs[0].parentElement === previewControls.parentElement
                     && attachmentBadge.closest('header') === header
                     && actions.open === false
+                    && visibleHeaderActions.length === 1
+                    && visibleHeaderActions[0] === actions
                     && subject.closest('[data-ndb-inspector-detail-header-primary]') === primary
-                    && status.closest('[data-ndb-inspector-detail-header-primary]') === primary
+                    && header.querySelector('[data-ndb-mail-status]') === null
                     && metadataFacts.length === 4
-                    && header.textContent.includes('Sent')
+                    && ! header.textContent.includes('Sent')
                     && metadata.textContent.includes('Attachments')
                     && metadata.textContent.includes('Runtime')
                     && metadata.textContent.includes('Delivery')

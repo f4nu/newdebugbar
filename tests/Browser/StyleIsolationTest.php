@@ -162,8 +162,7 @@ it('keeps host styles and package styles isolated', function () {
                 const status = document.querySelector('[data-ndb-mail-status]');
                 const related = document.querySelector('[data-ndb-mail-related-profile]');
 
-                return Number.parseFloat(getComputedStyle(status).fontSize) === 11
-                    && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
+                return status === null
                     && related.getBoundingClientRect().height === 36
                     && getComputedStyle(related).borderRadius === '8px';
             })()

@@ -10,12 +10,6 @@
     <x-slot:aside>
         <div class="ndb:flex ndb:shrink-0 ndb:items-center ndb:gap-2">
             <span
-                data-ndb-mail-status
-                :class="selectedMailMessage.status_class"
-                class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
-                x-text="selectedMailMessage.status_label"
-            ></span>
-            <span
                 x-show.important="selectedMailMessage.lifecycle === 'after_response'"
                 class="ndb:rounded-md ndb:bg-indigo-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
             >After response</span>
