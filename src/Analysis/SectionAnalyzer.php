@@ -5,6 +5,10 @@ namespace NewDebugBar\Analysis;
 /** Adds deterministic summaries and groups to existing Laravel sections. */
 final class SectionAnalyzer
 {
+    private const EVENT_DISPATCH_SOURCE_LIMIT = 10;
+
+    private const EVENT_OCCURRENCE_EVIDENCE_LIMIT = 25;
+
     /** @param array<string, mixed> $profile @return array<string, mixed> */
     public function analyze(array $profile): array
     {
@@ -229,12 +233,29 @@ final class SectionAnalyzer
 
         foreach ($groups as &$group) {
             $group['dispatch_sources'] = array_values($group['dispatch_sources']);
+            usort($group['dispatch_sources'], fn (array $left, array $right): int => $right['count'] <=> $left['count']
+                ?: ($left['sequences'][0] ?? 0) <=> ($right['sequences'][0] ?? 0));
             $group['span_ms'] = $group['first_at_ms'] !== null && $group['last_at_ms'] !== null
                 ? round($group['last_at_ms'] - $group['first_at_ms'], 3)
                 : 0.0;
             $group['search'] = $this->eventSearchText($group);
             $group['next_step'] = $this->eventNextStep($group);
             $group['related_section'] = $this->relatedEventSection($group['name']);
+            $group['dispatch_source_count'] = count($group['dispatch_sources']);
+            $group['dispatch_source_omitted_count'] = max(
+                0,
+                $group['dispatch_source_count'] - self::EVENT_DISPATCH_SOURCE_LIMIT,
+            );
+            $group['dispatch_sources'] = array_slice(
+                $group['dispatch_sources'],
+                0,
+                self::EVENT_DISPATCH_SOURCE_LIMIT,
+            );
+            $group['occurrence_omitted_count'] = max(
+                0,
+                $group['occurrence_count'] - self::EVENT_OCCURRENCE_EVIDENCE_LIMIT,
+            );
+            $group['occurrences'] = $this->boundedEventOccurrences($group['occurrences']);
         }
         unset($group);
 
@@ -257,6 +278,21 @@ final class SectionAnalyzer
         $profile['sections']['events']['payload']['groups'] = $groups;
 
         return $profile;
+    }
+
+    /** @param list<array<string, mixed>> $occurrences @return list<array<string, mixed>> */
+    private function boundedEventOccurrences(array $occurrences): array
+    {
+        if (count($occurrences) <= self::EVENT_OCCURRENCE_EVIDENCE_LIMIT) {
+            return $occurrences;
+        }
+
+        $firstCount = intdiv(self::EVENT_OCCURRENCE_EVIDENCE_LIMIT, 2);
+
+        return [
+            ...array_slice($occurrences, 0, $firstCount),
+            ...array_slice($occurrences, -(self::EVENT_OCCURRENCE_EVIDENCE_LIMIT - $firstCount)),
+        ];
     }
 
     /** @param array<string, mixed> $item @return array<string, mixed> */

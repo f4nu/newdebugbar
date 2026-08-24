@@ -190,9 +190,9 @@
                         <span
                             class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
                             x-text="
-                                selectedEvent.dispatch_sources.length === 1
+                                selectedEvent.dispatch_source_count === 1
                                     ? '1 application location'
-                                    : selectedEvent.dispatch_sources.length + ' application locations'
+                                    : selectedEvent.dispatch_source_count + ' application locations'
                             "
                         ></span>
                     </div>
@@ -226,6 +226,17 @@
                             </button>
                         </template>
                     </div>
+                    <p
+                        data-ndb-event-dispatch-sources-omitted
+                        x-show.important="selectedEvent.dispatch_source_omitted_count > 0"
+                        class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                        x-text="
+                            selectedEvent.dispatch_source_omitted_count +
+                            (selectedEvent.dispatch_source_omitted_count === 1
+                                ? ' lower-frequency location is not shown.'
+                                : ' lower-frequency locations are not shown.')
+                        "
+                    ></p>
                 </section>
 
                 <section data-ndb-event-listeners class="ndb:space-y-2">
@@ -396,6 +407,17 @@
                             </div>
                         </template>
                     </div>
+                    <p
+                        data-ndb-event-occurrences-omitted
+                        x-show.important="selectedEvent.occurrence_omitted_count > 0"
+                        class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                        x-text="
+                            selectedEvent.occurrence_omitted_count +
+                            (selectedEvent.occurrence_omitted_count === 1
+                                ? ' middle dispatch is not shown.'
+                                : ' middle dispatches are not shown.')
+                        "
+                    ></p>
                 </section>
 
                 <section

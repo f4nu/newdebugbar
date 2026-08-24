@@ -216,10 +216,7 @@ final class CallSiteResolver
             ];
         }
 
-        return [
-            'file' => $this->relativePath($file),
-            'line' => max(1, $line),
-        ];
+        return null;
     }
 
     /** @param array<string, mixed> $frame */

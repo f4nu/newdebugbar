@@ -127,6 +127,37 @@ it('groups repeated event signatures while preserving timing sources listeners a
         ->and($untimed['payload_shape'][0]['type'])->toBe('array');
 });
 
+it('bounds grouped event detail while preserving totals and timeline endpoints', function () {
+    $items = array_map(fn (int $sequence): array => [
+        'name' => 'App\\Events\\RepeatedSignal',
+        'at_ms' => $sequence / 10,
+        'callsite' => [
+            'file' => 'app/Signals/Source'.(($sequence - 1) % 15).'.php',
+            'line' => $sequence,
+        ],
+    ], range(1, 40));
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'events' => [
+                'summary' => ['count' => 40, 'retained_count' => 40],
+                'payload' => ['items' => $items],
+            ],
+        ],
+    ]);
+    $group = $profile['sections']['events']['payload']['groups'][0];
+
+    expect($group)
+        ->occurrence_count->toBe(40)
+        ->occurrence_omitted_count->toBe(15)
+        ->dispatch_source_count->toBe(40)
+        ->dispatch_source_omitted_count->toBe(30)
+        ->and($group['occurrences'])->toHaveCount(25)
+        ->and($group['occurrences'][0]['sequence'])->toBe(1)
+        ->and($group['occurrences'][24]['sequence'])->toBe(40)
+        ->and($group['dispatch_sources'])->toHaveCount(10)
+        ->and($profile['sections']['events']['payload']['items'])->toHaveCount(40);
+});
+
 it('sorts model groups by count then by model name', function () {
     $profile = (new SectionAnalyzer)->analyze([
         'sections' => [
