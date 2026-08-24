@@ -389,7 +389,7 @@ export function createNewDebugBar(
     httpClientSort: 'execution',
     httpClientSelected: null,
     httpClientDetailOpen: false,
-    httpClientDetailTab: 'overview',
+    httpClientDetailTab: 'response',
     visibleHttpClientCount: summary.section_counts?.http_client ?? 0,
     mailMessages: [],
     pendingMailMessageId: null,
@@ -1888,7 +1888,7 @@ export function createNewDebugBar(
       this.httpClientSort = 'execution';
       this.httpClientSelected = null;
       this.httpClientDetailOpen = false;
-      this.httpClientDetailTab = 'overview';
+      this.httpClientDetailTab = 'response';
       this.visibleHttpClientCount = 0;
       this.mailMessages = [];
       this.pendingMailMessageId = null;
@@ -2633,7 +2633,7 @@ export function createNewDebugBar(
       this.httpClientSearch = '';
       this.httpClientSort = 'execution';
       this.httpClientDetailOpen = false;
-      this.httpClientDetailTab = 'overview';
+      this.httpClientDetailTab = 'response';
       this.httpClientSelected = this.httpClientRequests[0]?.execution ?? null;
       this.$nextTick?.(() => this.applyHttpClientView());
     },
@@ -2657,11 +2657,11 @@ export function createNewDebugBar(
 
       this.httpClientSelected = execution;
       this.httpClientDetailOpen = true;
-      this.httpClientDetailTab = 'overview';
+      this.httpClientDetailTab = 'response';
     },
 
     setHttpClientDetailTab(tab) {
-      if (!['overview', 'request', 'response', 'source'].includes(tab)) return;
+      if (!['response', 'request', 'source'].includes(tab)) return;
 
       this.httpClientDetailTab = tab;
       this.$nextTick?.(() => this.$refs?.httpClientDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
@@ -2714,7 +2714,7 @@ export function createNewDebugBar(
 
       if (!selectedVisible) {
         this.httpClientSelected = firstVisible;
-        this.httpClientDetailTab = 'overview';
+        this.httpClientDetailTab = 'response';
       }
     },
 

@@ -149,10 +149,10 @@ it('keeps host styles and package styles isolated', function () {
                 const method = document.querySelector('[data-ndb-http-client-method]');
                 const header = document.querySelector('[data-ndb-http-client-header]');
                 const path = header.querySelector('[data-ndb-http-client-detail-path]');
-                const facts = document.querySelector('[data-ndb-http-client-facts]');
+                const facts = document.querySelector('[data-ndb-http-client-response-facts]');
                 const factElements = [...facts.querySelectorAll('dl, dt, dd')];
+                const detailStatus = document.querySelector('[data-ndb-http-client-detail-status]');
                 const copyUrl = document.querySelector('[data-ndb-http-client-copy-url]');
-                const sourceLink = document.querySelector('[data-ndb-http-client-source-link]');
                 const listFilters = [...document.querySelectorAll('[data-ndb-http-client-filter]')];
                 const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
 
@@ -173,7 +173,7 @@ it('keeps host styles and package styles isolated', function () {
                     factElements.every((element) => getComputedStyle(element).color !== 'rgb(0, 128, 0)'),
                     copyUrl.getBoundingClientRect().height < 91,
                     getComputedStyle(copyUrl).backgroundColor !== 'rgb(255, 0, 0)',
-                    sourceLink.getBoundingClientRect().height < 91,
+                    getComputedStyle(detailStatus).color !== 'rgb(0, 128, 0)',
                     listFilters.every((filter) => filter.getBoundingClientRect().height < 91),
                     detailTabs.every((tab) => tab.getBoundingClientRect().height < 91),
                 ];
@@ -183,9 +183,24 @@ it('keeps host styles and package styles isolated', function () {
         ->assertScript(<<<'JS'
             (() => {
                 const copyCurl = document.querySelector('[data-ndb-http-client-copy-curl]');
+                const facts = document.querySelector('[data-ndb-http-client-request-facts]');
+                const host = document.querySelector('[data-ndb-http-client-detail-host]');
 
                 return copyCurl.getBoundingClientRect().height < 91
-                    && getComputedStyle(copyCurl).backgroundColor !== 'rgb(255, 0, 0)';
+                    && getComputedStyle(copyCurl).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(facts).display === 'grid'
+                    && getComputedStyle(host).color !== 'rgb(0, 128, 0)';
+            })()
+            JS)
+        ->click('[data-ndb-http-client-detail-tab="source"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const facts = document.querySelector('[data-ndb-http-client-source-facts]');
+                const source = document.querySelector('[data-ndb-http-client-detail-source]');
+
+                return getComputedStyle(facts).display === 'grid'
+                    && getComputedStyle(source).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(source).color !== 'rgb(0, 0, 0)';
             })()
             JS)
         ->click('[data-ndb-section="mail"]')

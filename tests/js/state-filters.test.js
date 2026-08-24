@@ -230,6 +230,7 @@ test('HTTP client filters failures and slow requests while keeping one selected'
   assert.equal(state.httpClientFilter, 'all');
   assert.equal(state.httpClientSelected, 1);
   assert.equal(state.httpClientDetailOpen, false);
+  assert.equal(state.httpClientDetailTab, 'response');
   assert.equal(state.selectedHttpClientRequest.host, 'api.example.test');
   assert.equal(first.hidden, false);
   assert.equal(first.style.display, '');
@@ -270,11 +271,11 @@ test('HTTP client filters failures and slow requests while keeping one selected'
   state.setHttpClientSort('duration');
   assert.deepEqual(appended, [second, third, first]);
 
-  state.httpClientDetailTab = 'response';
+  state.httpClientDetailTab = 'source';
   state.selectHttpClientRequest(1);
   assert.equal(state.httpClientSelected, 1);
   assert.equal(state.httpClientDetailOpen, true);
-  assert.equal(state.httpClientDetailTab, 'overview');
+  assert.equal(state.httpClientDetailTab, 'response');
 
   state.selectHttpClientRequest(2);
   assert.equal(state.httpClientSelected, 2);

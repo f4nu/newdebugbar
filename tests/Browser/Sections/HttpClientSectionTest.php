@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
+it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
     visit('/profiled-http-client-rich')
         ->resize(1440, 900)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
@@ -12,7 +12,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
         ->assertDontSee('HTTP client needs attention.')
         ->assertScript('document.querySelector("[data-ndb-http-client-attention]") === null')
         ->assertAttribute('[data-ndb-http-client-filter="all"]', 'aria-pressed', 'true')
-        ->assertAttribute('[data-ndb-http-client-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-http-client-detail-tab="response"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 7)
         ->assertScript(<<<'JS'
             (() => {
@@ -27,7 +27,9 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                 const durations = rows.map((row) => row.querySelector('[data-ndb-http-client-list-duration]'));
                 const header = document.querySelector('[data-ndb-http-client-header]');
                 const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
-                const facts = document.querySelector('[data-ndb-http-client-facts]');
+                const requestFacts = document.querySelector('[data-ndb-http-client-request-facts]');
+                const responseFacts = document.querySelector('[data-ndb-http-client-response-facts]');
+                const sourceFacts = document.querySelector('[data-ndb-http-client-source-facts]');
                 const search = document.querySelector('[data-ndb-http-client-search]');
                 const searchIcon = search.parentElement.querySelector('svg');
                 const sort = document.querySelector('[data-ndb-http-client-sort]');
@@ -82,9 +84,9 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     ]))
                     && Math.abs(search.getBoundingClientRect().top - sort.getBoundingClientRect().top) <= 1
                     && search.getBoundingClientRect().right < sort.getBoundingClientRect().left
-                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left >= 7
-                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left <= 9
-                    && Math.round(searchIcon.getBoundingClientRect().width) === 12
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left >= 9
+                    && searchIcon.getBoundingClientRect().left - search.getBoundingClientRect().left <= 11
+                    && Math.round(searchIcon.getBoundingClientRect().width) === 16
                     && searchIcon.getBoundingClientRect().right
                         <= search.getBoundingClientRect().left + parseFloat(getComputedStyle(search).paddingLeft)
                     && filters.getBoundingClientRect().top > search.getBoundingClientRect().bottom
@@ -106,14 +108,23 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && header.querySelector('[data-ndb-http-client-detail-status]') === null
                     && !header.textContent.includes('200 OK')
                     && !header.textContent.includes('ms')
-                    && facts && !header.contains(facts)
+                    && responseFacts && !header.contains(responseFacts)
+                    && responseFacts.textContent.includes('Status')
+                    && responseFacts.textContent.includes('Runtime')
+                    && responseFacts.textContent.includes('Response body')
+                    && !responseFacts.textContent.includes('Host')
+                    && !responseFacts.textContent.includes('Source')
+                    && requestFacts.textContent.includes('Host')
+                    && requestFacts.textContent.includes('Request body')
+                    && !requestFacts.textContent.includes('Status')
+                    && sourceFacts.textContent.includes('Source')
                     && header.querySelectorAll('button').length === 1
                     && verticallyAligned([headerMethod, headerPath, urlAction])
                     && urlAction.textContent.trim() === 'Copy URL'
                     && urlIcon.querySelectorAll('path').length === 2
                     && urlIcon.querySelector('rect') === null
                     && document.querySelectorAll('[data-ndb-http-client-copy-curl]').length === 1
-                    && detailTabs.map((tab) => tab.textContent.trim()).join('|') === 'Overview|Request|Response|Source'
+                    && detailTabs.map((tab) => tab.textContent.trim()).join('|') === 'Response|Request|Source'
                     && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
                     && detailTabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'tabs')
                     && detailTabs.every((tab) => tab.querySelector('svg') === null)
@@ -121,6 +132,9 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
                     && getComputedStyle(slowDuration).color !== getComputedStyle(successStatus).color
                     && getComputedStyle(detail).overflowY === 'auto'
                     && detail.tabIndex === 0
+                    && getComputedStyle(document.querySelector('[data-ndb-http-client-detail-panel="response"]')).display !== 'none'
+                    && document.querySelector('[data-ndb-http-client-detail-panel="overview"]') === null
+                    && document.querySelector('[data-ndb-http-client-guidance]') === null
                     && !document.querySelector('[data-ndb-http-client]').textContent.includes('•')
                     && rows.every((row) => ! /#\d+/.test(row.textContent));
             })()
@@ -133,13 +147,11 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
         ->assertAttribute('[data-ndb-http-client-filter="slow"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 1)
         ->assertAttribute('[data-ndb-http-client-item="1"]', 'aria-pressed', 'true')
-        ->assertSee('Inspect the response size, endpoint work, timeout, and whether this call can leave the request path.')
+        ->assertVisible('[data-ndb-http-client-detail-panel="response"]')
         ->click('[data-ndb-http-client-filter="failed"]')
         ->click('[data-ndb-http-client-item="6"]')
         ->assertAttribute('[data-ndb-http-client-item="6"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-status]").textContent.trim() === "503 Service Unavailable"')
-        ->assertSee('api.error.test returned HTTP 503 Service Unavailable.')
-        ->assertSee('Confirm endpoint health, timeout, and retry behavior.')
         ->assertScript(<<<'JS'
             (() => {
                 const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
@@ -165,6 +177,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
         ->click('[data-ndb-http-client-detail-tab="request"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="request"]')
         ->assertSee('Request body')
+        ->assertScript('document.querySelector("[data-ndb-http-client-detail-host]").textContent.trim() === "api.error.test"')
         ->click('[data-ndb-http-client-copy-curl]')
         ->wait(0.05)
         ->assertScript(<<<'JS'
@@ -204,21 +217,17 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
         ->assertSee('Service unavailable.')
         ->click('[data-ndb-http-client-detail-tab="source"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="source"]')
+        ->assertScript('document.querySelector("[data-ndb-http-client-detail-source]").textContent.includes("tests/Support/DefinesTestApplication.php")')
         ->assertSee('tests/Support/DefinesTestApplication.php')
         ->click('[data-ndb-http-client-filter="all"]')
         ->click('[data-ndb-http-client-item="3"]')
-        ->assertSee('api.redirect.test returned HTTP 302 Found.')
-        ->assertSee('If the redirect was unexpected, inspect the Location header and the client redirect settings.')
-        ->click('[data-ndb-http-client-detail-tab="response"]')
+        ->assertVisible('[data-ndb-http-client-detail-panel="response"]')
         ->assertSee('Redirect to')
         ->assertSee('https://api.redirect.test/v2/current')
         ->click('[data-ndb-http-client-item="4"]')
-        ->assertSee('Inspect the response body and compare the submitted payload with the remote validation rules.')
-        ->assertDontSee('Check DNS, network access, the endpoint, and timeout settings.')
+        ->assertVisible('[data-ndb-http-client-detail-panel="response"]')
         ->click('[data-ndb-http-client-item="7"]')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-status]").textContent.trim() === "Connection failed"')
-        ->assertSee('Check DNS, network access, the endpoint, and timeout settings.')
-        ->click('[data-ndb-http-client-detail-tab="response"]')
         ->assertSee('No HTTP response was received.')
         ->click('[data-ndb-http-client-filter="all"]')
         ->select('[data-ndb-http-client-sort]', 'duration')
@@ -234,7 +243,7 @@ it('filters, sorts, selects, and explains outbound HTTP evidence', function () {
         ->type('[data-ndb-http-client-search]', 'healthy.test')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 1)
         ->assertAttribute('[data-ndb-http-client-item="2"]', 'aria-pressed', 'true')
-        ->assertSee('No follow-up is needed.')
+        ->assertScript('document.querySelector("[data-ndb-http-client-detail-status]").textContent.trim() === "204 No Content"')
         ->type('[data-ndb-http-client-search]', ' no request matches')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 0)
         ->assertSee('No outbound HTTP requests match these controls.')
@@ -305,14 +314,14 @@ it('keeps HTTP request details readable on mobile in dark mode', function () {
                     && content.scrollWidth <= content.clientWidth + 1
                     && back.getClientRects().length > 0
                     && back.textContent.trim() === 'Requests'
-                    && tabs.length === 4
-                    && tabs.map((tab) => tab.textContent.trim()).join('|') === 'Overview|Request|Response|Source'
+                    && tabs.length === 3
+                    && tabs.map((tab) => tab.textContent.trim()).join('|') === 'Response|Request|Source'
+                    && tabs[0].getAttribute('aria-pressed') === 'true'
                     && tabs.every((tab) => tab.getClientRects().length > 0)
                     && tabs.every((tab) => tab.querySelector('svg') === null)
                     && urlAction.getBoundingClientRect().height >= 36;
             })()
             JS)
-        ->click('[data-ndb-http-client-detail-tab="response"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="response"]')
         ->assertSee('No HTTP response was received.')
         ->click('[data-ndb-http-client-detail-back]')

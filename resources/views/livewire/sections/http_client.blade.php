@@ -76,12 +76,12 @@
                                     @input.debounce.100ms="applyHttpClientView()"
                                     type="search"
                                     placeholder="Search requests"
-                                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-3 ndb:pl-7 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
+                                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-3 ndb:pl-8 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
                                 />
                                 <x-newdebugbar::icon
                                     name="search"
-                                    size="3"
-                                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:left-2 ndb:-translate-y-1/2 ndb:text-zinc-400"
+                                    size="4"
+                                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:left-2.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
                                 />
                             </label>
                         @endif
@@ -209,7 +209,7 @@
 
                         <div class="ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
                             <x-newdebugbar::filter-tabs label="Outbound HTTP request detail" class="ndb:min-w-0">
-                                @foreach (['overview' => 'Overview', 'request' => 'Request', 'response' => 'Response', 'source' => 'Source'] as $tab => $label)
+                                @foreach (['response' => 'Response', 'request' => 'Request', 'source' => 'Source'] as $tab => $label)
                                     <x-newdebugbar::filter-tab
                                         data-ndb-http-client-detail-tab="{{ $tab }}"
                                         @click="setHttpClientDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
@@ -223,15 +223,27 @@
                         </div>
 
                         <div class="ndb:p-4">
-                            <x-newdebugbar::http-client-overview />
-
                             <div
                                 data-ndb-http-client-detail-panel="request"
                                 x-show.important="httpClientDetailTab === 'request'"
                             >
-                                <div class="ndb:flex ndb:flex-wrap ndb:items-end ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800">
-                                    <dl>
-                                        <div>
+                                <div class="ndb:flex ndb:flex-col ndb:items-stretch ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800">
+                                    <dl
+                                        data-ndb-http-client-request-facts
+                                        class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3"
+                                    >
+                                        <div class="ndb:min-w-0">
+                                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                                                Host
+                                            </dt>
+                                            <dd
+                                                data-ndb-http-client-detail-host
+                                                :title="selectedHttpClientRequest.host"
+                                                class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                                x-text="selectedHttpClientRequest.host"
+                                            ></dd>
+                                        </div>
+                                        <div class="ndb:min-w-0">
                                             <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
                                                 Request body
                                             </dt>
@@ -245,7 +257,7 @@
                                         type="button"
                                         data-ndb-http-client-copy-curl
                                         @click="copyText(selectedHttpClientRequest.curl)"
-                                        class="ndb:inline-flex ndb:h-auto ndb:min-h-9 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
+                                        class="ndb:inline-flex ndb:h-auto ndb:min-h-9 ndb:items-center ndb:self-start ndb:gap-1.5 ndb:rounded-lg ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:self-auto ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
                                     >
                                         <x-newdebugbar::icon name="code" size="3.5" />
                                         Copy safe cURL
@@ -268,48 +280,91 @@
                                 data-ndb-http-client-detail-panel="response"
                                 x-show.important="httpClientDetailTab === 'response'"
                             >
-                                <template x-if="selectedHttpClientRequest.response">
-                                    <div>
-                                        <dl class="ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800">
-                                            <div>
-                                                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                                    Response body
-                                                </dt>
-                                                <dd
-                                                    class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                    x-text="selectedHttpClientRequest.response_body_size_label"
-                                                ></dd>
-                                            </div>
-                                            <div
-                                                x-show.important="selectedHttpClientRequest.redirect_location"
-                                                class="ndb:min-w-0"
-                                            >
-                                                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                                    Redirect to
-                                                </dt>
-                                                <dd
-                                                    :title="selectedHttpClientRequest.redirect_location"
-                                                    class="ndb:mt-0.5 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                    x-text="selectedHttpClientRequest.redirect_location"
-                                                ></dd>
-                                            </div>
-                                        </dl>
+                                <dl
+                                    data-ndb-http-client-response-facts
+                                    class="ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800 ndb:sm:grid-cols-4"
+                                >
+                                    <div class="ndb:min-w-0">
+                                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                                            Status
+                                        </dt>
+                                        <dd
+                                            data-ndb-http-client-detail-status
+                                            :class="selectedHttpClientRequest.failed
+                                                ? 'ndb:text-red-700 ndb:dark:text-red-300'
+                                                : 'ndb:text-zinc-700 ndb:dark:text-zinc-200'"
+                                            class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-bold"
+                                            x-text="selectedHttpClientRequest.status_label"
+                                        ></dd>
+                                    </div>
+                                    <div class="ndb:min-w-0">
+                                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                                            Runtime
+                                        </dt>
+                                        <dd
+                                            data-ndb-http-client-detail-runtime
+                                            :class="selectedHttpClientRequest.slow
+                                                ? 'ndb:text-amber-700 ndb:dark:text-amber-300'
+                                                : 'ndb:text-zinc-700 ndb:dark:text-zinc-200'"
+                                            class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
+                                            x-text="selectedHttpClientRequest.duration_label"
+                                        ></dd>
+                                    </div>
+                                    <div x-show.important="selectedHttpClientRequest.response" class="ndb:min-w-0">
+                                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                                            Response body
+                                        </dt>
+                                        <dd
+                                            class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                            x-text="selectedHttpClientRequest.response_body_size_label"
+                                        ></dd>
+                                    </div>
+                                    <div
+                                        x-show.important="selectedHttpClientRequest.redirect_location"
+                                        class="ndb:min-w-0"
+                                    >
+                                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                                            Redirect to
+                                        </dt>
+                                        <dd
+                                            :title="selectedHttpClientRequest.redirect_location"
+                                            class="ndb:mt-0.5 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                            x-text="selectedHttpClientRequest.redirect_location"
+                                        ></dd>
+                                    </div>
+                                </dl>
 
-                                        <div class="ndb:mt-5 ndb:space-y-5">
-                                            <section>
-                                                <h4 class="ndb:mb-2 ndb:text-xs ndb:font-bold">Headers</h4>
-                                                <pre class="ndb-scrollbar ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatHttpClientEvidence(selectedHttpClientRequest.response?.headers)"></code></pre>
-                                            </section>
-                                            <section>
-                                                <h4 class="ndb:mb-2 ndb:text-xs ndb:font-bold">Body</h4>
-                                                <pre class="ndb-scrollbar ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatHttpClientEvidence(selectedHttpClientRequest.response?.body)"></code></pre>
-                                            </section>
-                                        </div>
+                                <dl
+                                    data-ndb-http-client-failure
+                                    x-show.important="selectedHttpClientRequest.failed"
+                                    class="ndb:mt-4 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800"
+                                >
+                                    <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
+                                        <dt class="ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">
+                                            Failure
+                                        </dt>
+                                        <dd
+                                            class="ndb:text-xs ndb:leading-5 ndb:text-red-700 ndb:dark:text-red-300"
+                                            x-text="selectedHttpClientRequest.response_summary"
+                                        ></dd>
+                                    </div>
+                                </dl>
+
+                                <template x-if="selectedHttpClientRequest.response">
+                                    <div class="ndb:mt-5 ndb:space-y-5">
+                                        <section>
+                                            <h4 class="ndb:mb-2 ndb:text-xs ndb:font-bold">Headers</h4>
+                                            <pre class="ndb-scrollbar ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatHttpClientEvidence(selectedHttpClientRequest.response?.headers)"></code></pre>
+                                        </section>
+                                        <section>
+                                            <h4 class="ndb:mb-2 ndb:text-xs ndb:font-bold">Body</h4>
+                                            <pre class="ndb-scrollbar ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatHttpClientEvidence(selectedHttpClientRequest.response?.body)"></code></pre>
+                                        </section>
                                     </div>
                                 </template>
 
                                 <template x-if="! selectedHttpClientRequest.response">
-                                    <div>
+                                    <div class="ndb:mt-5">
                                         <p class="ndb:text-xs ndb:font-semibold">No HTTP response was received.</p>
                                         <dl
                                             x-show.important="
@@ -349,12 +404,31 @@
                                 data-ndb-http-client-detail-panel="source"
                                 x-show.important="httpClientDetailTab === 'source'"
                             >
+                                <dl
+                                    data-ndb-http-client-source-facts
+                                    class="ndb:grid ndb:grid-cols-1 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800"
+                                >
+                                    <div class="ndb:min-w-0">
+                                        <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                                            Source
+                                        </dt>
+                                        <dd class="ndb:mt-0.5 ndb:min-w-0">
+                                            <code
+                                                data-ndb-http-client-detail-source
+                                                :title="selectedHttpClientRequest.callsite_label"
+                                                class="ndb:block ndb:max-w-full ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:dark:text-indigo-300"
+                                                x-text="selectedHttpClientRequest.callsite_label"
+                                            ></code>
+                                        </dd>
+                                    </div>
+                                </dl>
+
                                 <template x-if="(selectedHttpClientRequest.stack ?? []).length === 0">
-                                    <p class="ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    <p class="ndb:mt-5 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                         No application stack was captured.
                                     </p>
                                 </template>
-                                <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+                                <div class="ndb:mt-5 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
                                     <template
                                         x-for="(frame, index) in selectedHttpClientRequest.stack ?? []"
                                         :key="frame.file + ':' + frame.line + ':' + index"
