@@ -1004,6 +1004,9 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
   const appended = [];
+  let detailFocuses = 0;
+  let detailScrolls = 0;
+  let returnFocuses = 0;
   const item = (id, source, search, occurrences, firstSequence, lastSequence) => ({
     dataset: {
       ndbEventId: String(id),
@@ -1027,10 +1030,16 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   const framework = item(1, 'framework', 'illuminate auth login', 14, 1, 18);
   const application = item(2, 'application', 'clinic ready listener payload source', 2, 4, 9);
   const laterApplication = item(3, 'application', 'trip refreshed listener', 1, 20, 20);
+  laterApplication.isConnected = true;
+  laterApplication.focus = () => returnFocuses++;
   state.$refs = {
     eventList: {
       children: [framework, application, laterApplication],
       appendChild: (child) => appended.push(child),
+    },
+    eventDetail: {
+      focus: () => detailFocuses++,
+      scrollTo: () => detailScrolls++,
     },
   };
   state.$nextTick = (callback) => callback();
@@ -1098,8 +1107,17 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(state.eventDetailTab, 'overview');
   state.setEventDetailTab('payload');
   assert.equal(state.eventDetailTab, 'payload');
+  assert.equal(detailScrolls, 2);
   state.closeEventDetail();
   assert.equal(state.eventDetailOpen, false);
+  assert.equal(returnFocuses, 1);
+
+  browser.viewportWidth = () => 390;
+  state.selectEvent(3, laterApplication);
+  assert.equal(detailFocuses, 1);
+  state.closeEventDetail();
+  assert.equal(returnFocuses, 2);
+  state.closeEventDetail();
 
   state.setEventSource('invalid');
   state.setEventSort('invalid');
@@ -1108,7 +1126,7 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(state.eventSource, 'all');
   assert.equal(state.eventSort, 'latest');
   assert.equal(state.eventSelected, 3);
-  assert.equal(state.eventDetailTab, 'payload');
+  assert.equal(state.eventDetailTab, 'overview');
   assert.equal(state.formatEventTime(null), '—');
   assert.equal(state.formatEventTime(''), '—');
   assert.equal(state.formatEventTime('missing'), '—');
