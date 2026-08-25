@@ -35,6 +35,7 @@ use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Http\Controllers\AssetController;
 use NewDebugBar\Http\Controllers\MailPreviewController;
+use NewDebugBar\Http\Controllers\StudioController;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Mcp\NewDebugBarServer;
@@ -240,6 +241,8 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $router->get('/__newdebugbar/assets/{path}', AssetController::class)
             ->where('path', '.*')
             ->name('newdebugbar.asset');
+        $router->get('/__newdebugbar/studio', StudioController::class)
+            ->name('newdebugbar.studio');
         $router->get('/__newdebugbar/mail/{profile}/{index}/{format}', MailPreviewController::class)
             ->where('profile', ProfileStore::ID_PATTERN)
             ->whereNumber('index')

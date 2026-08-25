@@ -1,5 +1,6 @@
 <?php
 
+use NewDebugBar\Presentation\StudioCatalog;
 use NewDebugBar\Tests\Support\ProjectFiles;
 
 it('keeps every Blade view focused', function () {
@@ -15,6 +16,39 @@ it('keeps every Blade view focused', function () {
     }
 
     expect($oversizedViews)->toBe([]);
+});
+
+it('documents and demonstrates every reusable Blade component in Studio', function () {
+    $root = dirname(__DIR__, 2);
+    $componentDirectory = $root.'/resources/views/components';
+    $catalog = StudioCatalog::groups();
+    $catalogComponents = collect($catalog)
+        ->flatMap(fn (array $group): array => array_keys($group['components']))
+        ->values()
+        ->all();
+    $viewComponents = collect(ProjectFiles::bladeFilesIn($componentDirectory))
+        ->map(fn (SplFileInfo $file): string => str_replace('.blade.php', '', $file->getFilename()))
+        ->sort()
+        ->values()
+        ->all();
+    $documentedComponents = file_get_contents($root.'/.agents/skills/craft-newdebugbar-ui/references/components.md');
+
+    expect($catalogComponents)->toHaveCount(count(array_unique($catalogComponents)));
+
+    sort($catalogComponents);
+
+    expect($catalogComponents)->toBe($viewComponents);
+
+    foreach ($catalog as $slug => $group) {
+        expect($group['title'])->not->toBeEmpty()
+            ->and($group['description'])->not->toBeEmpty()
+            ->and($root.'/resources/views/studio/demos/'.$slug.'.blade.php')->toBeFile();
+
+        foreach ($group['components'] as $component => $description) {
+            expect($description)->not->toBeEmpty()
+                ->and($documentedComponents)->toContain('`'.$component.'`');
+        }
+    }
 });
 
 it('keeps package interface text at a readable minimum size', function () {
