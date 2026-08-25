@@ -213,9 +213,12 @@
                         'ndb:mt-5' => $retrievalCount > 0,
                     ])
                 >
-                    <h4 class="ndb:text-xs ndb:font-bold">Writes</h4>
+                    <x-newdebugbar::inspector-explanation
+                        title="How this model changed"
+                        description="Each row is one completed model write during this request. Operation shows what Laravel did, Record identifies the affected record, Time shows when it happened in the request, and Source shows where it started. If a write is unexpected, use Source to trace the code that triggered it."
+                    />
 
-                    <div class="ndb:mt-2 ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
+                    <div class="ndb:mt-3 ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                         <div class="ndb:hidden ndb:grid-cols-[minmax(6rem,0.7fr)_minmax(5rem,0.55fr)_5.5rem_minmax(8rem,1.25fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid">
                             <span>Operation</span>
                             <span>Record</span>

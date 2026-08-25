@@ -290,7 +290,9 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
         ->assertDontSee('Write events')
         ->assertVisible('[data-ndb-model-write-table]')
         ->assertVisible('[data-ndb-model-write-operation]')
-        ->assertSeeIn('[data-ndb-model-write-table]', 'Writes')
+        ->assertSeeIn('[data-ndb-model-write-table]', 'How this model changed')
+        ->assertSeeIn('[data-ndb-model-write-table]', 'Each row is one completed model write during this request.')
+        ->assertSeeIn('[data-ndb-model-write-table]', 'If a write is unexpected, use Source to trace the code that triggered it.')
         ->assertSeeIn('[data-ndb-model-write-operation]', 'Updated')
         ->assertDontSee('Updating')
         ->assertDontSee('Saved')
@@ -300,11 +302,13 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
                 const writes = metadata.find((fact) => fact.querySelector('dt').textContent.trim() === 'Writes');
                 const table = document.querySelector('[data-ndb-model-write-table]');
                 const heading = [...table.querySelector('div > div:first-child').children];
+                const tableGrid = heading[0].parentElement.parentElement;
                 const rows = [...table.querySelectorAll('[data-ndb-model-write-operation]')];
                 const cells = [...rows[0].children];
 
                 return writes?.querySelector('dd').textContent.trim() === '1'
                     && table.closest('[data-ndb-model-detail-panel="records"]') !== null
+                    && getComputedStyle(tableGrid).marginTop === '12px'
                     && heading.map((cell) => cell.textContent.trim()).join('|') === 'Operation|Record|Time|Source'
                     && rows.length === 1
                     && cells[0].innerText.trim() === 'Updated'
