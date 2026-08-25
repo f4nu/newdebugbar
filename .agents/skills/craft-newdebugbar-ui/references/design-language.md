@@ -140,8 +140,19 @@ Do not explain Source, repeat a heading, or narrate ordinary table columns. A ne
 
 - Do not render every retained payload, stack, editor, or detail panel on initial load.
 - Render the active group, selected item, and active tab.
-- Keep the Studio bounded to one component family per iframe page.
+- Keep the Studio bounded to exactly one reusable component per iframe page.
 - Treat large DOM output as a product defect even when it eventually renders.
+
+## Studio catalog
+
+- Group component navigation by practical purpose. Keep every component in exactly one compact navigation group.
+- Give every reusable component one canonical Studio URL. A page may show useful states or variants of that component, but it must not mix in other component demos.
+- Let the navigation identify the selected component. Do not repeat its name, purpose, type, breadcrumb, Blade tag, or source in a separate content header.
+- Use a normal page scroll. Do not make the component navigation an independent overflow region.
+- Keep the library and preview edge to edge. Do not nest the preview inside framed gallery cards or add a separate Studio header.
+- Center the selected component vertically and horizontally in its preview container, including larger compositions.
+- Use a searchable grouped navigation on desktop and a compact component picker on smaller outer viewports.
+- Keep theme, viewport, and manually resized width state when moving between component pages.
 
 ## Host isolation
 

@@ -8,7 +8,7 @@ For the benchmark, prove that Composer resolves this repository before treating 
 
 `http://newdebugbar-benchmark.test/trips/kyoto-autumn`
 
-Open `/__newdebugbar/studio` for shared-component inspection. The Studio proves component states and responsive primitives, but section behavior must still be checked on the real inspector.
+Open the component's canonical `/__newdebugbar/studio/{component}` page for shared-component inspection. Confirm that its iframe contains exactly one demo. The Studio proves component states and responsive primitives, but section behavior must still be checked on the real inspector.
 
 ## Required viewport and theme matrix
 

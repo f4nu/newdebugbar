@@ -16,7 +16,7 @@ Before changing UI:
 3. Read [references/components.md](references/components.md) when choosing, changing, or adding a component.
 4. Read [references/verification.md](references/verification.md) before verification.
 
-Use `/__newdebugbar/studio` as the living component catalog. It is a fast way to inspect the shared language, but it does not replace checking the real section with realistic profile data.
+Use `/__newdebugbar/studio` as the living component catalog. Browse one canonical component page at a time; the navigation groups components by practical purpose rather than presenting inspector sections as gallery pages. It is a fast way to inspect the shared language, but it does not replace checking the real section with realistic profile data.
 
 ## Workflow
 
@@ -56,7 +56,7 @@ Preserve unique diagnostic evidence. Move raw, internal, or supporting evidence 
 - Extract a component when the same visual or interaction rule appears in more than one section.
 - Let each section's data decide its labels, filters, tabs, and evidence. Shared structure does not mean identical content.
 
-Check [references/components.md](references/components.md) before creating a new primitive. Add every new reusable Blade component to `StudioCatalog`, its bounded Studio demo, and this reference in the same change.
+Check [references/components.md](references/components.md) before creating a new primitive. Add every new reusable Blade component to `StudioCatalog`, its focused Studio page and demo, and this reference in the same change.
 
 ### 5. Make state deliberate
 

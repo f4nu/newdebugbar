@@ -2,6 +2,8 @@
 
 The living visual catalog is `/__newdebugbar/studio`. The source registry is `src/Presentation/StudioCatalog.php`. Every file in `resources/views/components` must appear exactly once in the registry and in a bounded Studio demo.
 
+Each component has one canonical page at `/__newdebugbar/studio/{component}` and one preview at `/__newdebugbar/studio/{component}/preview`. The normal page navigation groups components by practical role, and the iframe renders exactly one centered component demo. Do not add a separate Studio header, component explainer, breadcrumb, source panel, or framed card around the preview. Inspector families such as HTTP Client or Cache are demo-harness provenance, not gallery pages.
+
 Prefer composition over adding props that only serve the Studio. State-bound components should be demonstrated inside the smallest realistic parent harness.
 
 ## Foundations
@@ -139,7 +141,7 @@ In one change:
 1. Reuse or edit an existing component when its semantics match.
 2. If a new component is warranted, keep its API about product semantics, not one page's layout accident.
 3. Add it to `StudioCatalog` with a useful description.
-4. Add a bounded real demo in the matching Studio family.
+4. Add a bounded real demo to its canonical Studio component page.
 5. Document its purpose, important variants, and state dependencies here.
 6. Extend completeness and focused behavior tests.
 7. Inspect it at desktop and mobile widths in both themes.
