@@ -1,11 +1,11 @@
 <x-newdebugbar::inspector-detail-header layout="wrap" data-ndb-http-client-header>
     <x-slot:title>
         <div class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-[3rem_minmax(0,1fr)] ndb:items-center ndb:gap-2">
-            <x-newdebugbar::http-client-method
+            <x-newdebugbar::inspector-operation-badge
                 outlined
                 data-ndb-http-client-detail-method
                 x-text="selectedHttpClientRequest.method"
-            ></x-newdebugbar::http-client-method>
+            ></x-newdebugbar::inspector-operation-badge>
             <h3
                 data-ndb-http-client-detail-path
                 :title="selectedHttpClientRequest.url"

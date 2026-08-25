@@ -12,7 +12,9 @@
                 x-text="'Locale ' + selectedNotification.locale"
             ></span>
         </div>
-        <pre class="ndb-scrollbar ndb:mt-2 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatNotificationEvidence(selectedNotification.notification_data)"></code></pre>
+        <x-newdebugbar::code-block language="json" class="ndb:mt-2">
+            <x-slot:value x-text="formatNotificationEvidence(selectedNotification.notification_data)"></x-slot:value>
+        </x-newdebugbar::code-block>
     </section>
 
     <section class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800">
@@ -59,14 +61,32 @@
                 </div>
             </template>
         </dl>
-        <pre class="ndb-scrollbar ndb:mt-2 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatNotificationEvidence(selectedNotificationDelivery?.response, 'No provider response was captured.')"></code></pre>
+        <x-newdebugbar::code-block language="json" class="ndb:mt-2">
+            <x-slot:value
+                x-text="
+                    formatNotificationEvidence(
+                        selectedNotificationDelivery?.response,
+                        'No provider response was captured.',
+                    )
+                "
+            ></x-slot:value>
+        </x-newdebugbar::code-block>
         <div x-show="selectedNotificationDelivery?.status === 'failed'" class="ndb:mt-3">
             <p
                 x-show="selectedNotificationDelivery?.failure_message"
                 class="ndb:rounded-lg ndb:bg-red-50 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:leading-5 ndb:text-red-700 ndb:dark:bg-red-950/30 ndb:dark:text-red-300"
                 x-text="selectedNotificationDelivery?.failure_message"
             ></p>
-            <pre class="ndb-scrollbar ndb:mt-2 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatNotificationEvidence(selectedNotificationDelivery?.failure_data, 'No extra failure data was captured.')"></code></pre>
+            <x-newdebugbar::code-block language="json" class="ndb:mt-2">
+                <x-slot:value
+                    x-text="
+                        formatNotificationEvidence(
+                            selectedNotificationDelivery?.failure_data,
+                            'No extra failure data was captured.',
+                        )
+                    "
+                ></x-slot:value>
+            </x-newdebugbar::code-block>
         </div>
     </section>
 
@@ -75,6 +95,8 @@
         class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
     >
         <h4 class="ndb:text-xs ndb:font-bold">Anonymous routes</h4>
-        <pre class="ndb-scrollbar ndb:mt-2 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="formatNotificationEvidence(selectedNotification.routes)"></code></pre>
+        <x-newdebugbar::code-block language="json" class="ndb:mt-2">
+            <x-slot:value x-text="formatNotificationEvidence(selectedNotification.routes)"></x-slot:value>
+        </x-newdebugbar::code-block>
     </section>
 </div>

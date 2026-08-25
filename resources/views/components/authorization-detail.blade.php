@@ -30,20 +30,19 @@
                 ></p>
             </header>
 
-            <div class="ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
-                <x-newdebugbar::filter-tabs label="Authorization decision detail">
-                    @foreach (['decision' => 'Decision', 'source' => 'Source'] as $tab => $label)
-                        <x-newdebugbar::filter-tab
-                            data-ndb-authorization-detail-tab="{{ $tab }}"
-                            @click="setAuthorizationDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
-                            ::aria-pressed="authorizationDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
-                            class="ndb:h-auto"
-                        >
-                            {{ $label }}
-                        </x-newdebugbar::filter-tab>
-                    @endforeach
-                </x-newdebugbar::filter-tabs>
-            </div>
+            <x-newdebugbar::inspector-detail-tabs label="Authorization decision detail">
+                @foreach (['decision' => 'Decision', 'source' => 'Source'] as $tab => $label)
+                    <x-newdebugbar::filter-tab
+                        variant="segmented"
+                        data-ndb-authorization-detail-tab="{{ $tab }}"
+                        @click="setAuthorizationDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
+                        ::aria-pressed="authorizationDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
+                        class="ndb:h-auto"
+                    >
+                        {{ $label }}
+                    </x-newdebugbar::filter-tab>
+                @endforeach
+            </x-newdebugbar::inspector-detail-tabs>
 
             <div class="ndb:p-4">
                 <div

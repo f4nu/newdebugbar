@@ -24,6 +24,7 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 const header = document.querySelector('[data-ndb-authorization-header]');
                 const detailResult = document.querySelector('[data-ndb-authorization-detail-result]');
                 const firstTab = document.querySelector('[data-ndb-authorization-detail-tab]');
+                const detailTabGroup = firstTab.closest('[data-ndb-filter-tabs]');
                 const resultRightEdges = results.map((result) => Math.round(result.getBoundingClientRect().right));
 
                 return getComputedStyle(workspace).display === 'grid'
@@ -39,6 +40,11 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                     && resultRightEdges.every((right) => right === resultRightEdges[0])
                     && header.querySelector('[data-ndb-authorization-detail-result]') === null
                     && detailResult.getBoundingClientRect().top > firstTab.getBoundingClientRect().bottom
+                    && detailTabGroup.dataset.ndbFilterTabsVariant === 'segmented'
+                    && Math.abs(
+                        detailTabGroup.getBoundingClientRect().left + detailTabGroup.getBoundingClientRect().width / 2
+                        - detail.getBoundingClientRect().left - detail.getBoundingClientRect().width / 2
+                    ) <= 1
                     && document.querySelector('[data-ndb-authorization-item][aria-pressed="true"]') !== null;
             })()
             JS);
@@ -225,6 +231,7 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                 const list = workspace.firstElementChild;
                 const back = document.querySelector('[data-ndb-authorization-detail-back]');
                 const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
+                const detailTabGroup = tabs[0].closest('[data-ndb-filter-tabs]');
                 const contentRect = content.getBoundingClientRect();
                 const backRect = back.getBoundingClientRect();
 
@@ -242,6 +249,8 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                     && back.textContent.trim() === 'Decisions'
                     && tabs.length === 2
                     && tabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
+                    && tabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
+                    && detailTabGroup.dataset.ndbFilterTabsVariant === 'segmented'
                     && tabs.every((tab) => tab.textContent.trim().length > 0)
                     && content.scrollWidth <= content.clientWidth + 1;
             })()

@@ -174,11 +174,14 @@
                                                 Loading view data…
                                             </div>
                                             <template x-if="viewDataLoaded && ! viewDataIsEmpty">
-                                                <pre
+                                                <x-newdebugbar::code-block
+                                                    language="json"
                                                     tabindex="0"
                                                     data-ndb-view-data
-                                                    class="ndb-code ndb-scrollbar ndb:max-h-80 ndb:overflow-auto ndb:rounded-none ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
-                                                ><code data-ndb-language="json" x-text="formattedViewData"></code></pre>
+                                                    class="ndb:max-h-80 ndb:overflow-auto ndb:rounded-none ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                                >
+                                                    <x-slot:value x-text="formattedViewData"></x-slot:value>
+                                                </x-newdebugbar::code-block>
                                             </template>
                                             <template x-if="viewDataLoaded && viewDataIsEmpty">
                                                 <p class="ndb:px-4 ndb:py-3 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">

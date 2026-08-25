@@ -1,5 +1,6 @@
 import '../css/newdebugbar.css';
 import hljs from 'highlight.js/lib/core';
+import http from 'highlight.js/lib/languages/http';
 import json from 'highlight.js/lib/languages/json';
 import sql from 'highlight.js/lib/languages/sql';
 import { installLivewireTrace } from './livewire-trace.js';
@@ -25,13 +26,22 @@ const php = (language) => ({
 });
 
 hljs.registerLanguage('json', json);
+hljs.registerLanguage('http', http);
 hljs.registerLanguage('php', php);
 hljs.registerLanguage('sql', sql);
 
+const highlightedSources = new WeakMap();
+
 window.newDebugBarHighlight = (root = document) => {
-  root.querySelectorAll('code[data-ndb-language]:not([data-highlighted])').forEach((block) => {
+  root.querySelectorAll('code[data-ndb-language]').forEach((block) => {
+    const source = block.textContent;
+    if (block.hasAttribute('data-highlighted') && highlightedSources.get(block) === source) return;
+
+    block.removeAttribute('data-highlighted');
+    block.textContent = source;
     block.classList.add(`language-${block.dataset.ndbLanguage}`);
     hljs.highlightElement(block);
+    highlightedSources.set(block, source);
   });
 };
 

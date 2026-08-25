@@ -28,7 +28,10 @@
         </div>
         @if ($exception['source'] ?? null)
             @php($sourceText = implode("\n", array_map(fn (array $line): string => sprintf('%4d%s %s', $line['number'], $line['focus'] ? '>' : ' ', $line['code']), $exception['source']['lines'])))
-            <pre class="ndb-code ndb-scrollbar ndb:max-h-72 ndb:rounded-none ndb:border-b ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="php">{{ $sourceText }}</code></pre>
+            <x-newdebugbar::code-block
+                language="php"
+                class="ndb:max-h-72 ndb:rounded-none ndb:border-b ndb:border-zinc-200 ndb:dark:border-zinc-800"
+            >{{ $sourceText }}</x-newdebugbar::code-block>
         @endif
         <div class="ndb:p-4">
             <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">

@@ -335,9 +335,10 @@
                         <x-newdebugbar::mail-header />
 
                         <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
-                            <x-newdebugbar::filter-tabs label="Mail detail" class="ndb:min-w-0">
+                            <x-newdebugbar::filter-tabs label="Mail detail" variant="segmented" class="ndb:min-w-0">
                                 @foreach (['preview' => ['Preview', 'eye'], 'message' => ['Message', 'mail'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
                                     <x-newdebugbar::filter-tab
+                                        variant="segmented"
                                         data-ndb-mail-detail-tab="{{ $tab }}"
                                         @click="setMailDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
                                         ::aria-pressed="mailDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"

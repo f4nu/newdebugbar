@@ -135,7 +135,9 @@
         <summary class="ndb:cursor-pointer ndb:text-xs ndb:font-bold ndb:text-zinc-900 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-100">
             Raw headers
         </summary>
-        <pre class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code x-text="selectedMailMessage.headers || 'No raw headers were captured.'"></code></pre>
+        <x-newdebugbar::code-block language="http" class="ndb:mt-3">
+            <x-slot:value x-text="selectedMailMessage.headers || 'No raw headers were captured.'"></x-slot:value>
+        </x-newdebugbar::code-block>
     </details>
 </div>
 

@@ -88,26 +88,26 @@
     </p>
 @endif
 
-@if ($itemCount >= 5)
-    <x-newdebugbar::search-field
-        label="Search cache operations"
-        placeholder="Search keys or stores"
-        data-ndb-cache-search
-        x-model="cacheSearch"
-        @input.debounce.100ms="applyCacheView()"
-    />
-@endif
+<div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_8.75rem] ndb:gap-2">
+    @if ($itemCount >= 5)
+        <x-newdebugbar::search-field
+            label="Search cache operations"
+            placeholder="Search keys or stores"
+            data-ndb-cache-search
+            x-model="cacheSearch"
+            @input.debounce.100ms="applyCacheView()"
+        />
+    @endif
 
-<x-newdebugbar::filter-tabs label="Filter cache operations" variant="segmented" class="ndb:w-full">
-    @foreach ($filters as $filter => [$label])
-        <x-newdebugbar::filter-tab
-            variant="segmented"
-            data-ndb-cache-filter="{{ $filter }}"
-            @click="setCacheFilter({{ \Illuminate\Support\Js::from($filter) }})"
-            ::aria-pressed="cacheFilter === {{ \Illuminate\Support\Js::from($filter) }}"
-            class="ndb:h-auto ndb:min-w-0 ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
-        >
-            <span>{{ $label }}</span>
-        </x-newdebugbar::filter-tab>
-    @endforeach
-</x-newdebugbar::filter-tabs>
+    <x-newdebugbar::select-field
+        label="Filter cache operations"
+        :span="$itemCount < 5"
+        data-ndb-cache-filter
+        x-model="cacheFilter"
+        @change="setCacheFilter($event.target.value)"
+    >
+        @foreach ($filters as $filter => [$label, $count])
+            <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
+        @endforeach
+    </x-newdebugbar::select-field>
+</div>

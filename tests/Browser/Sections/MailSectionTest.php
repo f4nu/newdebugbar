@@ -75,6 +75,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const metadataGrid = metadata.querySelector('[data-ndb-mail-facts]');
                 const metadataFacts = [...metadata.querySelectorAll('[data-ndb-mail-fact]')];
                 const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
+                const sourceLink = metadata.querySelector('[data-ndb-inspector-source-link]');
                 const addressGroups = [...identity.querySelector('dl').children];
                 const headerTop = header.getBoundingClientRect().top;
                 const availableScroll = Math.max(0, detail.scrollHeight - detail.clientHeight);
@@ -106,11 +107,19 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && getComputedStyle(listStatus).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(listStatus).borderWidth === '0px'
                     && tabs.length === 1
+                    && tabs[0].dataset.ndbFilterTabsVariant === 'segmented'
+                    && [...tabs[0].querySelectorAll('[data-ndb-mail-detail-tab]')]
+                        .every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
                     && viewportButtons.length === 2
                     && viewportButtons.every((button) => button.querySelector('svg'))
                     && viewportButtons.every((button) => button.querySelector('svg').getBoundingClientRect().width <= 12.5)
                     && formatControl.getBoundingClientRect().left > viewportControl.getBoundingClientRect().right
                     && tabs[0].parentElement === previewControls.parentElement
+                    && Math.abs(
+                        tabs[0].getBoundingClientRect().left
+                        - tabs[0].parentElement.getBoundingClientRect().left
+                        - Number.parseFloat(getComputedStyle(tabs[0].parentElement).paddingLeft)
+                    ) <= 1
                     && actions.open === false
                     && visibleHeaderActions.length === 1
                     && visibleHeaderActions[0] === actions
@@ -121,7 +130,10 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && getComputedStyle(metadataGrid).display === 'grid'
                     && getComputedStyle(metadataGrid).borderTopWidth === '0px'
                     && ! header.textContent.includes('Sent')
-                    && metadata.querySelectorAll('svg').length === 1
+                    && sourceLink.querySelector('svg') === null
+                    && getComputedStyle(sourceLink).paddingLeft === '0px'
+                    && getComputedStyle(sourceLink).textDecorationLine.includes('underline')
+                    && metadata.querySelectorAll('svg').length === 0
                     && header.querySelector('[data-ndb-mail-actions-trigger]').textContent.trim() === ''
                     && identity.textContent.includes('Recipients')
                     && identity.textContent.includes('Sender')
@@ -263,6 +275,14 @@ it('selects and inspects mail with a real in-panel preview', function () {
             JS)
         ->click('[data-ndb-mail-headers] summary')
         ->assertSee('X-Northstar-Flow: profiled-mail')
+        ->assertScript(<<<'JS'
+            (() => {
+                const code = document.querySelector('[data-ndb-mail-headers] code[data-ndb-language="http"][data-highlighted]');
+
+                return code !== null
+                    && code.querySelector('.hljs-attribute') !== null;
+            })()
+            JS)
         ->click('[data-ndb-mail-detail-tab="source"]')
         ->assertVisible('[data-ndb-mail-detail-panel="source"]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-mail-preview-controls]")).display === "none"')
@@ -280,6 +300,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
 
                 return facts.length === 2
                     && stack !== null
+                    && facts.every((fact) => fact.querySelector('svg') === null)
                     && getComputedStyle(sourceClass).fontFamily.includes('JetBrains Mono Variable')
                     && getComputedStyle(sourceClass).fontFeatureSettings.includes('"calt"')
                     && !getComputedStyle(triggerPath).fontFamily.includes('JetBrains Mono Variable')

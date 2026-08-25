@@ -1,15 +1,16 @@
 <x-newdebugbar::inspector-detail-header data-ndb-cache-header>
     <x-slot:title>
-        <h3 class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-2 ndb:overflow-hidden">
-            <span
+        <h3 class="ndb:flex ndb:min-w-0 ndb:flex-nowrap ndb:items-center ndb:gap-2 ndb:overflow-hidden">
+            <x-newdebugbar::inspector-operation-badge
+                outlined
+                wide
                 data-ndb-cache-detail-operation
-                class="ndb:shrink-0 ndb:text-base ndb:font-bold ndb:leading-6"
                 x-text="selectedCacheOperation.operation_label"
-            ></span>
+            ></x-newdebugbar::inspector-operation-badge>
             <span
                 data-ndb-cache-detail-key
                 :title="selectedCacheOperation.key_label"
-                class="ndb:min-w-0 ndb:truncate ndb:text-sm ndb:font-semibold ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold ndb:leading-5 ndb:text-zinc-700 ndb:dark:text-zinc-200"
                 x-text="selectedCacheOperation.key_label"
             ></span>
         </h3>

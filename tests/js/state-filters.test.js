@@ -164,7 +164,6 @@ test('Cache filters searches and keeps a visible operation selected', () => {
 test('HTTP client filters failures and slow requests while keeping one selected', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
-  const appended = [];
   let detailResets = 0;
   const element = (execution, duration, failed, slow, search) => ({
     dataset: {
@@ -191,7 +190,6 @@ test('HTTP client filters failures and slow requests while keeping one selected'
   state.$refs = {
     httpClientList: {
       children: [first, second, third],
-      appendChild: (child) => appended.push(child),
     },
     httpClientDetail: { scrollTo: () => detailResets++ },
   };
@@ -241,11 +239,6 @@ test('HTTP client filters failures and slow requests while keeping one selected'
   assert.equal(third.hidden, false);
   assert.equal(state.httpClientSelected, 3);
 
-  state.httpClientSearch = '';
-  appended.length = 0;
-  state.setHttpClientSort('duration');
-  assert.deepEqual(appended, [second, third, first]);
-
   state.httpClientDetailTab = 'source';
   state.selectHttpClientRequest(1);
   assert.equal(state.httpClientSelected, 1);
@@ -262,11 +255,9 @@ test('HTTP client filters failures and slow requests while keeping one selected'
   state.setHttpClientDetailTab('request');
   state.setHttpClientDetailTab('invalid');
   state.setHttpClientFilter('invalid');
-  state.setHttpClientSort('invalid');
   state.selectHttpClientRequest(99);
   assert.equal(state.httpClientDetailTab, 'request');
   assert.equal(state.httpClientFilter, 'all');
-  assert.equal(state.httpClientSort, 'duration');
   assert.equal(state.httpClientSelected, 2);
 
   assert.equal(state.formatHttpClientEvidence(null), '—');

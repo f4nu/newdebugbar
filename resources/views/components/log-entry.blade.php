@@ -219,7 +219,10 @@
                                             </dt>
                                             <dd class="ndb:min-w-0 ndb:text-xs ndb:leading-5">
                                                 @if ($field['structured'])
-                                                    <pre class="ndb-code ndb-scrollbar ndb:max-w-full"><code>{{ json_encode($field['value'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) }}</code></pre>
+                                                    <x-newdebugbar::code-block
+                                                        language="json"
+                                                        class="ndb:max-w-full"
+                                                    >{{ json_encode($field['value'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) }}</x-newdebugbar::code-block>
                                                 @else
                                                     <span class="ndb:whitespace-pre-wrap ndb:break-words ndb:[overflow-wrap:anywhere]">{{ $field['preview'] }}</span>
                                                 @endif

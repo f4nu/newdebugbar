@@ -11,7 +11,10 @@
                     >{{ $item['at_ms'] }} ms</span>
             </div>
             @if (($item['context'] ?? []) !== [])
-                <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($item['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                <x-newdebugbar::code-block
+                    language="json"
+                    class="ndb:rounded-none ndb:border-t ndb:border-zinc-200 ndb:dark:border-zinc-800"
+                >{{ json_encode($item['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</x-newdebugbar::code-block>
             @endif
         </article>
     @empty

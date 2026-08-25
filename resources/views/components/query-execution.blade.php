@@ -100,7 +100,7 @@
 
     <div data-ndb-query-details class="ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800">
         @unless ($grouped)
-            <pre class="ndb-code ndb-scrollbar ndb:rounded-none"><code data-ndb-language="sql">{{ $sql }}</code></pre>
+            <x-newdebugbar::code-block language="sql" class="ndb:rounded-none">{{ $sql }}</x-newdebugbar::code-block>
         @endunless
 
         @if ($bindings !== [] || $stack !== [] || ($query['callsite'] ?? null) !== null)
@@ -186,7 +186,10 @@
                     id="ndb-query-{{ $identity }}-bindings-panel"
                     @if ($hasMultipleEvidence) aria-labelledby="ndb-query-{{ $identity }}-bindings-tab" @endif
                 >
-                    <pre class="ndb-code ndb-scrollbar ndb:rounded-none ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800"><code data-ndb-language="json">{{ json_encode($bindings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                    <x-newdebugbar::code-block
+                        language="json"
+                        class="ndb:rounded-none ndb:border-t ndb:border-zinc-200/80 ndb:dark:border-zinc-800"
+                    >{{ json_encode($bindings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</x-newdebugbar::code-block>
                 </div>
             @endif
 
@@ -253,7 +256,9 @@
                 <p class="ndb:mb-2 ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                     <span x-text="queryExplain.mode"></span><span x-text="queryExplain.driver"></span>
                 </p>
-                <pre class="ndb-code ndb-scrollbar"><code data-ndb-language="json" x-text="JSON.stringify(queryExplain.rows, null, 2)"></code></pre>
+                <x-newdebugbar::code-block language="json">
+                    <x-slot:value x-text="JSON.stringify(queryExplain.rows, null, 2)"></x-slot:value>
+                </x-newdebugbar::code-block>
             </div>
         </template>
 

@@ -66,8 +66,6 @@ it('uses one filter tab treatment across inspector sections', function () {
         'components/query-section.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
-        'components/cache-controls.blade.php',
-        'components/http-client-controls.blade.php',
     ] as $view) {
         $contents = file_get_contents($views.'/'.$view);
 
@@ -124,11 +122,13 @@ it('composes the HTTP Client workspace from focused view components', function (
     expect($controls)
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
-        ->toContain('<x-newdebugbar::filter-tabs');
+        ->not->toContain('<x-newdebugbar::filter-tabs')
+        ->not->toContain('Oldest')
+        ->not->toContain('Slowest');
 
     expect($header)
         ->toContain('<x-newdebugbar::inspector-detail-header')
-        ->toContain('<x-newdebugbar::http-client-method')
+        ->toContain('<x-newdebugbar::inspector-operation-badge')
         ->toContain('<x-newdebugbar::inspector-action');
 
     expect($request)
@@ -154,6 +154,7 @@ it('composes the Cache workspace from the shared inspector components', function
     $detail = file_get_contents($views.'/components/cache-detail.blade.php');
     $controls = file_get_contents($views.'/components/cache-controls.blade.php');
     $header = file_get_contents($views.'/components/cache-header.blade.php');
+    $listItem = file_get_contents($views.'/components/cache-list-item.blade.php');
     $overview = file_get_contents($views.'/components/cache-overview-panel.blade.php');
     $raw = file_get_contents($views.'/components/cache-raw-panel.blade.php');
     $source = file_get_contents($views.'/components/cache-source-panel.blade.php');
@@ -181,14 +182,18 @@ it('composes the Cache workspace from the shared inspector components', function
 
     expect($controls)
         ->toContain('<x-newdebugbar::search-field')
-        ->toContain('<x-newdebugbar::filter-tabs')
-        ->toContain('variant="segmented"')
-        ->not->toContain('<select')
+        ->toContain('<x-newdebugbar::select-field')
+        ->not->toContain('<x-newdebugbar::filter-tabs')
         ->not->toContain('cacheSort');
 
     expect($header)
         ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::inspector-operation-badge')
         ->not->toContain('font-mono');
+
+    expect($listItem)
+        ->toContain('<x-newdebugbar::inspector-operation-badge')
+        ->not->toContain('#{{');
 
     expect($overview)
         ->toContain('<x-newdebugbar::cache-overview-facts')
@@ -234,6 +239,40 @@ it('uses one calm source presentation across inspector sections', function () {
         ->toContain('@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2')
         ->toContain('--font-mono: "JetBrains Mono Variable"')
         ->toContain('font-variant-ligatures: contextual common-ligatures discretionary-ligatures');
+
+    expect(file_get_contents($views.'/components/inspector-source-link.blade.php'))
+        ->toContain('ndb:p-0')
+        ->toContain('ndb:underline')
+        ->not->toContain('<x-newdebugbar::icon')
+        ->not->toContain('hover:bg-zinc-100');
+
+    expect(file_get_contents($views.'/components/inspector-source-fact.blade.php'))
+        ->not->toContain('<x-newdebugbar::icon');
+});
+
+it('routes every syntax-highlighted block through one code component', function () {
+    $resources = dirname(__DIR__, 2).'/resources';
+    $views = $resources.'/views';
+    $rawCodeBlocks = [];
+
+    foreach (ProjectFiles::bladeFilesIn($views) as $file) {
+        $relativePath = ProjectFiles::relativePath($file, $views);
+
+        if ($relativePath !== 'components/code-block.blade.php' && str_contains(file_get_contents($file->getPathname()), '<pre')) {
+            $rawCodeBlocks[] = $relativePath;
+        }
+    }
+
+    expect($rawCodeBlocks)->toBe([]);
+    expect(file_get_contents($views.'/components/code-block.blade.php'))
+        ->toContain('data-ndb-language="{{ $language }}"')
+        ->toContain('ndb-code');
+
+    expect(file_get_contents($resources.'/js/newdebugbar.js'))
+        ->toContain("registerLanguage('http', http)")
+        ->toContain("registerLanguage('json', json)")
+        ->toContain("registerLanguage('php', php)")
+        ->toContain("registerLanguage('sql', sql)");
 });
 
 it('uses the top-only frame across edge-to-edge inspector workspaces', function () {
@@ -249,6 +288,31 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
             ->toContain('<x-newdebugbar::inspector-workspace')
             ->toContain('frame="top"');
     }
+});
+
+it('uses centered segmented controls across inspector detail panels', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+
+    foreach ([
+        'components/authorization-detail.blade.php',
+        'components/cache-detail-tabs.blade.php',
+        'components/event-detail.blade.php',
+        'components/http-client-detail-tabs.blade.php',
+        'components/notification-detail.blade.php',
+    ] as $view) {
+        expect(file_get_contents($views.'/'.$view))
+            ->toContain('<x-newdebugbar::inspector-detail-tabs')
+            ->toContain('variant="segmented"');
+    }
+
+    expect(file_get_contents($views.'/components/inspector-detail-tabs.blade.php'))
+        ->toContain("'align' => 'center'")
+        ->toContain('variant="segmented"')
+        ->toContain('ndb:sm:col-start-2');
+
+    expect(file_get_contents($views.'/livewire/sections/mail.blade.php'))
+        ->toContain('<x-newdebugbar::filter-tabs label="Mail detail" variant="segmented"')
+        ->toContain('variant="segmented"');
 });
 
 it('uses the shared section heading hierarchy in the inspector shell', function () {

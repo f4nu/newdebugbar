@@ -276,6 +276,7 @@ it('keeps Events selection focused with one mobile scroll owner', function () {
                 const workspace = document.querySelector('[data-ndb-event-workspace]');
                 const [list, detail] = workspace.children;
                 const tabs = [...document.querySelectorAll('[data-ndb-event-detail-tab]')];
+                const detailTabGroup = tabs[0].closest('[data-ndb-filter-tabs]');
                 const labels = tabs.map((tab) => tab.querySelector('span'));
                 const icons = tabs.map((tab) => tab.querySelector('[data-ndb-event-detail-tab-icon]'));
                 const candidates = [content, list, detail];
@@ -291,6 +292,8 @@ it('keeps Events selection focused with one mobile scroll owner', function () {
                     && document.activeElement === detail
                     && detail.scrollWidth <= detail.clientWidth + 1
                     && tabs.length === 3
+                    && tabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
+                    && detailTabGroup.dataset.ndbFilterTabsVariant === 'segmented'
                     && labels.every((label) => getComputedStyle(label).display === 'none')
                     && icons.every((icon) => getComputedStyle(icon).display !== 'none')
                     && scrollOwners.length === 1

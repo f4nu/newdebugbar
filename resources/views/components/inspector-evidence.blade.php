@@ -1,8 +1,14 @@
-@props(['label' => null])
+@props([
+    'label' => null,
+    'language' => 'json',
+])
 
 <section data-ndb-inspector-evidence {{ $attributes }}>
     @if ($label !== null)
         <h4 class="ndb:mb-2 ndb:text-xs ndb:font-bold">{{ $label }}</h4>
     @endif
-    <pre class="ndb-scrollbar ndb:overflow-x-auto ndb:rounded-lg ndb:bg-zinc-100/75 ndb:p-3 ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300"><code {{ $value->attributes }}>{{ $value }}</code></pre>
+    <x-newdebugbar::code-block
+        :language="$language"
+        :code-attributes="$value->attributes"
+    >{{ $value }}</x-newdebugbar::code-block>
 </section>

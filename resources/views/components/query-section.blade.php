@@ -131,10 +131,11 @@
                             {{ $group['count'] }} executions,
                             <span data-ndb-query-group-extra>{{ $group['extra_executions'] }} extra {{ $group['extra_executions'] === 1 ? 'run' : 'runs' }}</span>
                         </p>
-                        <pre
+                        <x-newdebugbar::code-block
+                            language="sql"
                             data-ndb-query-group-pattern
-                            class="ndb-scrollbar ndb:mt-3 ndb:overflow-x-auto ndb:font-mono ndb:text-[11px] ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                        ><code data-ndb-language="sql">{{ $group['sql'] }}</code></pre>
+                            class="ndb:mt-3 ndb:rounded-none ndb:bg-transparent ndb:p-0"
+                        >{{ $group['sql'] }}</x-newdebugbar::code-block>
                     </div>
                     <div class="ndb:shrink-0 ndb:text-right">
                         @if ($group['likely_n_plus_one'])

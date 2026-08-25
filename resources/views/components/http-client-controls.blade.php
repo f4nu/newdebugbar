@@ -46,28 +46,14 @@
     @endif
 
     <x-newdebugbar::select-field
-        label="Sort outbound HTTP requests"
+        label="Filter outbound HTTP requests"
         :span="$itemCount < 5"
-        data-ndb-http-client-sort
-        x-model="httpClientSort"
-        @change="setHttpClientSort($event.target.value)"
+        data-ndb-http-client-filter
+        x-model="httpClientFilter"
+        @change="setHttpClientFilter($event.target.value)"
     >
-        <option value="execution">Oldest</option>
-        <option value="duration">Slowest</option>
+        @foreach ($filters as $filter => [$label, $count])
+            <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
+        @endforeach
     </x-newdebugbar::select-field>
 </div>
-
-<x-newdebugbar::filter-tabs label="Filter outbound HTTP requests" variant="segmented" class="ndb:w-full">
-    @foreach ($filters as $filter => [$label, $count])
-        <x-newdebugbar::filter-tab
-            variant="segmented"
-            data-ndb-http-client-filter="{{ $filter }}"
-            @click="setHttpClientFilter({{ \Illuminate\Support\Js::from($filter) }})"
-            ::aria-pressed="httpClientFilter === {{ \Illuminate\Support\Js::from($filter) }}"
-            class="ndb:h-auto ndb:min-w-0 ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
-        >
-            <span>{{ $label }}</span>
-            <span class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70">{{ $count }}</span>
-        </x-newdebugbar::filter-tab>
-    @endforeach
-</x-newdebugbar::filter-tabs>

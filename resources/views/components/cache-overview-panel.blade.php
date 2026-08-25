@@ -12,10 +12,9 @@
     >
         <x-newdebugbar::inspector-definition-row label="Value" x-show.important="selectedCacheOperation.has_value">
             <x-slot:value class="ndb:min-w-0">
-                <pre
-                    class="ndb:whitespace-pre-wrap ndb:break-words ndb:font-mono"
-                    x-text="selectedCacheOperation.value_display"
-                ></pre>
+                <x-newdebugbar::code-block language="json" class="ndb:max-w-full">
+                    <x-slot:value x-text="selectedCacheOperation.value_display"></x-slot:value>
+                </x-newdebugbar::code-block>
             </x-slot:value>
         </x-newdebugbar::inspector-definition-row>
         <x-newdebugbar::inspector-definition-row

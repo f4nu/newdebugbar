@@ -128,10 +128,13 @@
                         >
                             <div class="ndb:rounded-lg ndb:bg-zinc-50 ndb:px-3 ndb:py-2.5 ndb:dark:bg-zinc-900/65">
                                 <code class="ndb:text-[11px] ndb:font-bold" x-text="action.name"></code>
-                                <pre
+                                <x-newdebugbar::code-block
+                                    language="json"
                                     x-show.important="action.params.length > 0"
-                                    class="ndb-scrollbar ndb:mt-2 ndb:overflow-x-auto ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                ><code x-text="JSON.stringify(action.params, null, 2)"></code></pre>
+                                    class="ndb:mt-2"
+                                >
+                                    <x-slot:value x-text="JSON.stringify(action.params, null, 2)"></x-slot:value>
+                                </x-newdebugbar::code-block>
                             </div>
                         </template>
                     </div>

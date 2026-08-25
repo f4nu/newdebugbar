@@ -8,6 +8,7 @@
             <article
                 data-ndb-notification-delivery
                 :class="{
+                    'ndb:cursor-pointer': delivery.mail_available,
                     'ndb:border-red-200 ndb:bg-red-50/45 ndb:dark:border-red-950 ndb:dark:bg-red-950/20':
                         delivery.status === 'failed',
                     'ndb:border-zinc-200 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35': [
@@ -20,8 +21,17 @@
                         'waiting',
                     ].includes(delivery.status),
                 }"
-                class="ndb:overflow-hidden ndb:rounded-lg ndb:border"
+                class="ndb:relative ndb:overflow-hidden ndb:rounded-lg ndb:border"
             >
+                <template x-if="delivery.mail_available">
+                    <button
+                        type="button"
+                        data-ndb-notification-view-mail
+                        :aria-label="'Open email for ' + delivery.channel_label + ' delivery'"
+                        @click="openNotificationMail(delivery.mail_message_id)"
+                        class="ndb:absolute ndb:inset-0 ndb:z-10 ndb:cursor-pointer ndb:rounded-lg ndb:bg-transparent ndb:transition-colors ndb:hover:bg-zinc-950/[0.025] ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/[0.035]"
+                    ></button>
+                </template>
                 <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3 ndb:px-3 ndb:py-2.5">
                     <div class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-2.5">
                         <span
@@ -89,29 +99,16 @@
                             </template>
                         </div>
                     </div>
-                    <div class="ndb:flex ndb:shrink-0 ndb:flex-col ndb:items-end ndb:gap-2">
-                        <span
-                            class="ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
-                            x-text="
-                                ['sent', 'failed'].includes(delivery.status) || delivery.duration_ms > 0
-                                    ? delivery.duration_ms.toFixed(2) + ' ms'
-                                    : delivery.delay_seconds > 0
-                                      ? delivery.delay_seconds + ' s delay'
-                                      : delivery.status_label
-                            "
-                        ></span>
-                        <template x-if="delivery.mail_available">
-                            <button
-                                type="button"
-                                data-ndb-notification-view-mail
-                                @click="openNotificationMail(delivery.mail_message_id)"
-                                class="ndb:inline-flex ndb:h-7 ndb:items-center ndb:gap-1.5 ndb:rounded-md ndb:border ndb:border-zinc-200 ndb:bg-white/80 ndb:px-2 ndb:text-[11px] ndb:font-bold ndb:text-zinc-700 ndb:transition ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-200 ndb:dark:hover:bg-zinc-800"
-                            >
-                                <x-newdebugbar::icon name="mail" size="3.5" />
-                                View email
-                            </button>
-                        </template>
-                    </div>
+                    <span
+                        class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
+                        x-text="
+                            ['sent', 'failed'].includes(delivery.status) || delivery.duration_ms > 0
+                                ? delivery.duration_ms.toFixed(2) + ' ms'
+                                : delivery.delay_seconds > 0
+                                  ? delivery.delay_seconds + ' s delay'
+                                  : delivery.status_label
+                        "
+                    ></span>
                 </div>
 
                 <div

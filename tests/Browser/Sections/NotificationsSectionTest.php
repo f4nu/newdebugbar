@@ -37,9 +37,23 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->assertValue('[data-ndb-notification-filter]', 'all')
         ->assertAttribute('[data-ndb-notification-detail-tab="delivery"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-notification-view-mail]')
-        ->assertScript(
-            'document.querySelector("[data-ndb-notification-view-mail]").closest("[data-ndb-notification-delivery]").textContent.includes("Mail")',
-        )
+        ->assertDontSee('View email')
+        ->assertScript(<<<'JS'
+            (() => {
+                const control = document.querySelector('[data-ndb-notification-view-mail]');
+                const card = control.closest('[data-ndb-notification-delivery]');
+                const controlBox = control.getBoundingClientRect();
+                const cardBox = card.getBoundingClientRect();
+
+                return card.textContent.includes('Mail')
+                    && control.getAttribute('aria-label') === 'Open email for Mail delivery'
+                    && getComputedStyle(control).position === 'absolute'
+                    && Math.abs(controlBox.left - cardBox.left) <= 1
+                    && Math.abs(controlBox.top - cardBox.top) <= 1
+                    && Math.abs(controlBox.right - cardBox.right) <= 1
+                    && Math.abs(controlBox.bottom - cardBox.bottom) <= 1;
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-notifications]');
@@ -119,14 +133,24 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && filter.options[0].value === 'all'
                     && tabs.length === 1
                     && tabs[0].parentElement === channelControl.parentElement
+                    && tabs[0].dataset.ndbFilterTabsVariant === 'segmented'
+                    && [...tabs[0].querySelectorAll('[data-ndb-notification-detail-tab]')]
+                        .every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
+                    && Math.abs(
+                        tabs[0].getBoundingClientRect().left + tabs[0].getBoundingClientRect().width / 2
+                        - detail.getBoundingClientRect().left - detail.getBoundingClientRect().width / 2
+                    ) <= 1
                     && getComputedStyle(channelControl).display === 'none'
                     && metadataFacts.length === 4
                     && metadataLabels.join('|') === 'Channels|Duration|Execution|Source'
                     && sourceLink !== null
                     && !getComputedStyle(sourceLink).fontFamily.includes('JetBrains Mono')
+                    && sourceLink.querySelector('svg') === null
+                    && getComputedStyle(sourceLink).paddingLeft === '0px'
+                    && getComputedStyle(sourceLink).textDecorationLine.includes('underline')
                     && getComputedStyle(metadataGrid).display === 'grid'
                     && getComputedStyle(metadataGrid).borderTopWidth === '0px'
-                    && metadata.querySelectorAll('svg').length === 1
+                    && metadata.querySelectorAll('svg').length === 0
                     && metadata.scrollWidth <= metadata.clientWidth + 1
                     && recipient.textContent.includes('Recipient')
                     && recipient.textContent.includes('Destinations')
@@ -150,9 +174,14 @@ it('groups notification attempts in a full-height delivery inspector', function 
             (() => {
                 const fields = [...document.querySelectorAll('[data-ndb-notification-detail-panel="payload"] dl > div')];
                 const valueFor = (label) => fields.find((field) => field.querySelector('dt').textContent.trim() === label)?.querySelector('dd');
+                const codeBlocks = [...document.querySelectorAll('[data-ndb-notification-detail-panel="payload"] code[data-ndb-language="json"]')]
+                    .filter((code) => code.getClientRects().length > 0);
 
                 return getComputedStyle(valueFor('Exception')).fontFamily.includes('JetBrains Mono')
-                    && !getComputedStyle(valueFor('Failed at')).fontFamily.includes('JetBrains Mono');
+                    && !getComputedStyle(valueFor('Failed at')).fontFamily.includes('JetBrains Mono')
+                    && codeBlocks.length >= 3
+                    && codeBlocks.every((code) => code.hasAttribute('data-highlighted'))
+                    && codeBlocks.some((code) => code.querySelector('[class^="hljs-"]'));
             })()
             JS)
         ->click('[data-ndb-notification-fact]:last-child button')
@@ -175,6 +204,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
 
                 return facts.length === 4
                     && stack !== null
+                    && facts.every((fact) => fact.querySelector('svg') === null)
                     && getComputedStyle(notificationClass).fontFamily.includes('JetBrains Mono Variable')
                     && !getComputedStyle(notificationId).fontFamily.includes('JetBrains Mono Variable')
                     && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
@@ -186,7 +216,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
             })()
             JS)
         ->click('[data-ndb-notification-detail-tab="delivery"]')
-        ->click('[data-ndb-notification-view-mail]');
+        ->click('[data-ndb-notification-delivery]:has([data-ndb-notification-view-mail])');
 
     DebugBarBrowser::waitForDetails($page);
 

@@ -385,7 +385,6 @@ export function createNewDebugBar(
     httpClientRequests: [],
     httpClientFilter: 'all',
     httpClientSearch: '',
-    httpClientSort: 'execution',
     httpClientSelected: null,
     httpClientDetailOpen: false,
     httpClientDetailTab: 'response',
@@ -1883,7 +1882,6 @@ export function createNewDebugBar(
       this.httpClientRequests = [];
       this.httpClientFilter = 'all';
       this.httpClientSearch = '';
-      this.httpClientSort = 'execution';
       this.httpClientSelected = null;
       this.httpClientDetailOpen = false;
       this.httpClientDetailTab = 'response';
@@ -2022,6 +2020,7 @@ export function createNewDebugBar(
       this.livewireSelectedActivityId = id;
       this.livewireActivitySelectionPinned = true;
       this.livewireDetailOpen = true;
+      this.$nextTick?.(() => browser.highlight?.());
     },
 
     selectLivewireComponent(id) {
@@ -2092,6 +2091,7 @@ export function createNewDebugBar(
       this.livewireTab = 'activity';
       this.livewireDetailOpen = true;
       this.livewireSearch = '';
+      this.$nextTick?.(() => browser.highlight?.());
     },
 
     livewireComponentTitle(id) {
@@ -2534,6 +2534,7 @@ export function createNewDebugBar(
       this.$nextTick?.(() => {
         this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
         this.$refs?.cacheDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        browser.highlight?.();
       });
     },
 
@@ -2584,7 +2585,6 @@ export function createNewDebugBar(
       this.httpClientRequests = Array.isArray(requests) ? requests : [];
       this.httpClientFilter = 'all';
       this.httpClientSearch = '';
-      this.httpClientSort = 'execution';
       this.httpClientDetailOpen = false;
       this.httpClientDetailTab = 'response';
       this.httpClientSelected = this.httpClientRequests[0]?.execution ?? null;
@@ -2598,26 +2598,26 @@ export function createNewDebugBar(
       this.applyHttpClientView();
     },
 
-    setHttpClientSort(sort) {
-      if (!['execution', 'duration'].includes(sort)) return;
-
-      this.httpClientSort = sort;
-      this.applyHttpClientView();
-    },
-
     selectHttpClientRequest(execution) {
       if (!this.httpClientRequests.some((request) => request.execution === execution)) return;
 
       this.httpClientSelected = execution;
       this.httpClientDetailOpen = true;
       this.httpClientDetailTab = 'response';
+      this.$nextTick?.(() => browser.highlight?.());
     },
 
     setHttpClientDetailTab(tab) {
       if (!['response', 'request', 'source'].includes(tab)) return;
 
       this.httpClientDetailTab = tab;
-      this.$nextTick?.(() => this.$refs?.httpClientDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+      this.$nextTick?.(() => {
+        this.$refs?.httpClientDetail?.scrollTo?.({
+          top: 0,
+          behavior: 'instant',
+        });
+        browser.highlight?.();
+      });
     },
 
     applyHttpClientView() {
@@ -2627,41 +2627,28 @@ export function createNewDebugBar(
       let firstVisible = null;
       let selectedVisible = false;
 
-      [...(list?.children ?? [])]
-        .sort((left, right) => {
-          if (this.httpClientSort === 'duration') {
-            return (
-              Number(right.dataset.ndbDuration ?? 0) - Number(left.dataset.ndbDuration ?? 0) ||
-              Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0)
-            );
-          }
+      [...(list?.children ?? [])].forEach((item) => {
+        const matchesFilter =
+          this.httpClientFilter === 'all' ||
+          (this.httpClientFilter === 'failed' && item.dataset.ndbFailed === 'true') ||
+          (this.httpClientFilter === 'slow' && item.dataset.ndbSlow === 'true');
+        const matches =
+          matchesFilter &&
+          (search === '' || item.dataset.ndbSearch?.includes(search));
+        item.hidden = !matches;
+        if (matches) {
+          item.style.removeProperty('display');
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
 
-          return Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
-        })
-        .forEach((item) => {
-          const matchesFilter =
-            this.httpClientFilter === 'all' ||
-            (this.httpClientFilter === 'failed' && item.dataset.ndbFailed === 'true') ||
-            (this.httpClientFilter === 'slow' && item.dataset.ndbSlow === 'true');
-          const matches =
-            matchesFilter &&
-            (search === '' || item.dataset.ndbSearch?.includes(search));
-          item.hidden = !matches;
-          if (matches) {
-            item.style.removeProperty('display');
-          } else {
-            item.style.setProperty('display', 'none', 'important');
-          }
-
-          if (matches) {
-            const execution = Number(item.dataset.ndbExecution);
-            firstVisible ??= execution;
-            selectedVisible ||= execution === this.httpClientSelected;
-            visible++;
-          }
-
-          list?.appendChild?.(item);
-        });
+        if (matches) {
+          const execution = Number(item.dataset.ndbExecution);
+          firstVisible ??= execution;
+          selectedVisible ||= execution === this.httpClientSelected;
+          visible++;
+        }
+      });
 
       this.visibleHttpClientCount = visible;
 
@@ -2715,7 +2702,10 @@ export function createNewDebugBar(
       if (!['preview', 'message', 'source'].includes(tab)) return;
 
       this.mailDetailTab = tab;
-      this.$nextTick?.(() => this.$refs?.mailDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+      this.$nextTick?.(() => {
+        this.$refs?.mailDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        browser.highlight?.();
+      });
     },
 
     setMailPreviewFormat(format) {
@@ -2921,7 +2911,10 @@ export function createNewDebugBar(
       this.mailDetailTab = 'preview';
       this.mailPreviewFormat = this.selectedMailMessage?.has_html ? 'html' : 'text';
       this.mailPreviewViewport = 'desktop';
-      this.$nextTick?.(() => this.$refs?.mailDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+      this.$nextTick?.(() => {
+        this.$refs?.mailDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        browser.highlight?.();
+      });
     },
 
     mailPreviewUrl(message = this.selectedMailMessage) {
@@ -2963,18 +2956,20 @@ export function createNewDebugBar(
       if (!['delivery', 'payload', 'source'].includes(tab)) return;
 
       this.notificationDetailTab = tab;
-      this.$nextTick?.(() =>
+      this.$nextTick?.(() => {
         this.$refs?.notificationDetail?.scrollTo?.({
           top: 0,
           behavior: 'instant',
-        }),
-      );
+        });
+        browser.highlight?.();
+      });
     },
 
     setNotificationChannel(channel) {
       if (!this.selectedNotification?.deliveries?.some((delivery) => delivery.channel === channel)) return;
 
       this.notificationChannel = channel;
+      this.$nextTick?.(() => browser.highlight?.());
     },
 
     applyNotificationView() {
@@ -3021,12 +3016,13 @@ export function createNewDebugBar(
     resetNotificationDetail() {
       this.notificationDetailTab = 'delivery';
       this.notificationChannel = this.selectedNotification?.deliveries?.[0]?.channel ?? null;
-      this.$nextTick?.(() =>
+      this.$nextTick?.(() => {
         this.$refs?.notificationDetail?.scrollTo?.({
           top: 0,
           behavior: 'instant',
-        }),
-      );
+        });
+        browser.highlight?.();
+      });
     },
 
     formatNotificationEvidence(value, empty = 'No data was captured.') {

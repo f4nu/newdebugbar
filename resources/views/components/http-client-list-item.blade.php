@@ -15,9 +15,9 @@
         : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
     class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3rem_minmax(0,1fr)_3.5rem_4.75rem] ndb:items-center ndb:gap-x-2 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
 >
-    <x-newdebugbar::http-client-method data-ndb-http-client-method>
+    <x-newdebugbar::inspector-operation-badge data-ndb-http-client-method>
         {{ $item['method'] }}
-    </x-newdebugbar::http-client-method>
+    </x-newdebugbar::inspector-operation-badge>
     <span :title="{{ \Illuminate\Support\Js::from($item['url']) }}" class="ndb:min-w-0">
         <span
             data-ndb-http-client-host

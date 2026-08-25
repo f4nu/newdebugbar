@@ -159,6 +159,7 @@
 
 #newdebugbar .hljs-string,
 #newdebugbar .hljs-attr,
+#newdebugbar .hljs-attribute,
 #newdebugbar .hljs-template-variable {
     color: #15803d;
 }
@@ -190,7 +191,7 @@
     color: #c4b5fd;
 }
 
-#newdebugbar[data-ndb-theme="dark"] :is(.hljs-string, .hljs-attr, .hljs-template-variable) {
+#newdebugbar[data-ndb-theme="dark"] :is(.hljs-string, .hljs-attr, .hljs-attribute, .hljs-template-variable) {
     color: #86efac;
 }
 

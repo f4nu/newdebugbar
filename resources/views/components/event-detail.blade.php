@@ -38,27 +38,26 @@
                 <x-slot:aside></x-slot:aside>
             </x-newdebugbar::inspector-detail-header>
 
-            <div class="ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
-                <x-newdebugbar::filter-tabs label="Laravel event detail" class="ndb:min-w-0">
-                    @foreach (['overview' => ['Overview', 'eye'], 'payload' => ['Payload', 'database'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
-                        <x-newdebugbar::filter-tab
-                            data-ndb-event-detail-tab="{{ $tab }}"
-                            @click="setEventDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
-                            ::aria-pressed="eventDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
-                            aria-label="{{ $label }}"
-                            class="ndb:h-auto"
-                        >
-                            <x-newdebugbar::icon
-                                name="{{ $icon }}"
-                                size="3.5"
-                                data-ndb-event-detail-tab-icon="{{ $tab }}"
-                                class="ndb:sm:hidden"
-                            />
-                            <span class="ndb:hidden ndb:sm:inline">{{ $label }}</span>
-                        </x-newdebugbar::filter-tab>
-                    @endforeach
-                </x-newdebugbar::filter-tabs>
-            </div>
+            <x-newdebugbar::inspector-detail-tabs label="Laravel event detail">
+                @foreach (['overview' => ['Overview', 'eye'], 'payload' => ['Payload', 'database'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
+                    <x-newdebugbar::filter-tab
+                        variant="segmented"
+                        data-ndb-event-detail-tab="{{ $tab }}"
+                        @click="setEventDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
+                        ::aria-pressed="eventDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
+                        aria-label="{{ $label }}"
+                        class="ndb:h-auto"
+                    >
+                        <x-newdebugbar::icon
+                            name="{{ $icon }}"
+                            size="3.5"
+                            data-ndb-event-detail-tab-icon="{{ $tab }}"
+                            class="ndb:sm:hidden"
+                        />
+                        <span class="ndb:hidden ndb:sm:inline">{{ $label }}</span>
+                    </x-newdebugbar::filter-tab>
+                @endforeach
+            </x-newdebugbar::inspector-detail-tabs>
 
             <div
                 data-ndb-event-detail-panel="overview"
