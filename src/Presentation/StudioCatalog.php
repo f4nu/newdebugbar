@@ -2,9 +2,14 @@
 
 namespace NewDebugBar\Presentation;
 
+use Illuminate\Support\Str;
+use LogicException;
+
 /** Lists every reusable Blade component shown in the local Studio. */
 final class StudioCatalog
 {
+    public const DEFAULT_COMPONENT = 'search-field';
+
     /**
      * @return array<string, array{title: string, description: string, components: array<string, string>}>
      */
@@ -71,10 +76,10 @@ final class StudioCatalog
                 'title' => 'HTTP Client',
                 'description' => 'The complete outbound-request grammar, from list scanning to request, response, and source evidence.',
                 'components' => [
-                    'http-client-controls' => 'Combines request counts, search, filtering, and ordering in the list header.',
+                    'http-client-controls' => 'Combines the request count, search, and one status filter in a stable list header.',
                     'http-client-detail' => 'Coordinates the selected outbound request and its state-aware detail panels.',
                     'http-client-detail-tabs' => 'Orders Response, Request, and Source evidence with a deliberate default.',
-                    'http-client-empty' => 'Asks the developer to select an outbound request before showing details.',
+                    'http-client-empty' => 'Explains that no outbound requests were captured and what activity would appear here.',
                     'http-client-header' => 'Keeps only the method and URL identity in the detail header.',
                     'http-client-list-item' => 'Aligns method, URL, outcome, and runtime on stable scan tracks.',
                     'http-client-no-response' => 'Explains a connection failure when no HTTP response exists.',
@@ -91,12 +96,12 @@ final class StudioCatalog
                     'cache-controls' => 'Combines cache counts, search, and operation filtering in the list header.',
                     'cache-detail' => 'Coordinates the selected cache operation and its detail panels.',
                     'cache-detail-tabs' => 'Switches between Overview, Raw, and Source with the shared segmented treatment.',
-                    'cache-empty' => 'Asks the developer to select a cache operation before showing details.',
+                    'cache-empty' => 'Explains that no cache operations were captured and what activity would appear here.',
                     'cache-header' => 'Keeps the operation badge and key on one aligned identity row.',
                     'cache-list-item' => 'Shows one cache operation with an equal-width badge and compact key identity.',
                     'cache-overview-facts' => 'Displays the outcome, store, duration, and related cache facts.',
                     'cache-overview-panel' => 'Explains the selected cache operation through structured facts.',
-                    'cache-raw-panel' => 'Shows retained cache values only when raw evidence adds something unique.',
+                    'cache-raw-panel' => 'Shows the bounded raw collector fields retained for one cache operation.',
                     'cache-source-panel' => 'Shows the application source and bounded call stack for the operation.',
                     'cache-workspace' => 'Composes the shared list and detail structure for cache activity.',
                 ],
@@ -111,7 +116,7 @@ final class StudioCatalog
                     'mail-source-panel' => 'Shows where a mail message was created and the bounded stack behind it.',
                     'notification-delivery-panel' => 'Shows the actual outcome for each notification channel and destination.',
                     'notification-detail' => 'Coordinates the selected notification across delivery, data, and source views.',
-                    'notification-header' => 'Shows notification identity, recipient context, and lifecycle actions without a separate attention badge.',
+                    'notification-header' => 'Shows notification identity, recipient context, destinations, and relevant lifecycle actions.',
                     'notification-payload-panel' => 'Shows the application notification data without queue-internal noise.',
                     'notification-source-panel' => 'Shows where the notification began and its bounded application stack.',
                 ],
@@ -133,5 +138,346 @@ final class StudioCatalog
                 ],
             ],
         ];
+    }
+
+    /**
+     * @return array<string, array{title: string, singular: string, description: string, components: list<string>}>
+     */
+    public static function kinds(): array
+    {
+        return [
+            'elements' => [
+                'title' => 'Elements',
+                'singular' => 'Element',
+                'description' => 'Small controls and visual units that make sense on their own.',
+                'components' => [
+                    'icon',
+                    'icon-button',
+                    'inspector-action',
+                    'inspector-operation-badge',
+                    'search-field',
+                    'select-field',
+                    'filter-tab',
+                    'empty-state',
+                    'popover-surface',
+                    'theme-menu-item',
+                    'theme-toggle',
+                    'code-block',
+                    'inspector-definition-row',
+                    'inspector-detail-back',
+                    'inspector-detail-empty',
+                    'inspector-explanation',
+                    'inspector-fact',
+                    'inspector-source-fact',
+                    'inspector-source-link',
+                    'toolbar-anchor-preview',
+                    'toolbar-button',
+                ],
+            ],
+            'patterns' => [
+                'title' => 'Patterns',
+                'singular' => 'Pattern',
+                'description' => 'Recurring arrangements and interactions built from elements.',
+                'components' => [
+                    'filter-tabs',
+                    'section-heading',
+                    'inspector-definition-list',
+                    'inspector-detail-header',
+                    'inspector-detail-pane',
+                    'inspector-detail-tabs',
+                    'inspector-evidence',
+                    'inspector-facts',
+                    'inspector-list-panel',
+                    'inspector-stack',
+                    'mobile-request-metrics',
+                    'mobile-toolbar-popover',
+                    'request-option',
+                    'window-controls',
+                    'http-client-controls',
+                    'http-client-detail-tabs',
+                    'http-client-empty',
+                    'http-client-header',
+                    'http-client-list-item',
+                    'http-client-no-response',
+                    'http-client-request-panel',
+                    'http-client-response-panel',
+                    'http-client-source-panel',
+                    'cache-controls',
+                    'cache-detail-tabs',
+                    'cache-empty',
+                    'cache-header',
+                    'cache-list-item',
+                    'cache-overview-facts',
+                    'cache-overview-panel',
+                    'cache-raw-panel',
+                    'cache-source-panel',
+                    'mail-actions',
+                    'mail-header',
+                    'mail-message-details',
+                    'mail-source-panel',
+                    'notification-delivery-panel',
+                    'notification-header',
+                    'notification-payload-panel',
+                    'notification-source-panel',
+                    'livewire-property-editor',
+                    'livewire-split-view',
+                    'log-entry',
+                    'model-group',
+                    'query-actions',
+                    'query-execution',
+                ],
+            ],
+            'compositions' => [
+                'title' => 'Compositions',
+                'singular' => 'Composition',
+                'description' => 'Larger, stateful product slices that coordinate several patterns.',
+                'components' => [
+                    'inspector-workspace',
+                    'corner-toolbar',
+                    'request-switcher',
+                    'http-client-detail',
+                    'http-client-workspace',
+                    'cache-detail',
+                    'cache-workspace',
+                    'notification-detail',
+                    'authorization-detail',
+                    'event-detail',
+                    'model-group-detail',
+                    'query-section',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{title: string, description: string, components: list<string>}>
+     */
+    public static function navigationGroups(): array
+    {
+        return [
+            'controls' => [
+                'title' => 'Controls',
+                'description' => 'Inputs, actions, menus, and selectors.',
+                'components' => [
+                    'icon',
+                    'icon-button',
+                    'inspector-action',
+                    'search-field',
+                    'select-field',
+                    'filter-tab',
+                    'filter-tabs',
+                    'popover-surface',
+                    'theme-menu-item',
+                    'theme-toggle',
+                    'toolbar-button',
+                    'window-controls',
+                    'query-actions',
+                    'mail-actions',
+                ],
+            ],
+            'content' => [
+                'title' => 'Content and states',
+                'description' => 'Reusable ways to show outcomes, facts, and evidence.',
+                'components' => [
+                    'empty-state',
+                    'inspector-operation-badge',
+                    'code-block',
+                    'inspector-definition-list',
+                    'inspector-definition-row',
+                    'inspector-detail-empty',
+                    'inspector-evidence',
+                    'inspector-explanation',
+                    'inspector-fact',
+                    'inspector-facts',
+                    'inspector-source-fact',
+                    'inspector-source-link',
+                    'inspector-stack',
+                    'http-client-empty',
+                    'http-client-no-response',
+                    'cache-empty',
+                    'cache-overview-facts',
+                    'cache-raw-panel',
+                    'notification-payload-panel',
+                    'log-entry',
+                    'query-execution',
+                ],
+            ],
+            'layout' => [
+                'title' => 'Inspector layout',
+                'description' => 'Shared structure for lists, details, and section framing.',
+                'components' => [
+                    'section-heading',
+                    'inspector-detail-back',
+                    'inspector-detail-header',
+                    'inspector-detail-pane',
+                    'inspector-detail-tabs',
+                    'inspector-list-panel',
+                    'inspector-workspace',
+                ],
+            ],
+            'toolbar' => [
+                'title' => 'Request toolbar',
+                'description' => 'Controls for the current request and debug bar window.',
+                'components' => [
+                    'corner-toolbar',
+                    'mobile-request-metrics',
+                    'mobile-toolbar-popover',
+                    'request-option',
+                    'request-switcher',
+                    'toolbar-anchor-preview',
+                ],
+            ],
+            'section-parts' => [
+                'title' => 'Section parts',
+                'description' => 'Focused pieces used inside diagnostic sections.',
+                'components' => [
+                    'http-client-controls',
+                    'http-client-detail-tabs',
+                    'http-client-header',
+                    'http-client-list-item',
+                    'http-client-request-panel',
+                    'http-client-response-panel',
+                    'http-client-source-panel',
+                    'cache-controls',
+                    'cache-detail-tabs',
+                    'cache-header',
+                    'cache-list-item',
+                    'cache-overview-panel',
+                    'cache-source-panel',
+                    'mail-header',
+                    'mail-message-details',
+                    'mail-source-panel',
+                    'notification-delivery-panel',
+                    'notification-header',
+                    'notification-source-panel',
+                    'model-group',
+                ],
+            ],
+            'laravel-activity' => [
+                'title' => 'Laravel activity',
+                'description' => 'Components for framework-specific runtime data.',
+                'components' => [
+                    'authorization-detail',
+                    'event-detail',
+                    'livewire-property-editor',
+                    'livewire-split-view',
+                    'model-group-detail',
+                    'query-section',
+                ],
+            ],
+            'compositions' => [
+                'title' => 'Complete views',
+                'description' => 'Large components that combine smaller pieces into a usable inspector view.',
+                'components' => [
+                    'http-client-detail',
+                    'http-client-workspace',
+                    'cache-detail',
+                    'cache-workspace',
+                    'notification-detail',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{
+     *     slug: string,
+     *     title: string,
+     *     description: string,
+     *     kind: string,
+     *     kindTitle: string,
+     *     kindSingular: string,
+     *     kindDescription: string,
+     *     group: string,
+     *     groupTitle: string,
+     *     groupDescription: string
+     * }>
+     */
+    public static function components(): array
+    {
+        $origins = [];
+
+        foreach (self::groups() as $group => $metadata) {
+            foreach ($metadata['components'] as $component => $description) {
+                $origins[$component] = [
+                    'description' => $description,
+                    'group' => $group,
+                    'groupTitle' => $metadata['title'],
+                    'groupDescription' => $metadata['description'],
+                ];
+            }
+        }
+
+        $components = [];
+
+        foreach (self::kinds() as $kind => $metadata) {
+            foreach ($metadata['components'] as $component) {
+                $origin = $origins[$component] ?? throw new LogicException(
+                    sprintf('Studio component [%s] has no demo group.', $component),
+                );
+
+                $components[$component] = [
+                    'slug' => $component,
+                    'title' => self::displayTitle($component),
+                    'description' => $origin['description'],
+                    'kind' => $kind,
+                    'kindTitle' => $metadata['title'],
+                    'kindSingular' => $metadata['singular'],
+                    'kindDescription' => $metadata['description'],
+                    ...$origin,
+                ];
+            }
+        }
+
+        return $components;
+    }
+
+    /**
+     * @return array{
+     *     slug: string,
+     *     title: string,
+     *     description: string,
+     *     kind: string,
+     *     kindTitle: string,
+     *     kindSingular: string,
+     *     kindDescription: string,
+     *     group: string,
+     *     groupTitle: string,
+     *     groupDescription: string
+     * }|null
+     */
+    public static function component(string $slug): ?array
+    {
+        return self::components()[$slug] ?? null;
+    }
+
+    private static function displayTitle(string $component): string
+    {
+        $titles = [
+            'filter-tab' => 'Segmented Option',
+            'filter-tabs' => 'Segmented Control',
+            'inspector-operation-badge' => 'Operation Badge',
+            'inspector-definition-list' => 'Definition List',
+            'inspector-definition-row' => 'Definition Row',
+            'inspector-detail-back' => 'Detail Back Action',
+            'inspector-detail-empty' => 'Detail Empty State',
+            'inspector-detail-header' => 'Detail Header',
+            'inspector-detail-pane' => 'Detail Pane',
+            'inspector-detail-tabs' => 'Detail Tabs',
+            'inspector-evidence' => 'Code Evidence',
+            'inspector-fact' => 'Summary Fact',
+            'inspector-facts' => 'Fact Grid',
+            'inspector-list-panel' => 'List Pane',
+            'inspector-stack' => 'Application Stack',
+            'inspector-workspace' => 'List-Detail Workspace',
+            'corner-toolbar' => 'Compact Request Toolbar',
+            'request-option' => 'Saved Request Row',
+            'toolbar-anchor-preview' => 'Toolbar Drop Preview',
+            'model-group' => 'Model Row',
+            'model-group-detail' => 'Model Detail',
+            'query-section' => 'Queries Workspace',
+        ];
+
+        return $titles[$component] ?? str_replace('Http ', 'HTTP ', Str::headline($component));
     }
 }

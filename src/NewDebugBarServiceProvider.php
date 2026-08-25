@@ -241,8 +241,14 @@ final class NewDebugBarServiceProvider extends ServiceProvider
         $router->get('/__newdebugbar/assets/{path}', AssetController::class)
             ->where('path', '.*')
             ->name('newdebugbar.asset');
-        $router->get('/__newdebugbar/studio', StudioController::class)
+        $router->get('/__newdebugbar/studio', [StudioController::class, 'index'])
             ->name('newdebugbar.studio');
+        $router->get('/__newdebugbar/studio/{component}/preview', [StudioController::class, 'preview'])
+            ->where('component', '[a-z0-9-]+')
+            ->name('newdebugbar.studio.preview');
+        $router->get('/__newdebugbar/studio/{component}', [StudioController::class, 'show'])
+            ->where('component', '[a-z0-9-]+')
+            ->name('newdebugbar.studio.component');
         $router->get('/__newdebugbar/mail/{profile}/{index}/{format}', MailPreviewController::class)
             ->where('profile', ProfileStore::ID_PATTERN)
             ->whereNumber('index')

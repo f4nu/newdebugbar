@@ -53,7 +53,7 @@
         recentProfiles = [summary, ...{{ \Illuminate\Support\Js::from($laterRequests) }}];
     "
 >
-    @component('newdebugbar::studio.component', ['component' => 'corner-toolbar', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'corner-toolbar', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{ toolbarIsCorner: true }"
             class="ndb:h-14 ndb:w-[196px] ndb:rounded-[18px] ndb:border ndb:border-white/70 ndb:bg-white/80 ndb:p-1.5 ndb:shadow-lg ndb:dark:border-white/10 ndb:dark:bg-zinc-950/90"
@@ -62,13 +62,13 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'mobile-request-metrics', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'mobile-request-metrics', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:max-w-sm ndb:rounded-xl ndb:border ndb:border-zinc-200/80 ndb:bg-white ndb:px-2 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
             <x-newdebugbar::mobile-request-metrics scope="studio" />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'mobile-toolbar-popover', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'mobile-toolbar-popover', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ mobileToolbarMenu: 'studio-actions' }" class="ndb:relative ndb:h-52 ndb:max-w-sm">
             <x-newdebugbar::mobile-toolbar-popover
                 id="newdebugbar-studio-mobile-actions"
@@ -97,19 +97,19 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'request-option', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'request-option', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ request: {{ \Illuminate\Support\Js::from($laterRequests[0]) }} }" class="ndb:max-w-sm">
             <x-newdebugbar::request-option />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'request-switcher', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'request-switcher', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:relative ndb:h-64 ndb:max-w-sm">
             <x-newdebugbar::request-switcher scope="studio" direction="below" class="ndb:w-full" />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'toolbar-anchor-preview', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'toolbar-anchor-preview', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 toolbarDragging: true,
@@ -132,7 +132,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'toolbar-button', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'toolbar-button', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::toolbar-button
             section="queries"
             class="ndb:flex ndb:border ndb:border-zinc-200/80 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -148,7 +148,7 @@
         </x-newdebugbar::toolbar-button>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'window-controls', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'window-controls', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:inline-flex ndb:rounded-xl ndb:border ndb:border-zinc-200/80 ndb:bg-white ndb:px-1 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
             <x-newdebugbar::window-controls />
         </div>

@@ -1,4 +1,4 @@
-@component('newdebugbar::studio.component', ['component' => 'inspector-definition-list', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-definition-list', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-definition-list class="ndb:max-w-xl">
         <x-newdebugbar::inspector-definition-row label="Connection">sqlite</x-newdebugbar::inspector-definition-row>
         <x-newdebugbar::inspector-definition-row label="Table">bookings</x-newdebugbar::inspector-definition-row>
@@ -7,23 +7,23 @@
     </x-newdebugbar::inspector-definition-list>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-definition-row', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-definition-row', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-definition-list class="ndb:max-w-xl">
         <x-newdebugbar::inspector-definition-row label="Cache store"> redis </x-newdebugbar::inspector-definition-row>
     </x-newdebugbar::inspector-definition-list>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-detail-back', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-detail-back', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-detail-back persistent label="Requests" data-ndb-studio-detail-back />
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-detail-empty', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-detail-empty', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div class="ndb:max-h-[32rem] ndb:overflow-hidden">
         <x-newdebugbar::inspector-detail-empty label="Select a request to inspect its response." />
     </div>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-detail-header', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-detail-header', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-detail-header layout="wrap" class="ndb:bg-white ndb:dark:bg-zinc-950">
         <x-slot:title>
             <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2">
@@ -50,7 +50,7 @@
     </x-newdebugbar::inspector-detail-header>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-detail-pane', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-detail-pane', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div
         x-data="{ newdebugbarStudioDetailPaneOpen: true }"
         class="ndb:h-80 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -80,7 +80,7 @@
     </div>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-detail-tabs', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-detail-tabs', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div x-data="{ newdebugbarStudioDetailTab: 'response' }" class="ndb:bg-white ndb:dark:bg-zinc-950">
         <x-newdebugbar::inspector-detail-tabs label="Request detail">
             @foreach (['response', 'request', 'source'] as $tab)
@@ -94,20 +94,20 @@
     </div>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-evidence', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-evidence', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-evidence label="Response body" language="json">
         <x-slot:value>{ "temperature": 18, "conditions": "clear" }</x-slot:value>
     </x-newdebugbar::inspector-evidence>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-explanation', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-explanation', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-explanation
         title="Why was this record loaded more than once?"
         description="The same record was retrieved three times during this request. If that was not intentional, inspect the listed sources for work that can reuse an earlier result."
     />
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-fact', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-fact', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-facts columns="2" :bordered="false" class="ndb:max-w-md">
         <x-newdebugbar::inspector-fact label="Runtime">
             <span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-amber-600 ndb:dark:text-amber-400">363.1 ms</span>
@@ -118,7 +118,7 @@
     </x-newdebugbar::inspector-facts>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-facts', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-facts', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-facts columns="4">
         <x-newdebugbar::inspector-fact label="Status"><span class="ndb:text-xs ndb:font-bold">200 OK</span></x-newdebugbar::inspector-fact>
         <x-newdebugbar::inspector-fact label="Runtime"><span class="ndb:text-xs ndb:font-bold ndb:tabular-nums">363.1 ms</span></x-newdebugbar::inspector-fact>
@@ -127,7 +127,7 @@
     </x-newdebugbar::inspector-facts>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-list-panel', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-list-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div
         x-data="{ newdebugbarStudioListDetailOpen: false }"
         class="ndb:h-80 ndb:max-w-xl ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -157,7 +157,7 @@
     </div>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-source-fact', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-source-fact', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <dl class="ndb:grid ndb:max-w-2xl ndb:gap-3 ndb:sm:grid-cols-2">
         <x-newdebugbar::inspector-source-fact label="Request initiated at">
             app/Travel/LocalPartnerGateway.php:49
@@ -168,7 +168,7 @@
     </dl>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-source-link', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-source-link', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-source-link>
         app/Actions/Trips/RefreshTripWorkspace.php:150
     </x-newdebugbar::inspector-source-link>
@@ -181,13 +181,13 @@
         ['function' => 'App\\Http\\Controllers\\TripController->show', 'file' => 'app/Http/Controllers/TripController.php', 'line' => 31],
     ];
 @endphp
-@component('newdebugbar::studio.component', ['component' => 'inspector-stack', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-stack', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div x-data="{ newdebugbarStudioFrames: @js($newdebugbarStudioFrames) }" class="ndb:max-w-2xl">
         <x-newdebugbar::inspector-stack frames="newdebugbarStudioFrames" />
     </div>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-workspace', 'components' => $components])
+@component('newdebugbar::studio.component', ['component' => 'inspector-workspace', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div x-data="{ newdebugbarStudioWorkspaceDetailOpen: false }" class="ndb:h-96 ndb:overflow-hidden">
         <x-newdebugbar::inspector-workspace detail-open="newdebugbarStudioWorkspaceDetailOpen" class="ndb:h-full">
             <x-newdebugbar::inspector-list-panel

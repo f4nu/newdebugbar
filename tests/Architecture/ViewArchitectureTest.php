@@ -21,10 +21,14 @@ it('keeps every Blade view focused', function () {
 it('documents and demonstrates every reusable Blade component in Studio', function () {
     $root = dirname(__DIR__, 2);
     $componentDirectory = $root.'/resources/views/components';
-    $catalog = StudioCatalog::groups();
-    $catalogComponents = collect($catalog)
-        ->flatMap(fn (array $group): array => array_keys($group['components']))
-        ->values()
+    $groups = StudioCatalog::groups();
+    $kinds = StudioCatalog::kinds();
+    $navigationGroups = StudioCatalog::navigationGroups();
+    $components = StudioCatalog::components();
+    $catalogComponents = array_keys($components);
+    $kindComponents = collect($kinds)->flatMap(fn (array $kind): array => $kind['components'])->all();
+    $navigationComponents = collect($navigationGroups)
+        ->flatMap(fn (array $group): array => $group['components'])
         ->all();
     $viewComponents = collect(ProjectFiles::bladeFilesIn($componentDirectory))
         ->map(fn (SplFileInfo $file): string => str_replace('.blade.php', '', $file->getFilename()))
@@ -33,21 +37,44 @@ it('documents and demonstrates every reusable Blade component in Studio', functi
         ->all();
     $documentedComponents = file_get_contents($root.'/.agents/skills/craft-newdebugbar-ui/references/components.md');
 
-    expect($catalogComponents)->toHaveCount(count(array_unique($catalogComponents)));
+    expect($catalogComponents)->toHaveCount(count(array_unique($catalogComponents)))
+        ->and($kindComponents)->toHaveCount(count(array_unique($kindComponents)))
+        ->and($kindComponents)->toHaveCount(count($catalogComponents))
+        ->and($navigationComponents)->toHaveCount(count(array_unique($navigationComponents)))
+        ->and($navigationComponents)->toHaveCount(count($catalogComponents));
 
     sort($catalogComponents);
+    sort($kindComponents);
+    sort($navigationComponents);
 
-    expect($catalogComponents)->toBe($viewComponents);
+    expect($catalogComponents)->toBe($viewComponents)
+        ->and($kindComponents)->toBe($viewComponents)
+        ->and($navigationComponents)->toBe($viewComponents);
 
-    foreach ($catalog as $slug => $group) {
+    foreach ($groups as $slug => $group) {
         expect($group['title'])->not->toBeEmpty()
             ->and($group['description'])->not->toBeEmpty()
             ->and($root.'/resources/views/studio/demos/'.$slug.'.blade.php')->toBeFile();
+    }
 
-        foreach ($group['components'] as $component => $description) {
-            expect($description)->not->toBeEmpty()
-                ->and($documentedComponents)->toContain('`'.$component.'`');
-        }
+    foreach ($kinds as $kind) {
+        expect($kind['title'])->not->toBeEmpty()
+            ->and($kind['singular'])->not->toBeEmpty()
+            ->and($kind['description'])->not->toBeEmpty();
+    }
+
+    foreach ($navigationGroups as $navigationGroup) {
+        expect($navigationGroup['title'])->not->toBeEmpty()
+            ->and($navigationGroup['description'])->not->toBeEmpty();
+    }
+
+    foreach ($components as $component => $metadata) {
+        expect($metadata['title'])->not->toBeEmpty()
+            ->and($metadata['description'])->not->toBeEmpty()
+            ->and($metadata['kindTitle'])->not->toBeEmpty()
+            ->and($metadata['kindDescription'])->not->toBeEmpty()
+            ->and($groups)->toHaveKey($metadata['group'])
+            ->and($documentedComponents)->toContain('`'.$component.'`');
     }
 });
 

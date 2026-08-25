@@ -94,13 +94,13 @@
 @endphp
 
 <div class="ndb:space-y-5" x-init="initializeHttpClient({{ \Illuminate\Support\Js::from($items) }})">
-    @component('newdebugbar::studio.component', ['component' => 'http-client-controls', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-controls', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:max-w-lg">
             <x-newdebugbar::http-client-controls :summary="$summary" :item-count="count($items)" />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-detail', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-detail', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{ httpClientDetailOpen: true }"
             class="ndb:h-[34rem] ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -109,7 +109,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-detail-tabs', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-detail-tabs', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 httpClientDetailTab: 'response',
@@ -123,11 +123,11 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-empty', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-empty', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::http-client-empty />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-header', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-header', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{ selectedHttpClientRequest: {{ \Illuminate\Support\Js::from($selectedRequest) }} }"
             class="ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -136,13 +136,13 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-list-item', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-list-item', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:max-w-xl ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
             <x-newdebugbar::http-client-list-item :item="$items[2]" />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-no-response', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-no-response', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{ selectedHttpClientRequest: {{ \Illuminate\Support\Js::from($connectionFailure) }} }"
             class="ndb:max-w-xl ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:p-4 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -151,7 +151,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-request-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-request-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 selectedHttpClientRequest: {{ \Illuminate\Support\Js::from($selectedRequest) }},
@@ -163,7 +163,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-response-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-response-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 selectedHttpClientRequest: {{ \Illuminate\Support\Js::from($selectedRequest) }},
@@ -175,7 +175,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-source-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-source-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 selectedHttpClientRequest: {{ \Illuminate\Support\Js::from($selectedRequest) }},
@@ -187,7 +187,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'http-client-workspace', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'http-client-workspace', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:flex ndb:h-[38rem] ndb:min-h-0 ndb:flex-col ndb:overflow-hidden ndb:bg-white ndb:dark:bg-zinc-950">
             <x-newdebugbar::http-client-workspace :items="$items" :summary="$summary" />
         </div>

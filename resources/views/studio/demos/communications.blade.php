@@ -148,7 +148,7 @@
     }"
     class="ndb:space-y-5"
 >
-    @component('newdebugbar::studio.component', ['component' => 'mail-actions', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'mail-actions', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-init="$nextTick(() => ($el.querySelector('[data-ndb-mail-actions]').open = true))"
             class="ndb:flex ndb:min-h-48 ndb:justify-end ndb:p-2"
@@ -157,43 +157,43 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'mail-header', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'mail-header', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::mail-header />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'mail-message-details', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'mail-message-details', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::mail-message-details />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'mail-source-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'mail-source-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ mailDetailTab: 'source' }">
             <x-newdebugbar::mail-source-panel />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'notification-delivery-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'notification-delivery-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ notificationDetailTab: 'delivery' }">
             <x-newdebugbar::notification-delivery-panel />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'notification-detail', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'notification-detail', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:min-h-[32rem] ndb:overflow-hidden ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
             <x-newdebugbar::notification-detail />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'notification-header', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'notification-header', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::notification-header />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'notification-payload-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'notification-payload-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ notificationDetailTab: 'payload' }">
             <x-newdebugbar::notification-payload-panel />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'notification-source-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'notification-source-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ notificationDetailTab: 'source' }">
             <x-newdebugbar::notification-source-panel />
         </div>

@@ -152,7 +152,7 @@
 @endphp
 
 <div class="ndb:space-y-5">
-    @component('newdebugbar::studio.component', ['component' => 'authorization-detail', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'authorization-detail', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 selectedAuthorizationDecision: @js($authorization),
@@ -167,7 +167,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'event-detail', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'event-detail', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 selectedEvent: @js($event),
@@ -183,13 +183,13 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'livewire-property-editor', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'livewire-property-editor', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ row: @js($livewireRow) }" class="ndb:flex ndb:justify-end">
             <x-newdebugbar::livewire-property-editor />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'livewire-split-view', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'livewire-split-view', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ livewireDetailOpen: false }">
             <x-newdebugbar::livewire-split-view>
                 <x-slot:list>
@@ -210,7 +210,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'log-entry', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'log-entry', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{ logDetailSequence: null }"
             class="ndb:overflow-hidden ndb:border-y ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950"
@@ -219,7 +219,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'model-group', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'model-group', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 modelSelected: 0,
@@ -233,7 +233,7 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'model-group-detail', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'model-group-detail', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 modelDetailTab: 'records',
@@ -247,17 +247,17 @@
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'query-actions', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'query-actions', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:flex ndb:justify-end">
             <x-newdebugbar::query-actions :query="$query" identity="studio-actions" :sql="$query['sql']" />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'query-execution', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'query-execution', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::query-execution :query="$query" identity="studio-execution" expanded />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'query-section', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'query-section', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div
             x-data="{
                 queryFilter: 'all',

@@ -58,6 +58,8 @@ it('profiles application requests and excludes package owned traffic', function 
     ), false],
     'package asset' => [fn () => Request::create('/__newdebugbar/assets/newdebugbar.js', server: ['HTTP_ACCEPT' => 'text/html']), false],
     'package Studio' => [fn () => Request::create('/__newdebugbar/studio', server: ['HTTP_ACCEPT' => 'text/html']), false],
+    'package Studio component' => [fn () => Request::create('/__newdebugbar/studio/search-field', server: ['HTTP_ACCEPT' => 'text/html']), false],
+    'package Studio preview' => [fn () => Request::create('/__newdebugbar/studio/search-field/preview', server: ['HTTP_ACCEPT' => 'text/html']), false],
     'package Livewire runtime asset' => [fn () => Request::create('/livewire-95508dcc/livewire.js', server: ['HTTP_ACCEPT' => 'text/javascript']), false],
     'ordinary route named like Livewire' => [fn () => Request::create('/livewire/update', server: ['HTTP_ACCEPT' => 'text/html']), true],
     'ordinary similarly named script' => [fn () => Request::create('/livewire-example/app.js', server: ['HTTP_ACCEPT' => 'text/javascript']), true],

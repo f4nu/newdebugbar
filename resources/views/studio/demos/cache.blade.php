@@ -116,56 +116,56 @@
     }"
     class="ndb:space-y-5"
 >
-    @component('newdebugbar::studio.component', ['component' => 'cache-controls', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-controls', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::cache-controls :summary="$cacheSummary" :item-count="6" />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-detail', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-detail', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:min-h-[30rem] ndb:overflow-hidden ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
             <x-newdebugbar::cache-detail />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-detail-tabs', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-detail-tabs', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::cache-detail-tabs />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-empty', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-empty', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::cache-empty />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-header', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-header', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::cache-header />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-list-item', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-list-item', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div class="ndb:overflow-hidden ndb:border-y ndb:border-zinc-200/90 ndb:bg-white ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950">
             <x-newdebugbar::cache-list-item :item="$cacheItems[2]" />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-overview-facts', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-overview-facts', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::cache-overview-facts />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-overview-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-overview-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <x-newdebugbar::cache-overview-panel />
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-raw-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-raw-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ cacheDetailTab: 'raw' }">
             <x-newdebugbar::cache-raw-panel />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-source-panel', 'components' => $components])
+    @component('newdebugbar::studio.component', ['component' => 'cache-source-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
         <div x-data="{ cacheDetailTab: 'source' }">
             <x-newdebugbar::cache-source-panel />
         </div>
     @endcomponent
 
-    @component('newdebugbar::studio.component', ['component' => 'cache-workspace', 'components' => $components])
-        <div class="ndb:h-[34rem] ndb:overflow-hidden ndb:bg-white ndb:dark:bg-zinc-950">
+    @component('newdebugbar::studio.component', ['component' => 'cache-workspace', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
+        <div class="ndb:flex ndb:h-[34rem] ndb:min-h-0 ndb:flex-col ndb:overflow-hidden ndb:bg-white ndb:dark:bg-zinc-950">
             <x-newdebugbar::cache-workspace :items="$cacheItems" :summary="$cacheSummary" />
         </div>
     @endcomponent
