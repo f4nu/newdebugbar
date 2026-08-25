@@ -120,6 +120,7 @@ it('keeps host styles and package styles isolated', function () {
                 const search = document.querySelector('[data-ndb-cache-search]');
                 const detail = document.querySelector('[data-ndb-cache-detail]');
                 const summaryPrimary = document.querySelector('[data-ndb-cache-summary] p');
+                const sourceLink = document.querySelector('[data-ndb-cache-metadata] [data-ndb-inspector-source-link]');
 
                 return [
                     root.getAttribute('data-cache'),
@@ -137,9 +138,12 @@ it('keeps host styles and package styles isolated', function () {
                     Number.parseFloat(getComputedStyle(summaryPrimary).fontSize) === 12,
                     getComputedStyle(summaryPrimary).backgroundColor === 'rgba(0, 0, 0, 0)',
                     getComputedStyle(summaryPrimary).color !== 'rgb(0, 128, 0)',
+                    sourceLink.getBoundingClientRect().height < 91,
+                    getComputedStyle(sourceLink).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    getComputedStyle(sourceLink).color !== 'rgb(0, 128, 0)',
                 ];
             })()
-            JS, [null, null, null, null, null, null, true, true, true, true, true, true, true, true, true])
+            JS, [null, null, null, null, null, null, true, true, true, true, true, true, true, true, true, true, true, true])
         ->click('[data-ndb-section="http_client"]')
         ->assertVisible('[data-ndb-section-panel="http_client"]')
         ->assertScript(<<<'JS'
@@ -197,10 +201,22 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const facts = document.querySelector('[data-ndb-http-client-source-facts]');
                 const source = document.querySelector('[data-ndb-http-client-detail-source]');
+                const fact = source.closest('[data-ndb-inspector-source-fact]');
+                const stack = document.querySelector('[data-ndb-http-client-detail-panel="source"] [data-ndb-inspector-stack]');
+                const functionCall = stack.querySelector('li code');
+                const stackPath = stack.querySelector('li > span:last-child > span');
 
                 return getComputedStyle(facts).display === 'grid'
                     && getComputedStyle(source).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(source).color !== 'rgb(0, 0, 0)';
+                    && getComputedStyle(source).color !== 'rgb(0, 0, 0)'
+                    && !getComputedStyle(source).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
+                    && !getComputedStyle(stackPath).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(fact).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(fact).paddingLeft) === 12
+                    && getComputedStyle(stack).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(stack).borderLeftWidth === '0px'
+                    && Number.parseFloat(getComputedStyle(stack).paddingLeft) === 0;
             })()
             JS)
         ->click('[data-ndb-section="mail"]')
@@ -214,6 +230,7 @@ it('keeps host styles and package styles isolated', function () {
                 const metadataGrid = metadata.querySelector('[data-ndb-mail-facts]');
                 const metadataFacts = [...metadata.querySelectorAll('[data-ndb-mail-fact]')];
                 const metadataLabel = metadata.querySelector('dt');
+                const sourceLink = metadata.querySelector('[data-ndb-inspector-source-link]');
                 const backIcon = document.querySelector('[data-ndb-mail-detail-back] svg');
                 const tabIcons = [...document.querySelectorAll('[data-ndb-mail-detail-tab-icon]')];
 
@@ -228,8 +245,11 @@ it('keeps host styles and package styles isolated', function () {
                     && Number.parseFloat(getComputedStyle(metadataGrid).paddingTop) === 0
                     && getComputedStyle(metadataGrid).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && metadataFacts.every((fact) => getComputedStyle(fact).backgroundColor === 'rgba(0, 0, 0, 0)')
-                    && Number.parseFloat(getComputedStyle(metadataLabel).fontSize) === 10
+                    && Number.parseFloat(getComputedStyle(metadataLabel).fontSize) === 11
                     && getComputedStyle(metadataLabel).color !== 'rgb(0, 128, 0)'
+                    && sourceLink.getBoundingClientRect().height < 91
+                    && getComputedStyle(sourceLink).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(sourceLink).color !== 'rgb(0, 128, 0)'
                     && Number.parseFloat(getComputedStyle(backIcon).width) === 14
                     && tabIcons.length === 3
                     && tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14);
@@ -321,6 +341,8 @@ it('keeps host styles and package styles isolated', function () {
                 const metadataGrid = metadata.querySelector('[data-ndb-notification-facts]');
                 const metadataFacts = [...metadata.querySelectorAll('[data-ndb-notification-fact]')];
                 const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
+                const sourceLink = metadata.querySelector('[data-ndb-inspector-source-link]');
+                const destinations = [...document.querySelectorAll('[data-ndb-notification-destination]')];
                 const status = document.querySelector('[data-ndb-notification-status]');
                 const link = document.querySelector('[data-ndb-notification-profile-link]');
                 const backIcon = document.querySelector('[data-ndb-notification-detail-back] svg');
@@ -340,7 +362,14 @@ it('keeps host styles and package styles isolated', function () {
                     && metadataFacts.every((fact) => getComputedStyle(fact).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && metadataTerms.every((term) => getComputedStyle(term).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)')
-                    && Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 10
+                    && Number.parseFloat(getComputedStyle(metadata.querySelector('dt')).fontSize) === 11
+                    && sourceLink.getBoundingClientRect().height < 91
+                    && getComputedStyle(sourceLink).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(sourceLink).color !== 'rgb(0, 128, 0)'
+                    && destinations.length >= 1
+                    && destinations.every((destination) => Number.parseFloat(getComputedStyle(destination).fontSize) === 11)
+                    && destinations.every((destination) => !getComputedStyle(destination).fontFamily.includes('JetBrains Mono'))
+                    && destinations.every((destination) => getComputedStyle(destination).backgroundColor !== 'rgb(255, 0, 0)')
                     && Number.parseFloat(getComputedStyle(status).fontSize) === 11
                     && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
                     && link.getBoundingClientRect().height < 91

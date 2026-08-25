@@ -73,7 +73,6 @@ test('Models opens one focused detail and restores list scroll and focus', () =>
 
 test('Cache filters searches and keeps a visible operation selected', () => {
   const state = createNewDebugBar(summary, runtime());
-  const scrolled = [];
   let detailResets = 0;
   let contentResets = 0;
   const element = (execution, category, failed, search) => ({
@@ -84,7 +83,6 @@ test('Cache filters searches and keeps a visible operation selected', () => {
       ndbCacheSearchText: search,
     },
     hidden: false,
-    scrollIntoView: (options) => scrolled.push([execution, options]),
     style: {
       display: '',
       removeProperty(property) {
@@ -145,24 +143,16 @@ test('Cache filters searches and keeps a visible operation selected', () => {
   assert.equal(detailResets, 1);
   assert.equal(contentResets, 1);
 
-  state.cacheSearch = 'stale';
-  state.setCacheFilter('failed');
-  state.selectRelatedCacheOperation(2);
-  assert.equal(state.cacheFilter, 'all');
-  assert.equal(state.cacheSearch, '');
-  assert.equal(state.cacheSelected, 2);
-  assert.deepEqual(scrolled, [[2, { block: 'nearest' }]]);
-
   state.setCacheDetailTab('source');
-  assert.equal(detailResets, 3);
-  assert.equal(contentResets, 3);
+  assert.equal(detailResets, 2);
+  assert.equal(contentResets, 2);
   state.setCacheDetailTab('raw');
   state.setCacheDetailTab('invalid');
   state.setCacheFilter('invalid');
   state.selectCacheOperation(99);
   assert.equal(state.cacheDetailTab, 'raw');
   assert.equal(state.cacheFilter, 'all');
-  assert.equal(state.cacheSelected, 2);
+  assert.equal(state.cacheSelected, 3);
   assert.equal(state.formatCachePayload({ key: 'trip:alpha' }), '{\n  "key": "trip:alpha"\n}');
 
   state.initializeCache('invalid');

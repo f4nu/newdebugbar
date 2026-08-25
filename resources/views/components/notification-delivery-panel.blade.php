@@ -67,21 +67,23 @@
                                 x-text="delivery.status_label"
                             ></p>
                             <template x-if="delivery.destination_labels.length <= 1">
-                                <code
+                                <span
+                                    data-ndb-notification-destination
                                     :class="delivery.destination_resolved
                                         ? 'ndb:text-zinc-500 ndb:dark:text-zinc-400'
                                         : 'ndb:text-amber-700 ndb:dark:text-amber-300'"
-                                    class="ndb:mt-1 ndb:block ndb:break-all ndb:font-mono ndb:text-[11px]"
+                                    class="ndb:mt-1 ndb:block ndb:break-all ndb:bg-transparent ndb:p-0 ndb:text-[11px]"
                                     x-text="delivery.destination_label"
-                                ></code>
+                                ></span>
                             </template>
                             <template x-if="delivery.destination_labels.length > 1">
                                 <div class="ndb:mt-1.5 ndb:flex ndb:flex-wrap ndb:gap-1">
                                     <template x-for="destination in delivery.destination_labels" :key="destination">
-                                        <code
-                                            class="ndb:max-w-full ndb:break-all ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:font-mono ndb:text-[11px] ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300"
+                                        <span
+                                            data-ndb-notification-destination
+                                            class="ndb:max-w-full ndb:break-all ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:text-[11px] ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300"
                                             x-text="destination"
-                                        ></code>
+                                        ></span>
                                     </template>
                                 </div>
                             </template>
@@ -125,7 +127,7 @@
                         class="ndb:mt-1 ndb:block ndb:break-all ndb:text-[11px] ndb:text-red-500 ndb:dark:text-red-400"
                         x-text="delivery.exception_class"
                     ></code>
-                    <code
+                    <span
                         x-show.important="delivery.exception_location"
                         class="ndb:mt-1 ndb:block ndb:break-all ndb:text-[11px] ndb:text-red-500 ndb:dark:text-red-400"
                         x-text="
@@ -133,7 +135,7 @@
                                 ? delivery.exception_location.file + ':' + delivery.exception_location.line
                                 : ''
                         "
-                    ></code>
+                    ></span>
                 </div>
 
                 <div

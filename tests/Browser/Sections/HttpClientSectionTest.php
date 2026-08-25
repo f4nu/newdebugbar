@@ -23,6 +23,7 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                 const rows = [...document.querySelectorAll('[data-ndb-http-client-item]')];
                 const methods = rows.map((row) => row.querySelector('[data-ndb-http-client-method]'));
                 const hosts = rows.map((row) => row.querySelector('[data-ndb-http-client-host]'));
+                const paths = hosts.map((host) => host.nextElementSibling);
                 const statuses = rows.map((row) => row.querySelector('[data-ndb-http-client-list-status]'));
                 const durations = rows.map((row) => row.querySelector('[data-ndb-http-client-list-duration]'));
                 const header = document.querySelector('[data-ndb-http-client-header]');
@@ -74,6 +75,7 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                     && methods.length === 7
                     && methods.every((method) => Math.round(method.getBoundingClientRect().width) === 48)
                     && aligned(hosts, 'left')
+                    && paths.every((path) => !getComputedStyle(path).fontFamily.includes('JetBrains Mono'))
                     && aligned(statuses, 'left')
                     && aligned(durations, 'left')
                     && rows.every((row, index) => verticallyAligned([
@@ -117,8 +119,9 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
                     && requestFacts.textContent.includes('Host')
                     && requestFacts.textContent.includes('Request body')
                     && !requestFacts.textContent.includes('Status')
-                    && sourceFacts.textContent.includes('Source')
+                    && sourceFacts.textContent.includes('Request initiated at')
                     && header.querySelectorAll('button').length === 1
+                    && !getComputedStyle(headerPath).fontFamily.includes('JetBrains Mono')
                     && verticallyAligned([headerMethod, headerPath, urlAction])
                     && urlAction.textContent.trim() === 'Copy URL'
                     && urlIcon.querySelectorAll('path').length === 2
@@ -219,6 +222,24 @@ it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
         ->assertVisible('[data-ndb-http-client-detail-panel="source"]')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-source]").textContent.includes("tests/Support/DefinesTestApplication.php")')
         ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertScript(<<<'JS'
+            (() => {
+                const source = document.querySelector('[data-ndb-http-client-detail-source]');
+                const fact = source.closest('[data-ndb-inspector-source-fact]');
+                const stack = document.querySelector('[data-ndb-http-client-detail-panel="source"] [data-ndb-inspector-stack]');
+                const action = document.querySelector('[data-ndb-http-client-copy-url]');
+                const functionCall = stack.querySelector('li code');
+                const stackPath = stack.querySelector('li > span:last-child > span');
+
+                return fact !== null
+                    && stack !== null
+                    && !getComputedStyle(source).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFeatureSettings.includes('"calt"')
+                    && !getComputedStyle(stackPath).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(source).color !== getComputedStyle(action).color;
+            })()
+            JS)
         ->click('[data-ndb-http-client-filter="all"]')
         ->click('[data-ndb-http-client-item="3"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="response"]')

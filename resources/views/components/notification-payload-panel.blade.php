@@ -28,10 +28,10 @@
                 x-for="
                     field in
                     [
-                        ['Destination', selectedNotificationDelivery?.destination_label],
-                        ['Status', selectedNotificationDelivery?.status_label],
-                        ['Response type', selectedNotificationDelivery?.response_type],
-                        ['Exception', selectedNotificationDelivery?.exception_class],
+                        ['Destination', selectedNotificationDelivery?.destination_label, false],
+                        ['Status', selectedNotificationDelivery?.status_label, false],
+                        ['Response type', selectedNotificationDelivery?.response_type, false],
+                        ['Exception', selectedNotificationDelivery?.exception_class, true],
                         [
                             'Failed at',
                             selectedNotificationDelivery?.exception_location
@@ -39,8 +39,9 @@
                                   ':' +
                                   selectedNotificationDelivery.exception_location.line
                                 : null,
+                            false,
                         ],
-                        ['Message ID', selectedNotificationDelivery?.mail_message_id],
+                        ['Message ID', selectedNotificationDelivery?.mail_message_id, false],
                     ]
                 "
                 :key="field[0]"
@@ -51,7 +52,8 @@
                 >
                     <dt class="ndb:text-[11px] ndb:font-bold" x-text="field[0]"></dt>
                     <dd
-                        class="ndb:break-all ndb:font-mono ndb:text-[11px] ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                        :class="field[2] ? 'ndb:font-mono ndb:text-[11px]' : 'ndb:text-xs'"
+                        class="ndb:break-all ndb:text-zinc-600 ndb:dark:text-zinc-300"
                         x-text="field[1]"
                     ></dd>
                 </div>

@@ -9,7 +9,7 @@
             <h3
                 data-ndb-http-client-detail-path
                 :title="selectedHttpClientRequest.url"
-                class="ndb:min-w-0 ndb:break-all ndb:font-mono ndb:text-xs ndb:font-bold ndb:leading-5 ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                class="ndb:min-w-0 ndb:break-all ndb:text-xs ndb:font-bold ndb:leading-5 ndb:text-zinc-700 ndb:dark:text-zinc-200"
                 x-text="
                     selectedHttpClientRequest.path +
                     (selectedHttpClientRequest.query ? '?' + selectedHttpClientRequest.query : '')

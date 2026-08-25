@@ -143,7 +143,7 @@ it('composes the HTTP Client workspace from focused view components', function (
         ->toContain('<x-newdebugbar::http-client-no-response');
 
     expect($source)
-        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-source-fact')
         ->toContain('<x-newdebugbar::inspector-stack');
 });
 
@@ -197,7 +197,43 @@ it('composes the Cache workspace from the shared inspector components', function
         ->not->toContain('Check next');
 
     expect($raw)->toContain('<x-newdebugbar::inspector-evidence');
-    expect($source)->toContain('<x-newdebugbar::inspector-stack');
+    expect($source)
+        ->toContain('<x-newdebugbar::inspector-source-fact')
+        ->toContain('<x-newdebugbar::inspector-stack');
+});
+
+it('uses one calm source presentation across inspector sections', function () {
+    $resources = dirname(__DIR__, 2).'/resources';
+    $views = $resources.'/views';
+
+    foreach ([
+        'components/cache-overview-facts.blade.php',
+        'components/mail-header.blade.php',
+        'components/notification-header.blade.php',
+    ] as $view) {
+        expect(file_get_contents($views.'/'.$view))
+            ->toContain('<x-newdebugbar::inspector-source-link');
+    }
+
+    foreach ([
+        'components/cache-source-panel.blade.php',
+        'components/http-client-source-panel.blade.php',
+        'components/mail-source-panel.blade.php',
+        'components/notification-source-panel.blade.php',
+    ] as $view) {
+        expect(file_get_contents($views.'/'.$view))
+            ->toContain('<x-newdebugbar::inspector-source-fact')
+            ->toContain('<x-newdebugbar::inspector-stack');
+    }
+
+    expect(file_get_contents($views.'/components/mail-message-details.blade.php'))
+        ->toContain('<x-newdebugbar::mail-source-panel')
+        ->not->toContain('data-ndb-mail-detail-panel="source"');
+
+    expect(file_get_contents($resources.'/css/newdebugbar.css'))
+        ->toContain('@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2')
+        ->toContain('--font-mono: "JetBrains Mono Variable"')
+        ->toContain('font-variant-ligatures: contextual common-ligatures discretionary-ligatures');
 });
 
 it('uses the top-only frame across edge-to-edge inspector workspaces', function () {

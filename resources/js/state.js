@@ -2523,22 +2523,6 @@ export function createNewDebugBar(
       this.resetCacheDetailScroll();
     },
 
-    selectRelatedCacheOperation(execution) {
-      if (!this.cacheOperations.some((operation) => operation.execution === execution)) return;
-
-      this.cacheFilter = 'all';
-      this.cacheSearch = '';
-      this.selectCacheOperation(execution);
-      this.applyCacheView();
-      this.$nextTick?.(() => {
-        const item = [...(this.$refs?.cacheList?.children ?? [])].find(
-          (candidate) => Number(candidate.dataset.ndbCacheExecution) === execution,
-        );
-
-        item?.scrollIntoView?.({ block: 'nearest' });
-      });
-    },
-
     setCacheDetailTab(tab) {
       if (!['overview', 'raw', 'source'].includes(tab)) return;
 

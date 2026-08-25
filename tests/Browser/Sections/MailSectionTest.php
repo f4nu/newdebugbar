@@ -121,7 +121,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && getComputedStyle(metadataGrid).display === 'grid'
                     && getComputedStyle(metadataGrid).borderTopWidth === '0px'
                     && ! header.textContent.includes('Sent')
-                    && metadata.querySelectorAll('svg').length === 0
+                    && metadata.querySelectorAll('svg').length === 1
                     && header.querySelector('[data-ndb-mail-actions-trigger]').textContent.trim() === ''
                     && identity.textContent.includes('Recipients')
                     && identity.textContent.includes('Sender')
@@ -254,6 +254,13 @@ it('selects and inspects mail with a real in-panel preview', function () {
             })()
             JS)
         ->assertSee('Default mailer')
+        ->assertScript(<<<'JS'
+            (() => {
+                const values = [...document.querySelectorAll('[data-ndb-mail-detail-panel="message"] dd')];
+
+                return values.every((value) => !getComputedStyle(value).fontFamily.includes('JetBrains Mono'));
+            })()
+            JS)
         ->click('[data-ndb-mail-headers] summary')
         ->assertSee('X-Northstar-Flow: profiled-mail')
         ->click('[data-ndb-mail-detail-tab="source"]')
@@ -261,6 +268,26 @@ it('selects and inspects mail with a real in-panel preview', function () {
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-mail-preview-controls]")).display === "none"')
         ->assertSee('NewDebugBar\\Tests\\Fixtures\\Mail\\ProfiledMailable')
         ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-mail-detail-panel="source"]');
+                const facts = [...panel.querySelectorAll('[data-ndb-inspector-source-fact]')];
+                const stack = panel.querySelector('[data-ndb-inspector-stack]');
+                const sourceClass = facts[0].querySelector('dd > code');
+                const triggerPath = facts[1].querySelector('dd > span');
+                const functionCall = stack.querySelector('li code');
+                const stackPath = stack.querySelector('li > span:last-child > span');
+
+                return facts.length === 2
+                    && stack !== null
+                    && getComputedStyle(sourceClass).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(sourceClass).fontFeatureSettings.includes('"calt"')
+                    && !getComputedStyle(triggerPath).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
+                    && !getComputedStyle(stackPath).fontFamily.includes('JetBrains Mono Variable')
+                    && facts.every((fact) => getComputedStyle(fact).color !== 'rgb(79, 70, 229)');
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 

@@ -19,7 +19,7 @@
             data-ndb-cache-operation
             class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-500 ndb:dark:text-zinc-400"
         >{{ $item['operation_label'] }}</span>
-        <span class="ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400 ndb:dark:text-zinc-500">
+        <span class="ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400 ndb:dark:text-zinc-500">
             #{{ $item['execution'] }}
         </span>
     </span>

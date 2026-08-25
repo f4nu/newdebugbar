@@ -634,6 +634,9 @@ trait DefinesTestApplication
                             [data-ndb-model-summary], [data-ndb-model-list], [data-ndb-model-list-heading], [data-ndb-model-group], [data-ndb-model-detail], [data-ndb-model-facts], [data-ndb-model-operations], [data-ndb-model-operation], [data-ndb-model-operation-changes], [data-ndb-model-changes], [data-ndb-model-records], [data-ndb-model-record], [data-ndb-model-extra-guidance], [data-ndb-model-sources], [data-ndb-model-source], [data-ndb-model-source-gap], [data-ndb-model-compiled-source], [data-ndb-model-query-guidance], [data-ndb-model-query-evidence], [data-ndb-model-retrieved-column], [data-ndb-model-write-column], [data-ndb-model-extra-column], [data-ndb-model-source-column] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
                             [data-ndb-model-view-queries], [data-ndb-inspector-focus-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-inspector-focus-list], [data-ndb-inspector-focus-detail], #newdebugbar-model-detail { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 50px; }
+                            [data-ndb-inspector-source-link] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; padding: 50px; }
+                            [data-ndb-inspector-source-fact], [data-ndb-inspector-stack] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
+                            [data-ndb-notification-destination] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
                         </style>
                     </head>
                     <body>

@@ -35,12 +35,11 @@
         x-show.important="selectedCacheOperation.source_label !== 'Source unavailable'"
         class="ndb:col-span-2 ndb:sm:col-span-4"
     >
-        <button
-            type="button"
-            :title="selectedCacheOperation.source_label"
+        <x-newdebugbar::inspector-source-link
+            ::title="selectedCacheOperation.source_label"
             @click="setCacheDetailTab('source')"
-            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-left ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:underline-offset-2 ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-            x-text="selectedCacheOperation.source_short_label"
-        ></button>
+        >
+            <x-slot:value x-text="selectedCacheOperation.source_short_label"></x-slot:value>
+        </x-newdebugbar::inspector-source-link>
     </x-newdebugbar::inspector-fact>
 </x-newdebugbar::inspector-facts>

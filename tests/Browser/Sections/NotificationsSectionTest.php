@@ -67,6 +67,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const listBox = list.getBoundingClientRect();
                 const detailBox = detail.getBoundingClientRect();
                 const selected = document.querySelector('[data-ndb-notification-item][aria-pressed="true"]');
+                const header = document.querySelector('[data-ndb-notification-header]');
                 const listTitle = selected.querySelector('[data-ndb-notification-list-title]');
                 const listStatus = selected.querySelector('[data-ndb-notification-list-status]');
                 const listRecipient = selected.querySelector('[data-ndb-notification-list-recipient]');
@@ -78,6 +79,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const metadata = document.querySelector('[data-ndb-notification-metadata]');
                 const metadataGrid = metadata.querySelector('[data-ndb-notification-facts]');
                 const metadataFacts = [...metadata.querySelectorAll('[data-ndb-notification-fact]')];
+                const sourceLink = metadata.querySelector('[data-ndb-inspector-source-link]');
                 const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
                 const recipient = document.querySelector('[data-ndb-notification-recipient]');
                 const deliveries = [...document.querySelectorAll('[data-ndb-notification-delivery]')];
@@ -101,6 +103,8 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && Math.abs(listBox.top - detailBox.top) <= 1
                     && selected.dataset.ndbNotificationItem === '1'
                     && selected.getAttribute('aria-pressed') === 'true'
+                    && listStatus.textContent.trim() === 'Needs attention'
+                    && !header.textContent.includes('Needs attention')
                     && getComputedStyle(selected).borderLeftWidth === '0px'
                     && selected.children.length === 4
                     && selected.getBoundingClientRect().height <= 68
@@ -118,9 +122,11 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && getComputedStyle(channelControl).display === 'none'
                     && metadataFacts.length === 4
                     && metadataLabels.join('|') === 'Channels|Duration|Execution|Source'
+                    && sourceLink !== null
+                    && !getComputedStyle(sourceLink).fontFamily.includes('JetBrains Mono')
                     && getComputedStyle(metadataGrid).display === 'grid'
                     && getComputedStyle(metadataGrid).borderTopWidth === '0px'
-                    && metadata.querySelectorAll('svg').length === 0
+                    && metadata.querySelectorAll('svg').length === 1
                     && metadata.scrollWidth <= metadata.clientWidth + 1
                     && recipient.textContent.includes('Recipient')
                     && recipient.textContent.includes('Destinations')
@@ -140,12 +146,45 @@ it('groups notification attempts in a full-height delivery inspector', function 
         ->assertValue('[data-ndb-notification-channel]', 'profiled-sms')
         ->assertSee('RuntimeException')
         ->assertSee('No provider response was captured.')
+        ->assertScript(<<<'JS'
+            (() => {
+                const fields = [...document.querySelectorAll('[data-ndb-notification-detail-panel="payload"] dl > div')];
+                const valueFor = (label) => fields.find((field) => field.querySelector('dt').textContent.trim() === label)?.querySelector('dd');
+
+                return getComputedStyle(valueFor('Exception')).fontFamily.includes('JetBrains Mono')
+                    && !getComputedStyle(valueFor('Failed at')).fontFamily.includes('JetBrains Mono');
+            })()
+            JS)
         ->click('[data-ndb-notification-fact]:last-child button')
         ->assertVisible('[data-ndb-notification-detail-panel="source"]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-notification-channel-control]")).display === "none"')
         ->assertSee('NewDebugBar\\Tests\\Fixtures\\Notifications\\ProfiledNotification')
         ->assertSee('tests/Fixtures/Notifications/ProfiledNotification.php')
         ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-notification-detail-panel="source"]');
+                const facts = [...panel.querySelectorAll('[data-ndb-inspector-source-fact]')];
+                const stack = panel.querySelector('[data-ndb-inspector-stack]');
+                const notificationClass = facts[0].querySelector('dd > code');
+                const definedPath = facts[1].querySelector('dd > span');
+                const triggerPath = facts[2].querySelector('dd > span');
+                const notificationId = facts[3].querySelector('dd > span');
+                const functionCall = stack.querySelector('li code');
+                const stackPath = stack.querySelector('li > span:last-child > span');
+
+                return facts.length === 4
+                    && stack !== null
+                    && getComputedStyle(notificationClass).fontFamily.includes('JetBrains Mono Variable')
+                    && !getComputedStyle(notificationId).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFeatureSettings.includes('"calt"')
+                    && !getComputedStyle(definedPath).fontFamily.includes('JetBrains Mono Variable')
+                    && !getComputedStyle(triggerPath).fontFamily.includes('JetBrains Mono Variable')
+                    && !getComputedStyle(stackPath).fontFamily.includes('JetBrains Mono Variable')
+                    && facts.every((fact) => getComputedStyle(fact).color !== 'rgb(79, 70, 229)');
+            })()
+            JS)
         ->click('[data-ndb-notification-detail-tab="delivery"]')
         ->click('[data-ndb-notification-view-mail]');
 
@@ -191,7 +230,7 @@ it('keeps many recipients readable without widening the inspector', function () 
             'document.querySelector("[data-ndb-notification-view-mail]").closest("[data-ndb-notification-delivery]") === document.querySelector("[data-ndb-notification-delivery]")',
         )
         ->assertScript(
-            '[...document.querySelector("[data-ndb-notification-delivery]").querySelectorAll("code")].filter((destination) => destination.getClientRects().length > 0).length',
+            '[...document.querySelector("[data-ndb-notification-delivery]").querySelectorAll("[data-ndb-notification-destination]")].filter((destination) => destination.getClientRects().length > 0).length',
             8,
         )
         ->assertScript(<<<'JS'
@@ -199,7 +238,7 @@ it('keeps many recipients readable without widening the inspector', function () 
                 const workspace = document.querySelector('[data-ndb-notification-workspace]');
                 const detail = document.querySelector('[data-ndb-notification-detail]');
                 const header = document.querySelector('[data-ndb-notification-recipient]').parentElement;
-                const destinations = [...document.querySelector('[data-ndb-notification-delivery]').querySelectorAll('code')]
+                const destinations = [...document.querySelector('[data-ndb-notification-delivery]').querySelectorAll('[data-ndb-notification-destination]')]
                     .filter((destination) => destination.getClientRects().length > 0);
 
                 return destinations.every((destination) => destination.textContent.includes('@example.test'))

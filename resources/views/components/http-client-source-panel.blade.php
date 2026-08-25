@@ -1,14 +1,13 @@
 <div data-ndb-http-client-detail-panel="source" x-show.important="httpClientDetailTab === 'source'">
-    <x-newdebugbar::inspector-facts columns="1" data-ndb-http-client-source-facts>
-        <x-newdebugbar::inspector-fact label="Source">
-            <code
+    <dl class="ndb:grid ndb:gap-2" data-ndb-http-client-source-facts>
+        <x-newdebugbar::inspector-source-fact label="Request initiated at">
+            <x-slot:value
                 data-ndb-http-client-detail-source
-                :title="selectedHttpClientRequest.callsite_label"
-                class="ndb:block ndb:max-w-full ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:dark:text-indigo-300"
+                ::title="selectedHttpClientRequest.callsite_label"
                 x-text="selectedHttpClientRequest.callsite_label"
-            ></code>
-        </x-newdebugbar::inspector-fact>
-    </x-newdebugbar::inspector-facts>
+            ></x-slot:value>
+        </x-newdebugbar::inspector-source-fact>
+    </dl>
 
     <x-newdebugbar::inspector-stack frames="selectedHttpClientRequest.stack ?? []" />
 </div>

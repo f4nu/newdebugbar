@@ -62,6 +62,7 @@ it('filters selects and inspects rich cache diagnostics', function () {
                 const results = rows.map((row) => row.querySelector('[data-ndb-cache-result]'));
                 const durations = rows.map((row) => row.querySelector('[data-ndb-cache-list-duration]'));
                 const stores = rows.map((row) => row.children[3].textContent.trim());
+                const executionLabels = rows.map((row) => row.children[0].lastElementChild);
                 const executionIds = rows.map((row) => row.children[0].lastElementChild.textContent.trim());
                 const keyOffsets = rows.map((row) => row.querySelector('[data-ndb-cache-key]').getBoundingClientRect().left);
                 const rightTrackWidths = rows.map((row) => Number.parseFloat(getComputedStyle(row).gridTemplateColumns.split(' ').at(-1)));
@@ -116,7 +117,10 @@ it('filters selects and inspects rich cache diagnostics', function () {
                     && metadataValues[2] === 'array'
                     && metadataValues[3] === 'array'
                     && sourceLink?.textContent.trim().includes('.php:')
+                    && sourceLink.matches('[data-ndb-inspector-source-link]')
+                    && !getComputedStyle(sourceLink).fontFamily.includes('JetBrains Mono')
                     && executionIds.every((id, index) => id === `#${rows[index].dataset.ndbCacheExecution}`)
+                    && executionLabels.every((label) => !getComputedStyle(label).fontFamily.includes('JetBrains Mono'))
                     && new Set(keyOffsets.map(Math.round)).size === 1
                     && keys.every((key) => key.clientWidth <= key.parentElement.getBoundingClientRect().width)
                     && keys.every((key) => getComputedStyle(key).textOverflow === 'ellipsis')
@@ -139,17 +143,9 @@ it('filters selects and inspects rich cache diagnostics', function () {
             })()
             JS)
         ->click('[data-ndb-cache-item="5"]')
-        ->assertSee('2 operations for this key in this store:')
-        ->assertScript(<<<'JS'
-            [...document.querySelectorAll('[aria-label^="Open cache execution "]')]
-                .map((link) => link.textContent.trim())
-                .join('|')
-            JS, '#5|#6')
-        ->assertAttribute('[aria-label="Open cache execution 5"]', 'aria-current', 'true')
-        ->click('[aria-label="Open cache execution 6"]')
-        ->assertAttribute('[data-ndb-cache-item="6"]', 'aria-pressed', 'true')
-        ->assertAttribute('[aria-label="Open cache execution 6"]', 'aria-current', 'true')
-        ->assertSee('Hit')
+        ->assertAttribute('[data-ndb-cache-item="5"]', 'aria-pressed', 'true')
+        ->assertDontSee('Related uses')
+        ->assertScript('document.querySelectorAll(\'[aria-label^="Open cache execution "]\').length', 0)
         ->click('[data-ndb-cache-filter="failed"]')
         ->assertAttribute('[data-ndb-cache-filter="failed"]', 'aria-pressed', 'true')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 3)
@@ -172,6 +168,24 @@ it('filters selects and inspects rich cache diagnostics', function () {
         ->assertAttribute('[data-ndb-cache-detail-tab="source"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-cache-detail-panel="source"]')
         ->assertSee('tests/Support/DefinesTestApplication.php')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-cache-detail-panel="source"]');
+                const fact = panel.querySelector('[data-ndb-inspector-source-fact]');
+                const stack = panel.querySelector('[data-ndb-inspector-stack]');
+                const source = fact.querySelector('dd > span');
+                const functionCall = stack.querySelector('li code');
+                const stackPath = stack.querySelector('li > span:last-child > span');
+
+                return fact !== null
+                    && stack !== null
+                    && !getComputedStyle(source).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(functionCall).fontFeatureSettings.includes('"calt"')
+                    && !getComputedStyle(stackPath).fontFamily.includes('JetBrains Mono Variable')
+                    && getComputedStyle(source).color !== 'rgb(79, 70, 229)';
+            })()
+            JS)
         ->click('[data-ndb-cache-detail-tab="raw"]')
         ->assertVisible('[data-ndb-cache-detail-panel="raw"]')
         ->assertSee('Captured collector fields only')

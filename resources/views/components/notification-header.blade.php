@@ -13,25 +13,6 @@
             class="ndb:flex ndb:shrink-0 ndb:flex-wrap ndb:items-center ndb:justify-end ndb:gap-2 ndb:bg-transparent ndb:text-[11px]"
         >
             <span
-                :class="{
-                    'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300':
-                        selectedNotification.status === 'sent',
-                    'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300': [
-                        'partial',
-                        'delayed',
-                        'waiting',
-                    ].includes(selectedNotification.status),
-                    'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300':
-                        selectedNotification.status === 'failed',
-                    'ndb:bg-sky-100 ndb:text-sky-700 ndb:dark:bg-sky-950 ndb:dark:text-sky-300':
-                        selectedNotification.status === 'queued',
-                    'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300':
-                        selectedNotification.status === 'processing',
-                }"
-                class="ndb:inline-flex ndb:shrink-0 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
-                x-text="selectedNotification.status_label"
-            ></span>
-            <span
                 x-show.important="selectedNotification.lifecycle === 'after_response'"
                 class="ndb:rounded-md ndb:bg-indigo-100 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-semibold ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300"
             >After response</span>
@@ -79,11 +60,11 @@
                             class="ndb:inline-flex ndb:min-w-0 ndb:max-w-full ndb:items-center ndb:gap-1.5 ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:ring-1 ndb:ring-inset"
                         >
                             <span class="ndb:shrink-0 ndb:font-bold" x-text="delivery.channel_label"></span>
-                            <code
+                            <span
                                 :title="delivery.destination_label"
-                                class="ndb:truncate ndb:font-mono ndb:text-[11px]"
+                                class="ndb:truncate ndb:text-[11px]"
                                 x-text="delivery.destination_summary_label"
-                            ></code>
+                            ></span>
                         </span>
                     </template>
                 </dd>
@@ -97,7 +78,7 @@
             class="ndb:grid ndb:w-full ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4"
         >
             <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
                     Channels
                 </dt>
                 <dd
@@ -106,7 +87,7 @@
                 ></dd>
             </div>
             <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
                     Duration
                 </dt>
                 <dd
@@ -122,7 +103,7 @@
                 ></dd>
             </div>
             <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
                     Execution
                 </dt>
                 <dd
@@ -132,15 +113,14 @@
                 ></dd>
             </div>
             <div data-ndb-notification-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[10px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
+                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
                 <dd class="ndb:mt-0.5 ndb:min-w-0">
-                    <button
-                        type="button"
-                        :title="selectedNotification.callsite_label"
+                    <x-newdebugbar::inspector-source-link
+                        ::title="selectedNotification.callsite_label"
                         @click="setNotificationDetailTab('source')"
-                        class="ndb:block ndb:max-w-full ndb:truncate ndb:text-left ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:underline-offset-2 ndb:hover:underline ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300"
-                        x-text="selectedNotification.callsite_short_label"
-                    ></button>
+                    >
+                        <x-slot:value x-text="selectedNotification.callsite_short_label"></x-slot:value>
+                    </x-newdebugbar::inspector-source-link>
                 </dd>
             </div>
         </div>

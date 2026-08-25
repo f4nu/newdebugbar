@@ -32,7 +32,7 @@
         >
             <x-slot:value
                 ::title="selectedHttpClientRequest.redirect_location"
-                class="ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
                 x-text="selectedHttpClientRequest.redirect_location"
             ></x-slot:value>
         </x-newdebugbar::inspector-fact>

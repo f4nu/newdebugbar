@@ -3,20 +3,39 @@
     'emptyLabel' => 'No application stack was captured.',
 ])
 
-<template x-if="({{ $frames }}).length === 0">
-    <p class="ndb:mt-5 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $emptyLabel }}</p>
-</template>
-<div {{ $attributes->class('ndb:mt-5 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800') }}>
-    <template x-for="(frame, index) in {{ $frames }}" :key="frame.file + ':' + frame.line + ':' + index">
-        <div class="ndb:py-3 ndb:first:pt-0">
-            <code
-                class="ndb:block ndb:break-all ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:dark:text-indigo-300"
-                x-text="frame.file + ':' + frame.line"
-            ></code>
-            <p
-                class="ndb:mt-1 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                x-text="frame.function || 'Application call'"
-            ></p>
-        </div>
+<section
+    data-ndb-inspector-stack
+    {{ $attributes->class('ndb:mt-5 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:text-inherit') }}
+>
+    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
+        <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Application stack</h4>
+        <span
+            x-show.important="({{ $frames }}).length > 0"
+            class="ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
+            x-text="({{ $frames }}).length + (({{ $frames }}).length === 1 ? ' frame' : ' frames')"
+        ></span>
+    </div>
+    <template x-if="({{ $frames }}).length === 0">
+        <p class="ndb:pt-3 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $emptyLabel }}</p>
     </template>
-</div>
+    <ol class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+        <template x-for="(frame, index) in {{ $frames }}" :key="frame.file + ':' + frame.line + ':' + index">
+            <li class="ndb:flex ndb:min-w-0 ndb:items-start ndb:gap-3 ndb:py-3">
+                <span
+                    class="ndb:flex ndb:size-6 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-zinc-100 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-400"
+                    x-text="index + 1"
+                ></span>
+                <span class="ndb:min-w-0 ndb:flex-1">
+                    <code
+                        class="ndb:block ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                        x-text="frame.function || 'Application call'"
+                    ></code>
+                    <span
+                        class="ndb:mt-0.5 ndb:block ndb:break-all ndb:text-[11px] ndb:font-medium ndb:text-zinc-400 ndb:dark:text-zinc-500"
+                        x-text="frame.file + ':' + frame.line"
+                    ></span>
+                </span>
+            </li>
+        </template>
+    </ol>
+</section>
