@@ -66,10 +66,6 @@
     }
 
     $hasActivityWindow = is_numeric($group['first_seen_ms'] ?? null) && is_numeric($group['last_seen_ms'] ?? null);
-
-    $extraGuidance = collect($group['guidance'] ?? [])->first(
-        fn (array $guidance): bool => ($guidance['type'] ?? null) === 'extra_retrievals',
-    );
 @endphp
 
 <div
@@ -92,15 +88,13 @@
         <x-slot:metadata>
             <div class="ndb:min-w-0">
                 <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Connection</dt>
-                <dd class="ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300">
+                <dd class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300">
                     {{ $connection }}
                 </dd>
             </div>
             <div class="ndb:min-w-0">
                 <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Table</dt>
-                <dd class="ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300">
-                    {{ $table }}
-                </dd>
+                <dd class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300">{{ $table }}</dd>
             </div>
         </x-slot:metadata>
     </x-newdebugbar::inspector-detail-header>
@@ -161,34 +155,6 @@
                     </x-newdebugbar::inspector-definition-row>
                 @endif
             </x-newdebugbar::inspector-definition-list>
-
-            <section
-                data-ndb-model-guidance
-                class="ndb:mt-4 ndb:border-l-0 ndb:border-t ndb:border-zinc-200/90 ndb:bg-transparent ndb:p-0 ndb:pt-4 ndb:text-xs ndb:text-zinc-950 ndb:dark:border-zinc-800 ndb:dark:text-white"
-            >
-                @if (is_array($extraGuidance))
-                    <h4 class="ndb:text-xs ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300">
-                        {{ $extraGuidance['summary'] }}
-                    </h4>
-                    <p class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300">
-                        {{ $extraGuidance['next'] }} Use Records to find repeated identifiers, then Source to find the
-                        application locations involved.
-                    </p>
-                @else
-                    <h4 class="ndb:text-xs ndb:font-bold">No repeated retrievals detected</h4>
-                    <p class="ndb:mt-1 ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300">
-                        Each identified record was retrieved once in this request.
-                    </p>
-                @endif
-
-                @if ($unidentifiedCount > 0)
-                    <p class="ndb:mt-2 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        {{ number_format($unidentifiedCount) }} {{ $plural('retrieval', $unidentifiedCount) }} had no
-                        model identifier and {{ $unidentifiedCount === 1 ? 'is' : 'are' }} excluded from the
-                        extra-retrieval count.
-                    </p>
-                @endif
-            </section>
         </div>
 
         <div
@@ -201,31 +167,7 @@
                     data-ndb-model-records
                     class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
                 >
-                    <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3">
-                        <div>
-                            <h4 class="ndb:text-xs ndb:font-bold">Retrieved records</h4>
-                            <p class="ndb:mt-0.5 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                Repeated identifiers reveal records loaded more than once during this request.
-                            </p>
-                        </div>
-                        <span class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
-                            {{ number_format($recordCount) }} identified
-                        </span>
-                    </div>
-
-                    @if ($repeatCount > 0)
-                        <p
-                            data-ndb-model-extra-guidance
-                            class="ndb:mt-2 ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                        >
-                            Rows with more than one retrieval account for
-                            <strong class="ndb:font-bold ndb:text-amber-700 ndb:dark:text-amber-300"
-                                >{{ number_format($repeatCount) }} extra {{ $plural('retrieval', $repeatCount) }}</strong
-                            >.
-                        </p>
-                    @endif
-
-                    <div class="ndb:mt-3 ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
+                    <div class="ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                         <div class="ndb:hidden ndb:grid-cols-[minmax(8rem,1fr)_5.5rem_6rem_6rem_minmax(8rem,1fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid">
                             <span>Identifier</span>
                             <span class="ndb:text-right">Retrieved</span>
@@ -239,14 +181,16 @@
                                 @php
                                     $recordSource = $record['sources'][0]['callsite'] ?? null;
                                     $recordLoads = (int) ($record['loads'] ?? 0);
+                                    $recordKey = $record['key'] ?? null;
                                 @endphp
                                 <article
                                     data-ndb-model-record
                                     data-ndb-model-record-retrievals="{{ $recordLoads }}"
                                     class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:border-l-0 ndb:bg-transparent ndb:px-0 ndb:py-2.5 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white ndb:sm:grid-cols-[minmax(8rem,1fr)_5.5rem_6rem_6rem_minmax(8rem,1fr)] ndb:sm:items-center ndb:sm:gap-3"
                                 >
-                                    <p class="ndb:min-w-0 ndb:break-all ndb:font-mono ndb:text-[11px] ndb:font-semibold">
-                                        {{ $record['key_name'] ?? 'id' }} {{ (string) $record['key'] }}
+                                    <p class="ndb:min-w-0 ndb:break-all ndb:text-[11px] ndb:font-semibold">
+                                        {{ $record['key_name'] ?? 'id' }}
+                                        <span @class(['ndb:font-mono ndb:tabular-nums' => is_numeric($recordKey)])>{{ (string) $recordKey }}</span>
                                     </p>
                                     <span @class([
                                         'ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:sm:text-right',
@@ -278,7 +222,7 @@
                                     data-ndb-model-missing-identifiers
                                     class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:border-l-0 ndb:bg-transparent ndb:px-0 ndb:py-2.5 ndb:sm:grid-cols-[minmax(8rem,1fr)_5.5rem_6rem_6rem_minmax(8rem,1fr)] ndb:sm:items-center ndb:sm:gap-3"
                                 >
-                                    <p class="ndb:font-mono ndb:text-[11px] ndb:font-semibold">—</p>
+                                    <p class="ndb:text-[11px] ndb:font-semibold">—</p>
                                     <span class="ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-600 ndb:dark:text-zinc-300 ndb:sm:text-right">
                                         <span class="ndb:text-zinc-400 ndb:sm:hidden">Retrieved </span
                                         >{{ number_format($unidentifiedCount) }}

@@ -31,7 +31,7 @@
     <span class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0">
         <span data-ndb-model-name class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $shortName }}</span>
         <span
-            class="ndb:mt-0.5 ndb:block ndb:truncate ndb:font-mono ndb:text-[11px] ndb:text-zinc-400"
+            class="ndb:mt-0.5 ndb:block ndb:truncate ndb:text-[11px] ndb:text-zinc-400"
             title="{{ $connection }} connection, {{ $table }} table"
         >
             {{ $connection }}, {{ $table }}

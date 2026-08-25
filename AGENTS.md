@@ -35,6 +35,7 @@
 - Preserve useful diagnostics, but simplify dense views through hierarchy and progressive disclosure instead of removing information.
 - Keep primary views focused. Move framework internals, raw data, hashes, and supporting evidence into deeper detail views.
 - Reuse established components and interaction patterns, while letting each section's data model determine its content and controls.
+- Use monospaced type only for actual code and numeric values in tables. Keep paths, sources, drivers, connections, table names, keys, labels, and prose in the interface typeface.
 - Give stateful controls deliberate defaults. Do not make developers configure a view before it becomes useful.
 - Prefer explicit labels over ambiguous symbols. Selection, loading, and content changes must not shift surrounding layout.
 - Give each view one clear vertical scroll owner, and make the full parent height chain support it.

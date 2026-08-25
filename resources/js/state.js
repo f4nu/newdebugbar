@@ -2451,7 +2451,7 @@ export function createNewDebugBar(
       const normalized = Number(count);
 
       this.modelGroupCount = Number.isInteger(normalized) && normalized > 0 ? normalized : 0;
-      this.modelSelected = this.modelGroupCount > 0 ? 0 : null;
+      this.modelSelected = null;
       this.modelDetailOpen = false;
       this.modelDetailTab = 'overview';
       this.modelListScrollTop = 0;

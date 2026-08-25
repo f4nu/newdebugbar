@@ -116,8 +116,10 @@
                 @endforeach
 
                 <x-newdebugbar::inspector-detail-empty
-                    label="Choose a model to inspect its activity."
+                    data-ndb-model-detail-empty
+                    label="Select a model to inspect its activity."
                     x-show.important="modelSelected === null"
+                    class="ndb:flex-1"
                 />
             </x-newdebugbar::inspector-detail-pane>
         </x-newdebugbar::inspector-workspace>

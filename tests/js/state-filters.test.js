@@ -4,7 +4,7 @@ import test from 'node:test';
 import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
-test('Models keeps a desktop selection while opening and closing mobile detail', () => {
+test('Models starts unselected and keeps a selection while opening and closing mobile detail', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
   const contentScrolls = [];
@@ -50,7 +50,7 @@ test('Models keeps a desktop selection while opening and closing mobile detail',
 
   state.initializeModels(2);
   assert.equal(state.modelGroupCount, 2);
-  assert.equal(state.modelSelected, 0);
+  assert.equal(state.modelSelected, null);
   assert.equal(state.modelDetailOpen, false);
   assert.equal(state.modelDetailTab, 'overview');
 

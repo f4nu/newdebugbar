@@ -584,6 +584,28 @@ it('keeps host styles and package styles isolated', function () {
         ->click('[data-ndb-section="models"]')
         ->assertVisible('[data-ndb-section-panel="models"]')
         ->assertVisible('[data-ndb-model-workspace]')
+        ->assertVisible('[data-ndb-model-detail-empty]')
+        ->assertMissing('[data-ndb-model-detail]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const pane = document.querySelector('[data-ndb-model-detail-pane]');
+                const empty = document.querySelector('[data-ndb-model-detail-empty]');
+                const prompt = empty.querySelector('p');
+
+                return getComputedStyle(empty).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(empty).borderLeftWidth !== '20px'
+                    && getComputedStyle(empty).color !== 'rgb(0, 128, 0)'
+                    && Math.abs(
+                        prompt.getBoundingClientRect().left + prompt.getBoundingClientRect().width / 2
+                        - pane.getBoundingClientRect().left - pane.getBoundingClientRect().width / 2
+                    ) <= 1
+                    && Math.abs(
+                        prompt.getBoundingClientRect().top + prompt.getBoundingClientRect().height / 2
+                        - pane.getBoundingClientRect().top - pane.getBoundingClientRect().height / 2
+                    ) <= 1;
+            })()
+            JS)
+        ->click('[data-ndb-model-group]:first-of-type')
         ->assertVisible('[data-ndb-model-detail]')
         ->assertVisible('[data-ndb-model-detail-panel="overview"]')
         ->assertScript(<<<'JS'
@@ -598,7 +620,6 @@ it('keeps host styles and package styles isolated', function () {
                     '[data-ndb-model-detail]',
                     '[data-ndb-model-header]',
                     '[data-ndb-model-facts]',
-                    '[data-ndb-model-guidance]',
                     '[data-ndb-model-detail-panel="overview"]',
                     '[data-ndb-model-retrieved-column]',
                     '[data-ndb-model-write-column]',
@@ -642,7 +663,6 @@ it('keeps host styles and package styles isolated', function () {
                     document.querySelector('[data-ndb-model-detail-panel="records"]'),
                     document.querySelector('[data-ndb-model-records]'),
                     document.querySelector('[data-ndb-model-record]'),
-                    document.querySelector('[data-ndb-model-extra-guidance]'),
                 ];
 
                 return elements.every(Boolean)
