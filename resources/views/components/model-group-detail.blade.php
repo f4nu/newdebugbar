@@ -11,9 +11,6 @@
     $hiddenWriteCount = (int) ($group['hidden_change_operation_count'] ?? 0);
     $connection = is_string($group['connection'] ?? null) && $group['connection'] !== '' ? $group['connection'] : '—';
     $table = is_string($group['table'] ?? null) && $group['table'] !== '' ? $group['table'] : '—';
-    $formatTime = static fn (mixed $value): string => is_numeric($value)
-        ? rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.').' ms'
-        : '—';
     $plural = static fn (string $word, int $count): string => \Illuminate\Support\Str::plural($word, $count);
     $formatEvent = static fn (string $event): string => match ($event) {
         'forceDeleted' => 'Force deleted',
@@ -122,7 +119,7 @@
                 >
                     <x-newdebugbar::inspector-explanation
                         title="How this model was loaded"
-                        description="Each row is one record Laravel loaded during this request. Retrieved shows how often it was loaded, and Source shows where it started. If Retrieved is above 1, use Source to check whether the repeat is expected."
+                        description="Each row is one record Laravel loaded during this request. Retrieved shows how often it was loaded. If the count is above 1, check whether those repeated loads are expected."
                     />
 
                     <div class="ndb:mt-3 ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
@@ -215,14 +212,13 @@
                 >
                     <x-newdebugbar::inspector-explanation
                         title="How this model changed"
-                        description="Each row is one completed model write during this request. Operation shows what Laravel did, Record identifies the affected record, Time shows when it happened in the request, and Source shows where it started. If a write is unexpected, use Source to trace the code that triggered it."
+                        description="Each row is one create, update, or delete completed during this request. If a write is unexpected, check whether the model is being saved more than once or earlier than intended."
                     />
 
                     <div class="ndb:mt-3 ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
-                        <div class="ndb:hidden ndb:grid-cols-[minmax(6rem,0.7fr)_minmax(5rem,0.55fr)_5.5rem_minmax(8rem,1.25fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid">
+                        <div class="ndb:hidden ndb:grid-cols-[minmax(6rem,0.7fr)_minmax(5rem,0.55fr)_minmax(8rem,1.25fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid">
                             <span>Operation</span>
                             <span>Record</span>
-                            <span class="ndb:text-right">Time</span>
                             <span>Source</span>
                         </div>
 
@@ -234,7 +230,7 @@
                                 @endphp
                                 <article
                                     data-ndb-model-write-operation
-                                    class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:border-l-0 ndb:bg-transparent ndb:px-0 ndb:py-2.5 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white ndb:sm:grid-cols-[minmax(6rem,0.7fr)_minmax(5rem,0.55fr)_5.5rem_minmax(8rem,1.25fr)] ndb:sm:items-center ndb:sm:gap-3"
+                                    class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:border-l-0 ndb:bg-transparent ndb:px-0 ndb:py-2.5 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white ndb:sm:grid-cols-[minmax(6rem,0.7fr)_minmax(5rem,0.55fr)_minmax(8rem,1.25fr)] ndb:sm:items-center ndb:sm:gap-3"
                                 >
                                     <span class="ndb:text-[11px] ndb:font-semibold">
                                         <span class="ndb:text-zinc-400 ndb:sm:hidden">Operation </span
@@ -246,10 +242,6 @@
                                     ])>
                                         <span class="ndb:font-sans ndb:text-zinc-400 ndb:sm:hidden">Record </span
                                         >{{ $writeKey === null || $writeKey === '' ? '—' : (string) $writeKey }}
-                                    </span>
-                                    <span class="ndb:font-mono ndb:text-[11px] ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400 ndb:sm:text-right">
-                                        <span class="ndb:font-sans ndb:sm:hidden">Time </span
-                                        >{{ $formatTime($operation['at_ms'] ?? null) }}
                                     </span>
                                     <span
                                         class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"

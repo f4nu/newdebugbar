@@ -35,7 +35,7 @@
 - Preserve useful diagnostics, but simplify dense views through hierarchy and progressive disclosure instead of removing information.
 - Keep primary views focused. Move framework internals, raw data, hashes, and supporting evidence into deeper detail views.
 - Reuse established components and interaction patterns, while letting each section's data model determine its content and controls.
-- Use the shared inspector explanation component only when developers need help interpreting or acting on a table or evidence group. Its title must state the concrete question the content answers. Its description must explain what the rows or values mean and give a conditional next check without assuming the condition is a problem. Do not repeat the tab name or table heading.
+- Use the shared inspector explanation component only when developers need help interpreting or acting on a table or evidence group. Its title must state the concrete question the content answers. Its description must explain only domain-specific or ambiguous information and give a conditional next check without assuming the condition is a problem. Do not explain self-evident labels or fields such as Source, or repeat the tab name or table heading.
 - Use monospaced type only for actual code and numeric values in tables. Keep paths, sources, drivers, connections, table names, keys, labels, and prose in the interface typeface.
 - Give stateful controls deliberate defaults. Do not make developers configure a view before it becomes useful.
 - Prefer explicit labels over ambiguous symbols. Selection, loading, and content changes must not shift surrounding layout.

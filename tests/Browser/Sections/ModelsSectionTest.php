@@ -176,7 +176,7 @@ it('presents model activity as a persistent two column inspector', function () {
         ->assertScript('document.querySelector("[data-ndb-model-record] p").textContent.trim()', '2')
         ->assertSeeIn('[data-ndb-model-records]', 'How this model was loaded')
         ->assertSeeIn('[data-ndb-model-records]', 'Each row is one record Laravel loaded during this request.')
-        ->assertSeeIn('[data-ndb-model-records]', 'If Retrieved is above 1, use Source to check whether the repeat is expected.')
+        ->assertSeeIn('[data-ndb-model-records]', 'If the count is above 1, check whether those repeated loads are expected.')
         ->assertScript(<<<'JS'
             [...document.querySelector('[data-ndb-model-records] > div:nth-child(2) > div:first-child').children]
                 .map((heading) => heading.textContent.trim()).join('|') === 'Identifier|Retrieved|Source'
@@ -291,11 +291,12 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
         ->assertVisible('[data-ndb-model-write-table]')
         ->assertVisible('[data-ndb-model-write-operation]')
         ->assertSeeIn('[data-ndb-model-write-table]', 'How this model changed')
-        ->assertSeeIn('[data-ndb-model-write-table]', 'Each row is one completed model write during this request.')
-        ->assertSeeIn('[data-ndb-model-write-table]', 'If a write is unexpected, use Source to trace the code that triggered it.')
+        ->assertSeeIn('[data-ndb-model-write-table]', 'Each row is one create, update, or delete completed during this request.')
+        ->assertSeeIn('[data-ndb-model-write-table]', 'If a write is unexpected, check whether the model is being saved more than once or earlier than intended.')
         ->assertSeeIn('[data-ndb-model-write-operation]', 'Updated')
-        ->assertDontSee('Updating')
-        ->assertDontSee('Saved')
+        ->assertDontSeeIn('[data-ndb-model-write-operation]', 'Updating')
+        ->assertDontSeeIn('[data-ndb-model-write-operation]', 'Saved')
+        ->assertDontSeeIn('[data-ndb-model-write-table]', 'Time')
         ->assertScript(<<<'JS'
             (() => {
                 const metadata = [...document.querySelectorAll('[data-ndb-model-header] dl > div')];
@@ -309,12 +310,12 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
                 return writes?.querySelector('dd').textContent.trim() === '1'
                     && table.closest('[data-ndb-model-detail-panel="records"]') !== null
                     && getComputedStyle(tableGrid).marginTop === '12px'
-                    && heading.map((cell) => cell.textContent.trim()).join('|') === 'Operation|Record|Time|Source'
+                    && heading.map((cell) => cell.textContent.trim()).join('|') === 'Operation|Record|Source'
                     && rows.length === 1
+                    && cells.length === 3
                     && cells[0].innerText.trim() === 'Updated'
                     && cells[1].innerText.trim() === '4'
-                    && cells[2].innerText.trim().endsWith('ms')
-                    && cells[3].innerText.trim() !== '—';
+                    && cells[2].innerText.trim() !== '—';
             })()
             JS)
         ->assertDontSee('Write evidence')
