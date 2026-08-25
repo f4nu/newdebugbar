@@ -14,9 +14,27 @@ test('Models starts unselected and keeps a selection while opening and closing m
   const rowFocus = [];
   let contentScrollTop = 0;
   let listScrollTop = 184;
+  const modelRow = (index, search, retrievals, writes, repeats) => ({
+    dataset: {
+      ndbModelSearchValue: search,
+      ndbModelRetrievals: String(retrievals),
+      ndbModelWrites: String(writes),
+      ndbModelRepeats: String(repeats),
+    },
+    hidden: false,
+    style: {
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+    focus: (options) => rowFocus.push([index, options]),
+  });
   const rows = [
-    { focus: (options) => rowFocus.push([0, options]) },
-    { focus: (options) => rowFocus.push([1, options]) },
+    modelRow(0, 'studiojob testing studio_jobs', 14, 0, 8),
+    modelRow(1, 'proofversion testing proof_versions', 8, 1, 3),
   ];
 
   state.$refs = {
@@ -37,6 +55,7 @@ test('Models starts unselected and keeps a selection while opening and closing m
         listScrolls.push(options);
         listScrollTop = options.top;
       },
+      querySelectorAll: (selector) => (selector === '[data-ndb-model-group]' ? rows : []),
     },
     modelDetail: {
       focus: (options) => detailFocus.push(options),
@@ -48,11 +67,28 @@ test('Models starts unselected and keeps a selection while opening and closing m
   };
   state.$nextTick = (callback) => callback();
 
-  state.initializeModels(2);
+  state.initializeModels(2, 22, 1, 11);
   assert.equal(state.modelGroupCount, 2);
+  assert.equal(state.visibleModelCount, 2);
+  assert.equal(state.visibleModelRetrievalCount, 22);
+  assert.equal(state.visibleModelWriteCount, 1);
+  assert.equal(state.visibleModelExtraCount, 11);
   assert.equal(state.modelSelected, null);
   assert.equal(state.modelDetailOpen, false);
-  assert.equal(state.modelDetailTab, 'overview');
+  assert.equal(state.modelDetailTab, 'records');
+
+  state.modelSearch = 'proof';
+  state.applyModelView();
+  assert.equal(rows[0].hidden, true);
+  assert.equal(rows[1].hidden, false);
+  assert.equal(state.visibleModelCount, 1);
+  assert.equal(state.visibleModelRetrievalCount, 8);
+  assert.equal(state.visibleModelWriteCount, 1);
+  assert.equal(state.visibleModelExtraCount, 3);
+
+  state.modelSearch = '';
+  state.applyModelView();
+  assert.equal(state.visibleModelCount, 2);
 
   state.selectModelGroup(1);
   assert.equal(state.modelSelected, 1);
@@ -62,15 +98,15 @@ test('Models starts unselected and keeps a selection while opening and closing m
   assert.deepEqual(detailScrolls, [{ top: 0, behavior: 'instant' }]);
   assert.deepEqual(detailFocus, [{ preventScroll: true }]);
 
-  state.setModelDetailTab('records');
-  assert.equal(state.modelDetailTab, 'records');
+  state.setModelDetailTab('source');
+  assert.equal(state.modelDetailTab, 'source');
   assert.deepEqual(detailScrolls, [
     { top: 0, behavior: 'instant' },
     { top: 0, behavior: 'instant' },
   ]);
 
-  state.setModelDetailTab('invalid');
-  assert.equal(state.modelDetailTab, 'records');
+  state.setModelDetailTab('overview');
+  assert.equal(state.modelDetailTab, 'source');
 
   state.selectModelGroup(-1);
   state.selectModelGroup(0.5);
@@ -89,6 +125,11 @@ test('Models starts unselected and keeps a selection while opening and closing m
   assert.deepEqual(rowFocus, [[1, { preventScroll: true }]]);
   state.closeModelDetail();
   assert.deepEqual(rowFocus, [[1, { preventScroll: true }]]);
+
+  state.modelSearch = 'studio';
+  state.applyModelView();
+  assert.equal(state.modelSelected, null);
+  assert.equal(state.modelDetailTab, 'records');
 
   state.initializeModels(0);
   assert.equal(state.modelGroupCount, 0);

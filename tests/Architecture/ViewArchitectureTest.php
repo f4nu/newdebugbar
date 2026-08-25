@@ -224,9 +224,9 @@ it('composes Models as a shared split inspector without write or query detail', 
         ->toContain('<x-newdebugbar::inspector-detail-header')
         ->toContain('<x-newdebugbar::inspector-detail-tabs')
         ->toContain('variant="segmented"')
-        ->toContain('data-ndb-model-detail-panel="overview"')
         ->toContain('data-ndb-model-detail-panel="records"')
         ->toContain('data-ndb-model-detail-panel="source"')
+        ->not->toContain('data-ndb-model-detail-panel="overview"')
         ->not->toContain('Write evidence')
         ->not->toContain('related quer')
         ->not->toContain('navigateToQueriesAtSource');

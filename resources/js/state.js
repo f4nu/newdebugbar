@@ -415,9 +415,14 @@ export function createNewDebugBar(
     viewSortDirection: 'asc',
     visibleQueryCount: summary.query_count ?? 0,
     modelGroupCount: 0,
+    modelSearch: '',
+    visibleModelCount: 0,
+    visibleModelRetrievalCount: 0,
+    visibleModelWriteCount: 0,
+    visibleModelExtraCount: 0,
     modelSelected: null,
     modelDetailOpen: false,
-    modelDetailTab: 'overview',
+    modelDetailTab: 'records',
     modelListScrollTop: 0,
     authorizationDecisions: [],
     authorizationFilter: 'all',
@@ -1906,9 +1911,14 @@ export function createNewDebugBar(
       this.viewSort = 'name';
       this.viewSortDirection = 'asc';
       this.modelGroupCount = 0;
+      this.modelSearch = '';
+      this.visibleModelCount = 0;
+      this.visibleModelRetrievalCount = 0;
+      this.visibleModelWriteCount = 0;
+      this.visibleModelExtraCount = 0;
       this.modelSelected = null;
       this.modelDetailOpen = false;
-      this.modelDetailTab = 'overview';
+      this.modelDetailTab = 'records';
       this.modelListScrollTop = 0;
       this.authorizationDecisions = [];
       this.authorizationFilter = 'all';
@@ -2447,14 +2457,54 @@ export function createNewDebugBar(
       }
     },
 
-    initializeModels(count) {
+    initializeModels(count, retrievalCount = 0, writeCount = 0, extraCount = 0) {
       const normalized = Number(count);
 
       this.modelGroupCount = Number.isInteger(normalized) && normalized > 0 ? normalized : 0;
+      this.modelSearch = '';
+      this.visibleModelCount = this.modelGroupCount;
+      this.visibleModelRetrievalCount = Math.max(0, Number(retrievalCount) || 0);
+      this.visibleModelWriteCount = Math.max(0, Number(writeCount) || 0);
+      this.visibleModelExtraCount = Math.max(0, Number(extraCount) || 0);
       this.modelSelected = null;
       this.modelDetailOpen = false;
-      this.modelDetailTab = 'overview';
+      this.modelDetailTab = 'records';
       this.modelListScrollTop = 0;
+    },
+
+    applyModelView() {
+      const rows = [...(this.$refs?.modelList?.querySelectorAll?.('[data-ndb-model-group]') ?? [])];
+      const search = this.modelSearch.toLowerCase().trim();
+      let visible = 0;
+      let retrievals = 0;
+      let writes = 0;
+      let extras = 0;
+
+      rows.forEach((row) => {
+        const matches = search === '' || row.dataset.ndbModelSearchValue?.includes(search);
+        row.hidden = !matches;
+
+        if (matches) {
+          row.style.removeProperty('display');
+          visible++;
+          retrievals += Number(row.dataset.ndbModelRetrievals) || 0;
+          writes += Number(row.dataset.ndbModelWrites) || 0;
+          extras += Number(row.dataset.ndbModelRepeats) || 0;
+        } else {
+          row.style.setProperty('display', 'none', 'important');
+        }
+      });
+
+      this.visibleModelCount = visible;
+      this.visibleModelRetrievalCount = retrievals;
+      this.visibleModelWriteCount = writes;
+      this.visibleModelExtraCount = extras;
+
+      if (Number.isInteger(this.modelSelected) && rows[this.modelSelected]?.hidden) {
+        this.modelSelected = null;
+        this.modelDetailOpen = false;
+        this.modelDetailTab = 'records';
+      }
     },
 
     selectModelGroup(index) {
@@ -2468,7 +2518,7 @@ export function createNewDebugBar(
       );
       this.modelSelected = selected;
       this.modelDetailOpen = true;
-      this.modelDetailTab = 'overview';
+      this.modelDetailTab = 'records';
       this.$nextTick?.(() => {
         this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
         this.$refs?.modelDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
@@ -2479,7 +2529,7 @@ export function createNewDebugBar(
     },
 
     setModelDetailTab(tab) {
-      if (!['overview', 'records', 'source'].includes(tab)) return;
+      if (!['records', 'source'].includes(tab)) return;
 
       this.modelDetailTab = tab;
       this.$nextTick?.(() => {

@@ -12,12 +12,11 @@ it('presents model activity as a persistent two column inspector', function () {
 
     $page
         ->assertSee('Review Eloquent retrievals, writes, repeated records, and application sources.')
-        ->assertSee('44 Eloquent activities')
-        ->assertSee('Across 5 model classes')
-        ->assertSee('Counts describe Eloquent events, not database rows or queries.')
         ->assertSee('Retrieved')
         ->assertSee('Writes')
         ->assertSee('Extra')
+        ->assertVisible('[data-ndb-model-search]')
+        ->assertVisible('[data-ndb-model-summary]')
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'aria-pressed', 'false')
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'aria-controls', 'newdebugbar-model-detail')
         ->assertVisible('[data-ndb-model-detail-empty]')
@@ -31,10 +30,16 @@ it('presents model activity as a persistent two column inspector', function () {
                 const workspace = document.querySelector('[data-ndb-model-workspace]');
                 const loadedSection = document.querySelector('[data-ndb-loaded-section="models"]');
                 const stage = document.querySelector('[data-ndb-section-stage]');
+                const sectionContent = document.querySelector('[data-ndb-section-content]');
                 const [list, detail] = workspace.children;
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const heading = document.querySelector('[data-ndb-model-list-heading]');
                 const row = document.querySelector('[data-ndb-model-group]');
+                const modelList = document.querySelector('[data-ndb-model-list]');
+                const rows = [...document.querySelectorAll('[data-ndb-model-group]')];
+                const summary = document.querySelector('[data-ndb-model-summary]');
+                const summaryGrid = summary.querySelector('dl');
+                const search = document.querySelector('[data-ndb-model-search]');
                 const empty = document.querySelector('[data-ndb-model-detail-empty]');
                 const prompt = empty.querySelector('p');
                 const rowCells = [
@@ -44,6 +49,7 @@ it('presents model activity as a persistent two column inspector', function () {
                     row.querySelector('[data-ndb-model-extra-column]'),
                 ];
                 const headingCells = [...heading.children];
+                const summaryCells = [...summaryGrid.children];
 
                 const checks = {
                     grid: getComputedStyle(workspace).display === 'grid',
@@ -63,6 +69,28 @@ it('presents model activity as a persistent two column inspector', function () {
                     columns: rowCells.every((cell, index) =>
                         Math.abs(cell.getBoundingClientRect().left - headingCells[index].getBoundingClientRect().left) <= 1
                     ),
+                    searchHeader: list.firstElementChild.contains(search)
+                        && list.children[1] === modelList
+                        && modelList.firstElementChild === heading,
+                    totalsAtEnd: modelList.lastElementChild === summary
+                        && rows.every((modelRow) =>
+                            Boolean(modelRow.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING)
+                        ),
+                    totalColumns: getComputedStyle(summaryGrid).display === 'grid'
+                        && summaryCells.length === 4
+                        && summaryCells.every((cell, index) =>
+                            Math.abs(cell.getBoundingClientRect().left - headingCells[index].getBoundingClientRect().left) <= 1
+                        )
+                        && summaryCells[0].querySelector('dt').textContent.trim() === 'Counts'
+                        && summaryCells.slice(1).map((cell) => cell.querySelector('dd').textContent.trim()).join('|') === '44|0|20',
+                    fullHeight: getComputedStyle(content).display === 'flex'
+                        && getComputedStyle(stage).display === 'flex'
+                        && getComputedStyle(sectionContent).display === 'flex'
+                        && Math.abs(
+                            workspace.getBoundingClientRect().bottom
+                            - loadedSection.getBoundingClientRect().bottom
+                            + Number.parseFloat(getComputedStyle(loadedSection).paddingBottom)
+                        ) <= 1,
                     emptyFill: empty.getBoundingClientRect().width === detail.getBoundingClientRect().width
                         && empty.getBoundingClientRect().height === detail.getBoundingClientRect().height,
                     emptyCenteredX: Math.abs(
@@ -87,14 +115,27 @@ it('presents model activity as a persistent two column inspector', function () {
                 return true;
             })()
             JS)
+        ->fill('[data-ndb-model-search]', 'ProofVersion')
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:not([hidden])").length', 1)
+        ->assertScript(<<<'JS'
+            (() => {
+                const cells = [...document.querySelectorAll('[data-ndb-model-summary] dl > div')];
+
+                return cells[0].querySelector('dt').textContent.trim() === 'Counts'
+                    && cells.slice(1).map((cell) => cell.querySelector('dd').textContent.trim()).join('|') === '8|0|3';
+            })()
+            JS)
+        ->fill('[data-ndb-model-search]', '')
+        ->assertScript('document.querySelectorAll("[data-ndb-model-group]:not([hidden])").length', 5)
         ->click('[data-ndb-model-group]:first-of-type')
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'aria-pressed', 'true')
-        ->assertAttribute('[data-ndb-model-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-model-detail-panel="overview"]')
+        ->assertAttribute('[data-ndb-model-detail-tab="records"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-model-detail-panel="records"]')
+        ->assertMissing('[data-ndb-model-detail-tab="overview"]')
+        ->assertMissing('[data-ndb-model-detail-panel="overview"]')
         ->assertSee('NewDebugBar\Tests\Fixtures\Models\StudioJob')
-        ->assertSee('Activity window')
-        ->assertSee('after request start')
         ->assertDontSee('Write events')
+        ->assertMissing('[data-ndb-model-write-table]')
         ->assertDontSee('were observed for already identified records')
         ->assertMissing('[data-ndb-model-guidance]')
         ->assertScript(<<<'JS'
@@ -104,12 +145,22 @@ it('presents model activity as a persistent two column inspector', function () {
                 const tabGroup = tabs[0].closest('[data-ndb-filter-tabs]');
                 const listMetadata = document.querySelector('[data-ndb-model-name] + span');
                 const detailMetadata = [...document.querySelectorAll('[data-ndb-model-header] dd')];
+                const metadataList = detailMetadata[0].closest('dl');
+                const modelClass = document.querySelector('[data-ndb-model-class]');
 
-                return tabs.map((tab) => tab.textContent.trim()).join('|') === 'Overview|Records|Source'
+                const headerText = document.querySelector('[data-ndb-model-header]').textContent;
+
+                return tabs.map((tab) => tab.textContent.trim()).join('|') === 'Records|Source'
                     && tabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
                     && tabGroup.dataset.ndbFilterTabsVariant === 'segmented'
                     && ! getComputedStyle(listMetadata).fontFamily.includes('JetBrains Mono')
+                    && ! getComputedStyle(modelClass).fontFamily.includes('JetBrains Mono')
                     && detailMetadata.every((value) => ! getComputedStyle(value).fontFamily.includes('JetBrains Mono'))
+                    && Number.parseFloat(getComputedStyle(metadataList).columnGap) >= 32
+                    && headerText.includes('Writes')
+                    && ! headerText.includes('Logical writes')
+                    && ! ['Retrieved', 'Extra retrievals', 'Identified records', 'First', 'Last', 'Source']
+                        .some((label) => headerText.includes(label))
                     && Math.abs(
                         tabGroup.getBoundingClientRect().left + tabGroup.getBoundingClientRect().width / 2
                         - detail.getBoundingClientRect().left - detail.getBoundingClientRect().width / 2
@@ -119,15 +170,21 @@ it('presents model activity as a persistent two column inspector', function () {
         ->click('[data-ndb-model-group][data-ndb-model-short-name="ProofVersion"]')
         ->assertAttribute('[data-ndb-model-group][data-ndb-model-short-name="ProofVersion"]', 'aria-pressed', 'true')
         ->assertSee('NewDebugBar\Tests\Fixtures\Models\ProofVersion')
-        ->assertAttribute('[data-ndb-model-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->click('[data-ndb-model-detail-tab="records"]')
         ->assertAttribute('[data-ndb-model-detail-tab="records"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-model-detail-panel="records"]')
         ->assertScript('document.querySelectorAll("[data-ndb-model-record]").length', 5)
+        ->assertScript('document.querySelector("[data-ndb-model-record] p").textContent.trim()', '2')
+        ->assertSeeIn('[data-ndb-model-records]', 'How this model was loaded')
+        ->assertSeeIn('[data-ndb-model-records]', 'Each row is one record Laravel loaded during this request.')
+        ->assertSeeIn('[data-ndb-model-records]', 'If Retrieved is above 1, use Source to check whether the repeat is expected.')
+        ->assertScript(<<<'JS'
+            [...document.querySelector('[data-ndb-model-records] > div:nth-child(2) > div:first-child').children]
+                .map((heading) => heading.textContent.trim()).join('|') === 'Identifier|Retrieved|Source'
+            JS)
         ->assertDontSee('Retrieved records')
         ->assertDontSee('Repeated identifiers reveal records')
         ->assertMissing('[data-ndb-model-extra-guidance]')
-        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-record]").parentElement.parentElement).marginTop', '0px')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-record]").parentElement.parentElement).marginTop', '12px')
         ->click('[data-ndb-model-detail-tab="source"]')
         ->assertVisible('[data-ndb-model-detail-panel="source"]')
         ->assertVisible('[data-ndb-model-source]:first-of-type')
@@ -153,6 +210,18 @@ it('adapts the model list and details into a mobile drill in flow', function () 
         ->click('[data-ndb-header-mobile-action="palette"]')
         ->click('[data-ndb-command="section:models"]')
         ->assertVisible('[data-ndb-model-list]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const list = document.querySelector('[data-ndb-model-list]');
+                const summary = document.querySelector('[data-ndb-model-summary]');
+                const metrics = [...summary.querySelectorAll('dl > div')];
+
+                return list.lastElementChild === summary
+                    && metrics.length === 4
+                    && metrics[0].querySelector('dt').textContent.trim() === 'Counts'
+                    && metrics.slice(1).map((metric) => metric.querySelector('dd').textContent.trim()).join('|') === '44|0|20';
+            })()
+            JS)
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-detail-pane]")).display === "none"')
         ->keys('[data-ndb-model-group][data-ndb-model-short-name="ProofVersion"]', 'Enter');
 
@@ -200,7 +269,7 @@ it('adapts the model list and details into a mobile drill in flow', function () 
         ->assertNoJavaScriptErrors();
 });
 
-it('keeps writes as a useful count without rendering write evidence', function () {
+it('summarizes writes and shows completed operations without lifecycle noise', function () {
     visit('/profiled-models?changes=1')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="models"]')
@@ -218,14 +287,30 @@ it('keeps writes as a useful count without rendering write evidence', function (
             JS)
         ->click('[data-ndb-model-group][data-ndb-model-short-name="Client"]')
         ->assertSee('NewDebugBar\Tests\Fixtures\Models\Client')
-        ->assertSee('Write events')
-        ->assertSee('Updating 1, Updated 1, Saved 1')
+        ->assertDontSee('Write events')
+        ->assertVisible('[data-ndb-model-write-table]')
+        ->assertVisible('[data-ndb-model-write-operation]')
+        ->assertSeeIn('[data-ndb-model-write-table]', 'Writes')
+        ->assertSeeIn('[data-ndb-model-write-operation]', 'Updated')
+        ->assertDontSee('Updating')
+        ->assertDontSee('Saved')
         ->assertScript(<<<'JS'
             (() => {
-                const facts = [...document.querySelectorAll('[data-ndb-model-facts] [data-ndb-inspector-fact]')];
-                const writes = facts.find((fact) => fact.querySelector('dt').textContent.trim() === 'Logical writes');
+                const metadata = [...document.querySelectorAll('[data-ndb-model-header] dl > div')];
+                const writes = metadata.find((fact) => fact.querySelector('dt').textContent.trim() === 'Writes');
+                const table = document.querySelector('[data-ndb-model-write-table]');
+                const heading = [...table.querySelector('div > div:first-child').children];
+                const rows = [...table.querySelectorAll('[data-ndb-model-write-operation]')];
+                const cells = [...rows[0].children];
 
-                return writes?.querySelector('dd').textContent.trim() === '1';
+                return writes?.querySelector('dd').textContent.trim() === '1'
+                    && table.closest('[data-ndb-model-detail-panel="records"]') !== null
+                    && heading.map((cell) => cell.textContent.trim()).join('|') === 'Operation|Record|Time|Source'
+                    && rows.length === 1
+                    && cells[0].innerText.trim() === 'Updated'
+                    && cells[1].innerText.trim() === '4'
+                    && cells[2].innerText.trim().endsWith('ms')
+                    && cells[3].innerText.trim() !== '—';
             })()
             JS)
         ->assertDontSee('Write evidence')
@@ -261,8 +346,19 @@ it('shows application sources without related query controls', function () {
         ->click('[data-ndb-model-detail-tab="source"]')
         ->assertVisible('[data-ndb-model-detail-panel="source"]')
         ->assertVisible('[data-ndb-model-source]:first-of-type')
-        ->assertSee('Application sources')
-        ->assertSee('Start with locations responsible for the most model activity.')
+        ->assertDontSee('Start with locations responsible for the most model activity.')
+        ->assertSeeIn('[data-ndb-model-sources]', 'Where this model was used')
+        ->assertSeeIn('[data-ndb-model-sources]', 'Each row points to application code that loaded or changed this model.')
+        ->assertScript(<<<'JS'
+            (() => {
+                const sources = document.querySelector('[data-ndb-model-sources]');
+                const firstSource = document.querySelector('[data-ndb-model-source]');
+                const sourceList = firstSource.parentElement;
+
+                return sources.children[1] === sourceList
+                    && getComputedStyle(sourceList).marginTop === '12px';
+            })()
+            JS)
         ->assertDontSee('Related queries')
         ->assertMissing('[data-ndb-model-query-guidance]')
         ->assertMissing('[data-ndb-model-query-evidence]')

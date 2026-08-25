@@ -2,23 +2,14 @@
 @php
     $modelGroups = array_values($section['payload']['model_group_previews'] ?? $section['payload']['model_groups'] ?? []);
     $modelSummary = $section['summary'] ?? [];
-    $modelClassCount = (int) ($modelSummary['model_classes'] ?? 0);
-    $modelContextCount = (int) ($modelSummary['model_contexts'] ?? count($modelGroups));
-    $activityCount = (int) ($modelSummary['activity_count'] ?? 0);
     $retrievalCount = (int) ($modelSummary['retrieval_count'] ?? 0);
     $changeCount = (int) ($modelSummary['model_change_count'] ?? 0);
     $repeatCount = (int) ($modelSummary['repeated_load_count'] ?? 0);
-    $plural = static fn (string $word, int $count): string => \Illuminate\Support\Str::plural($word, $count);
-    $modelScope = number_format($modelClassCount).' model '.$plural('class', $modelClassCount);
-
-    if ($modelContextCount > $modelClassCount) {
-        $modelScope .= ' in '.number_format($modelContextCount).' contexts';
-    }
 @endphp
 
 <div
     data-ndb-models
-    x-init="initializeModels({{ count($modelGroups) }})"
+    x-init="initializeModels({{ count($modelGroups) }}, {{ $retrievalCount }}, {{ $changeCount }}, {{ $repeatCount }})"
     class="ndb:text-zinc-950 ndb:[&_code]:bg-transparent ndb:[&_dd]:bg-transparent ndb:[&_dl]:bg-transparent ndb:[&_dt]:bg-transparent ndb:dark:text-white ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
 >
     @if ($modelGroups !== [])
@@ -29,42 +20,13 @@
         >
             <x-newdebugbar::inspector-list-panel detail-open="modelDetailOpen" list-ref="modelList">
                 <x-slot:controls>
-                    <section
-                        data-ndb-model-summary
-                        aria-label="Model activity summary"
-                        class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
-                    >
-                        <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
-                            <div class="ndb:min-w-0">
-                                <p class="ndb:text-xs ndb:font-bold ndb:tabular-nums">
-                                    {{ number_format($activityCount) }} Eloquent {{ $plural('activity', $activityCount) }}
-                                </p>
-                                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-400">Across {{ $modelScope }}</p>
-                            </div>
-                        </div>
-
-                        <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-x-3">
-                            @foreach ([
-                                ['Retrieved', $retrievalCount],
-                                ['Writes', $changeCount],
-                                ['Extra', $repeatCount],
-                            ] as [$label, $value])
-                                <div class="ndb:min-w-0">
-                                    <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">{{ $label }}</dt>
-                                    <dd @class([
-                                        'ndb:mt-0.5 ndb:text-xs ndb:font-bold ndb:tabular-nums',
-                                        'ndb:text-amber-700 ndb:dark:text-amber-300' => $label === 'Extra' && $value > 0,
-                                    ])>
-                                        {{ number_format($value) }}
-                                    </dd>
-                                </div>
-                            @endforeach
-                        </dl>
-
-                        <p class="ndb:mt-3 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                            Counts describe Eloquent events, not database rows or queries.
-                        </p>
-                    </section>
+                    <x-newdebugbar::search-field
+                        label="Search models"
+                        placeholder="Search models"
+                        data-ndb-model-search
+                        x-model="modelSearch"
+                        @input.debounce.100ms="applyModelView()"
+                    />
                 </x-slot:controls>
 
                 <x-slot:list
@@ -74,7 +36,7 @@
                     <div
                         data-ndb-model-list-heading
                         aria-hidden="true"
-                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[minmax(8rem,1fr)_4rem_3rem_3.75rem] ndb:gap-2 ndb:border-l-0 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95 ndb:sm:grid"
+                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3rem] ndb:gap-2 ndb:border-l-0 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95 ndb:sm:grid"
                     >
                         <span>Model</span>
                         <span class="ndb:text-right">Retrieved</span>
@@ -85,6 +47,41 @@
                     @foreach ($modelGroups as $index => $group)
                         <x-newdebugbar::model-group :group="$group" :index="$index" />
                     @endforeach
+
+                    <div x-show.important="visibleModelCount === 0" class="ndb:p-3">
+                        <x-newdebugbar::empty-state label="No models match this search." />
+                    </div>
+
+                    <section
+                        data-ndb-model-summary
+                        aria-label="Model activity totals"
+                        x-show.important="visibleModelCount > 0"
+                        class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+                    >
+                        <dl class="ndb:grid ndb:grid-cols-4 ndb:gap-2 ndb:px-3 ndb:py-2.5 ndb:sm:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3rem]">
+                            <div class="ndb:min-w-0">
+                                <dt class="ndb:text-xs ndb:font-bold ndb:text-zinc-950 ndb:dark:text-white">Counts</dt>
+                                <dd class="ndb:sr-only">Visible model activity totals</dd>
+                            </div>
+
+                            @foreach ([
+                                ['Retrieved', 'visibleModelRetrievalCount'],
+                                ['Writes', 'visibleModelWriteCount'],
+                                ['Extra', 'visibleModelExtraCount'],
+                            ] as [$label, $value])
+                                <div class="ndb:min-w-0 ndb:text-right">
+                                    <dt class="ndb:sr-only">{{ $label }}</dt>
+                                    <dd
+                                        @class([
+                                            'ndb:text-xs ndb:font-bold ndb:tabular-nums',
+                                            'ndb:text-amber-700 ndb:dark:text-amber-300' => $label === 'Extra',
+                                        ])
+                                        x-text="{{ $value }}"
+                                    ></dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </section>
                 </x-slot:list>
             </x-newdebugbar::inspector-list-panel>
 

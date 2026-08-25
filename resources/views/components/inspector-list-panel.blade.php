@@ -7,9 +7,11 @@
     :class="{{ $detailOpen }} ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
     {{ $attributes->class('ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800') }}
 >
-    <div {{ $controls->attributes->class('ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800') }}>
-        {{ $controls }}
-    </div>
+    @isset($controls)
+        <div {{ $controls->attributes->class('ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800') }}>
+            {{ $controls }}
+        </div>
+    @endisset
 
     <div
         x-ref="{{ $listRef }}"
