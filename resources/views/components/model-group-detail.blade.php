@@ -120,14 +120,10 @@
                     data-ndb-model-records
                     class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
                 >
-                    <div>
-                        <h4 class="ndb:text-xs ndb:font-bold">How this model was loaded</h4>
-                        <p class="ndb:mt-0.5 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                            Each row is one record Laravel loaded during this request. Retrieved shows how often it was
-                            loaded, and Source shows where it started. If Retrieved is above 1, use Source to check
-                            whether the repeat is expected.
-                        </p>
-                    </div>
+                    <x-newdebugbar::inspector-explanation
+                        title="How this model was loaded"
+                        description="Each row is one record Laravel loaded during this request. Retrieved shows how often it was loaded, and Source shows where it started. If Retrieved is above 1, use Source to check whether the repeat is expected."
+                    />
 
                     <div class="ndb:mt-3 ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800">
                         <div class="ndb:hidden ndb:grid-cols-[minmax(8rem,1fr)_5.5rem_minmax(10rem,1.25fr)] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid">
@@ -285,13 +281,10 @@
                 data-ndb-model-sources
                 class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
             >
-                <div>
-                    <h4 class="ndb:text-xs ndb:font-bold">Where this model was used</h4>
-                    <p class="ndb:mt-0.5 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        Each row points to application code that loaded or changed this model. Activity shows how many
-                        loads and writes came from that place.
-                    </p>
-                </div>
+                <x-newdebugbar::inspector-explanation
+                    title="Where this model was used"
+                    description="Each row points to application code that loaded or changed this model. Activity shows how many loads and writes came from that place."
+                />
 
                 @if (($group['sources'] ?? []) !== [])
                     <div class="ndb:mt-3 ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">

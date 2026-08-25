@@ -207,10 +207,11 @@ it('composes the Cache workspace from the shared inspector components', function
         ->toContain('<x-newdebugbar::inspector-stack');
 });
 
-it('composes Models as a shared split inspector without write or query detail', function () {
+it('composes Models as a shared split inspector with reusable explanations', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
     $section = file_get_contents($views.'/livewire/sections/models.blade.php');
     $detail = file_get_contents($views.'/components/model-group-detail.blade.php');
+    $explanation = file_get_contents($views.'/components/inspector-explanation.blade.php');
 
     expect($section)
         ->toContain('<x-newdebugbar::inspector-workspace')
@@ -230,6 +231,15 @@ it('composes Models as a shared split inspector without write or query detail', 
         ->not->toContain('Write evidence')
         ->not->toContain('related quer')
         ->not->toContain('navigateToQueriesAtSource');
+
+    expect(substr_count($detail, '<x-newdebugbar::inspector-explanation'))->toBe(2);
+
+    expect($explanation)
+        ->toContain("@props(['title', 'description'])")
+        ->toContain('{{ $title }}')
+        ->toContain('{{ $description }}')
+        ->toContain('ndb:text-xs ndb:font-bold')
+        ->toContain('ndb:text-[11px] ndb:leading-5');
 });
 
 it('uses one calm source presentation across inspector sections', function () {
