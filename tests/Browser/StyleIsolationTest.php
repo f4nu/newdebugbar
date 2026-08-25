@@ -583,59 +583,95 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->click('[data-ndb-section="models"]')
         ->assertVisible('[data-ndb-section-panel="models"]')
-        ->keys('[data-ndb-model-group]:first-of-type', 'Enter')
-        ->assertVisible('[data-ndb-inspector-focus-detail]')
-        ->assertVisible('[data-ndb-inspector-focus-back]')
-        ->assertVisible('[data-ndb-model-operation]')
-        ->assertVisible('[data-ndb-model-source]:first-of-type')
-        ->assertVisible('[data-ndb-model-record]:first-of-type')
-        ->keys('[data-ndb-model-operation-changes] > summary', 'Enter')
-        ->assertAttribute('[data-ndb-model-operation-changes]', 'open', '')
-        ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
-                .every((selector) => getComputedStyle(document.querySelector(selector)).backgroundColor !== 'rgb(255, 0, 0)')
-            JS)
-        ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
-                .every((selector) => getComputedStyle(document.querySelector(selector)).borderLeftWidth !== '20px')
-            JS)
-        ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
-                .every((selector) => getComputedStyle(document.querySelector(selector)).color !== 'rgb(0, 128, 0)')
-            JS)
-        ->assertScript(<<<'JS'
-            ['[data-ndb-model-summary]', '[data-ndb-model-list]', '[data-ndb-model-list-heading]', '[data-ndb-model-group]', '[data-ndb-model-detail]', '[data-ndb-model-facts]', '[data-ndb-model-operations]', '[data-ndb-model-operation]', '[data-ndb-model-operation-changes]', '[data-ndb-model-changes]', '[data-ndb-model-records]', '[data-ndb-model-source]', '[data-ndb-model-record]', '[data-ndb-inspector-focus-list]', '[data-ndb-inspector-focus-detail]', '[data-ndb-inspector-focus-back]', '#newdebugbar-model-detail']
-                .every((selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize) < 42)
-            JS)
+        ->assertVisible('[data-ndb-model-workspace]')
+        ->assertVisible('[data-ndb-model-detail]')
+        ->assertVisible('[data-ndb-model-detail-panel="overview"]')
         ->assertScript(<<<'JS'
             (() => {
+                const selectors = [
+                    '[data-ndb-model-workspace]',
+                    '[data-ndb-model-summary]',
+                    '[data-ndb-model-list]',
+                    '[data-ndb-model-list-heading]',
+                    '[data-ndb-model-group]',
+                    '[data-ndb-model-detail-pane]',
+                    '[data-ndb-model-detail]',
+                    '[data-ndb-model-header]',
+                    '[data-ndb-model-facts]',
+                    '[data-ndb-model-guidance]',
+                    '[data-ndb-model-detail-panel="overview"]',
+                    '[data-ndb-model-retrieved-column]',
+                    '[data-ndb-model-write-column]',
+                    '[data-ndb-model-extra-column]',
+                ];
+                const elements = selectors.map((selector) => document.querySelector(selector));
                 const style = getComputedStyle(document.querySelector('[data-ndb-model-summary] dt'));
+                const modelClass = document.querySelector('[data-ndb-model-class]');
+                const tabs = [...document.querySelectorAll('[data-ndb-model-detail-tab]')];
 
-                return style.backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && style.color !== 'rgb(0, 128, 0)'
-                        && Number.parseFloat(style.fontSize) === 11;
+                const checks = {
+                    elements: elements.every(Boolean),
+                    backgrounds: elements.every((element) => getComputedStyle(element).backgroundColor !== 'rgb(255, 0, 0)'),
+                    borders: elements.every((element) => getComputedStyle(element).borderLeftWidth !== '20px'),
+                    colors: elements.every((element) => getComputedStyle(element).color !== 'rgb(0, 128, 0)'),
+                    typeSizes: elements.every((element) => Number.parseFloat(getComputedStyle(element).fontSize) < 42),
+                    termBackground: style.backgroundColor === 'rgba(0, 0, 0, 0)',
+                    termColor: style.color !== 'rgb(0, 128, 0)',
+                    termSize: Number.parseFloat(style.fontSize) === 11,
+                    classBackground: getComputedStyle(modelClass).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    classFont: getComputedStyle(modelClass).fontFamily.includes('JetBrains Mono'),
+                    tabs: tabs.length === 3,
+                    tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                    tabBackground: tabs.every((tab) => getComputedStyle(tab).backgroundColor !== 'rgb(255, 0, 255)'),
+                    tabColor: tabs.every((tab) => getComputedStyle(tab).color !== 'rgb(0, 128, 0)'),
+                    removedWriteEvidence: document.querySelector('[data-ndb-model-operation]') === null,
+                    removedQueryActions: document.querySelector('[data-ndb-model-view-queries]') === null,
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Model isolation failed: ' + failures.join(', '));
+
+                return true;
             })()
             JS)
+        ->click('[data-ndb-model-detail-tab="records"]')
+        ->assertVisible('[data-ndb-model-record]:first-of-type')
         ->assertScript(<<<'JS'
             (() => {
-                const detail = document.querySelector('[data-ndb-model-detail]');
-                const facts = document.querySelector('[data-ndb-model-facts]');
-                const operation = document.querySelector('[data-ndb-model-operation]');
-                const changes = document.querySelector('[data-ndb-model-changes]');
-                const action = document.querySelector('[data-ndb-model-view-queries]');
-                const focusBack = document.querySelector('[data-ndb-inspector-focus-back]');
+                const elements = [
+                    document.querySelector('[data-ndb-model-detail-panel="records"]'),
+                    document.querySelector('[data-ndb-model-records]'),
+                    document.querySelector('[data-ndb-model-record]'),
+                    document.querySelector('[data-ndb-model-extra-guidance]'),
+                ];
 
-                return Number.parseFloat(getComputedStyle(detail).paddingTop) === 0
-                    && getComputedStyle(facts).display === 'grid'
-                    && Number.parseFloat(getComputedStyle(facts).paddingTop) === 0
-                    && Number.parseFloat(getComputedStyle(operation).paddingLeft) === 0
-                    && Number.parseFloat(getComputedStyle(changes).paddingTop) === 0
-                    && action.getBoundingClientRect().height < 91
-                    && getComputedStyle(action).backgroundColor !== 'rgb(255, 0, 255)'
-                    && getComputedStyle(action).color !== 'rgb(0, 128, 0)'
-                    && focusBack.getBoundingClientRect().height < 91
-                    && getComputedStyle(focusBack).backgroundColor !== 'rgb(255, 0, 255)'
-                    && getComputedStyle(focusBack).color !== 'rgb(0, 128, 0)';
+                return elements.every(Boolean)
+                    && elements.every((element) => getComputedStyle(element).backgroundColor !== 'rgb(255, 0, 0)')
+                    && elements.every((element) => getComputedStyle(element).borderLeftWidth !== '20px')
+                    && elements.every((element) => Number.parseFloat(getComputedStyle(element).paddingLeft) < 50);
+            })()
+            JS)
+        ->click('[data-ndb-model-detail-tab="source"]')
+        ->assertVisible('[data-ndb-model-source]:first-of-type')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-model-detail-panel="source"]');
+                const sources = document.querySelector('[data-ndb-model-sources]');
+                const source = document.querySelector('[data-ndb-model-source]');
+                const path = source.querySelector('[data-ndb-model-source-path]');
+                const back = document.querySelector('[data-ndb-model-detail-back]');
+
+                return [panel, sources, source, path].every(Boolean)
+                    && [panel, sources, source, path].every(
+                        (element) => getComputedStyle(element).backgroundColor !== 'rgb(255, 0, 0)',
+                    )
+                    && [panel, sources, source, path].every(
+                        (element) => getComputedStyle(element).borderLeftWidth !== '20px',
+                    )
+                    && !getComputedStyle(path).fontFamily.includes('JetBrains Mono')
+                    && back.getBoundingClientRect().height < 91
+                    && getComputedStyle(back).backgroundColor !== 'rgb(255, 0, 255)'
+                    && getComputedStyle(back).color !== 'rgb(0, 128, 0)';
             })()
             JS)
         ->assertNoJavaScriptErrors();

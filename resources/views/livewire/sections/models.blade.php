@@ -1,4 +1,4 @@
-{{-- Summarizes Eloquent activity before model-specific evidence. --}}
+{{-- Presents model activity as a compact model table with persistent details. --}}
 @php
     $modelGroups = array_values($section['payload']['model_group_previews'] ?? $section['payload']['model_groups'] ?? []);
     $modelSummary = $section['summary'] ?? [];
@@ -8,124 +8,118 @@
     $retrievalCount = (int) ($modelSummary['retrieval_count'] ?? 0);
     $changeCount = (int) ($modelSummary['model_change_count'] ?? 0);
     $repeatCount = (int) ($modelSummary['repeated_load_count'] ?? 0);
-    $intermediateCount = (int) ($modelSummary['intermediate_lifecycle_event_count'] ?? 0);
-    $unknownSourceCount = (int) ($modelSummary['unknown_source_activity_count'] ?? 0);
     $plural = static fn (string $word, int $count): string => \Illuminate\Support\Str::plural($word, $count);
     $modelScope = number_format($modelClassCount).' model '.$plural('class', $modelClassCount);
 
     if ($modelContextCount > $modelClassCount) {
-        $modelScope .= ' in '.number_format($modelContextCount).' connection or table contexts';
-    }
-
-    $methodology = 'Activity means Eloquent retrieved events plus completed logical writes. It does not mean database rows or queries. Callbacks with a shared operation ID are shown once as one write.';
-
-    if ($intermediateCount > 0) {
-        $methodology .= ' '.number_format($intermediateCount).' other lifecycle '.$plural('callback', $intermediateCount).' stay outside the activity total.';
-    }
-
-    if ($unknownSourceCount > 0) {
-        $methodology .= ' Application source was unavailable for '.number_format($unknownSourceCount).' '.$plural('activity', $unknownSourceCount).'.';
+        $modelScope .= ' in '.number_format($modelContextCount).' contexts';
     }
 @endphp
 
 <div
     data-ndb-models
     x-init="initializeModels({{ count($modelGroups) }})"
-    class="ndb:min-h-0 ndb:text-zinc-950 ndb:dark:text-white ndb:lg:flex ndb:lg:flex-1 ndb:lg:flex-col"
+    class="ndb:text-zinc-950 ndb:[&_code]:bg-transparent ndb:[&_dd]:bg-transparent ndb:[&_dl]:bg-transparent ndb:[&_dt]:bg-transparent ndb:dark:text-white ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
 >
     @if ($modelGroups !== [])
         <x-newdebugbar::inspector-workspace
-            mode="focus"
-            detail-open="modelDetailOpen"
-            detail-id="newdebugbar-model-detail"
-            detail-ref="modelDetail"
-            detail-label="Selected model details"
-            back-label="Models"
-            close-action="closeModelDetail()"
+            frame="top"
+            data-ndb-model-workspace
+            class="ndb:border-l-0 ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
         >
-            <x-slot:list class="ndb:space-y-4">
-                <section
-                    data-ndb-model-summary
-                    aria-label="Model activity summary"
-                    class="ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800"
-                >
-                    <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end ndb:sm:justify-between">
-                        <div>
-                            <p class="ndb:text-sm ndb:font-bold ndb:tabular-nums">
-                                {{ number_format($activityCount) }} Eloquent {{ $plural('activity', $activityCount) }}
-                            </p>
-                            <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                Across {{ $modelScope }}.
-                            </p>
+            <x-newdebugbar::inspector-list-panel detail-open="modelDetailOpen" list-ref="modelList">
+                <x-slot:controls>
+                    <section
+                        data-ndb-model-summary
+                        aria-label="Model activity summary"
+                        class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+                    >
+                        <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
+                            <div class="ndb:min-w-0">
+                                <p class="ndb:text-xs ndb:font-bold ndb:tabular-nums">
+                                    {{ number_format($activityCount) }} Eloquent {{ $plural('activity', $activityCount) }}
+                                </p>
+                                <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-400">Across {{ $modelScope }}</p>
+                            </div>
                         </div>
 
-                        <dl class="ndb:grid ndb:grid-cols-3 ndb:gap-x-5 ndb:sm:shrink-0">
+                        <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-3 ndb:gap-x-3">
                             @foreach ([
-                                ['Retrieved', $retrievalCount, false],
-                                ['Writes', $changeCount, false],
-                                ['Extra retrievals', $repeatCount, $repeatCount > 0],
-                            ] as [$label, $value, $attention])
+                                ['Retrieved', $retrievalCount],
+                                ['Writes', $changeCount],
+                                ['Extra', $repeatCount],
+                            ] as [$label, $value])
                                 <div class="ndb:min-w-0">
-                                    <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                                        {{ $label }}
-                                    </dt>
+                                    <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">{{ $label }}</dt>
                                     <dd @class([
                                         'ndb:mt-0.5 ndb:text-xs ndb:font-bold ndb:tabular-nums',
-                                        'ndb:text-amber-700 ndb:dark:text-amber-300' => $attention,
+                                        'ndb:text-amber-700 ndb:dark:text-amber-300' => $label === 'Extra' && $value > 0,
                                     ])>
                                         {{ number_format($value) }}
                                     </dd>
                                 </div>
                             @endforeach
                         </dl>
-                    </div>
 
-                    <p class="ndb:mt-3 ndb:max-w-4xl ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        {{ $methodology }}
-                    </p>
-                </section>
+                        <p class="ndb:mt-3 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                            Counts describe Eloquent events, not database rows or queries.
+                        </p>
+                    </section>
+                </x-slot:controls>
 
-                <section aria-label="Models involved">
-                    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:pb-2">
-                        <h3 class="ndb:text-xs ndb:font-bold">Models involved</h3>
-                        <span class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
-                            {{ number_format($modelContextCount) }} {{ $plural('context', $modelContextCount) }}
-                        </span>
-                    </div>
-
+                <x-slot:list
+                    data-ndb-model-list
+                    class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+                >
                     <div
                         data-ndb-model-list-heading
                         aria-hidden="true"
-                        class="ndb:hidden ndb:grid-cols-[minmax(10rem,1.35fr)_5.5rem_4.75rem_7rem_minmax(8rem,1fr)_1rem] ndb:gap-3 ndb:border-t ndb:border-zinc-200/90 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid"
+                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[minmax(8rem,1fr)_4rem_3rem_3.75rem] ndb:gap-2 ndb:border-l-0 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95 ndb:sm:grid"
                     >
                         <span>Model</span>
                         <span class="ndb:text-right">Retrieved</span>
                         <span class="ndb:text-right">Writes</span>
-                        <span class="ndb:text-right">Extra retrievals</span>
-                        <span>Source</span>
-                        <span></span>
+                        <span class="ndb:text-right" title="Extra retrievals of identified records">Extra</span>
                     </div>
 
-                    <div
-                        data-ndb-model-list
-                        class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800 ndb:sm:border-t-0"
-                    >
-                        @foreach ($modelGroups as $index => $group)
-                            <x-newdebugbar::model-group :group="$group" :index="$index" />
-                        @endforeach
-                    </div>
-                </section>
-            </x-slot:list>
+                    @foreach ($modelGroups as $index => $group)
+                        <x-newdebugbar::model-group :group="$group" :index="$index" />
+                    @endforeach
+                </x-slot:list>
+            </x-newdebugbar::inspector-list-panel>
 
-            <x-slot:detail>
+            <x-newdebugbar::inspector-detail-pane
+                detail-open="modelDetailOpen"
+                detail-ref="modelDetail"
+                detail-label="Selected model details"
+                back-label="Models"
+                close-action="closeModelDetail()"
+                id="newdebugbar-model-detail"
+                data-ndb-model-detail-pane
+                class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+            >
+                <x-slot:back>
+                    <x-newdebugbar::inspector-detail-back
+                        data-ndb-model-detail-back
+                        @click="closeModelDetail()"
+                        label="Models"
+                        class="ndb:bg-transparent"
+                    />
+                </x-slot:back>
+
                 @foreach ($modelGroups as $index => $group)
                     <template x-if="modelSelected === {{ $index }}">
-                        <div wire:key="model-detail-{{ $index }}">
+                        <div wire:key="model-detail-{{ $index }}" class="ndb:flex ndb:flex-col">
                             <x-newdebugbar::model-group-detail :$group />
                         </div>
                     </template>
                 @endforeach
-            </x-slot:detail>
+
+                <x-newdebugbar::inspector-detail-empty
+                    label="Choose a model to inspect its activity."
+                    x-show.important="modelSelected === null"
+                />
+            </x-newdebugbar::inspector-detail-pane>
         </x-newdebugbar::inspector-workspace>
     @else
         <x-newdebugbar::empty-state label="No Eloquent model activity was captured for this request." />

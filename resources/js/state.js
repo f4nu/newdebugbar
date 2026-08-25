@@ -416,6 +416,8 @@ export function createNewDebugBar(
     visibleQueryCount: summary.query_count ?? 0,
     modelGroupCount: 0,
     modelSelected: null,
+    modelDetailOpen: false,
+    modelDetailTab: 'overview',
     modelListScrollTop: 0,
     authorizationDecisions: [],
     authorizationFilter: 'all',
@@ -697,12 +699,6 @@ export function createNewDebugBar(
 
     get selectedCacheOperation() {
       return this.cacheOperations.find((operation) => operation.execution === this.cacheSelected) ?? null;
-    },
-
-    get modelDetailOpen() {
-      return (
-        Number.isInteger(this.modelSelected) && this.modelSelected >= 0 && this.modelSelected < this.modelGroupCount
-      );
     },
 
     get selectedMailMessage() {
@@ -1911,6 +1907,8 @@ export function createNewDebugBar(
       this.viewSortDirection = 'asc';
       this.modelGroupCount = 0;
       this.modelSelected = null;
+      this.modelDetailOpen = false;
+      this.modelDetailTab = 'overview';
       this.modelListScrollTop = 0;
       this.authorizationDecisions = [];
       this.authorizationFilter = 'all';
@@ -2453,7 +2451,9 @@ export function createNewDebugBar(
       const normalized = Number(count);
 
       this.modelGroupCount = Number.isInteger(normalized) && normalized > 0 ? normalized : 0;
-      this.modelSelected = null;
+      this.modelSelected = this.modelGroupCount > 0 ? 0 : null;
+      this.modelDetailOpen = false;
+      this.modelDetailTab = 'overview';
       this.modelListScrollTop = 0;
     },
 
@@ -2462,23 +2462,42 @@ export function createNewDebugBar(
 
       if (!Number.isInteger(selected) || selected < 0 || selected >= this.modelGroupCount) return;
 
-      this.modelListScrollTop = Number(this.$refs?.content?.scrollTop ?? 0);
+      this.modelListScrollTop = Math.max(
+        Number(this.$refs?.modelList?.scrollTop ?? 0),
+        Number(this.$refs?.content?.scrollTop ?? 0),
+      );
       this.modelSelected = selected;
+      this.modelDetailOpen = true;
+      this.modelDetailTab = 'overview';
       this.$nextTick?.(() => {
         this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
+        this.$refs?.modelDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
         const focus = () => this.$refs?.modelDetail?.focus?.({ preventScroll: true });
 
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
     },
 
+    setModelDetailTab(tab) {
+      if (!['overview', 'records', 'source'].includes(tab)) return;
+
+      this.modelDetailTab = tab;
+      this.$nextTick?.(() => {
+        this.$refs?.modelDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+      });
+    },
+
     closeModelDetail() {
       const selected = this.modelSelected;
 
-      if (!Number.isInteger(selected)) return;
+      if (!Number.isInteger(selected) || !this.modelDetailOpen) return;
 
-      this.modelSelected = null;
+      this.modelDetailOpen = false;
       this.$nextTick?.(() => {
+        this.$refs?.modelList?.scrollTo?.({
+          top: this.modelListScrollTop,
+          behavior: 'instant',
+        });
         this.$refs?.content?.scrollTo?.({
           top: this.modelListScrollTop,
           behavior: 'instant',
@@ -3057,16 +3076,6 @@ export function createNewDebugBar(
 
       this.querySort = sort;
       this.applyQueryView();
-    },
-
-    navigateToQueriesAtSource(source) {
-      const search = String(source ?? '').trim();
-
-      if (search === '') return;
-
-      this.queryFilter = 'all';
-      this.querySearch = search;
-      this.selectSection('queries');
     },
 
     applyQueryView() {

@@ -207,6 +207,31 @@ it('composes the Cache workspace from the shared inspector components', function
         ->toContain('<x-newdebugbar::inspector-stack');
 });
 
+it('composes Models as a shared split inspector without write or query detail', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/models.blade.php');
+    $detail = file_get_contents($views.'/components/model-group-detail.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::model-group')
+        ->toContain('<x-newdebugbar::model-group-detail');
+
+    expect($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::inspector-detail-tabs')
+        ->toContain('variant="segmented"')
+        ->toContain('data-ndb-model-detail-panel="overview"')
+        ->toContain('data-ndb-model-detail-panel="records"')
+        ->toContain('data-ndb-model-detail-panel="source"')
+        ->not->toContain('Write evidence')
+        ->not->toContain('related quer')
+        ->not->toContain('navigateToQueriesAtSource');
+});
+
 it('uses one calm source presentation across inspector sections', function () {
     $resources = dirname(__DIR__, 2).'/resources';
     $views = $resources.'/views';
@@ -281,6 +306,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
     foreach ([
         'components/cache-workspace.blade.php',
         'components/http-client-workspace.blade.php',
+        'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
         'livewire/sections/notifications.blade.php',
     ] as $view) {
@@ -298,6 +324,7 @@ it('uses centered segmented controls across inspector detail panels', function (
         'components/cache-detail-tabs.blade.php',
         'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',
+        'components/model-group-detail.blade.php',
         'components/notification-detail.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))

@@ -4,13 +4,16 @@ import test from 'node:test';
 import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
-test('Models opens one focused detail and restores list scroll and focus', () => {
+test('Models keeps a desktop selection while opening and closing mobile detail', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
-  const scrolls = [];
+  const contentScrolls = [];
+  const listScrolls = [];
+  const detailScrolls = [];
   const detailFocus = [];
   const rowFocus = [];
-  let scrollTop = 184;
+  let contentScrollTop = 0;
+  let listScrollTop = 184;
   const rows = [
     { focus: (options) => rowFocus.push([0, options]) },
     { focus: (options) => rowFocus.push([1, options]) },
@@ -19,14 +22,26 @@ test('Models opens one focused detail and restores list scroll and focus', () =>
   state.$refs = {
     content: {
       get scrollTop() {
-        return scrollTop;
+        return contentScrollTop;
       },
       scrollTo(options) {
-        scrolls.push(options);
-        scrollTop = options.top;
+        contentScrolls.push(options);
+        contentScrollTop = options.top;
       },
     },
-    modelDetail: { focus: (options) => detailFocus.push(options) },
+    modelList: {
+      get scrollTop() {
+        return listScrollTop;
+      },
+      scrollTo(options) {
+        listScrolls.push(options);
+        listScrollTop = options.top;
+      },
+    },
+    modelDetail: {
+      focus: (options) => detailFocus.push(options),
+      scrollTo: (options) => detailScrolls.push(options),
+    },
   };
   state.$root = {
     querySelectorAll: (selector) => (selector === '[data-ndb-model-group]' ? rows : []),
@@ -35,15 +50,27 @@ test('Models opens one focused detail and restores list scroll and focus', () =>
 
   state.initializeModels(2);
   assert.equal(state.modelGroupCount, 2);
-  assert.equal(state.modelSelected, null);
+  assert.equal(state.modelSelected, 0);
   assert.equal(state.modelDetailOpen, false);
+  assert.equal(state.modelDetailTab, 'overview');
 
   state.selectModelGroup(1);
   assert.equal(state.modelSelected, 1);
   assert.equal(state.modelDetailOpen, true);
   assert.equal(state.modelListScrollTop, 184);
-  assert.deepEqual(scrolls, [{ top: 0, behavior: 'instant' }]);
+  assert.deepEqual(contentScrolls, [{ top: 0, behavior: 'instant' }]);
+  assert.deepEqual(detailScrolls, [{ top: 0, behavior: 'instant' }]);
   assert.deepEqual(detailFocus, [{ preventScroll: true }]);
+
+  state.setModelDetailTab('records');
+  assert.equal(state.modelDetailTab, 'records');
+  assert.deepEqual(detailScrolls, [
+    { top: 0, behavior: 'instant' },
+    { top: 0, behavior: 'instant' },
+  ]);
+
+  state.setModelDetailTab('invalid');
+  assert.equal(state.modelDetailTab, 'records');
 
   state.selectModelGroup(-1);
   state.selectModelGroup(0.5);
@@ -52,9 +79,10 @@ test('Models opens one focused detail and restores list scroll and focus', () =>
 
   browser.afterPaint = null;
   state.closeModelDetail();
-  assert.equal(state.modelSelected, null);
+  assert.equal(state.modelSelected, 1);
   assert.equal(state.modelDetailOpen, false);
-  assert.deepEqual(scrolls, [
+  assert.deepEqual(listScrolls, [{ top: 184, behavior: 'instant' }]);
+  assert.deepEqual(contentScrolls, [
     { top: 0, behavior: 'instant' },
     { top: 184, behavior: 'instant' },
   ]);
@@ -835,14 +863,6 @@ test('query controls filter search and sort captured evidence', () => {
   assert.equal(state.queryFilter, 'all');
   assert.equal(state.querySort, 'duration');
 
-  state.queryFilter = 'write';
-  state.navigateToQueriesAtSource('app/Actions/LoadTrip.php:42');
-  assert.equal(state.selected, 'queries');
-  assert.equal(state.queryFilter, 'all');
-  assert.equal(state.querySearch, 'app/Actions/LoadTrip.php:42');
-
-  state.navigateToQueriesAtSource('');
-  assert.equal(state.querySearch, 'app/Actions/LoadTrip.php:42');
 });
 
 test('authorization controls filter search selection detail and overview navigation', () => {
