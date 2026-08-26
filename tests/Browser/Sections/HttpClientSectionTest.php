@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('filters, sorts, selects, and inspects outbound HTTP evidence', function () {
+it('filters, selects, and inspects outbound HTTP evidence', function () {
     visit('/profiled-http-client-rich')
         ->resize(1440, 900)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
