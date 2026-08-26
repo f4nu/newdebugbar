@@ -1,7 +1,7 @@
 <?php
 
-use NewDebugBar\Presentation\StudioCatalog;
 use NewDebugBar\Tests\Support\ProjectFiles;
+use NewDebugBar\Tests\Support\ViewComponentInventory;
 
 it('keeps every Blade view focused', function () {
     $oversizedViews = [];
@@ -80,42 +80,22 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
         );
 });
 
-it('catalogs only canonical shared component families in Studio', function () {
+it('classifies every Blade component and keeps ownership boundaries', function () {
     $root = dirname(__DIR__, 2);
     $views = $root.'/resources/views';
     $componentDirectory = $root.'/resources/views/components';
-    $demoDirectory = $root.'/resources/views/studio/demos';
-    $groups = StudioCatalog::groups();
-    $kinds = StudioCatalog::kinds();
-    $navigationGroups = StudioCatalog::navigationGroups();
-    $components = StudioCatalog::components();
-    $catalogPages = array_keys($components);
-    $publicComponents = StudioCatalog::publicComponents();
-    $privateComponentsByOwner = StudioCatalog::privateComponents();
+    $publicComponents = ViewComponentInventory::SHARED;
+    $privateComponentsByOwner = ViewComponentInventory::PRIVATE_BY_OWNER;
     $privateComponents = collect($privateComponentsByOwner)->flatten()->all();
-    $kindComponents = collect($kinds)->flatMap(fn (array $kind): array => $kind['components'])->all();
-    $navigationComponents = collect($navigationGroups)
-        ->flatMap(fn (array $group): array => $group['components'])
-        ->all();
     $viewComponents = collect(ProjectFiles::bladeFilesIn($componentDirectory))
-        ->map(fn (SplFileInfo $file): string => str_replace('.blade.php', '', $file->getFilename()))
-        ->sort()
-        ->values()
-        ->all();
-    $demoGroups = collect(ProjectFiles::bladeFilesIn($demoDirectory))
         ->map(fn (SplFileInfo $file): string => str_replace('.blade.php', '', $file->getFilename()))
         ->sort()
         ->values()
         ->all();
     $documentedComponents = file_get_contents($root.'/.agents/skills/craft-newdebugbar-ui/references/components.md');
 
-    expect($catalogPages)->toHaveCount(count(array_unique($catalogPages)))
-        ->and($publicComponents)->toHaveCount(count(array_unique($publicComponents)))
-        ->and($privateComponents)->toHaveCount(count(array_unique($privateComponents)))
-        ->and($kindComponents)->toHaveCount(count(array_unique($kindComponents)))
-        ->and($navigationComponents)->toHaveCount(count(array_unique($navigationComponents)))
-        ->and($kindComponents)->toHaveCount(count($catalogPages))
-        ->and($navigationComponents)->toHaveCount(count($catalogPages));
+    expect($publicComponents)->toHaveCount(count(array_unique($publicComponents)))
+        ->and($privateComponents)->toHaveCount(count(array_unique($privateComponents)));
 
     $registeredComponents = [...$publicComponents, ...$privateComponents];
     sort($registeredComponents);
@@ -131,8 +111,7 @@ it('catalogs only canonical shared component families in Studio', function () {
         ->reject(function (SplFileInfo $file) use ($views): bool {
             $relativePath = ProjectFiles::relativePath($file, $views);
 
-            return str_starts_with($relativePath, 'components/')
-                || str_starts_with($relativePath, 'studio/');
+            return str_starts_with($relativePath, 'components/');
         })
         ->flatMap(fn (SplFileInfo $file): array => $extractComponentReferences(file_get_contents($file->getPathname())))
         ->unique()
@@ -155,13 +134,6 @@ it('catalogs only canonical shared component families in Studio', function () {
 
     sort($reachableComponents);
     expect($reachableComponents)->toBe($registeredComponents);
-
-    sort($catalogPages);
-    sort($kindComponents);
-    sort($navigationComponents);
-
-    expect($kindComponents)->toBe($catalogPages)
-        ->and($navigationComponents)->toBe($catalogPages);
 
     foreach ($publicComponents as $publicComponent) {
         expect($viewComponents)->toContain($publicComponent)
@@ -202,38 +174,6 @@ it('catalogs only canonical shared component families in Studio', function () {
     }
 
     expect($privateDependencyViolations)->toBe([]);
-
-    foreach ($groups as $slug => $group) {
-        expect($group['title'])->not->toBeEmpty()
-            ->and($group['description'])->not->toBeEmpty()
-            ->and($root.'/resources/views/studio/demos/'.$slug.'.blade.php')->toBeFile();
-
-        expect($group['components'])->not->toBeEmpty();
-    }
-
-    $expectedDemoGroups = array_keys($groups);
-    sort($expectedDemoGroups);
-    expect($demoGroups)->toBe($expectedDemoGroups);
-
-    foreach ($kinds as $kind) {
-        expect($kind['title'])->not->toBeEmpty()
-            ->and($kind['singular'])->not->toBeEmpty()
-            ->and($kind['description'])->not->toBeEmpty();
-    }
-
-    foreach ($navigationGroups as $navigationGroup) {
-        expect($navigationGroup['title'])->not->toBeEmpty()
-            ->and($navigationGroup['description'])->not->toBeEmpty();
-    }
-
-    foreach ($components as $component => $metadata) {
-        expect($metadata['title'])->not->toBeEmpty()
-            ->and($metadata['description'])->not->toBeEmpty()
-            ->and($metadata['kindTitle'])->not->toBeEmpty()
-            ->and($metadata['kindDescription'])->not->toBeEmpty()
-            ->and($groups)->toHaveKey($metadata['group'])
-            ->and($metadata['members'])->toContain($component);
-    }
 });
 
 it('keeps package interface text at a readable minimum size', function () {
