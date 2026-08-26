@@ -35,9 +35,75 @@ it('groups models views and event sources', function () {
         ->event->toBe('retrieved')
         ->count->toBe(2)
         ->and($profile['sections']['views']['summary']['unique_views'])->toBe(1)
+        ->and($profile['sections']['views']['summary']['application_count'])->toBe(2)
+        ->and($profile['sections']['views']['summary']['framework_count'])->toBe(0)
         ->and($profile['sections']['views']['payload']['groups'][0]['count'])->toBe(2)
+        ->and($profile['sections']['views']['payload']['groups'][0]['origin'])->toBe('application')
         ->and(array_column($profile['sections']['events']['payload']['items'], 'source'))
         ->toBe(['framework', 'application']);
+});
+
+it('puts application views first and preserves deeper render source evidence', function () {
+    $profile = (new SectionAnalyzer)->analyze([
+        'sections' => [
+            'views' => ['summary' => ['count' => 4], 'payload' => ['items' => [
+                [
+                    'name' => 'pagination::tailwind',
+                    'source' => ['file' => '/workspace/vendor/laravel/framework/views/tailwind.blade.php', 'line' => 1],
+                    'data' => ['paginator' => ['type' => 'LengthAwarePaginator']],
+                ],
+                [
+                    'name' => 'trips.show',
+                    'source' => ['file' => 'resources/views/trips/show.blade.php', 'line' => 1],
+                    'data' => ['trip' => ['id' => 42], 'weather' => 'clear'],
+                    'composers' => [[
+                        'name' => 'App\\View\\Composers\\TripComposer@compose',
+                        'source' => ['file' => 'app/View/Composers/TripComposer.php', 'line' => 18],
+                    ]],
+                ],
+                [
+                    'name' => 'trips.show',
+                    'source' => ['file' => 'resources/views/trips/show.blade.php', 'line' => 1],
+                    'data' => ['trip' => ['id' => 84]],
+                ],
+                [
+                    'name' => '/workspace/storage/framework/views/a1b2c3.php',
+                    'source' => ['file' => 'storage/framework/views/a1b2c3.php', 'line' => 12],
+                    'data' => [],
+                ],
+            ]]],
+        ],
+    ]);
+
+    $groups = $profile['sections']['views']['payload']['groups'];
+    $application = $groups[0];
+    $framework = $groups[1];
+    $compiled = $groups[2];
+
+    expect($profile['sections']['views']['summary'])
+        ->unique_views->toBe(3)
+        ->application_count->toBe(2)
+        ->framework_count->toBe(2)
+        ->application_views->toBe(1)
+        ->framework_views->toBe(2)
+        ->and($application)
+        ->id->toBe('view-2')
+        ->origin->toBe('application')
+        ->count->toBe(2)
+        ->search->toContain('trips.show', 'tripcomposer@compose')
+        ->and($application['items'][0])
+        ->render_order->toBe(2)
+        ->source_label->toBe('resources/views/trips/show.blade.php:1')
+        ->source_kind->toBe('template')
+        ->data_key_count->toBe(2)
+        ->composer_count->toBe(1)
+        ->and($application['items'][0]['composers'][0]['source_label'])
+        ->toBe('app/View/Composers/TripComposer.php:18')
+        ->and($framework['origin'])->toBe('framework')
+        ->and($framework['items'][0]['source_kind'])->toBe('framework')
+        ->and($compiled['origin'])->toBe('framework')
+        ->and($compiled['display_name'])->toBe('Compiled Blade view')
+        ->and($compiled['items'][0]['source_kind'])->toBe('compiled');
 });
 
 it('groups repeated event signatures while preserving timing sources listeners and payload shape', function () {

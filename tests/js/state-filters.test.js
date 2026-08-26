@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createNewDebugBar, createViewDataState } from '../../resources/js/state.js';
+import { createNewDebugBar } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
 test('Models starts unselected and keeps a selection while opening and closing mobile detail', () => {
@@ -1075,73 +1075,138 @@ test('authorization controls filter search selection detail and overview navigat
   assert.equal(state.authorizationFilter, 'denied');
 });
 
-test('view headers sort names and render counts in both directions', () => {
-  const state = createNewDebugBar(summary, runtime());
-  const first = { dataset: { ndbOrder: '0', ndbCount: '1', ndbName: 'zeta' } };
-  const second = { dataset: { ndbOrder: '1', ndbCount: '3', ndbName: 'alpha' } };
-  const third = { dataset: { ndbOrder: '2', ndbCount: '3', ndbName: 'beta' } };
-  const children = [first, second, third];
-  state.$refs = {
-    viewGroups: {
-      children,
-      appendChild(group) {
-        children.splice(children.indexOf(group), 1);
-        children.push(group);
-      },
-    },
-  };
-
-  state.applyViewSort();
-  assert.deepEqual(children, [second, third, first]);
-
-  state.toggleViewSort('name');
-  assert.equal(state.viewSortDirection, 'desc');
-  assert.deepEqual(children, [first, third, second]);
-
-  state.toggleViewSort('count');
-  assert.equal(state.viewSort, 'count');
-  assert.equal(state.viewSortDirection, 'desc');
-  assert.deepEqual(children, [second, third, first]);
-
-  state.toggleViewSort('count');
-  assert.equal(state.viewSortDirection, 'asc');
-  assert.deepEqual(children, [first, second, third]);
-
-  state.toggleViewSort('invalid');
-  assert.equal(state.viewSort, 'count');
-  assert.equal(state.viewSortDirection, 'asc');
-});
-
-test('view data state loads once and reports retryable failures', async () => {
+test('Views defaults to application records and lazily loads only the selected render', async () => {
   const calls = [];
   let highlighted = 0;
-  const state = createViewDataState({
+  let detailFocuses = 0;
+  let rowFocuses = 0;
+  const browser = runtime();
+  browser.highlight = () => highlighted++;
+  const state = createNewDebugBar(summary, browser);
+  const groups = [
+    {
+      id: 'view-1',
+      name: 'trips.show',
+      display_name: 'trips.show',
+      origin: 'application',
+      count: 2,
+      items: [
+        { render_order: 1, data_key_count: 2, composer_count: 0, composers: [], source_kind: 'template' },
+        { render_order: 2, data_key_count: 1, composer_count: 0, composers: [], source_kind: 'template' },
+      ],
+    },
+    {
+      id: 'view-2',
+      name: 'pagination::tailwind',
+      display_name: 'pagination::tailwind',
+      origin: 'framework',
+      count: 1,
+      items: [
+        { render_order: 3, data_key_count: 3, composer_count: 0, composers: [], source_kind: 'framework' },
+      ],
+    },
+  ];
+  const rows = [
+    {
+      dataset: {
+        ndbViewGroup: 'view-1',
+        ndbViewOrigin: 'application',
+        ndbViewSearchValue: 'trips.show resources/views/trips/show.blade.php',
+        ndbViewCount: '2',
+      },
+      hidden: false,
+      focus: () => rowFocuses++,
+    },
+    {
+      dataset: {
+        ndbViewGroup: 'view-2',
+        ndbViewOrigin: 'framework',
+        ndbViewSearchValue: 'pagination::tailwind vendor/laravel/framework',
+        ndbViewCount: '1',
+      },
+      hidden: false,
+      focus: () => rowFocuses++,
+    },
+  ];
+  state.$refs = {
+    viewGroups: {
+      querySelectorAll(selector) {
+        return selector.includes(':not([hidden])') ? rows.filter((row) => !row.hidden) : rows;
+      },
+    },
+    viewDetail: { focus: () => detailFocuses++ },
+    content: { scrollTop: 20 },
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.initializeViews(groups);
+  assert.equal(state.viewFilter, 'application');
+  assert.equal(rows[0].hidden, false);
+  assert.equal(rows[1].hidden, true);
+  assert.equal(state.visibleViewCount, 1);
+  assert.equal(state.visibleViewRenderCount, 2);
+
+  state.selectViewGroup('view-1');
+  assert.equal(state.viewDetailOpen, true);
+  assert.equal(state.selectedViewGroup.name, 'trips.show');
+  assert.equal(state.selectedViewRender.render_order, 1);
+  assert.equal(detailFocuses, 1);
+  assert.equal(state.$refs.content.scrollTop, 0);
+
+  const wire = {
     loadViewData: async (renderOrder) => {
       calls.push(renderOrder);
 
-      return { label: 'Context view' };
+      return { label: `Render ${renderOrder}` };
     },
-  }, 7, () => highlighted++);
+  };
 
-  state.loadViewData();
+  state.loadSelectedViewData(wire);
   assert.equal(state.viewDataLoading, true);
   await Promise.resolve();
   await Promise.resolve();
 
-  assert.deepEqual(calls, [7]);
+  assert.deepEqual(calls, [1]);
   assert.equal(state.viewDataLoaded, true);
   assert.equal(state.viewDataIsEmpty, false);
-  assert.match(state.formattedViewData, /Context view/);
+  assert.match(state.formattedViewData, /Render 1/);
   assert.equal(highlighted, 1);
 
-  state.loadViewData();
-  assert.deepEqual(calls, [7]);
+  state.loadSelectedViewData(wire);
+  assert.deepEqual(calls, [1]);
 
-  const failed = createViewDataState({ loadViewData: async () => Promise.reject(new Error('expired')) }, 8);
-  failed.loadViewData();
+  state.selectViewRender(2);
+  assert.equal(state.viewDataLoaded, false);
+  state.loadSelectedViewData(wire);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.deepEqual(calls, [1, 2]);
+
+  state.closeViewDetail();
+  assert.equal(state.viewDetailOpen, false);
+  assert.equal(rowFocuses, 1);
+
+  state.setViewFilter('framework');
+  assert.equal(rows[0].hidden, true);
+  assert.equal(rows[1].hidden, false);
+  assert.equal(state.viewSelected, null);
+  assert.equal(state.visibleViewRenderCount, 1);
+});
+
+test('Views reports retryable lazy-data failures', async () => {
+  const state = createNewDebugBar(summary, runtime());
+  state.$nextTick = (callback) => callback();
+  state.initializeViews([{
+    id: 'view-1',
+    origin: 'application',
+    items: [{ render_order: 8 }],
+  }]);
+  state.selectViewGroup('view-1');
+
+  state.loadSelectedViewData({ loadViewData: async () => Promise.reject(new Error('expired')) });
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(failed.viewDataLoading, false);
-  assert.equal(failed.viewDataError, true);
+  assert.equal(state.viewDataLoading, false);
+  assert.equal(state.viewDataError, true);
 });
 
 test('timeline controls filter sections and search labels', () => {

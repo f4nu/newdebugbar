@@ -723,5 +723,73 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(back).color !== 'rgb(0, 128, 0)';
             })()
             JS)
+        ->click('[data-ndb-section="views"]')
+        ->assertVisible('[data-ndb-section-panel="views"]')
+        ->assertVisible('[data-ndb-view-workspace]')
+        ->assertVisible('[data-ndb-view-detail-empty]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-view-workspace]');
+                const list = document.querySelector('[data-ndb-view-list-panel]');
+                const row = document.querySelector('[data-ndb-view-group]:not([hidden])');
+                const name = row.querySelector('[data-ndb-view-list-name]');
+                const search = document.querySelector('[data-ndb-view-search]');
+                const filter = document.querySelector('[data-ndb-view-filter]');
+                const detail = document.querySelector('[data-ndb-view-detail-pane]');
+
+                const elements = [workspace, list, row, detail];
+                const checks = {
+                    backgrounds: elements.every(
+                        (element) => getComputedStyle(element).backgroundColor !== 'rgb(255, 0, 0)',
+                    ),
+                    borders: elements.every((element) => getComputedStyle(element).borderLeftWidth !== '20px'),
+                    rowDisplay: getComputedStyle(row).display === 'grid',
+                    rowHeight: row.getBoundingClientRect().height < 91,
+                    rowPadding: Number.parseFloat(getComputedStyle(row).paddingLeft) < 50,
+                    nameSize: Number.parseFloat(getComputedStyle(name).fontSize) === 12,
+                    nameFont: !getComputedStyle(name).fontFamily.includes('monospace'),
+                    nameColor: getComputedStyle(name).color !== 'rgb(0, 128, 0)',
+                    searchHeight: search.getBoundingClientRect().height < 91,
+                    filterHeight: filter.getBoundingClientRect().height < 91,
+                    searchPadding: Number.parseFloat(getComputedStyle(search).paddingLeft) < 50,
+                    filterPadding: Number.parseFloat(getComputedStyle(filter).paddingLeft) < 50,
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('View list isolation failed: ' + failures.join(', '));
+
+                return true;
+            })()
+            JS)
+        ->click('[data-ndb-view-group]:not([hidden])')
+        ->assertVisible('[data-ndb-view-detail]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const detail = document.querySelector('[data-ndb-view-detail]');
+                const name = document.querySelector('[data-ndb-view-detail-name]');
+                const tabs = [...document.querySelectorAll('[data-ndb-view-detail-tab]')];
+                const back = document.querySelector('[data-ndb-view-detail-back]');
+
+                const checks = {
+                    background: getComputedStyle(detail).backgroundColor !== 'rgb(255, 0, 0)',
+                    border: getComputedStyle(detail).borderLeftWidth !== '20px',
+                    padding: Number.parseFloat(getComputedStyle(detail).paddingLeft) < 50,
+                    nameSize: Number.parseFloat(getComputedStyle(name).fontSize) === 16,
+                    nameFont: !getComputedStyle(name).fontFamily.includes('monospace'),
+                    nameColor: getComputedStyle(name).color !== 'rgb(0, 128, 0)',
+                    tabCount: tabs.length === 3,
+                    tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                    tabBackground: tabs.every(
+                        (tab) => getComputedStyle(tab).backgroundColor !== 'rgb(255, 0, 255)',
+                    ),
+                    backHeight: back.getBoundingClientRect().height < 91,
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('View detail isolation failed: ' + failures.join(', '));
+
+                return true;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

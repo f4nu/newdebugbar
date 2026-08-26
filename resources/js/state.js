@@ -256,46 +256,6 @@ const defaultRuntime = () => ({
   },
 });
 
-export function createViewDataState(wire, renderOrder, highlight = () => {}) {
-  return {
-    viewDataOpen: false,
-    viewData: null,
-    viewDataLoaded: false,
-    viewDataLoading: false,
-    viewDataError: false,
-
-    get viewDataIsEmpty() {
-      return this.viewData === null || typeof this.viewData !== 'object' || Object.keys(this.viewData).length === 0;
-    },
-
-    get formattedViewData() {
-      return JSON.stringify(this.viewData ?? {}, null, 2);
-    },
-
-    loadViewData(force = false) {
-      if (!force && (this.viewDataLoaded || this.viewDataLoading)) return;
-
-      const action = wire?.loadViewData;
-      if (typeof action !== 'function') return;
-
-      this.viewDataLoading = true;
-      this.viewDataError = false;
-      Promise.resolve(action.call(wire, renderOrder))
-        .then((data) => {
-          this.viewData = data ?? {};
-          this.viewDataLoaded = true;
-          this.viewDataLoading = false;
-          if (typeof this.$nextTick === 'function') this.$nextTick(highlight);
-          else highlight();
-        })
-        .catch(() => {
-          this.viewDataLoading = false;
-          this.viewDataError = true;
-        });
-    },
-  };
-}
-
 export function createNewDebugBar(
   summary = {},
   runtime = null,
@@ -423,8 +383,20 @@ export function createNewDebugBar(
     queryExplainExecution: null,
     queryExplainScrollTop: null,
     queryFocusFilter: null,
-    viewSort: 'name',
-    viewSortDirection: 'asc',
+    viewGroups: [],
+    viewFilter: 'application',
+    viewSearch: '',
+    viewSelected: null,
+    viewDetailOpen: false,
+    viewDetailTab: 'overview',
+    viewRenderOrder: null,
+    viewData: null,
+    viewDataLoaded: false,
+    viewDataLoading: false,
+    viewDataError: false,
+    viewDataRequest: 0,
+    visibleViewCount: 0,
+    visibleViewRenderCount: 0,
     visibleQueryCount: summary.query_count ?? 0,
     modelGroupCount: 0,
     modelSearch: '',
@@ -747,6 +719,34 @@ export function createNewDebugBar(
       return (
         this.authorizationDecisions.find((decision) => decision.execution === this.authorizationSelected) ?? null
       );
+    },
+
+    get selectedViewGroup() {
+      return this.viewGroups.find((group) => group.id === this.viewSelected) ?? null;
+    },
+
+    get selectedViewRender() {
+      return (
+        this.selectedViewGroup?.items?.find((view) => Number(view.render_order) === Number(this.viewRenderOrder)) ??
+        null
+      );
+    },
+
+    get viewDataIsEmpty() {
+      return this.viewData === null || typeof this.viewData !== 'object' || Object.keys(this.viewData).length === 0;
+    },
+
+    get formattedViewData() {
+      return JSON.stringify(this.viewData ?? {}, null, 2);
+    },
+
+    get selectedViewSourceKindLabel() {
+      return {
+        compiled: 'Compiled Laravel view',
+        framework: 'Package or framework view',
+        template: 'Application template',
+        unavailable: 'Source unavailable',
+      }[this.selectedViewRender?.source_kind] ?? 'Source unavailable';
     },
 
     get selectedEvent() {
@@ -1126,7 +1126,7 @@ export function createNewDebugBar(
         }
         if (this.selected === 'http_client') this.applyHttpClientView();
         if (this.selected === 'notifications') this.applyNotificationView();
-        if (this.selected === 'views') this.applyViewSort();
+        if (this.selected === 'views') this.applyViewFilters();
         if (this.selected === 'authorization') this.applyAuthorizationView();
         if (this.selected === 'timeline') this.applyTimelineFilters();
         if (this.selected === 'events') this.applyEventFilters();
@@ -1619,7 +1619,7 @@ export function createNewDebugBar(
         this.sectionTransitioning = false;
         this.syncSectionPanels();
         this.applyQueryView();
-        this.applyViewSort();
+        this.applyViewFilters();
         this.applyAuthorizationFilters();
         this.applyTimelineFilters();
         this.applyEventFilters();
@@ -1939,8 +1939,16 @@ export function createNewDebugBar(
       this.queryExplainScrollTop = null;
       this.queryFocusFilter = null;
       this.visibleQueryCount = 0;
-      this.viewSort = 'name';
-      this.viewSortDirection = 'asc';
+      this.viewGroups = [];
+      this.viewFilter = 'application';
+      this.viewSearch = '';
+      this.viewSelected = null;
+      this.viewDetailOpen = false;
+      this.viewDetailTab = 'overview';
+      this.viewRenderOrder = null;
+      this.resetViewData();
+      this.visibleViewCount = 0;
+      this.visibleViewRenderCount = 0;
       this.modelGroupCount = 0;
       this.modelSearch = '';
       this.visibleModelCount = 0;
@@ -3362,43 +3370,145 @@ export function createNewDebugBar(
       browser.highlight?.();
     },
 
-    toggleViewSort(sort) {
-      if (!['name', 'count'].includes(sort)) return;
-
-      if (this.viewSort === sort) {
-        this.viewSortDirection = this.viewSortDirection === 'asc' ? 'desc' : 'asc';
-      } else {
-        this.viewSort = sort;
-        this.viewSortDirection = sort === 'count' ? 'desc' : 'asc';
-      }
-
-      this.applyViewSort();
+    initializeViews(groups) {
+      this.viewGroups = Array.isArray(groups) ? groups : [];
+      this.viewFilter = this.viewGroups.some((group) => group.origin === 'application') ? 'application' : 'all';
+      this.viewSearch = '';
+      this.viewSelected = null;
+      this.viewDetailOpen = false;
+      this.viewDetailTab = 'overview';
+      this.viewRenderOrder = null;
+      this.resetViewData();
+      this.$nextTick?.(() => this.applyViewFilters());
     },
 
-    applyViewSort() {
+    setViewFilter(filter) {
+      if (!['application', 'all', 'framework'].includes(filter)) return;
+
+      this.viewFilter = filter;
+      this.applyViewFilters();
+    },
+
+    applyViewFilters() {
       const groups = this.$refs?.viewGroups ?? this.$root?.querySelector?.('[x-ref="viewGroups"]');
 
-      if (!groups?.children) return;
+      if (!groups?.querySelectorAll) {
+        this.visibleViewCount = 0;
+        this.visibleViewRenderCount = 0;
 
-      [...groups.children]
-        .sort((left, right) => {
-          const direction = this.viewSortDirection === 'asc' ? 1 : -1;
+        return;
+      }
 
-          if (this.viewSort === 'count') {
-            return (
-              (Number(left.dataset.ndbCount ?? 0) - Number(right.dataset.ndbCount ?? 0)) * direction ||
-              Number(left.dataset.ndbOrder ?? 0) - Number(right.dataset.ndbOrder ?? 0)
-            );
-          }
+      const search = this.viewSearch.toLowerCase().trim();
+      let visibleGroups = 0;
+      let visibleRenders = 0;
 
-          return (
-            String(left.dataset.ndbName ?? '').localeCompare(String(right.dataset.ndbName ?? ''), undefined, {
-              numeric: true,
-              sensitivity: 'base',
-            }) * direction || Number(left.dataset.ndbOrder ?? 0) - Number(right.dataset.ndbOrder ?? 0)
-          );
+      [...groups.querySelectorAll('[data-ndb-view-group]')].forEach((group) => {
+        const matchesFilter = this.viewFilter === 'all' || group.dataset.ndbViewOrigin === this.viewFilter;
+        const matchesSearch = search === '' || group.dataset.ndbViewSearchValue?.includes(search);
+        group.hidden = !matchesFilter || !matchesSearch;
+
+        if (!group.hidden) {
+          visibleGroups++;
+          visibleRenders += Number(group.dataset.ndbViewCount ?? 0);
+        }
+      });
+
+      this.visibleViewCount = visibleGroups;
+      this.visibleViewRenderCount = visibleRenders;
+
+      if (
+        this.viewSelected &&
+        ![...groups.querySelectorAll('[data-ndb-view-group]:not([hidden])')].some(
+          (group) => group.dataset.ndbViewGroup === this.viewSelected,
+        )
+      ) {
+        this.viewSelected = null;
+        this.viewDetailOpen = false;
+        this.viewRenderOrder = null;
+        this.resetViewData();
+      }
+    },
+
+    selectViewGroup(id) {
+      const group = this.viewGroups.find((candidate) => candidate.id === id);
+
+      if (!group) return;
+
+      this.viewSelected = id;
+      this.viewDetailOpen = true;
+      this.viewDetailTab = 'overview';
+      this.viewRenderOrder = group.items?.[0]?.render_order ?? null;
+      this.resetViewData();
+      this.$nextTick?.(() => {
+        if (this.$refs?.content) this.$refs.content.scrollTop = 0;
+        this.$refs?.viewDetail?.focus?.({ preventScroll: true });
+      });
+    },
+
+    closeViewDetail() {
+      const id = this.viewSelected;
+      this.viewDetailOpen = false;
+      this.$nextTick?.(() => {
+        const groups = this.$refs?.viewGroups?.querySelectorAll?.('[data-ndb-view-group]') ?? [];
+        [...groups].find((group) => group.dataset.ndbViewGroup === id)?.focus?.({ preventScroll: true });
+      });
+    },
+
+    setViewDetailTab(tab) {
+      if (!['overview', 'data', 'source'].includes(tab)) return;
+
+      this.viewDetailTab = tab;
+    },
+
+    selectViewRender(renderOrder) {
+      const order = Number(renderOrder);
+
+      if (!this.selectedViewGroup?.items?.some((view) => Number(view.render_order) === order)) return;
+      if (Number(this.viewRenderOrder) === order) return;
+
+      this.viewRenderOrder = order;
+      this.resetViewData();
+    },
+
+    resetViewData() {
+      this.viewDataRequest++;
+      this.viewData = null;
+      this.viewDataLoaded = false;
+      this.viewDataLoading = false;
+      this.viewDataError = false;
+    },
+
+    loadSelectedViewData(wire, force = false) {
+      if (!force && (this.viewDataLoaded || this.viewDataLoading)) return;
+
+      const renderOrder = Number(this.viewRenderOrder);
+      const action = wire?.loadViewData;
+
+      if (!Number.isInteger(renderOrder) || renderOrder <= 0 || typeof action !== 'function') {
+        this.viewDataError = true;
+
+        return;
+      }
+
+      const request = ++this.viewDataRequest;
+      this.viewDataLoading = true;
+      this.viewDataError = false;
+      Promise.resolve(action.call(wire, renderOrder))
+        .then((data) => {
+          if (request !== this.viewDataRequest || renderOrder !== Number(this.viewRenderOrder)) return;
+
+          this.viewData = data ?? {};
+          this.viewDataLoaded = true;
+          this.viewDataLoading = false;
+          this.$nextTick?.(() => browser.highlight?.());
         })
-        .forEach((group) => groups.appendChild?.(group));
+        .catch(() => {
+          if (request !== this.viewDataRequest) return;
+
+          this.viewDataLoading = false;
+          this.viewDataError = true;
+        });
     },
 
     initializeAuthorization(decisions) {
@@ -4128,9 +4238,6 @@ export function createNewDebugBar(
       }
 
       if (event.key === 'Escape') {
-        const viewDataOwner = event.target?.closest?.('[data-ndb-view-render]');
-        if (viewDataOwner?.querySelector?.('[data-ndb-view-data-trigger][aria-expanded="true"]')) return;
-
         if (this.paletteOpen) this.closePalette();
         else if (this.requestPickerScope) this.closeRequestPicker();
         else if (this.mobileToolbarMenu) this.closeMobileToolbarMenu();

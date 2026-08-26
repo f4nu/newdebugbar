@@ -549,26 +549,146 @@ final class SectionAnalyzer
     {
         $items = $this->items($profile, 'views');
         $groups = [];
+        $sourceCounts = ['application' => 0, 'framework' => 0];
+        $uniqueNames = [];
 
         foreach ($items as $index => $item) {
             $item['render_order'] = $index + 1;
+            $item['origin'] = $this->viewOrigin($item);
+            $item['source_label'] = $this->viewSourceLabel($item['source'] ?? null);
+            $item['source_kind'] = $this->viewSourceKind($item);
+            $item['composers'] = array_values(array_map(function (mixed $composer): array {
+                $composer = is_array($composer) ? $composer : [];
+
+                return [
+                    ...$composer,
+                    'source_label' => $this->viewSourceLabel($composer['source'] ?? null),
+                ];
+            }, is_array($item['composers'] ?? null) ? $item['composers'] : []));
+            $item['composer_count'] = count(is_array($item['composers'] ?? null) ? $item['composers'] : []);
+            $item['data_key_count'] = count(is_array($item['data'] ?? null) ? $item['data'] : []);
 
             if (isset($profile['sections']['views']['payload']['items'][$index])) {
-                $profile['sections']['views']['payload']['items'][$index]['render_order'] = $index + 1;
+                $profile['sections']['views']['payload']['items'][$index] = $item;
             }
 
-            $name = (string) ($item['name'] ?? 'unknown');
-            $groups[$name] ??= ['name' => $name, 'count' => 0, 'items' => []];
-            $groups[$name]['count']++;
-            $groups[$name]['items'][] = $item;
+            $name = trim((string) ($item['name'] ?? '')) ?: 'Unnamed view';
+            $signature = $item['origin']."\0".$name;
+            $sourceCounts[$item['origin']]++;
+            $uniqueNames[$name] = true;
+
+            $groups[$signature] ??= [
+                'id' => 'view-'.(count($groups) + 1),
+                'name' => $name,
+                'display_name' => $this->viewDisplayName($name, $item),
+                'origin' => $item['origin'],
+                'count' => 0,
+                'items' => [],
+            ];
+            $groups[$signature]['count']++;
+            $groups[$signature]['items'][] = $item;
         }
 
+        foreach ($groups as &$group) {
+            $searchParts = [$group['name'], $group['origin']];
+
+            foreach ($group['items'] as $item) {
+                $searchParts[] = $item['source_label'];
+
+                foreach ((array) ($item['composers'] ?? []) as $composer) {
+                    $searchParts[] = is_array($composer) ? ($composer['name'] ?? '') : '';
+                }
+            }
+
+            $group['search'] = mb_strtolower(implode(' ', array_filter(array_map('strval', $searchParts))));
+        }
+        unset($group);
+
+        $groups = array_values($groups);
+        usort($groups, static fn (array $left, array $right): int => ($left['origin'] === 'application' ? 0 : 1) <=> ($right['origin'] === 'application' ? 0 : 1)
+            ?: ($left['items'][0]['render_order'] ?? 0) <=> ($right['items'][0]['render_order'] ?? 0));
+
         if (isset($profile['sections']['views'])) {
-            $profile['sections']['views']['summary']['unique_views'] = count($groups);
-            $profile['sections']['views']['payload']['groups'] = array_values($groups);
+            $profile['sections']['views']['summary']['unique_views'] = count($uniqueNames);
+            $profile['sections']['views']['summary']['application_count'] = $sourceCounts['application'];
+            $profile['sections']['views']['summary']['framework_count'] = $sourceCounts['framework'];
+            $profile['sections']['views']['summary']['application_views'] = count(array_filter(
+                $groups,
+                static fn (array $group): bool => $group['origin'] === 'application',
+            ));
+            $profile['sections']['views']['summary']['framework_views'] = count(array_filter(
+                $groups,
+                static fn (array $group): bool => $group['origin'] === 'framework',
+            ));
+            $profile['sections']['views']['payload']['groups'] = $groups;
         }
 
         return $profile;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function viewOrigin(array $item): string
+    {
+        $file = str_replace('\\', '/', (string) ($item['source']['file'] ?? ''));
+
+        if (
+            str_starts_with($file, '/')
+            || preg_match('/^[A-Za-z]:\//', $file) === 1
+            || str_starts_with($file, 'phar://')
+            || str_starts_with($file, 'vendor/')
+            || str_starts_with($file, 'storage/framework/views/')
+            || str_contains($file, '/vendor/')
+            || str_contains($file, '/storage/framework/views/')
+        ) {
+            return 'framework';
+        }
+
+        return 'application';
+    }
+
+    /** @param array<string, mixed> $item */
+    private function viewSourceKind(array $item): string
+    {
+        $file = str_replace('\\', '/', (string) ($item['source']['file'] ?? ''));
+
+        if ($file === '') {
+            return 'unavailable';
+        }
+
+        if (str_starts_with($file, 'storage/framework/views/') || str_contains($file, '/storage/framework/views/')) {
+            return 'compiled';
+        }
+
+        return $item['origin'] === 'framework' ? 'framework' : 'template';
+    }
+
+    /** @param array<string, mixed> $item */
+    private function viewDisplayName(string $name, array $item): string
+    {
+        if ($item['origin'] === 'application') {
+            return $name;
+        }
+
+        if ($item['source_kind'] === 'compiled' && (str_contains($name, '/') || str_ends_with($name, '.php'))) {
+            return 'Compiled Blade view';
+        }
+
+        if (str_contains($name, '/') || str_contains($name, '\\')) {
+            $basename = pathinfo(str_replace('\\', '/', $name), PATHINFO_FILENAME);
+
+            return str_ends_with($basename, '.blade') ? substr($basename, 0, -6) : $basename;
+        }
+
+        return $name;
+    }
+
+    private function viewSourceLabel(mixed $source): ?string
+    {
+        if (! is_array($source) || ! is_string($source['file'] ?? null) || $source['file'] === '') {
+            return null;
+        }
+
+        return $source['file'].':'.max(1, (int) ($source['line'] ?? 1));
     }
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */

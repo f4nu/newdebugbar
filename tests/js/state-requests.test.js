@@ -30,8 +30,11 @@ test('a new application profile keeps a matching section and resets stale sectio
   state.selected = 'logs';
   state.inspectorOpen = true;
   state.loadedSection = 'logs';
-  state.viewSort = 'count';
-  state.viewSortDirection = 'desc';
+  state.viewGroups = [{ id: 'view-1' }];
+  state.viewFilter = 'framework';
+  state.viewSearch = 'pagination';
+  state.viewSelected = 'view-1';
+  state.viewDetailOpen = true;
   state.eventSource = 'framework';
   state.eventSearch = 'booted';
 
@@ -45,8 +48,11 @@ test('a new application profile keeps a matching section and resets stale sectio
   assert.equal(state.summary.path, '/api/jobs');
   assert.equal(state.selected, 'logs');
   assert.equal(state.loadedSection, 'logs');
-  assert.equal(state.viewSort, 'name');
-  assert.equal(state.viewSortDirection, 'asc');
+  assert.deepEqual(state.viewGroups, []);
+  assert.equal(state.viewFilter, 'application');
+  assert.equal(state.viewSearch, '');
+  assert.equal(state.viewSelected, null);
+  assert.equal(state.viewDetailOpen, false);
   assert.equal(state.eventSource, 'all');
   assert.equal(state.eventSearch, '');
   assert.equal(sectionsLoaded, 1);

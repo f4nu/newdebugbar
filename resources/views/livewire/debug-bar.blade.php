@@ -8,7 +8,7 @@
         $nextTick(() => {
             syncSectionHeading();
             syncSectionPanels();
-            applyViewSort();
+            applyViewFilters();
             applyAuthorizationFilters();
             applyTimelineFilters();
             applyEventFilters();

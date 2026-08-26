@@ -40,6 +40,38 @@ it('keeps Timeline on shared inspector geometry with namespaced behavior hooks',
         );
 });
 
+it('keeps Views on one shared workspace and one active lazy detail', function () {
+    $root = dirname(__DIR__, 2);
+    $views = file_get_contents($root.'/resources/views/livewire/sections/views.blade.php');
+    $state = file_get_contents($root.'/resources/js/state.js');
+
+    expect($views)
+        ->toContain(
+            '<x-newdebugbar::inspector-workspace',
+            '<x-newdebugbar::inspector-list-panel',
+            '<x-newdebugbar::inspector-list-controls',
+            '<x-newdebugbar::search-field',
+            '<x-newdebugbar::select-field',
+            '<x-newdebugbar::inspector-detail-pane',
+            '<x-newdebugbar::inspector-detail-tabs',
+            '<template x-if="selectedViewGroup">',
+        )
+        ->not->toContain(
+            '<details',
+            '<x-newdebugbar::popover-surface',
+            'data-ndb-view-sort',
+            'newDebugBar.viewData',
+        )
+        ->and($state)
+        ->not->toContain(
+            'createViewDataState',
+            'viewSort:',
+            'viewSortDirection:',
+            'toggleViewSort(',
+            'applyViewSort(',
+        );
+});
+
 it('catalogs only canonical shared component families in Studio', function () {
     $root = dirname(__DIR__, 2);
     $componentDirectory = $root.'/resources/views/components';
@@ -239,7 +271,6 @@ it('uses one popover surface for toolbar and inspector menus', function () {
         'components/mobile-toolbar-popover.blade.php',
         'components/request-switcher.blade.php',
         'components/mail-actions.blade.php',
-        'livewire/sections/views.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::popover-surface');
@@ -600,6 +631,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'livewire/sections/notifications.blade.php',
         'livewire/sections/overview.blade.php',
         'livewire/sections/validation.blade.php',
+        'livewire/sections/views.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::inspector-workspace')
@@ -740,6 +772,7 @@ it('uses centered segmented controls across inspector detail panels', function (
         'components/model-group-detail.blade.php',
         'components/notification-detail.blade.php',
         'components/query-detail.blade.php',
+        'livewire/sections/views.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::inspector-detail-tabs')

@@ -36,6 +36,7 @@ final class DebugBar extends Component
         'queries',
         'timeline',
         'validation',
+        'views',
     ];
 
     /** @var array<string, string> */
