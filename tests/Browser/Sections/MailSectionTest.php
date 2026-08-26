@@ -126,6 +126,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && subject.closest('[data-ndb-inspector-detail-header-primary]') === primary
                     && header.querySelector('[data-ndb-mail-status]') === null
                     && metadataFacts.length === 4
+                    && metadataFacts.every((fact) => fact.hasAttribute('data-ndb-inspector-fact'))
                     && metadataLabels.join('|') === 'Attachments|Duration|Driver|Source'
                     && getComputedStyle(metadataGrid).display === 'grid'
                     && getComputedStyle(metadataGrid).borderTopWidth === '0px'

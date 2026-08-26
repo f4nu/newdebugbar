@@ -50,15 +50,14 @@
     </x-slot:identity>
 
     <x-slot:metadata data-ndb-mail-metadata class="ndb:w-full">
-        <div
+        <x-newdebugbar::inspector-facts
+            :bordered="false"
+            columns="4"
             data-ndb-mail-facts
-            class="ndb:grid ndb:w-full ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:grid-cols-4"
+            class="ndb:w-full ndb:gap-x-4 ndb:p-0"
         >
-            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                    Attachments
-                </dt>
-                <dd class="ndb:mt-0.5 ndb:min-w-0">
+            <x-newdebugbar::inspector-fact label="Attachments" data-ndb-mail-fact>
+                <x-slot:value>
                     <button
                         type="button"
                         x-show.important="selectedMailMessage.attachment_count > 0"
@@ -70,14 +69,11 @@
                         x-show.important="selectedMailMessage.attachment_count === 0"
                         class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
                     >None</span>
-                </dd>
-            </div>
-            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                    Duration
-                </dt>
-                <dd
-                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                </x-slot:value>
+            </x-newdebugbar::inspector-fact>
+            <x-newdebugbar::inspector-fact label="Duration" data-ndb-mail-fact>
+                <x-slot:value
+                    class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
                     x-text="
                         selectedMailMessage.status === 'sent'
                             ? selectedMailMessage.duration_ms.toFixed(2) + ' ms'
@@ -85,27 +81,25 @@
                               ? selectedMailMessage.delay_seconds + ' s delay'
                               : selectedMailMessage.status_label
                     "
-                ></dd>
-            </div>
-            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Driver</dt>
-                <dd
-                    :title="selectedMailMessage.delivery_label"
-                    class="ndb:mt-0.5 ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                ></x-slot:value>
+            </x-newdebugbar::inspector-fact>
+            <x-newdebugbar::inspector-fact label="Driver" data-ndb-mail-fact>
+                <x-slot:value
+                    ::title="selectedMailMessage.delivery_label"
+                    class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
                     x-text="selectedMailMessage.delivery_label"
-                ></dd>
-            </div>
-            <div data-ndb-mail-fact class="ndb:min-w-0 ndb:bg-transparent">
-                <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">Source</dt>
-                <dd class="ndb:mt-0.5 ndb:min-w-0">
+                ></x-slot:value>
+            </x-newdebugbar::inspector-fact>
+            <x-newdebugbar::inspector-fact label="Source" data-ndb-mail-fact>
+                <x-slot:value>
                     <x-newdebugbar::inspector-source-link
                         ::title="selectedMailMessage.callsite_label"
                         @click="setMailDetailTab('source')"
                     >
                         <x-slot:value x-text="selectedMailMessage.callsite_short_label"></x-slot:value>
                     </x-newdebugbar::inspector-source-link>
-                </dd>
-            </div>
-        </div>
+                </x-slot:value>
+            </x-newdebugbar::inspector-fact>
+        </x-newdebugbar::inspector-facts>
     </x-slot:metadata>
 </x-newdebugbar::inspector-detail-header>
