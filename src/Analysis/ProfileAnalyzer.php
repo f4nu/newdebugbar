@@ -151,7 +151,7 @@ final class ProfileAnalyzer
             $findings[] = $this->finding(
                 is_string($runtimeType) ? 'runtime.slow' : 'request.slow',
                 'warning',
-                'overview',
+                'timeline',
                 is_string($runtimeType)
                     ? sprintf('The runtime operation took %s ms.', $this->number($requestDuration))
                     : sprintf('The request took %s ms.', $this->number($requestDuration)),

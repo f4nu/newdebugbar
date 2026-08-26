@@ -43,6 +43,7 @@ it('produces stable bounded findings with supporting evidence', function () {
         'cache.high_miss_rate',
         'collector.truncated',
     ])->and($findings[1])->toMatchArray([
+        'section' => 'timeline',
         'action' => [
             'label' => 'Review request timing',
             'section' => 'timeline',
