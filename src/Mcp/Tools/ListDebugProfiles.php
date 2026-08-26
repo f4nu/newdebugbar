@@ -46,7 +46,7 @@ final class ListDebugProfiles extends DebugTool
             'limit' => 'nullable|integer|min:1|max:'.$this->store->maxProfiles(),
         ]);
 
-        return $this->response($this->profiles->list([
+        return $this->safeResponse(fn (): array => $this->profiles->list([
             'method' => isset($input['method']) ? strtoupper($input['method']) : null,
             'path' => $input['path'] ?? null,
             'status' => $input['status'] ?? null,

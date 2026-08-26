@@ -50,4 +50,7 @@ test('the real stdio server advertises complete profile access', function () {
     } finally {
         $client->disconnect();
     }
-});
+})->skip(
+    fn (): bool => ! class_exists(Client::class),
+    'The installed Laravel MCP version does not provide its test client.',
+);

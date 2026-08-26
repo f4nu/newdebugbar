@@ -6,6 +6,7 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Tool;
+use Throwable;
 
 abstract class DebugTool extends Tool
 {
@@ -30,5 +31,15 @@ abstract class DebugTool extends Tool
     protected function response(array $content): ResponseFactory
     {
         return Response::structured($content);
+    }
+
+    /** @param callable(): array<string, mixed> $content */
+    protected function safeResponse(callable $content): ResponseFactory
+    {
+        try {
+            return $this->response($content());
+        } catch (Throwable) {
+            return Response::make(Response::error('The debug profile could not be processed.'));
+        }
     }
 }

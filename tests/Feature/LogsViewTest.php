@@ -3,17 +3,19 @@
 use NewDebugBar\Analysis\LogAnalyzer;
 
 it('renders structured log details without repeating the raw record', function () {
+    $message = "Reservation refresh failed.\nThe cached itinerary remains available.";
+    $exceptionMessage = 'Partner rejected reservation KYO-441.';
     $analysis = app(LogAnalyzer::class)->analyze([
         [
             'level' => 'error',
-            'message' => "Reservation refresh failed.\nThe cached itinerary remains available.",
+            'message' => $message,
             'channel' => 'morrow-audit',
             'context' => ['trip_id' => 41, 'actor' => ['type' => 'planner', 'id' => 7]],
             'callsite' => ['file' => 'app/Actions/RefreshTrip.php', 'line' => 48],
             'stack' => [['file' => 'app/Actions/RefreshTrip.php', 'line' => 48, 'function' => 'handle']],
             'related_exception' => [
                 'class' => RuntimeException::class,
-                'message' => 'Partner rejected reservation KYO-441.',
+                'message' => $exceptionMessage,
                 'file' => 'app/Partners/RailPartner.php',
                 'line' => 91,
             ],
@@ -68,11 +70,16 @@ it('renders structured log details without repeating the raw record', function (
             'ndb:grid-cols-[4.75rem_minmax(0,1fr)_5.5rem]',
         );
 
-    expect($html)
-        ->toContain(
-            ">Reservation refresh failed.\nThe cached itinerary remains available.</h3>",
-            '>Partner rejected reservation KYO-441.</p>',
-        );
+    $document = new DOMDocument;
+    $previousLibxmlState = libxml_use_internal_errors(true);
+    $document->loadHTML('<?xml encoding="utf-8" ?><!doctype html><html><body>'.$html.'</body></html>');
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousLibxmlState);
+    $xpath = new DOMXPath($document);
+
+    expect(trim((string) $xpath->evaluate('string(//*[@data-ndb-log-details-title])')))->toBe($message)
+        ->and(trim((string) $xpath->evaluate('string(//*[@data-ndb-log-related-exception]//p[1])')))
+        ->toBe($exceptionMessage);
 });
 
 it('renders a truthful empty state when no log records were captured', function () {

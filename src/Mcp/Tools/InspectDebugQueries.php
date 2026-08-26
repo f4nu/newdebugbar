@@ -45,7 +45,7 @@ final class InspectDebugQueries extends DebugTool
             'limit' => 'nullable|integer|min:1|max:'.$this->profiles->maxItems(),
         ]);
 
-        return $this->response($this->profiles->queries(
+        return $this->safeResponse(fn (): array => $this->profiles->queries(
             $input['profile_id'],
             $input['filter'] ?? 'all',
             $input['search'] ?? '',

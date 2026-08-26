@@ -39,7 +39,7 @@ final class GetDebugFindings extends DebugTool
             'limit' => 'nullable|integer|min:1|max:'.$this->profiles->maxItems(),
         ]);
 
-        return $this->response($this->profiles->findings(
+        return $this->safeResponse(fn (): array => $this->profiles->findings(
             $input['profile_id'],
             (int) ($input['cursor'] ?? 0),
             (int) ($input['limit'] ?? $this->defaultLimit()),

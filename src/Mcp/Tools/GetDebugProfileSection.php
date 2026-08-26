@@ -41,7 +41,7 @@ final class GetDebugProfileSection extends DebugTool
             'limit' => 'nullable|integer|min:1|max:'.$this->profiles->maxItems(),
         ]);
 
-        return $this->response($this->profiles->section(
+        return $this->safeResponse(fn (): array => $this->profiles->section(
             $input['profile_id'],
             $input['section'],
             (int) ($input['cursor'] ?? 0),

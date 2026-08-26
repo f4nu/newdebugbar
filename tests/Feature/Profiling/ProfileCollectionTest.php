@@ -7,6 +7,7 @@ use Illuminate\Cache\Events\CacheFailedOver;
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\KeyForgetFailed;
 use Illuminate\Cache\Events\KeyWriteFailed;
+use Illuminate\Cache\Events\WritingKey;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
@@ -125,28 +126,43 @@ it('captures bounded cache timing source value and failure metadata', function (
     $failureCount = (int) class_exists(KeyWriteFailed::class)
         + (int) class_exists(KeyForgetFailed::class)
         + (int) class_exists(CacheFailedOver::class);
+    $flushCount = (int) class_exists(CacheFlushed::class);
+    $cacheTimingAvailable = class_exists(WritingKey::class);
 
     expect($section['summary'])
         ->hits->toBeGreaterThanOrEqual(2)
         ->misses->toBeGreaterThanOrEqual(3)
         ->writes->toBeGreaterThanOrEqual(4)
         ->forgets->toBeGreaterThanOrEqual(2)
-        ->flushes->toBe(1)
+        ->flushes->toBe($flushCount)
         ->failures->toBe($failureCount)
-        ->timed_count->toBeGreaterThan(0)
-        ->duration_ms->toBeGreaterThanOrEqual(0.0)
         ->and($write)
         ->driver->toBe('array')
-        ->duration_ms->toBeNumeric()->toBeGreaterThanOrEqual(0)
-        ->duration_scope->toBe('operation')
         ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
         ->stack->not->toBeEmpty()
         ->and($write['value'])->toBe(['high' => 24, 'low' => 15])
-        ->and($hit['value'])->toBe(['high' => 24, 'low' => 15])
-        ->and($batchWrites)->toHaveCount(2)
-        ->and($batchWrites->pluck('duration_id')->unique())->toHaveCount(1)
-        ->and($batchWrites->pluck('batch_size')->unique()->all())->toBe([2])
-        ->and($batchWrites->pluck('value')->all())->toBe(['A compact autumn itinerary', true]);
+        ->and($hit['value'])->toBe(['high' => 24, 'low' => 15]);
+
+    if ($cacheTimingAvailable) {
+        expect($section['summary'])
+            ->timed_count->toBeGreaterThan(0)
+            ->duration_ms->toBeGreaterThanOrEqual(0.0)
+            ->and($write)
+            ->duration_ms->toBeNumeric()->toBeGreaterThanOrEqual(0)
+            ->duration_scope->toBe('operation')
+            ->and($batchWrites)->toHaveCount(2)
+            ->and($batchWrites->pluck('duration_id')->unique())->toHaveCount(1)
+            ->and($batchWrites->pluck('batch_size')->unique()->all())->toBe([2])
+            ->and($batchWrites->pluck('value')->all())->toBe(['A compact autumn itinerary', true]);
+    } else {
+        expect($section['summary'])
+            ->timed_count->toBe(0)
+            ->duration_ms->toEqual(0)
+            ->and($write)
+            ->duration_ms->toBeNull()
+            ->duration_scope->toBeNull()
+            ->and($batchWrites)->toBeEmpty();
+    }
 
     if ($failureCount > 0) {
         expect($items->where('failed', true))->toHaveCount($failureCount);

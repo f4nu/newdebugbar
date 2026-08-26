@@ -656,7 +656,7 @@ it('enforces byte depth and item limits without exposing corrupt profiles', func
     NewDebugBarServer::tool(GetDebugProfileData::class, [
         'profile_id' => $corruptId,
         'path' => '/sections/models',
-    ])->assertHasErrors();
+    ])->assertHasErrors(['The debug profile could not be processed.']);
 });
 
 it('advances past an item that cannot fit within the MCP byte limit', function () {
@@ -756,6 +756,7 @@ it('bounds deeply nested focused values and surfaces malformed profile processin
     ]));
     NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $malformedId,
-    ])->assertHasErrors();
-    NewDebugBarServer::tool(ListDebugProfiles::class)->assertHasErrors();
+    ])->assertHasErrors(['The debug profile could not be processed.']);
+    NewDebugBarServer::tool(ListDebugProfiles::class)
+        ->assertHasErrors(['The debug profile could not be processed.']);
 });
