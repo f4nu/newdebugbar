@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
+use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Livewire\DebugBar;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
@@ -72,31 +73,45 @@ it('rejects unsafe incomplete and mutating explain requests before touching the 
     ]],
 ]);
 
-it('shows bindings directly when there is no application stack', function () {
-    $query = [
-        'execution' => 1,
-        'duration_ms' => 0.4,
-        'slow' => false,
-        'connection' => 'testing',
-        'query_type' => 'read',
+it('keeps repeated execution evidence in one bounded workspace record', function () {
+    $queries = array_map(fn (int $binding): array => [
         'sql' => 'select ? as number',
-        'normalized_sql' => 'select ? as number',
-        'bindings' => [1],
-        'stack' => [],
-        'callsite' => null,
-        'repeated' => false,
-        'query_time_percent' => 100,
-        'runnable_available' => false,
+        'bindings' => [$binding],
+        'bindings_complete' => true,
+        'binding_policy' => 'full',
+        'runnable_available' => true,
+        'runnable_sql' => 'select '.$binding.' as number',
+        'duration_ms' => $binding,
+        'connection' => 'testing',
+        'callsite' => ['file' => '/app/Queries/NumberQuery.php', 'line' => 14],
+        'stack' => [['file' => '/app/Queries/NumberQuery.php', 'line' => 14, 'function' => 'loadNumbers']],
+    ], [1, 2, 3]);
+    $analysis = (new QueryAnalyzer)->analyze($queries, 20);
+    $section = [
+        'summary' => [...$analysis['summary'], 'count' => 3],
+        'payload' => $analysis,
     ];
 
-    $html = Blade::render(
-        '<x-newdebugbar::query-execution :query="$query" identity="bindings-only" />',
-        ['query' => $query],
-    );
+    $html = Blade::render('<x-newdebugbar::query-section :section="$section" />', ['section' => $section]);
+
+    expect(preg_match('/<script type="application\/json" data-ndb-query-payload>\s*(?<payload>[^<]+)\s*<\/script>/', $html, $matches))
+        ->toBe(1);
+
+    $records = json_decode(base64_decode(trim($matches['payload']), true), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($records)
+        ->toHaveCount(1)
+        ->and($records[0]['repeated'])->toBeTrue()
+        ->and($records[0]['count'])->toBe(3)
+        ->and($records[0]['executions'])->toHaveCount(3)
+        ->and($records[0]['executions'][2]['bindings'])->toBe([3])
+        ->and($records[0]['executions'][2]['stack'][0]['function'])->toBe('loadNumbers')
+        ->and($records[0]['executions'][2]['runnable_sql'])->toBe('select 3 as number');
 
     expect($html)
-        ->toContain('data-ndb-query-evidence-direct="bindings"')
-        ->toContain('data-ndb-query-bindings-panel')
-        ->not->toContain('data-ndb-query-tabs')
-        ->not->toContain('role="tab"');
+        ->toContain('data-ndb-query-workspace')
+        ->toContain('data-ndb-query-group="group-')
+        ->toContain('data-ndb-query-detail')
+        ->not->toContain('<details')
+        ->not->toContain('data-ndb-query-group-executions');
 });

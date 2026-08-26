@@ -142,35 +142,40 @@ test('query findings reveal and scroll to grouped slow evidence', () => {
   const content = { scrollTop: 60 };
   let requestedSelector = '';
   let scrollOptions = null;
-  const target = {
+  const group = {
+    dataset: {
+      ndbQueryKey: 'group-users',
+      ndbExecution: '1',
+      ndbDuration: '20',
+      ndbQueryType: 'read',
+      ndbAttention: 'true',
+      ndbSlow: 'true',
+      ndbRepeated: 'true',
+      ndbSearch: 'select users',
+      ndbQueryExecutionCount: '3',
+    },
+    hidden: false,
+    style: { removeProperty() {}, setProperty() {} },
     scrollIntoView: (options) => {
       scrollOptions = options;
     },
   };
-  const group = {
-    dataset: {
-      execution: '1',
-      duration: '20',
-      type: 'read',
-      slow: 'true',
-      search: 'select users',
-      queryKind: 'group',
-      resultCount: '3',
-    },
-    hidden: false,
-    querySelector: () => null,
-  };
 
   state.$root = { querySelectorAll: () => [] };
+  state.queryRecords = [{
+    key: 'group-users',
+    executions: [{ execution: 1, explain_available: true }],
+  }];
   state.$refs = {
     content,
-    queryResults: {
-      children: [group],
+    queryDetail: { scrollTo() {} },
+    queryList: {
+      querySelectorAll: () => [group],
       appendChild() {},
       querySelector: (selector) => {
         requestedSelector = selector;
 
-        return target;
+        return group;
       },
     },
   };
@@ -179,9 +184,11 @@ test('query findings reveal and scroll to grouped slow evidence', () => {
   state.selectSection('queries', 'slow');
 
   assert.equal(state.queryFilter, 'attention');
+  assert.equal(state.querySelected, 'group-users');
+  assert.equal(state.queryDetailOpen, true);
   assert.equal(content.scrollTop, 0);
-  assert.match(requestedSelector, /data-ndb-query-group/);
-  assert.deepEqual(scrollOptions, { block: 'start' });
+  assert.match(requestedSelector, /data-ndb-slow/);
+  assert.deepEqual(scrollOptions, { block: 'nearest' });
 });
 
 test('favorite guards and drop positions preserve a valid order', () => {
@@ -210,4 +217,3 @@ test('favorite guards and drop positions preserve a valid order', () => {
   state.dropFavorite('logs');
   assert.deepEqual(state.favorites, ['logs', 'overview', 'queries']);
 });
-

@@ -215,7 +215,6 @@ it('uses one popover surface for toolbar and inspector menus', function () {
 
     foreach ([
         'components/mobile-toolbar-popover.blade.php',
-        'components/query-actions.blade.php',
         'components/request-switcher.blade.php',
         'components/mail-actions.blade.php',
         'livewire/sections/views.blade.php',
@@ -229,7 +228,6 @@ it('uses one filter tab treatment across inspector sections', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
 
     foreach ([
-        'components/query-section.blade.php',
         'livewire/livewire/view-tabs.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
@@ -244,6 +242,7 @@ it('uses one filter tab treatment across inspector sections', function () {
     foreach ([
         'components/cache-detail-tabs.blade.php',
         'components/http-client-detail-tabs.blade.php',
+        'components/query-detail.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::inspector-detail-tabs')
@@ -453,6 +452,43 @@ it('composes Livewire as one shared inspector workspace with focused details', f
         ->toContain('<x-newdebugbar::inspector-evidence');
 });
 
+it('composes Queries as a bounded shared list detail workspace', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/components/query-section.blade.php');
+    $detail = file_get_contents($views.'/components/query-detail.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::select-field')
+        ->toContain('<x-newdebugbar::query-detail')
+        ->not->toContain('<details')
+        ->not->toContain('<x-newdebugbar::query-execution')
+        ->not->toContain('<x-newdebugbar::query-actions');
+
+    expect($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::inspector-detail-back')
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::inspector-detail-tabs')
+        ->toContain('variant="segmented"')
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-evidence')
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-fact')
+        ->toContain('<x-newdebugbar::inspector-explanation')
+        ->toContain('<x-newdebugbar::inspector-action')
+        ->toContain('<template x-if="queryDetailTab === \'query\'">')
+        ->toContain('<template x-if="queryDetailTab === \'bindings\'">')
+        ->toContain('<template x-if="queryDetailTab === \'source\'">')
+        ->toContain('<template x-if="queryDetailTab === \'explain\'">')
+        ->not->toContain('<details')
+        ->not->toContain('<pre');
+});
+
 it('uses one calm source presentation across inspector sections', function () {
     $resources = dirname(__DIR__, 2).'/resources';
     $views = $resources.'/views';
@@ -471,6 +507,7 @@ it('uses one calm source presentation across inspector sections', function () {
         'components/http-client-detail.blade.php',
         'components/mail-message-details.blade.php',
         'components/notification-detail.blade.php',
+        'components/query-detail.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::inspector-source-panel')
@@ -531,6 +568,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
     foreach ([
         'components/cache-workspace.blade.php',
         'components/http-client-workspace.blade.php',
+        'components/query-section.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
         'livewire/sections/logs.blade.php',
@@ -655,6 +693,7 @@ it('uses centered segmented controls across inspector detail panels', function (
         'livewire/livewire/component-detail.blade.php',
         'components/model-group-detail.blade.php',
         'components/notification-detail.blade.php',
+        'components/query-detail.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::inspector-detail-tabs')

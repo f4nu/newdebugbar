@@ -134,6 +134,52 @@ trait DefinesTestApplication
             return response('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><main>Logs fixture</main></body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-queries-rich', function () {
+            DB::statement('drop table if exists ndb_query_workspace');
+            DB::statement('create table ndb_query_workspace (id integer primary key, name varchar(100), active integer)');
+            DB::insert('insert into ndb_query_workspace (id, name, active) values (?, ?, ?), (?, ?, ?)', [
+                1, 'Kyoto', 1, 2, 'Osaka', 0,
+            ]);
+            DB::update('update ndb_query_workspace set active = ? where id > ?', [1, 99]);
+
+            foreach (range(1, 8) as $id) {
+                DB::select('select * from ndb_query_workspace where id = ?', [$id]);
+            }
+
+            DB::select(<<<'SQL'
+                select id as itinerary_identifier,
+                       name as itinerary_name_with_a_deliberately_long_alias,
+                       active as itinerary_activity_status
+                from ndb_query_workspace
+                where name like ?
+                order by itinerary_name_with_a_deliberately_long_alias asc
+                SQL, ['%o%']);
+
+            config(['database.connections.query_replica' => config('database.connections.testing')]);
+            DB::connection('query_replica')->select('select ? as connection_probe', ['replica']);
+
+            $pdo = DB::connection()->getPdo();
+
+            if (method_exists($pdo, 'sqliteCreateFunction')) {
+                $pdo->sqliteCreateFunction('ndb_test_pause', function (): int {
+                    usleep(110_000);
+
+                    return 1;
+                });
+                DB::select('select ndb_test_pause() as slow_probe');
+            }
+
+            DB::select('select id as explain_failure_probe from ndb_query_workspace where id = ?', [1]);
+            DB::statement('drop table ndb_query_workspace');
+
+            return response('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>Rich query workspace</h1></body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get(
+            '/profiled-queries-empty',
+            fn () => response('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>Empty query workspace</h1></body></html>'),
+        );
+
         $router->middleware(ProfileRequest::class)->get('/profiled-livewire', function () {
             $component = app('livewire')->mount('host-counter', key: 'host-counter-browser');
 
@@ -603,6 +649,7 @@ trait DefinesTestApplication
                             a { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
                             details { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
                             dl, dt, dd { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            input[type="search"], select { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
@@ -618,6 +665,8 @@ trait DefinesTestApplication
                             [data-ndb-authorization-item] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); height: 91px; }
                             [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-query-workspace], [data-ndb-query-item], [data-ndb-query-detail] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-query-filter], [data-ndb-query-sort], [data-ndb-query-search], [data-ndb-query-execution-select], [data-ndb-query-copy-sql], [data-ndb-query-copy-runnable], [data-ndb-query-detail-tab], [data-ndb-query-explain-action] { height: 91px; }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-log-entry], [data-ndb-log-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); padding: 24px; }
                             [data-ndb-log-level-select] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }

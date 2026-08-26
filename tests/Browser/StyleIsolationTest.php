@@ -97,14 +97,33 @@ it('keeps host styles and package styles isolated', function () {
         ->assertVisible('[data-ndb-section-panel="queries"]')
         ->assertScript(<<<'JS'
             (() => {
-                const code = document.querySelector('[data-ndb-query-group-pattern] code[data-highlighted]');
+                const root = document.querySelector('[data-ndb-queries]');
+                const workspace = root.querySelector('[data-ndb-query-workspace]');
+                const row = root.querySelector('[data-ndb-query-item]');
+                const detail = root.querySelector('[data-ndb-query-detail]');
+                const facts = root.querySelector('[data-ndb-query-detail-panel="query"] [data-ndb-inspector-fact]')?.closest('dl');
+                const code = root.querySelector('[data-ndb-query-sql][data-highlighted]');
                 const surface = code?.closest('pre');
                 const keyword = code?.querySelector('.hljs-keyword');
+                const controls = [
+                    root.querySelector('[data-ndb-query-filter]'),
+                    root.querySelector('[data-ndb-query-sort]'),
+                    root.querySelector('[data-ndb-query-search]'),
+                    root.querySelector('[data-ndb-query-execution-select]'),
+                    ...root.querySelectorAll('[data-ndb-query-detail-tab]'),
+                ];
 
-                if (! code || ! surface || ! keyword) return false;
+                if (! workspace || ! row || ! detail || ! facts || ! code || ! surface || ! keyword) return false;
 
-                return getComputedStyle(surface).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(code).backgroundColor === 'rgba(0, 0, 0, 0)'
+                return getComputedStyle(workspace).borderLeftWidth === '0px'
+                    && getComputedStyle(row).borderLeftWidth === '0px'
+                    && row.getBoundingClientRect().height < 91
+                    && getComputedStyle(detail).borderLeftWidth === '0px'
+                    && getComputedStyle(facts).display === 'grid'
+                    && [...facts.querySelectorAll('dl, dt, dd')]
+                        .every((element) => getComputedStyle(element).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && controls.every((control) => control.getBoundingClientRect().height < 91)
+                    && getComputedStyle(surface).backgroundColor !== 'rgb(243, 243, 243)'
                     && getComputedStyle(code).color !== 'rgb(0, 0, 0)'
                     && getComputedStyle(keyword).color === 'rgb(196, 181, 253)';
             })()
