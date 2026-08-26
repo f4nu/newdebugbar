@@ -5,14 +5,12 @@
     'success' => false,
 ])
 
-<div
-    {{
-        $attributes->class([
-            'ndb:rounded-2xl ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700',
-            'ndb:lg:my-auto ndb:lg:w-full ndb:lg:max-w-lg ndb:lg:self-center' => $centered,
-        ])
-    }}
->
+<div {{
+    $attributes->class([
+        'ndb:rounded-2xl ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700',
+        'ndb:lg:my-auto ndb:lg:w-full ndb:lg:max-w-lg ndb:lg:self-center' => $centered,
+    ])
+}}>
     <span @class([
         'ndb:mx-auto ndb:grid ndb:size-10 ndb:place-items-center ndb:rounded-xl',
         'ndb:bg-emerald-50 ndb:text-emerald-600 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300' => $success,
@@ -22,8 +20,6 @@
     </span>
     <p class="ndb:mt-3 ndb:text-sm ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $label }}</p>
     @if ($description !== null)
-        <p class="ndb:mt-2 ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-            {{ $description }}
-        </p>
+        <p class="ndb:mt-2 ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $description }}</p>
     @endif
 </div>
