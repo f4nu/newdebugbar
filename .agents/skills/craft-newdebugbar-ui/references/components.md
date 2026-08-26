@@ -42,7 +42,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `icon` | Package-owned SVG at an explicit supported size. Prefer text when an icon would be ambiguous. |
 | `icon-button` | Accessible icon-only action. Always provide an accessible name. |
 | `inspector-action` | Compact labeled action beside the evidence it affects. |
-| `inspector-operation-badge` | Neutral equal-width HTTP method or cache-operation badge. Use `wide` for longer operations and `outlined` in detail headers. |
+| `inspector-operation-badge` | Neutral equal-width HTTP method, cache-operation, or Redis-command badge. Use `wide` for longer operations and `outlined` in detail headers. |
 | `inspector-source-link` | Underlined application-source action with no ornamental icon, padding, or hover fill. Pass `copy` when activation should copy the displayed location; keep that interaction inside the shared component. |
 | `search-field` | Shared labeled search input with the icon fixed on the left and balanced inset spacing. Do not add a right-icon variant. |
 | `select-field` | Native select with stable field geometry. Use for one list-filter dimension rather than a segmented strip. |
@@ -56,7 +56,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-definition-row` | One label/value pair. Pass `label` for static text or the optional `term` slot for Alpine-driven headings; use a danger tone only for an actual failed or harmful state. |
 | `inspector-detail-back` | Mobile drill-in Back action. Use `persistent` only when the desktop flow truly needs it. |
 | `inspector-detail-empty` | Center a short selection instruction in an unselected detail pane. |
-| `inspector-detail-header` | Stable selected-item identity and optional actions. Use `grid` for fixed action placement and `wrap` for long identities. |
+| `inspector-detail-header` | Stable selected-item identity and optional actions. Use `grid` for fixed action placement and `wrap` for long identities. Give its title slot one root element; wrap class, message, or other multi-line identity content together. |
 | `inspector-detail-pane` | Detail scroll owner with mobile drill-in behavior. Supply real open state, references, labels, and close behavior. |
 | `inspector-detail-tabs` | Detail segmented tabs. Center by default; align left only when adjacent controls make centering misleading. |
 | `inspector-evidence` | Optional label and compact aside plus syntax-highlighted evidence. Choose the actual language. |

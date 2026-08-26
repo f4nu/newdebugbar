@@ -91,10 +91,12 @@ Do not select the first item merely to fill space. When selection is not a delib
 - Center detail tabs in their container. Keep them left-aligned only when another control in the same row makes centered placement misleading, as in Mail.
 - Prefer explicit labels and stable widths. At a 390px viewport, an icon-only tab is acceptable only when the full set cannot fit, every icon has an accurate accessible label, and the meaning is familiar in context.
 - “All” is often useful, but it is not a universal default. Choose the state that suppresses noise and answers the common question for that section.
+- Keep active non-favorite sections in alphabetical navigation order, including Requests. A section's default-open behavior must not change its navigation position.
 
 ## Headers and facts
 
 - A selected-item header contains identity, not a pile of diagnostic facts.
+- Give the detail header title slot one structural root. Wrap a multi-line identity so the shared header grid does not lay its lines out as separate columns or implicit rows.
 - Pair operation or HTTP method badges with the key or URL on the same line.
 - Use the shared equal-width operation badge in both list and detail headers.
 - Put status in response evidence, host in request evidence, and source in source evidence.
@@ -127,11 +129,16 @@ Do not explain Source, repeat a heading, or narrate ordinary table columns. A ne
 - Requests: preserve the lifecycle trace and collapsed Request details disclosure. It is an intentional exception to the shared inspector-workspace presentation; keep the newer global section shell, height chain, and host isolation around it without replacing its internal flow with tabs or list/detail controls.
 - HTTP Client: list filter uses a dropdown; detail begins with Response, then Request, then Source.
 - Cache: list operation filter uses a dropdown; operation badge and key share one header line; Raw precedes Source when raw data is useful.
-- Redis: keep command facts and key evidence in one selected-command reading view. Do not split sparse Overview and Keys content into tabs; place the copy action beside the keys and explain protected identifiers only when they are shown.
-- Mail: the entire list item opens the message; detail tabs may remain left-aligned when sharing a control row.
+- Redis: keep command facts and key evidence in one selected-command reading view. Put the shared operation badge and primary key on one compact header line. Do not split sparse Overview and Keys content into tabs; place the copy action beside the keys and explain protected identifiers only when they are shown.
+- Logs: use the shared list/detail workspace. Make the compact log row the selection control and keep context, timing, related exceptions, and source in the persistent detail pane instead of an anchored popover.
+- Mail: the entire list item opens the message; detail tabs may remain left-aligned when sharing a control row. Do not capture or expose raw message headers without a concrete debugging use that is not already covered by the structured message facts or downloadable EML.
 - Notifications: show actual channel outcomes; do not add a redundant “needs attention” badge to the detail panel.
 - Models: no default selection; Records is the default selected-model tab; model list keeps a table header and a search field; drivers use the interface typeface; records, writes, and sources are separate useful views; do not duplicate table data in the header.
 - Queries: show the runnable SQL with retained binding values already inserted. Do not split a query and its bindings into separate tabs; explain only when capture limits leave placeholders unresolved. Keep Source and EXPLAIN separate because they answer different developer questions. Hide Source when no application source was retained. Opening EXPLAIN runs it automatically, reuses an existing result, and keeps an explicit retry after completion or failure.
+- Authorization: ability labels such as `view` and `update` use the interface typeface. Keep actual policy classes and callables in code type.
+- Exceptions: treat the exception class and message as one grouped identity. Keep the source action separate so the header has one clear reading axis.
+- Validation: keep failures in a full-width grouped view rather than drilling into one field at a time. On desktop use Field, Message, and Failed rules columns, giving Message the widest track; preserve that reading order when rows stack on mobile.
+- Views: keep Overview and Data only. Overview owns the unique render facts, template source, and composer evidence; omit composer evidence entirely when none was captured. Keep the selected-view header compact and move render selection there when a group has multiple renders.
 - Livewire: Activity is chronological. Preserve its connected timeline spine and status dots inside the shared list/detail workspace so interactions read as a sequence instead of unrelated rows.
 - Events: an Application default can be better than All when framework events dominate.
 
