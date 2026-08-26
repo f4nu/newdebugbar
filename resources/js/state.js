@@ -335,6 +335,7 @@ export function createNewDebugBar(
     favoriteDrag: null,
     favoriteDrop: null,
     favoriteDropAfter: false,
+    requestDetailTab: 'route',
     cacheOperations: [],
     cacheFilter: 'all',
     cacheSearch: '',
@@ -1891,6 +1892,7 @@ export function createNewDebugBar(
       this.sectionTransitioning = false;
       this.sectionError = false;
       this.selected = selected;
+      this.requestDetailTab = 'route';
       this.cacheOperations = [];
       this.cacheFilter = 'all';
       this.cacheSearch = '';
@@ -2501,6 +2503,25 @@ export function createNewDebugBar(
 
         return false;
       }
+    },
+
+    initializeRequestDetails(defaultTab = 'route') {
+      this.requestDetailTab = ['route', 'runtime'].includes(defaultTab) ? defaultTab : 'route';
+      this.resetRequestDetailScroll();
+    },
+
+    setRequestDetailTab(tab) {
+      if (!['route', 'input', 'headers', 'session', 'response', 'runtime', 'context'].includes(tab)) return;
+
+      this.requestDetailTab = tab;
+      this.resetRequestDetailScroll();
+    },
+
+    resetRequestDetailScroll() {
+      this.$nextTick?.(() => {
+        this.$refs?.requestDetailBody?.scrollTo?.({ top: 0, behavior: 'instant' });
+        browser.highlight?.();
+      });
     },
 
     initializeModels(count) {

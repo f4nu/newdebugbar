@@ -44,6 +44,17 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->assertScript(<<<'JS'
             (() => {
+                const host = document.querySelector('[data-testid="host-request"]');
+                const tab = host.querySelector('[data-request-tab]');
+
+                return getComputedStyle(host).backgroundColor === 'rgb(255, 0, 0)'
+                    && getComputedStyle(host).borderLeftWidth === '20px'
+                    && host.getBoundingClientRect().height === 91
+                    && tab.getBoundingClientRect().height === 91;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const style = getComputedStyle(document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]'));
 
                 return style.backgroundColor === 'rgba(0, 0, 0, 0)'
@@ -81,6 +92,19 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->click('[data-ndb-toolbar="request"]')
         ->assertVisible('[data-ndb-section-panel="request"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-request-workspace]');
+                const panel = document.querySelector('[data-ndb-request-panel]');
+                const tabs = [...document.querySelectorAll('[data-ndb-request-tab]')];
+
+                return getComputedStyle(workspace).borderLeftWidth === '0px'
+                    && getComputedStyle(panel).borderLeftWidth === '0px'
+                    && tabs.length === 5
+                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91)
+                    && document.querySelector('#newdebugbar [data-request-workspace], #newdebugbar [data-request-panel], #newdebugbar [data-request-tab], #newdebugbar [data-request-source]') === null;
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const code = Array.from(document.querySelectorAll('[data-ndb-section-panel="request"] code'));

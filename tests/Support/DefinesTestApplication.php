@@ -45,6 +45,7 @@ use NewDebugBar\Tests\Fixtures\Events\ProfiledQueuedApplicationListener;
 use NewDebugBar\Tests\Fixtures\HostCounter;
 use NewDebugBar\Tests\Fixtures\HostCounterGroup;
 use NewDebugBar\Tests\Fixtures\HostValidationForm;
+use NewDebugBar\Tests\Fixtures\Http\ProfiledRequestController;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledAfterResponseMailJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledFailingJob;
 use NewDebugBar\Tests\Fixtures\Jobs\ProfiledJob;
@@ -108,6 +109,11 @@ trait DefinesTestApplication
             '/profiled-next',
             fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
         );
+
+        $router->middleware(['web', ProfileRequest::class])->get(
+            '/profiled-request/{trip}',
+            [ProfiledRequestController::class, 'show'],
+        )->name('profiled.request.show');
 
         $router->middleware(ProfileRequest::class)->get('/profiled-logs', function () {
             Log::debug('Preparing the journey workspace.', ['trip_id' => 1]);
@@ -658,6 +664,7 @@ trait DefinesTestApplication
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
                             summary { color: rgb(255, 0, 0); font-size: 42px; }
+                            [data-request-workspace], [data-request-panel], [data-request-tab], [data-request-source] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-cache], [data-cache-item], [data-cache-result], [data-cache-filter], [data-cache-search], [data-cache-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-http-client], [data-http-client-item], [data-method], [data-host], [data-status], [data-duration], [data-source] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
@@ -702,6 +709,9 @@ trait DefinesTestApplication
                         <button data-testid="host-button">Host button</button>
                         <button data-testid="host-icon-button"><svg aria-hidden="true"></svg></button>
                         <code data-testid="host-code">Host code</code>
+                        <div data-testid="host-request" data-request-workspace data-request-panel data-request-source>
+                            <button data-request-tab>Host request tab</button>
+                        </div>
                     </body>
                 </html>
                 HTML);
