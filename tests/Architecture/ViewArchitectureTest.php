@@ -452,7 +452,7 @@ it('composes Models as a shared split inspector with reusable explanations', fun
         ->not->toContain('related quer')
         ->not->toContain('navigateToQueriesAtSource');
 
-    expect(substr_count($detail, '<x-newdebugbar::inspector-explanation'))->toBe(3);
+    expect(substr_count($detail, '<x-newdebugbar::inspector-explanation'))->toBe(2);
 
     expect($explanation)
         ->toContain("'title' => null")
