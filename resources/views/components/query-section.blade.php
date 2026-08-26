@@ -13,6 +13,7 @@
     $enrichQuery = static function (array $query) use ($queryExplains, $queryExplainErrors): array {
         $execution = max(1, (int) ($query['execution'] ?? 1));
         $bindings = array_values(is_array($query['bindings'] ?? null) ? $query['bindings'] : []);
+        $bindingsComplete = ($query['bindings_complete'] ?? false) === true;
         $stack = array_values(is_array($query['stack'] ?? null) ? $query['stack'] : []);
         $callsite = is_array($query['callsite'] ?? null) ? $query['callsite'] : null;
         $file = is_string($callsite['file'] ?? null) && $callsite['file'] !== '' ? $callsite['file'] : null;
@@ -25,13 +26,12 @@
         $displaySql = $runnableAvailable
             ? (string) $query['runnable_sql']
             : (string) ($query['sql'] ?? '');
+        unset($query['bindings'], $query['runnable_sql'], $query['bindings_complete']);
 
         return [
             ...$query,
             'execution' => $execution,
             'sql' => (string) ($query['sql'] ?? ''),
-            'bindings' => $bindings,
-            'bindings_count' => count($bindings),
             'stack' => $stack,
             'source_available' => $sourceAvailable,
             'source_label' => $sourceAvailable ? $file.':'.$line : 'Source unavailable',
@@ -43,7 +43,7 @@
             'query_time_percent' => round((float) ($query['query_time_percent'] ?? 0), 1),
             'runnable_available' => $runnableAvailable,
             'display_sql' => $displaySql,
-            'display_sql_complete' => $runnableAvailable || $bindings === [],
+            'display_sql_complete' => $runnableAvailable || ($bindingsComplete && $bindings === []),
             'explain_available' => $queryType === 'read' && $runnableAvailable,
             'explain_unavailable_reason' => $queryType !== 'read'
                 ? 'EXPLAIN is available for read queries only.'

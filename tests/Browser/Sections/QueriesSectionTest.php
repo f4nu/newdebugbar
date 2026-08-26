@@ -91,7 +91,8 @@ it('filters searches and sorts a varied query profile', function () {
                     && state.visibleQueryCount === retained
                     && rows.length >= 8
                     && repeated?.executions.length === 8
-                    && new Set(repeated.executions.map((query) => JSON.stringify(query.bindings))).size === 8
+                    && new Set(repeated.executions.map((query) => query.display_sql)).size === 8
+                    && repeated.executions.every((query) => ! Object.hasOwn(query, 'bindings'))
                     && connections.has('testing')
                     && connections.has('query_replica')
                     && state.queryRecords.some((record) => record.sql.length > 150);
