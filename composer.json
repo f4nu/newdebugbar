@@ -66,6 +66,7 @@
             "/.github",
             "/.gitignore",
             "/.phpunit.cache",
+            "/.workbench",
             "/AGENTS.md",
             "/composer.lock",
             "/node_modules",
