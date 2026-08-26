@@ -1,20 +1,24 @@
 @props([
     'frames',
     'emptyLabel' => 'No application stack was captured.',
+    'showHeading' => true,
+    'title' => 'Application stack',
 ])
 
 <section
     data-ndb-inspector-stack
     {{ $attributes->class('ndb:mt-5 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:text-inherit') }}
 >
-    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
-        <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Application stack</h4>
-        <span
-            x-show.important="({{ $frames }}).length > 0"
-            class="ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-            x-text="({{ $frames }}).length + (({{ $frames }}).length === 1 ? ' frame' : ' frames')"
-        ></span>
-    </div>
+    @if ($showHeading)
+        <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
+            <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">{{ $title }}</h4>
+            <span
+                x-show.important="({{ $frames }}).length > 0"
+                class="ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
+                x-text="({{ $frames }}).length + (({{ $frames }}).length === 1 ? ' frame' : ' frames')"
+            ></span>
+        </div>
+    @endif
     <template x-if="({{ $frames }}).length === 0">
         <p class="ndb:pt-3 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $emptyLabel }}</p>
     </template>

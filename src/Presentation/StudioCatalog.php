@@ -73,6 +73,10 @@ final class StudioCatalog
         'events' => [
             'event-detail',
         ],
+        'exceptions' => [
+            'exception-detail',
+            'exception-list-item',
+        ],
         'http-client' => [
             'http-client-controls',
             'http-client-detail',

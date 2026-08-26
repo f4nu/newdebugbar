@@ -24,6 +24,7 @@ final class DebugBar extends Component
         'cache',
         'default',
         'events',
+        'exceptions',
         'http_client',
         'logs',
         'livewire',

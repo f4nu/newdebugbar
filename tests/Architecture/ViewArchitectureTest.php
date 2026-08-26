@@ -569,6 +569,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'components/query-section.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
+        'livewire/sections/exceptions.blade.php',
         'livewire/sections/logs.blade.php',
         'livewire/sections/messages.blade.php',
         'livewire/sections/livewire.blade.php',
@@ -621,6 +622,31 @@ it('composes Events from the shared inspector workspace anatomy', function () {
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')
         ->toContain('<x-newdebugbar::inspector-detail-empty');
+});
+
+it('composes Exceptions as a shared list-detail workspace', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/exceptions.blade.php');
+    $detail = file_get_contents($views.'/components/exception-detail.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::exception-list-item')
+        ->toContain('<x-newdebugbar::exception-detail')
+        ->not->toContain('ndb:bg-red-50')
+        ->not->toContain('name="warning"');
+
+    expect($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::inspector-detail-tabs')
+        ->toContain('<x-newdebugbar::inspector-source-link')
+        ->toContain('<x-newdebugbar::code-block')
+        ->toContain('<x-newdebugbar::inspector-stack')
+        ->toContain('<template x-if="exceptionDetailTab === \'source\'">')
+        ->toContain('<template x-if="exceptionDetailTab === \'stack\'">');
 });
 
 it('composes Logs as a shared full-height inspector stream', function () {
