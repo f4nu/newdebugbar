@@ -94,8 +94,20 @@ it('locks server-owned profile state', function () {
 
 it('returns not found when deferred profile details have expired', function () {
     Livewire::test(DebugBar::class, ['profileId' => '00000000-0000-4000-8000-000000000000'])
-        ->call('loadSection', 'overview')
+        ->call('loadSection', 'request')
         ->assertNotFound();
+});
+
+it('keeps captured overview diagnostics out of the inspector UI', function () {
+    $id = $this->get('/profiled', ['Accept' => 'text/html'])
+        ->assertOk()
+        ->headers->get('X-NewDebugBar-Profile');
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->assertSet('selectedSection', 'request')
+        ->assertSet('summary.sections', fn (array $sections): bool => collect($sections)->doesntContain('key', 'overview'))
+        ->call('loadSection', 'overview')
+        ->assertStatus(422);
 });
 
 it('summarizes warnings, slow queries, and duplicate sql', function () {
@@ -200,7 +212,7 @@ it('marks active, quiet, truncated, and incomplete sections for disclosure', fun
             $sections = collect($sections)->keyBy('key');
 
             return $sections->every(fn (array $section): bool => filled($section['description'] ?? null))
-                && $sections['overview']['active'] === true
+                && ! isset($sections['overview'])
                 && $sections['request']['active'] === true
                 && $sections['queries']['active'] === false
                 && $sections['logs']['active'] === false
@@ -386,7 +398,7 @@ it('switches to an exact foreground application profile', function () {
         ->assertSet('profileId', $nextId)
         ->assertSet('summary.path', '/profiled-next')
         ->assertSet('sectionLoaded', false)
-        ->assertSet('selectedSection', 'overview')
+        ->assertSet('selectedSection', 'request')
         ->assertDispatched('newdebugbar-profile-switched');
 });
 

@@ -31,11 +31,11 @@ it('opens every compact toolbar destination and shrinks cleanly', function () {
             JS);
 
     foreach ([
-        'expand' => 'overview',
+        'expand' => 'request',
         'request' => 'request',
-        'environment' => 'overview',
+        'environment' => 'request',
         'duration' => 'request',
-        'memory' => 'overview',
+        'memory' => 'request',
         'queries' => 'queries',
     ] as $toolbar => $section) {
         $selector = $toolbar === 'expand'

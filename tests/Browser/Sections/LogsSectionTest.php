@@ -226,7 +226,7 @@ it('keeps log reading usable on mobile dark mode empty results and reopen', func
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->click('[data-ndb-mobile-toolbar-action="inspector"]');
 
-    DebugBarBrowser::assertSectionSelected($page, 'overview');
+    DebugBarBrowser::assertSectionSelected($page, 'request');
 
     $page
         ->click('[data-ndb-header-mobile-trigger="actions"]')

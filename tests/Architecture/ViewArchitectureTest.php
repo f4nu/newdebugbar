@@ -680,7 +680,6 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
         'livewire/sections/notifications.blade.php',
-        'livewire/sections/overview.blade.php',
         'livewire/sections/queue.blade.php',
         'livewire/sections/redis.blade.php',
         'livewire/sections/validation.blade.php',
@@ -843,21 +842,11 @@ it('composes Messages and Validation as shared diagnostic streams', function () 
         ->not->toContain('ndb:font-mono ndb:text-xs ndb:font-semibold ndb:text-indigo');
 });
 
-it('composes Overview and fallback data as shared full-height streams', function () {
+it('composes fallback data as a shared full-height stream', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
 
-    foreach (['overview', 'default'] as $section) {
-        expect(file_get_contents($views.'/livewire/sections/'.$section.'.blade.php'))
-            ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"');
-    }
-
-    expect(file_get_contents($views.'/livewire/sections/overview.blade.php'))
-        ->toContain('<x-newdebugbar::overview-runtime-details');
-
-    expect(file_get_contents($views.'/components/overview-runtime-details.blade.php'))
-        ->toContain('<x-newdebugbar::filter-tabs')
-        ->toContain('<x-newdebugbar::select-field')
-        ->not->toContain('ndb:font-mono ndb:text-[11px] ndb:font-medium');
+    expect(file_get_contents($views.'/livewire/sections/default.blade.php'))
+        ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"');
 });
 
 it('uses centered segmented controls across inspector detail panels', function () {
@@ -904,7 +893,6 @@ it('mounts only the active evidence tab in high-payload detail panes', function 
     $notificationDetail = file_get_contents($views.'/components/notification-detail.blade.php');
     $mail = file_get_contents($views.'/livewire/sections/mail.blade.php');
     $mailDetails = file_get_contents($views.'/components/mail-message-details.blade.php');
-    $runtime = file_get_contents($views.'/components/overview-runtime-details.blade.php');
 
     expect($notificationDetail)
         ->toContain(
@@ -924,9 +912,6 @@ it('mounts only the active evidence tab in high-payload detail panes', function 
         )
         ->not->toContain('x-show.important="mailDetailTab ===');
 
-    expect($runtime)
-        ->toContain('<template x-if="runtimeDetail === @js($key)">')
-        ->not->toContain('x-show.important="runtimeDetail ===');
 });
 
 it('uses the shared section heading hierarchy in the inspector shell', function () {

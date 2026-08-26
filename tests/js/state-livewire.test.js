@@ -7,7 +7,7 @@ import { runtime } from './state-test-support.js';
 const livewireSummary = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   sections: [
-    { key: 'overview', label: 'Overview' },
+    { key: 'request', label: 'Requests' },
     { key: 'livewire', label: 'Livewire' },
   ],
 };

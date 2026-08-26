@@ -39,7 +39,7 @@ test('the command palette jumps to sections and changes settings', async () => {
 test('the command palette keeps quiet collectors behind one reveal action', () => {
   const state = createNewDebugBar({
     sections: [
-      { key: 'overview', label: 'Overview', active: true },
+      { key: 'request', label: 'Requests', active: true },
       { key: 'queries', label: 'Queries', active: true },
       { key: 'redis', label: 'Redis', active: false },
       { key: 'mail', label: 'Mail', active: false },
@@ -47,15 +47,15 @@ test('the command palette keeps quiet collectors behind one reveal action', () =
   }, runtime());
 
   assert.deepEqual(state.filteredCommands.filter((command) => command.id.startsWith('section:')).map((command) => command.id), [
-    'section:overview',
     'section:queries',
+    'section:request',
   ]);
   assert.equal(state.filteredCommands.at(-1).id, 'collectors:show');
 
   state.runCommand('collectors:show');
   assert.deepEqual(state.filteredCommands.filter((command) => command.id.startsWith('section:')).map((command) => command.id), [
-    'section:overview',
     'section:queries',
+    'section:request',
     'section:mail',
     'section:redis',
   ]);

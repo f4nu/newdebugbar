@@ -12,7 +12,7 @@ test('malformed startup inputs use safe request defaults', () => {
   assert.equal(state.profileLimit, 20);
   assert.deepEqual(state.recentProfiles, []);
   assert.deepEqual(state.sectionKeys, []);
-  assert.equal(state.selectedSection.key, 'overview');
+  assert.equal(state.selectedSection.key, 'request');
   assert.equal(state.currentRequestProfile, initial);
 
   state.currentRequestId = 'current';
@@ -63,7 +63,7 @@ test('a new application profile keeps a matching section and resets stale sectio
     ...summary,
     id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8',
   });
-  assert.equal(state.selected, 'overview');
+  assert.equal(state.selected, 'request');
 });
 
 test('foreground profiles replace the current profile', async () => {
@@ -264,18 +264,24 @@ test('background refresh is useful-only, bounded, and preserves related navigati
   assert.equal(state.activityPollTimer, null);
 });
 
-test('background refresh reloads only the active section when collected data changes', async () => {
+test('background refresh reloads only sections affected by related activity', async () => {
   const origin = {
     ...summary,
     id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8',
     background_pending: true,
     background_activity_count: 0,
+    sections: [
+      ...summary.sections,
+      { key: 'timeline', label: 'Timeline' },
+      { key: 'views', label: 'Views' },
+      { key: 'mail', label: 'Mail' },
+    ],
   };
   let loads = 0;
   const state = createNewDebugBar(origin, runtime());
   state.inspectorOpen = true;
-  state.selected = 'overview';
-  state.loadedSection = 'overview';
+  state.selected = 'timeline';
+  state.loadedSection = 'timeline';
   state.$wire = {
     loadSection: async () => loads++,
   };
@@ -287,7 +293,7 @@ test('background refresh reloads only the active section when collected data cha
   state.receiveActivityRefresh({ ...origin, background_activity_count: 1 });
   await Promise.resolve();
   assert.equal(loads, 1);
-  assert.equal(state.loadedSection, 'overview');
+  assert.equal(state.loadedSection, 'timeline');
   state.sectionLoading = false;
   state.requestedSection = null;
 
@@ -309,10 +315,7 @@ test('background refresh reloads only the active section when collected data cha
 });
 
 test('the request picker manages focus, keyboard movement, and profile selection', async () => {
-  const requestSummary = {
-    ...summary,
-    sections: [...summary.sections, { key: 'request', label: 'Requests' }],
-  };
+  const requestSummary = { ...summary };
   const current = {
     ...requestSummary,
     id: '6ba7b810-9dad-41d1-80b4-00c04fd430c8',
@@ -479,14 +482,14 @@ test('stale section responses cannot resync panels for a newer profile', async (
 
   assert.equal(synced, syncsBeforeStaleResponse);
   assert.equal(state.summary.id, '550e8400-e29b-41d4-a716-446655440000');
-  assert.equal(state.selected, 'overview');
+  assert.equal(state.selected, 'request');
 });
 
 test('section changes fade the current panel and delay loading feedback for slow responses', async () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
   const panels = [
-    { dataset: { ndbSectionPanel: 'overview' }, hidden: false },
+    { dataset: { ndbSectionPanel: 'request' }, hidden: false },
     { dataset: { ndbSectionPanel: 'queries' }, hidden: true },
   ];
   let resolveSection;
@@ -502,7 +505,7 @@ test('section changes fade the current panel and delay loading feedback for slow
       }),
   };
   state.inspectorOpen = true;
-  state.loadedSection = 'overview';
+  state.loadedSection = 'request';
 
   state.selectSection('queries');
 
@@ -551,7 +554,7 @@ test('section selection falls back safely and a failed section can retry', async
   state.$nextTick = (callback) => callback();
 
   state.selectSection('missing');
-  assert.equal(state.selected, 'overview');
+  assert.equal(state.selected, 'request');
 
   state.openInspector('queries');
   await new Promise((resolve) => setImmediate(resolve));

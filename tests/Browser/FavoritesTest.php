@@ -45,11 +45,11 @@ it('reorders favorites with the keyboard and drag and drop', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
-    foreach (['request', 'overview', 'queries'] as $section) {
+    foreach (['request', 'logs', 'queries'] as $section) {
         $page->click("[data-ndb-toggle-favorite=\"{$section}\"]");
     }
 
-    DebugBarBrowser::assertFavoriteOrder($page, 'request,overview,queries');
+    DebugBarBrowser::assertFavoriteOrder($page, 'request,logs,queries');
 
     $page
         ->assertScript('Array.from(document.querySelectorAll("[data-ndb-favorites-heading]")).filter((heading) => heading.offsetParent !== null).length', 1)
@@ -63,17 +63,17 @@ it('reorders favorites with the keyboard and drag and drop', function () {
             })()
             JS);
 
-    $page->keys('[data-ndb-select-section="overview"]', 'Shift+ArrowUp');
-    DebugBarBrowser::assertFavoriteOrder($page, 'overview,request,queries');
+    $page->keys('[data-ndb-select-section="logs"]', 'Shift+ArrowUp');
+    DebugBarBrowser::assertFavoriteOrder($page, 'logs,request,queries');
 
-    $page->drag('[data-ndb-section="queries"]', '[data-ndb-section="overview"]');
-    DebugBarBrowser::assertFavoriteOrder($page, 'queries,overview,request');
+    $page->drag('[data-ndb-section="queries"]', '[data-ndb-section="logs"]');
+    DebugBarBrowser::assertFavoriteOrder($page, 'queries,logs,request');
 
     $page
         ->refresh()
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
-    DebugBarBrowser::assertFavoriteOrder($page, 'queries,overview,request');
+    DebugBarBrowser::assertFavoriteOrder($page, 'queries,logs,request');
 
     $page->assertNoJavaScriptErrors();
 });
@@ -82,27 +82,27 @@ it('shows the favorite source and insertion point while dragging', function () {
     $page = visit('/profiled')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
-    foreach (['request', 'overview', 'queries'] as $section) {
+    foreach (['request', 'logs', 'queries'] as $section) {
         $page->click("[data-ndb-toggle-favorite=\"{$section}\"]");
     }
 
     $page
         ->assertAttribute('[data-ndb-toggle-favorite="request"]', 'aria-pressed', 'true')
-        ->assertAttribute('[data-ndb-toggle-favorite="overview"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-toggle-favorite="logs"]', 'aria-pressed', 'true')
         ->assertAttribute('[data-ndb-toggle-favorite="queries"]', 'aria-pressed', 'true')
         ->assertScript(<<<'JS'
             (() => {
                 const source = document.querySelector('[data-ndb-section="queries"]');
-                const target = document.querySelector('[data-ndb-section="overview"]');
+                const target = document.querySelector('[data-ndb-section="logs"]');
                 const state = Alpine.$data(source);
                 state.startFavoriteDrag('queries');
-                Alpine.$data(target).hoverFavorite('overview');
+                Alpine.$data(target).hoverFavorite('logs');
 
-                return state.favoriteDrag === 'queries' && state.favoriteDrop === 'overview';
+                return state.favoriteDrag === 'queries' && state.favoriteDrop === 'logs';
             })()
             JS)
         ->assertAttribute('[data-ndb-section="queries"]', 'data-ndb-dragging', 'true')
-        ->assertVisible('[data-ndb-favorite-drop-before="overview"]')
+        ->assertVisible('[data-ndb-favorite-drop-before="logs"]')
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.querySelector('[data-ndb-section="queries"]'));
@@ -112,6 +112,6 @@ it('shows the favorite source and insertion point while dragging', function () {
             })()
             JS)
         ->assertAttribute('[data-ndb-section="queries"]', 'data-ndb-dragging', 'false')
-        ->assertAttribute('[data-ndb-favorite-drop-before="overview"]', 'hidden', '')
+        ->assertAttribute('[data-ndb-favorite-drop-before="logs"]', 'hidden', '')
         ->assertNoJavaScriptErrors();
 });

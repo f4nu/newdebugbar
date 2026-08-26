@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('pins overview before alphabetized active sections and keeps quiet sections in the palette', function () {
+it('pins requests before alphabetized active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
 
@@ -29,7 +29,7 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
                 const remaining = labels.slice(1);
                 const sorted = [...remaining].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
 
-                return labels[0] === 'Overview'
+                return labels[0] === 'Requests'
                     && JSON.stringify(remaining) === JSON.stringify(sorted);
             })()
             JS)
@@ -59,78 +59,29 @@ it('pins overview before alphabetized active sections and keeps quiet sections i
         ->assertNoJavaScriptErrors();
 });
 
-it('prioritizes relevant activity and keeps runtime details collapsed until requested', function () {
+it('removes Overview from navigation and opens Requests by default', function () {
     $page = visit('/profiled-rich')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
     DebugBarBrowser::waitForDetails($page);
 
-    $page->assertScript(<<<'JS'
-        (() => {
-            const state = document.getElementById('newdebugbar')._x_dataStack?.[0];
-            state.cancelActivityRefresh(true);
-            state.receiveActivityRefresh = () => {
-                state.activityRefreshPending = false;
-                state.cancelActivityRefresh();
-            };
-            state.summary = {
-                ...state.summary,
-                completion_state: 'complete',
-                background_pending: false,
-            };
-
-            return state.activityPollTimer === null && state.hasPendingActivity() === false;
-        })()
-        JS);
-
     $page
-        ->assertVisible('[data-ndb-overview-activity]')
-        ->assertCount('[data-ndb-overview-activity-section]', 5)
-        ->assertMissing('[data-ndb-overview-activity-section] svg')
+        ->assertMissing('[data-ndb-section="overview"]')
+        ->assertMissing('[data-ndb-select-section="overview"]')
+        ->assertMissing('[data-ndb-section-panel="overview"]')
+        ->assertMissing('[data-ndb-overview-activity]')
+        ->assertMissing('[data-ndb-overview-runtime]')
         ->assertScript(<<<'JS'
             (() => {
-                const row = document.querySelector('[data-ndb-overview-activity-section]');
-                const style = getComputedStyle(row);
+                const state = Alpine.$data(document.getElementById('newdebugbar'));
 
-                return style.paddingLeft === '0px' && style.paddingRight === '0px';
+                return state.selected === 'request'
+                    && state.selectedSection.label === 'Requests'
+                    && !state.sectionKeys.includes('overview')
+                    && !state.allCommands.some((command) => command.id === 'section:overview');
             })()
             JS)
-        ->assertVisible('[data-ndb-overview-runtime]')
-        ->assertScript('document.querySelector("[data-ndb-overview-runtime]").open === false')
-        ->click('[data-ndb-overview-runtime] > summary');
-
-    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-runtime-detail-panel="runtime"]');
-
-    $page
-        ->assertVisible('[data-ndb-runtime-detail-navigation]')
-        ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-select-wrapper]\')).display === "none"')
-        ->assertMissing('[data-ndb-runtime-detail-count]')
-        ->assertMissing('[data-ndb-runtime-detail-panel-count]')
-        ->assertNoJavaScriptErrors();
-
-    $page
-        ->keys('[data-ndb-runtime-detail="drivers"]', 'Enter')
-        ->assertVisible('[data-ndb-runtime-detail-panel="drivers"]')
-        ->assertScript('document.querySelector(\'[data-ndb-runtime-detail="drivers"]\').getAttribute("aria-pressed") === "true"')
-        ->resize(390, 844);
-
-    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-runtime-detail-select]');
-
-    $page
-        ->assertScript('getComputedStyle(document.querySelector(\'[data-ndb-runtime-detail-navigation]\')).display === "none"')
-        ->assertScript('document.querySelector(\'[data-ndb-runtime-detail-select]\').value === "drivers"')
-        ->select('[data-ndb-runtime-detail-select]', 'ecosystem')
-        ->assertVisible('[data-ndb-runtime-detail-panel="ecosystem"]')
-        ->assertScript('document.querySelector(\'[data-ndb-runtime-detail-select]\').value === "ecosystem"')
-        ->assertScript(<<<'JS'
-            (() => {
-                const activity = document.querySelector('[data-ndb-overview-activity]');
-                const runtime = document.querySelector('[data-ndb-overview-runtime]');
-
-                return activity.scrollWidth <= activity.clientWidth
-                    && runtime.scrollWidth <= runtime.clientWidth;
-            })()
-            JS)
+        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Requests"')
         ->assertNoJavaScriptErrors();
 });
 

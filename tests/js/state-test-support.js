@@ -39,7 +39,7 @@ export function runtime(saved = null) {
 
 export const summary = {
   sections: [
-    { key: 'overview', label: 'Overview', description: 'Request summary.' },
+    { key: 'request', label: 'Requests', description: 'Request details.' },
     { key: 'queries', label: 'Queries', description: 'Query evidence.' },
     { key: 'logs', label: 'Logs', description: 'Log evidence.' },
   ],

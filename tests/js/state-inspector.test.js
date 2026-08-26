@@ -45,14 +45,14 @@ test('the request action reuses an open inspector and opens a closed one', () =>
   const opener = {};
   const state = createNewDebugBar({
     sections: [
-      { key: 'overview', label: 'Overview' },
       { key: 'request', label: 'Request' },
+      { key: 'queries', label: 'Queries' },
     ],
   }, browser);
   state.$root = { querySelectorAll: () => [] };
   state.$wire = { loadSection: async () => {} };
   state.$nextTick = (callback) => callback();
-  state.loadedSection = 'overview';
+  state.loadedSection = 'request';
   state.inspectorOpen = true;
 
   state.openRequestSection();
@@ -61,7 +61,7 @@ test('the request action reuses an open inspector and opens a closed one', () =>
   assert.equal(browser.host.locks, 0);
 
   state.inspectorOpen = false;
-  state.selectSection('overview');
+  state.selectSection('queries');
   state.openRequestSection(opener);
 
   assert.equal(state.inspectorOpen, true);

@@ -56,7 +56,7 @@
             class="ndb-toolbar-facts ndb:hidden ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:sm:ml-auto ndb:sm:flex ndb:sm:flex-none"
         >
             <x-newdebugbar::toolbar-button
-                section="overview"
+                section="request"
                 data-ndb-toolbar="environment"
                 class="ndb:order-1 ndb:hidden ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:md:flex ndb:lg:px-2.5"
             >
@@ -96,7 +96,7 @@
             </x-newdebugbar::toolbar-button>
 
             <x-newdebugbar::toolbar-button
-                section="overview"
+                section="request"
                 data-ndb-toolbar="memory"
                 class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
             >
@@ -176,7 +176,7 @@
                     type="button"
                     role="menuitem"
                     data-ndb-mobile-toolbar-action="inspector"
-                    @click="openInspector('overview')"
+                    @click="openInspector('request')"
                     class="ndb:flex ndb:min-h-11 ndb:w-full ndb:items-center ndb:gap-3 ndb:rounded-lg ndb:px-3 ndb:py-2 ndb:text-left ndb:transition-colors ndb:hover:bg-zinc-100 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/10"
                 >
                     <x-newdebugbar::icon name="expand" class="ndb:size-4 ndb:text-zinc-500 ndb:dark:text-zinc-400" />

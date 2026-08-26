@@ -20,11 +20,11 @@
         ],
         [
             'key' => 'memory',
-            'section' => 'overview',
+            'section' => 'request',
             'label' => 'Peak MB',
             'shortLabel' => 'MB',
             'value' => 'summary.peak_memory_mb',
-            'ariaLabel' => 'Open request overview',
+            'ariaLabel' => 'Open request details',
         ],
     ];
 @endphp

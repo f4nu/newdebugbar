@@ -4,11 +4,11 @@ import test from 'node:test';
 import { createNewDebugBar, STORAGE_KEY } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
-test('pins overview before alphabetized active sections while keeping selected and favorite quiet sections', () => {
+test('pins requests before alphabetized active sections while keeping selected and favorite quiet sections', () => {
   const browser = runtime();
   const state = createNewDebugBar({
     sections: [
-      { key: 'overview', label: 'Overview', active: true },
+      { key: 'request', label: 'Requests', active: true },
       { key: 'queries', label: 'Queries', count: 3, active: true },
       { key: 'logs', label: 'Logs', count: 0, active: false },
       { key: 'cache', label: 'Cache', count: 0, active: false },
@@ -21,21 +21,30 @@ test('pins overview before alphabetized active sections while keeping selected a
     .filter((section) => state.isSectionVisible(section))
     .map((section) => section.key);
 
-  assert.deepEqual(visibleKeys(), ['overview', 'queries']);
-  assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
+  assert.deepEqual(visibleKeys(), ['request', 'queries']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'request');
   assert.equal(state.isSectionVisible(state.summary.sections[2]), false);
 
   state.selectSection('logs');
-  assert.deepEqual(visibleKeys(), ['overview', 'logs', 'queries']);
+  assert.deepEqual(visibleKeys(), ['request', 'logs', 'queries']);
 
   state.toggleFavorite('cache');
-  assert.deepEqual(visibleKeys(), ['cache', 'overview', 'logs', 'queries']);
-  assert.equal(state.firstVisibleNonFavoriteKey, 'overview');
+  assert.deepEqual(visibleKeys(), ['cache', 'request', 'logs', 'queries']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'request');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'system',
     toolbarAnchor: 'bottom',
     favorites: ['cache'],
   });
+});
+
+test('drops a saved Overview favorite after the UI section is removed', () => {
+  const state = createNewDebugBar(summary, runtime({ favorites: ['overview', 'logs'] }));
+
+  state.init();
+
+  assert.deepEqual(state.favorites, ['logs']);
+  assert.deepEqual(state.orderedSections.map((section) => section.key), ['logs', 'request', 'queries']);
 });
 
 test('favorites can be pinned and reordered', () => {
@@ -50,20 +59,20 @@ test('favorites can be pinned and reordered', () => {
     .map((section) => section.key);
 
   assert.deepEqual(state.favorites, ['logs', 'queries']);
-  assert.deepEqual(visibleKeys(), ['logs', 'queries', 'overview']);
+  assert.deepEqual(visibleKeys(), ['logs', 'queries', 'request']);
   assert.equal(browser.values.has(STORAGE_KEY), true);
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
-  assert.deepEqual(visibleKeys(), ['queries', 'overview', 'logs']);
+  assert.deepEqual(visibleKeys(), ['queries', 'request', 'logs']);
 
-  state.toggleFavorite('overview');
-  assert.deepEqual(state.favorites, ['queries', 'overview']);
-  assert.deepEqual(visibleKeys(), ['queries', 'overview', 'logs']);
+  state.toggleFavorite('request');
+  assert.deepEqual(state.favorites, ['queries', 'request']);
+  assert.deepEqual(visibleKeys(), ['queries', 'request', 'logs']);
 });
 
 test('favorites can be reordered by dragging', () => {
-  const state = createNewDebugBar(summary, runtime({ favorites: ['overview', 'queries', 'logs'] }));
+  const state = createNewDebugBar(summary, runtime({ favorites: ['request', 'queries', 'logs'] }));
   const favoriteRow = (key) => {
     const dropBefore = { hidden: false, toggleAttribute: (_name, hidden) => { dropBefore.hidden = hidden; } };
     const dropAfter = { hidden: false, toggleAttribute: (_name, hidden) => { dropAfter.hidden = hidden; } };
@@ -78,9 +87,9 @@ test('favorites can be reordered by dragging', () => {
 
     return row;
   };
-  const overview = favoriteRow('overview');
+  const request = favoriteRow('request');
   const logs = favoriteRow('logs');
-  state.$root = { querySelectorAll: () => [overview, logs] };
+  state.$root = { querySelectorAll: () => [request, logs] };
   const transfer = {
     effectAllowed: null,
     value: null,
@@ -88,23 +97,23 @@ test('favorites can be reordered by dragging', () => {
   };
 
   state.init();
-  state.startFavoriteDrag('overview', { dataTransfer: transfer });
+  state.startFavoriteDrag('request', { dataTransfer: transfer });
   state.hoverFavorite('logs', true);
 
-  assert.equal(overview.dataset.ndbDragging, 'true');
-  assert.equal(overview.dragging, true);
+  assert.equal(request.dataset.ndbDragging, 'true');
+  assert.equal(request.dragging, true);
   assert.equal(logs.dropBefore.hidden, true);
   assert.equal(logs.dropAfter.hidden, false);
 
   state.dropFavorite('logs', true);
 
-  assert.equal(transfer.value, 'overview');
+  assert.equal(transfer.value, 'request');
   assert.equal(transfer.effectAllowed, 'move');
-  assert.deepEqual(state.favorites, ['queries', 'logs', 'overview']);
+  assert.deepEqual(state.favorites, ['queries', 'logs', 'request']);
   assert.equal(state.favoriteDrag, null);
   assert.equal(state.favoriteDrop, null);
   assert.equal(state.favoriteDropAfter, false);
-  assert.equal(overview.dragging, false);
+  assert.equal(request.dragging, false);
   assert.equal(logs.dropAfter.hidden, true);
 });
 
@@ -114,7 +123,7 @@ test('selecting a section resets content and highlights its code', async () => {
   browser.highlight = () => highlighted++;
   const state = createNewDebugBar(summary, browser);
   const panels = [
-    { dataset: { ndbSectionPanel: 'overview' }, hidden: false },
+    { dataset: { ndbSectionPanel: 'request' }, hidden: false },
     { dataset: { ndbSectionPanel: 'queries' }, hidden: true },
   ];
   state.$root = { querySelectorAll: () => panels };
@@ -192,28 +201,28 @@ test('query findings reveal and scroll to grouped slow evidence', () => {
 });
 
 test('favorite guards and drop positions preserve a valid order', () => {
-  const state = createNewDebugBar(summary, runtime({ favorites: ['overview', 'queries', 'logs'] }));
+  const state = createNewDebugBar(summary, runtime({ favorites: ['request', 'queries', 'logs'] }));
   state.init();
 
   state.toggleFavorite('missing');
-  state.moveFavorite('overview', -1);
+  state.moveFavorite('request', -1);
   state.startFavoriteDrag('missing');
   state.hoverFavorite('missing');
-  assert.deepEqual(state.favorites, ['overview', 'queries', 'logs']);
+  assert.deepEqual(state.favorites, ['request', 'queries', 'logs']);
   assert.equal(state.favoriteDrag, null);
 
   state.startFavoriteDrag('logs');
-  state.hoverFavorite('overview');
-  assert.equal(state.favoriteDrop, 'overview');
+  state.hoverFavorite('request');
+  assert.equal(state.favoriteDrop, 'request');
   state.leaveFavorite('queries');
-  assert.equal(state.favoriteDrop, 'overview');
-  state.leaveFavorite('overview');
+  assert.equal(state.favoriteDrop, 'request');
+  state.leaveFavorite('request');
   assert.equal(state.favoriteDrop, null);
-  state.hoverFavorite('overview');
-  state.dropFavorite('overview');
-  assert.deepEqual(state.favorites, ['logs', 'overview', 'queries']);
+  state.hoverFavorite('request');
+  state.dropFavorite('request');
+  assert.deepEqual(state.favorites, ['logs', 'request', 'queries']);
 
   state.startFavoriteDrag('logs');
   state.dropFavorite('logs');
-  assert.deepEqual(state.favorites, ['logs', 'overview', 'queries']);
+  assert.deepEqual(state.favorites, ['logs', 'request', 'queries']);
 });

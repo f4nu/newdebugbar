@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'newdebugbar.preferences.v1';
+const DEFAULT_SECTION = 'request';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOOLBAR_PLACEMENTS = ['top-left', 'top', 'top-right', 'bottom-left', 'bottom', 'bottom-right'];
 const TOOLBAR_CORNER_PLACEMENTS = TOOLBAR_PLACEMENTS.filter((placement) => placement.includes('-'));
@@ -301,7 +302,7 @@ export function createNewDebugBar(
     activityPollAttempts: 0,
     activityPollTimer: null,
     activityRefreshPending: false,
-    selected: 'overview',
+    selected: DEFAULT_SECTION,
     theme: ['system', 'light', 'dark'].includes(summary.theme) ? summary.theme : 'system',
     resolvedTheme: 'light',
     toolbarPlacement: 'bottom',
@@ -664,16 +665,16 @@ export function createNewDebugBar(
       const allSections = this.summary.sections ?? [];
       const byKey = new Map(allSections.map((section) => [section.key, section]));
       const favorites = this.favorites.map((key) => byKey.get(key)).filter(Boolean);
-      const overview = this.isFavorite('overview') ? null : byKey.get('overview');
+      const request = this.isFavorite(DEFAULT_SECTION) ? null : byKey.get(DEFAULT_SECTION);
       const sections = allSections
-        .filter((section) => section.key !== 'overview' && !this.isFavorite(section.key))
+        .filter((section) => section.key !== DEFAULT_SECTION && !this.isFavorite(section.key))
         .sort((left, right) =>
           left.label.localeCompare(right.label, undefined, {
             sensitivity: 'base',
           }),
         );
 
-      return [...favorites, ...(overview ? [overview] : []), ...sections];
+      return [...favorites, ...(request ? [request] : []), ...sections];
     },
 
     get firstVisibleNonFavoriteKey() {
@@ -686,8 +687,8 @@ export function createNewDebugBar(
     get selectedSection() {
       return (
         (this.summary.sections ?? []).find((section) => section.key === this.selected) ?? {
-          key: 'overview',
-          label: 'Overview',
+          key: DEFAULT_SECTION,
+          label: 'Requests',
           description: '',
           layout: 'workspace',
           count: null,
@@ -1128,7 +1129,7 @@ export function createNewDebugBar(
 
     selectSection(section, filter = null, focusHeading = false) {
       const focusContentHeading = focusHeading || this.mobileSectionsOpen;
-      const nextSection = this.sectionKeys.includes(section) ? section : 'overview';
+      const nextSection = this.sectionKeys.includes(section) ? section : DEFAULT_SECTION;
       const needsSection = this.inspectorOpen && (this.loadedSection !== nextSection || this.sectionError);
       this.selected = nextSection;
       if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) {
@@ -1161,7 +1162,7 @@ export function createNewDebugBar(
     },
 
     navigateToSection(section, filter = null) {
-      const target = this.sectionKeys.includes(section) ? section : 'overview';
+      const target = this.sectionKeys.includes(section) ? section : DEFAULT_SECTION;
 
       this.selectSection(target, filter, true);
     },
@@ -1573,7 +1574,7 @@ export function createNewDebugBar(
     },
 
     requestSection(section = this.selected, force = false) {
-      const target = this.sectionKeys.includes(section) ? section : 'overview';
+      const target = this.sectionKeys.includes(section) ? section : DEFAULT_SECTION;
       if (!force && this.loadedSection === target) return;
       if (!force && this.sectionLoading && this.requestedSection === target) return;
 
@@ -1783,7 +1784,6 @@ export function createNewDebugBar(
       if (!PROFILE_PATTERN.test(summary?.id ?? '') || summary.id !== this.summary.id) return;
 
       const nextSummary = { ...this.summary, ...summary };
-      const summaryChanged = JSON.stringify(nextSummary) !== JSON.stringify(this.summary);
       const backgroundChanged =
         nextSummary.background_pending !== this.summary.background_pending ||
         nextSummary.background_activity_count !== this.summary.background_activity_count ||
@@ -1794,9 +1794,8 @@ export function createNewDebugBar(
         return !existing || JSON.stringify({ ...existing, ...profile }) !== JSON.stringify(existing);
       });
       const sectionNeedsRefresh =
-        (this.selected === 'overview' && summaryChanged) ||
-        (['timeline', 'queue', 'mail', 'notifications'].includes(this.selected) &&
-          (backgroundChanged || relatedChanged));
+        ['timeline', 'queue', 'mail', 'notifications'].includes(this.selected) &&
+        (backgroundChanged || relatedChanged);
 
       this.summary = nextSummary;
       this.rememberProfile(this.summary);
@@ -1816,7 +1815,7 @@ export function createNewDebugBar(
       else this.cancelActivityRefresh();
     },
 
-    openRelatedProfile(profileId, section = 'overview') {
+    openRelatedProfile(profileId, section = DEFAULT_SECTION) {
       if (!PROFILE_PATTERN.test(profileId ?? '')) return;
 
       if (profileId === this.summary.id) {
@@ -1892,7 +1891,7 @@ export function createNewDebugBar(
           : this.selected;
       const selected = (summary.sections ?? []).some((section) => section.key === requestedSection)
         ? requestedSection
-        : 'overview';
+        : DEFAULT_SECTION;
       this.cancelActivityRefresh(true);
       this.activityRefreshPending = false;
       this.sectionRequestVersion++;

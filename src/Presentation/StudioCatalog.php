@@ -108,9 +108,6 @@ final class StudioCatalog
             'notification-header',
             'notification-payload-panel',
         ],
-        'overview' => [
-            'overview-runtime-details',
-        ],
         'queries' => [
             'query-detail',
             'query-section',

@@ -9,7 +9,7 @@ it('switches every section after Livewire navigation with one active state', fun
         ->assertPathIs('/profiled-next')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
 
-    foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'overview', 'models'] as $section) {
+    foreach (['request', 'timeline', 'queries', 'models', 'cache', 'views', 'events', 'logs', 'exceptions', 'models'] as $section) {
         DebugBarBrowser::selectSectionViaPalette($page, $section);
 
         DebugBarBrowser::assertSectionSelected($page, $section);
@@ -53,7 +53,7 @@ it('keeps section content stable while delayed loading feedback takes over', fun
     $page
         ->assertAttribute('[data-ndb-section-stage]', 'aria-busy', 'true')
         ->assertScript(<<<'JS'
-            document.querySelector('[data-ndb-section-panel="overview"]').hidden === false
+            document.querySelector('[data-ndb-section-panel="request"]').hidden === false
             JS)
         ->assertScript(<<<'JS'
             getComputedStyle(document.querySelector('[data-ndb-section-loading]')).display === 'none'
@@ -72,7 +72,7 @@ it('keeps section content stable while delayed loading feedback takes over', fun
         (() => {
             const state = Alpine.$data(document.getElementById('newdebugbar'));
 
-            state.selected = 'overview';
+            state.selected = 'request';
             state.sectionLoading = false;
             state.sectionLoadingIndicator = false;
             state.sectionTransitioning = false;

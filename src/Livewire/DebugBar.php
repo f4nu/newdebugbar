@@ -16,11 +16,12 @@ use NewDebugBar\Support\QueryExplainer;
 /** Loads a request summary first and renders one inspector section at a time. */
 final class DebugBar extends Component
 {
+    private const DEFAULT_SECTION = 'request';
+
     private const TIMELINE_PAGE_SIZE = 50;
 
     /** @var array<string, string> */
     private const SECTION_DESCRIPTIONS = [
-        'overview' => 'Review the important request activity and the runtime behind it.',
         'authorization' => 'See what Laravel allowed or denied, for whom and what, then inspect the handler and source.',
         'cache' => 'Review cache reads, writes, deletes, stores, results, timing, and source.',
         'events' => 'See which events Laravel dispatched, where they came from, and how they were handled.',
@@ -52,7 +53,7 @@ final class DebugBar extends Component
     public bool $sectionLoaded = false;
 
     #[Locked]
-    public string $selectedSection = 'overview';
+    public string $selectedSection = self::DEFAULT_SECTION;
 
     #[Locked]
     public int $timelineLimit = self::TIMELINE_PAGE_SIZE;
@@ -89,7 +90,10 @@ final class DebugBar extends Component
         abort_if($stored === null, 404);
 
         $profile = $presenter->present($stored);
-        abort_unless(array_key_exists($section, (array) ($profile['sections'] ?? [])), 422);
+        abort_unless(
+            $section !== 'overview' && array_key_exists($section, (array) ($profile['sections'] ?? [])),
+            422,
+        );
 
         if ($this->selectedSection !== $section) {
             $this->timelineLimit = self::TIMELINE_PAGE_SIZE;
@@ -239,7 +243,7 @@ final class DebugBar extends Component
         $this->profileId = $profileId;
         $this->summary = $this->makeSummary($presenter->present($profile), $summaries);
         $this->sectionLoaded = false;
-        $this->selectedSection = 'overview';
+        $this->selectedSection = self::DEFAULT_SECTION;
         $this->timelineLimit = self::TIMELINE_PAGE_SIZE;
         $this->queryExplains = [];
         $this->queryExplainErrors = [];
@@ -307,6 +311,10 @@ final class DebugBar extends Component
         }
 
         foreach ($sections as $key => $section) {
+            if ($key === 'overview') {
+                continue;
+            }
+
             $label = $key === 'request'
                 ? 'Requests'
                 : (string) ($section['label'] ?? ucfirst($key));

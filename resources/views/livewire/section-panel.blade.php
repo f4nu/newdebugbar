@@ -14,7 +14,7 @@
             @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))
             @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? [])))
             @php($collectionTotal = (int) ($section['summary']['count'] ?? ($collectionRetained + $collectionDropped)))
-            @if (! in_array($sectionKey, ['overview', 'notifications'], true) && $collectionDropped > 0)
+            @if ($sectionKey !== 'notifications' && $collectionDropped > 0)
                 <div
                     data-ndb-collection-status="{{ $sectionKey }}"
                     role="status"

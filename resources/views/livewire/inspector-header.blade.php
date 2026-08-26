@@ -115,7 +115,7 @@
                 class="ndb-scrollbar ndb:flex ndb:min-w-0 ndb:flex-1 ndb:gap-2 ndb:overflow-x-auto ndb:overscroll-x-contain ndb:pb-0.5 ndb:sm:order-none ndb:sm:ml-auto ndb:sm:w-auto ndb:sm:flex-none ndb:sm:gap-1 ndb:sm:overflow-visible ndb:sm:pb-0"
             >
                 <x-newdebugbar::toolbar-button
-                    section="overview"
+                    section="request"
                     data-ndb-header-fact="environment"
                     class="ndb:order-1 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
                 >
@@ -156,7 +156,7 @@
                 </x-newdebugbar::toolbar-button>
 
                 <x-newdebugbar::toolbar-button
-                    section="overview"
+                    section="request"
                     data-ndb-header-fact="memory"
                     class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
                 >

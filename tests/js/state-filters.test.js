@@ -673,7 +673,7 @@ test('notifications default to all and group channel delivery diagnostics', () =
   const state = createNewDebugBar(
     {
       sections: [
-        { key: 'overview', label: 'Overview' },
+        { key: 'request', label: 'Requests' },
         { key: 'mail', label: 'Mail' },
         { key: 'notifications', label: 'Notifications' },
       ],
@@ -981,11 +981,11 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   assert.equal(state.querySelected, null);
 });
 
-test('authorization controls filter search selection detail and overview navigation', () => {
+test('authorization controls filter search selection detail and section navigation', () => {
   const browser = runtime();
   const state = createNewDebugBar({
     sections: [
-      { key: 'overview', label: 'Overview' },
+      { key: 'request', label: 'Requests' },
       { key: 'authorization', label: 'Authorization' },
     ],
   }, browser);
