@@ -107,9 +107,9 @@
                         </template>
 
                         <template x-for="argument in selectedAuthorizationDecision.arguments" :key="argument.position">
-                            <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                                <dt class="ndb:text-xs ndb:font-bold" x-text="argument.role_label"></dt>
-                                <dd class="ndb:min-w-0">
+                            <x-newdebugbar::inspector-definition-row>
+                                <x-slot:term x-text="argument.role_label"></x-slot:term>
+                                <x-slot:value class="ndb:min-w-0">
                                     <span
                                         class="ndb:block ndb:break-words ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
                                         x-text="argument.label"
@@ -123,8 +123,8 @@
                                         class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                         x-text="argument.identity_label"
                                     ></span>
-                                </dd>
-                            </div>
+                                </x-slot:value>
+                            </x-newdebugbar::inspector-definition-row>
                         </template>
 
                         <x-newdebugbar::inspector-definition-row label="Explanation">

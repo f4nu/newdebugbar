@@ -14,13 +14,13 @@
                 "
                 :key="field[0]"
             >
-                <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                    <dt class="ndb:text-xs ndb:font-bold" x-text="field[0]"></dt>
-                    <dd
+                <x-newdebugbar::inspector-definition-row>
+                    <x-slot:term x-text="field[0]"></x-slot:term>
+                    <x-slot:value
                         class="ndb:break-all ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                         x-text="formatMailAddresses(field[1])"
-                    ></dd>
-                </div>
+                    ></x-slot:value>
+                </x-newdebugbar::inspector-definition-row>
             </template>
         </dl>
 
@@ -106,13 +106,13 @@
                     "
                     :key="field[0]"
                 >
-                    <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                        <dt class="ndb:text-xs ndb:font-bold" x-text="field[0]"></dt>
-                        <dd
+                    <x-newdebugbar::inspector-definition-row>
+                        <x-slot:term x-text="field[0]"></x-slot:term>
+                        <x-slot:value
                             class="ndb:break-all ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                             x-text="field[1]"
-                        ></dd>
-                    </div>
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-definition-row>
                 </template>
             </dl>
         </section>

@@ -55,7 +55,7 @@ Similar section layouts do not justify a large component with many conditional p
 | --- | --- |
 | `filter-tabs` | Accessible tabs or segmented-control group. Give it a concrete label and place only `filter-tab` children inside it. |
 | `inspector-definition-list` | Stack `inspector-definition-row` children with one divider system. |
-| `inspector-definition-row` | One label/value pair. Use a danger tone only for an actual failed or harmful state. |
+| `inspector-definition-row` | One label/value pair. Pass `label` for static text or the optional `term` slot for Alpine-driven headings; use a danger tone only for an actual failed or harmful state. |
 | `inspector-detail-back` | Mobile drill-in Back action. Use `persistent` only when the desktop flow truly needs it. |
 | `inspector-detail-empty` | Center a short selection instruction in an unselected detail pane. |
 | `inspector-detail-header` | Stable selected-item identity and optional actions. Use `grid` for fixed action placement and `wrap` for long identities. |

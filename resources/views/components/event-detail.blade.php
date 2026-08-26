@@ -224,11 +224,11 @@
                         class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:bg-transparent ndb:dark:divide-zinc-800"
                     >
                         <template x-for="entry in selectedEvent.payload_shape" :key="entry.position">
-                            <div class="ndb:grid ndb:gap-1 ndb:bg-transparent ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                                <dt class="ndb:text-[11px] ndb:font-bold ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                            <x-newdebugbar::inspector-definition-row>
+                                <x-slot:term>
                                     <span x-text="'Argument ' + entry.position"></span>
-                                </dt>
-                                <dd class="ndb:min-w-0 ndb:bg-transparent">
+                                </x-slot:term>
+                                <x-slot:value class="ndb:min-w-0 ndb:bg-transparent">
                                     <code
                                         class="ndb:block ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:font-semibold"
                                         x-text="entry.type"
@@ -254,8 +254,8 @@
                                                 : ' more fields are not shown.')
                                         "
                                     ></p>
-                                </dd>
-                            </div>
+                                </x-slot:value>
+                            </x-newdebugbar::inspector-definition-row>
                         </template>
                     </dl>
 

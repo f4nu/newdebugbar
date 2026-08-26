@@ -281,7 +281,7 @@
                         <x-newdebugbar::inspector-detail-header data-ndb-queue-detail-header>
                             <x-slot:title>
                                 <h3
-                                    class="ndb:min-w-0 ndb:break-all ndb:text-sm ndb:font-bold"
+                                    class="ndb:min-w-0 ndb:break-all ndb:font-mono ndb:text-sm ndb:font-bold"
                                     x-text="selectedQueueActivity.job"
                                 ></h3>
                             </x-slot:title>
@@ -411,7 +411,7 @@
                                     ></x-newdebugbar::inspector-definition-row>
                                     <x-newdebugbar::inspector-definition-row label="Source"
                                         ><x-slot:value
-                                            class="ndb:break-all"
+                                            class="ndb:break-all ndb:font-mono"
                                             x-text="
                                                 selectedQueueActivity.communication_class ?? selectedQueueActivity.job
                                             "
@@ -427,7 +427,7 @@
                                         Worker exception
                                     </p>
                                     <p
-                                        class="ndb:mt-1 ndb:break-all ndb:text-xs ndb:text-red-700 ndb:dark:text-red-300"
+                                        class="ndb:mt-1 ndb:break-all ndb:font-mono ndb:text-xs ndb:text-red-700 ndb:dark:text-red-300"
                                         x-text="selectedQueueActivity.exception_class"
                                     ></p>
                                     <p

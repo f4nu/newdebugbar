@@ -16,12 +16,32 @@ it('filters queue activity and instantiates only the active detail evidence', fu
         ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
         ->assertSee('ProfiledJob')
         ->assertSee('What happened to this job?')
+        ->assertScript(<<<'JS'
+            (() => {
+                const detail = document.querySelector('[data-ndb-queue-detail]');
+                const headerClass = document.querySelector('[data-ndb-queue-detail-header] h3');
+                const sourceRow = [...document.querySelectorAll('[data-ndb-queue-communication] > div')]
+                    .find((row) => row.querySelector('dt')?.textContent.trim() === 'Source');
+
+                return getComputedStyle(headerClass).fontFamily !== getComputedStyle(detail).fontFamily
+                    && getComputedStyle(sourceRow.querySelector('dd')).fontFamily !== getComputedStyle(detail).fontFamily;
+            })()
+            JS)
         ->assertScript('document.querySelectorAll("[data-ndb-queue-item]:not([hidden])").length', 3)
         ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-panel]").length', 1)
         ->select('[data-ndb-queue-filter]', 'failed')
         ->assertScript('document.querySelectorAll("[data-ndb-queue-item]:not([hidden])").length', 1)
         ->assertAttribute('[data-ndb-queue-item="3"]', 'aria-pressed', 'true')
         ->assertSee('RuntimeException')
+        ->assertScript(<<<'JS'
+            (() => {
+                const detail = document.querySelector('[data-ndb-queue-detail]');
+                const exceptionClass = [...document.querySelectorAll('[data-ndb-queue-detail-panel="overview"] p')]
+                    .find((paragraph) => paragraph.textContent.trim() === 'RuntimeException');
+
+                return getComputedStyle(exceptionClass).fontFamily !== getComputedStyle(detail).fontFamily;
+            })()
+            JS)
         ->click('[data-ndb-queue-detail-tab="attempts"]')
         ->assertAttribute('[data-ndb-queue-detail-tab="attempts"]', 'aria-pressed', 'true')
         ->assertSee('No worker attempt has been linked yet.')
@@ -105,6 +125,28 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
         ->assertScript('document.querySelectorAll("[data-ndb-redis-item]:not([hidden])").length', 1)
         ->assertSee('RuntimeException')
         ->assertScript('document.querySelector("[data-ndb-redis-failed=\\"true\\"]").textContent.includes("—")')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows protected Redis identifiers in the interface typeface', function () {
+    $page = visit('/profiled-redis-protected')
+        ->resize(1440, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="redis"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-redis-workspace]');
+
+    $page
+        ->click('[data-ndb-redis-detail-tab="keys"]')
+        ->assertVisible('[data-ndb-redis-key-hash]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const identifier = document.querySelector('[data-ndb-redis-key-hash]');
+                const detail = document.querySelector('[data-ndb-redis-detail]');
+
+                return getComputedStyle(identifier).fontFamily === getComputedStyle(detail).fontFamily;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 

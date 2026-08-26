@@ -136,6 +136,10 @@ it('groups noisy Laravel events around application evidence', function () {
         ->click('[data-ndb-event-detail-tab="payload"]')
         ->assertAttribute('[data-ndb-event-detail-tab="payload"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-event-detail-panel="payload"]')
+        ->assertScript(<<<'JS'
+            [...document.querySelectorAll('[data-ndb-event-detail-panel="payload"] dl > div')]
+                .every((row) => row.querySelector(':scope > dt') && row.querySelector(':scope > dd'))
+            JS)
         ->assertSee('trip')
         ->assertSee('changes')
         ->assertMissing('[data-ndb-event-copy-payload-shape]')

@@ -73,11 +73,14 @@ it('scans filters searches and inspects authorization evidence on desktop', func
         ->assertScript(<<<'JS'
             (() => {
                 const actor = document.querySelector('[data-ndb-authorization-actor-detail]').textContent;
-                const arguments = document.querySelector('[data-ndb-authorization-arguments-detail]').textContent;
+                const argumentList = document.querySelector('[data-ndb-authorization-arguments-detail]');
+                const arguments = argumentList.textContent;
+                const rows = [...argumentList.querySelectorAll(':scope > div')];
 
                 return actor.includes('Guest')
                     && arguments.includes('Target')
-                    && arguments.includes('StudioJob');
+                    && arguments.includes('StudioJob')
+                    && rows.every((row) => row.querySelector(':scope > dt') && row.querySelector(':scope > dd'));
             })()
             JS)
         ->click('[data-ndb-authorization-item="4"]')

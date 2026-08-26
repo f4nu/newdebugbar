@@ -338,17 +338,14 @@
                                             x-for="(key, index) in selectedRedisCommand.keys"
                                             :key="`${index}:${key}`"
                                         >
-                                            <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                                                <dt
-                                                    class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                    x-text="`Key ${index + 1}`"
-                                                ></dt>
-                                                <dd
+                                            <x-newdebugbar::inspector-definition-row>
+                                                <x-slot:term x-text="`Key ${index + 1}`"></x-slot:term>
+                                                <x-slot:value
                                                     data-ndb-redis-key
                                                     class="ndb:break-all ndb:bg-transparent ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                                     x-text="key"
-                                                ></dd>
-                                            </div>
+                                                ></x-slot:value>
+                                            </x-newdebugbar::inspector-definition-row>
                                         </template>
                                     </x-newdebugbar::inspector-definition-list>
                                 </template>
@@ -363,17 +360,14 @@
                                             x-for="(hash, index) in selectedRedisCommand.key_hashes"
                                             :key="`${index}:${hash}`"
                                         >
-                                            <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                                                <dt
-                                                    class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                                    x-text="`Identifier ${index + 1}`"
-                                                ></dt>
-                                                <dd
+                                            <x-newdebugbar::inspector-definition-row>
+                                                <x-slot:term x-text="`Identifier ${index + 1}`"></x-slot:term>
+                                                <x-slot:value
                                                     data-ndb-redis-key-hash
-                                                    class="ndb:break-all ndb:font-mono ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                                    class="ndb:break-all ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                                     x-text="hash"
-                                                ></dd>
-                                            </div>
+                                                ></x-slot:value>
+                                            </x-newdebugbar::inspector-definition-row>
                                         </template>
                                     </x-newdebugbar::inspector-definition-list>
                                 </template>

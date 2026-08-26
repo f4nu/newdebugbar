@@ -1132,6 +1132,19 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>Independent cache</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-redis-protected', function () {
+            $originalPolicy = config('newdebugbar.collection.key_policy');
+            config()->set('newdebugbar.collection.key_policy', 'hash');
+
+            try {
+                Event::dispatch(new CommandExecuted('get', ['private-protected-key'], 1.25, new ProfiledRedisConnection));
+            } finally {
+                config()->set('newdebugbar.collection.key_policy', $originalPolicy);
+            }
+
+            return response('<!doctype html><html><body>Protected Redis</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->post(
             '/profiled-input',
             fn (Request $request) => response('<!doctype html><html><body>'.$request->input('clinic.name').'</body></html>'),
