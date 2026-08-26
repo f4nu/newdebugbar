@@ -43,10 +43,13 @@
                         class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold"
                         x-text="component.title"
                     ></span>
-                    <span
-                        x-show.important="livewireComponentIsSearchContext(component)"
-                        class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-                    >Parent component</span>
+                    <span class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-2 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
+                        <span
+                            data-ndb-livewire-component-property-count
+                            x-text="livewireComponentPropertyCountLabel(component)"
+                        ></span>
+                        <span x-show.important="livewireComponentIsSearchContext(component)">Parent component</span>
+                    </span>
                 </span>
                 <span
                     x-show.important="component.status !== 'idle'"

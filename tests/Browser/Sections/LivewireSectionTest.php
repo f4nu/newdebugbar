@@ -18,6 +18,8 @@ it('uses the shared edge-to-edge workspace and renders only the active Livewire 
                 const workspace = document.querySelector('[data-ndb-livewire-workspace]');
                 const list = document.querySelector('[data-ndb-livewire-list]');
                 const detail = document.querySelector('[data-ndb-livewire-detail-pane]');
+                const buttons = items.map((item) => item.querySelector('[data-ndb-livewire-activity-item]'));
+                const mountButtons = buttons.filter((button) => button.dataset.ndbLivewireActivityKind === 'mount');
                 const durationEdges = items.map((item) =>
                     item.querySelector('[data-ndb-livewire-activity-duration]').getBoundingClientRect().right,
                 );
@@ -34,6 +36,14 @@ it('uses the shared edge-to-edge workspace and renders only the active Livewire 
                 return items.length > 1
                     && items.every((item) => item.querySelector('[data-ndb-livewire-activity-item]'))
                     && items.every((item) => item.hasAttribute('data-ndb-livewire-activity-timeline-item'))
+                    && mountButtons.length > 0
+                    && ! buttons.some((button) => button.dataset.ndbLivewireActivityKind === 'render')
+                    && mountButtons.every((button) => /^\+\d+\.\d{3} ms$/.test(
+                        button.querySelector('[data-ndb-livewire-activity-time]').textContent.trim(),
+                    ))
+                    && mountButtons.every((button) => /^Render \d/.test(
+                        button.querySelector('[data-ndb-livewire-activity-duration]').textContent.trim(),
+                    ))
                     && durationEdges.every((edge) => Math.abs(edge - durationEdges[0]) <= 0.75)
                     && dots.every((dot) => Math.abs((dot.left + dot.width / 2) - (dots[0].left + dots[0].width / 2)) <= 0.75)
                     && connectors.every((connector, index) =>
@@ -46,6 +56,17 @@ it('uses the shared edge-to-edge workspace and renders only the active Livewire 
                     && parseFloat(workspaceStyle.borderLeftWidth) === 0
                     && listStyle.overflowY === 'auto'
                     && detailStyle.overflowY === 'auto';
+            })()
+            JS)
+        ->assertVisible('[data-ndb-livewire-mount-facts]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const mountedAt = document.querySelector('[data-ndb-livewire-mount-time]').textContent.trim();
+                const initialRender = document.querySelector('[data-ndb-livewire-initial-render-duration]').textContent.trim();
+
+                return /^\+\d+\.\d{3} ms$/.test(mountedAt)
+                    && /^\d/.test(initialRender)
+                    && initialRender.endsWith(' ms');
             })()
             JS)
         ->assertNoJavaScriptErrors();
@@ -75,6 +96,9 @@ it('keeps one workspace while switching between activity and mounted components'
         ->click('[data-ndb-livewire-tab="components"]')
         ->assertMissing('[data-ndb-livewire-activity]')
         ->assertVisible('[data-ndb-livewire-components]')
+        ->assertSeeIn('[data-ndb-livewire-component-list] [data-ndb-livewire-component-property-count]', '3 properties')
+        ->assertSeeIn('[data-ndb-livewire-component-detail] [data-ndb-livewire-component-property-count]', '3 properties')
+        ->assertSeeIn('[data-ndb-livewire-component-property-summary]', '0 changed, 2 editable')
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-livewire-workspace]');
@@ -509,7 +533,32 @@ it('centers segmented detail tabs and instantiates only the active evidence pane
             JS)
         ->click('[data-ndb-livewire-detail-tab="trace"]')
         ->assertMissing('[data-ndb-livewire-detail-panel="overview"]')
-        ->assertVisible('[data-ndb-livewire-detail-panel="trace"]')
+        ->assertVisible('[data-ndb-livewire-detail-panel="trace"]');
+
+    $page->script(<<<'JS'
+        (() => {
+            const state = Alpine.$data(document.getElementById('newdebugbar'));
+            const selected = state.livewireSelectedActivityId;
+            state.livewireTrace = {
+                ...state.livewireTrace,
+                activity: state.livewireTrace.activity.map((item) =>
+                    item.id === selected ? { ...item, phases: [] } : item,
+                ),
+            };
+            state.livewireDetailTab = 'overview';
+        })()
+        JS);
+
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const trace = document.querySelector('[data-ndb-livewire-detail-tab="trace"]');
+
+                return trace.getClientRects().length === 0
+                    && document.querySelector('[data-ndb-livewire-detail-panel="trace"]') === null
+                    && document.querySelector('[data-ndb-livewire-detail-panel="overview"]') !== null;
+            })()
+            JS)
         ->click('[data-ndb-livewire-tab="components"]')
         ->assertVisible('[data-ndb-livewire-detail-panel="properties"]')
         ->assertMissing('[data-ndb-livewire-detail-panel="source"]')
@@ -517,5 +566,13 @@ it('centers segmented detail tabs and instantiates only the active evidence pane
         ->assertMissing('[data-ndb-livewire-detail-panel="properties"]')
         ->assertVisible('[data-ndb-livewire-detail-panel="source"]')
         ->assertVisible('[data-ndb-language="php"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const instance = document.querySelector('[data-ndb-livewire-component-instance]');
+                const title = document.querySelector('[data-ndb-livewire-component-header] h3');
+
+                return getComputedStyle(instance).fontFamily === getComputedStyle(title).fontFamily;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });

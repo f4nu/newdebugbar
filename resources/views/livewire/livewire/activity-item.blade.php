@@ -1,6 +1,7 @@
 <button
     type="button"
     data-ndb-livewire-activity-item
+    :data-ndb-livewire-activity-kind="item.kind"
     @click="selectLivewireActivity(item.id)"
     :aria-pressed="livewireSelectedActivityId === item.id"
     :class="livewireSelectedActivityId === item.id
@@ -35,14 +36,14 @@
 
     <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-end ndb:gap-0.5 ndb:text-[11px] ndb:tabular-nums">
         <span
-            data-ndb-livewire-activity-age
+            data-ndb-livewire-activity-time
             class="ndb:max-w-full ndb:truncate ndb:font-medium ndb:text-zinc-400"
-            x-text="livewireActivityAge(item)"
+            x-text="livewireActivityTime(item)"
         ></span>
         <span
             data-ndb-livewire-activity-duration
             class="ndb:whitespace-nowrap ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-            x-text="livewireDuration(item)"
+            x-text="livewireActivityDuration(item)"
         ></span>
     </span>
 </button>

@@ -921,9 +921,7 @@ export function createNewDebugBar(
     },
 
     get livewireActivity() {
-      if (this.livewireTrace.ready) return this.livewireTrace.activity;
-
-      return this.livewireServerActivity.map((item, index) => ({
+      const serverActivity = this.livewireServerActivity.map((item, index) => ({
         id: item.id ?? `server-livewire-${index + 1}`,
         sequence: index + 1,
         componentId: String(item.component_id ?? ''),
@@ -934,8 +932,10 @@ export function createNewDebugBar(
         status: item.status ?? 'complete',
         occurredAt: null,
         startedAt: item.at_ms ?? null,
+        requestAtMs: item.at_ms ?? null,
         finishedAt: null,
         durationMs: item.duration_ms ?? null,
+        initialRenderDurationMs: null,
         profileIds: [],
         actions: item.method
           ? [
@@ -971,6 +971,132 @@ export function createNewDebugBar(
         phases: [],
         error: item.message ?? null,
       }));
+
+      if (!this.livewireTrace.ready) return serverActivity;
+
+      const renderEvidence = new Map();
+      const lastLifecycleByComponent = new Map();
+      serverActivity.forEach((item) => {
+        const componentId = String(item.componentId);
+        if (item.kind === 'render') {
+          const owner = lastLifecycleByComponent.get(componentId);
+          if (!owner) return;
+
+          const renders = renderEvidence.get(owner.id) ?? [];
+          renders.push(item);
+          renderEvidence.set(owner.id, renders);
+
+          return;
+        }
+
+        lastLifecycleByComponent.set(componentId, item);
+      });
+
+      const consumedServerIds = new Set();
+      const matchingServerEvidence = (item) => {
+        const actionNames = new Set((item.actions ?? []).map((action) => action.name));
+        const changePaths = new Set((item.changes ?? []).map((change) => change.path));
+        const eventNames = new Set([
+          ...(item.events ?? []).map((event) => event.name),
+          ...(item.actions ?? [])
+            .filter((action) => action.name === '__dispatch')
+            .map((action) => action.params?.[0])
+            .filter(Boolean),
+        ]);
+        const candidates = serverActivity.filter(
+          (serverItem) =>
+            serverItem.kind !== 'render' &&
+            !consumedServerIds.has(serverItem.id) &&
+            String(serverItem.componentId) === String(item.componentId),
+        );
+
+        if (item.kind === 'mount') return candidates.filter((serverItem) => serverItem.kind === 'mount').slice(0, 1);
+
+        const exact = candidates.filter((serverItem) => {
+          if (serverItem.kind === 'action') return actionNames.has(serverItem.actions?.[0]?.name);
+          if (serverItem.kind === 'change') return changePaths.has(serverItem.changes?.[0]?.path);
+          if (['event', 'event_received'].includes(serverItem.kind)) {
+            return eventNames.has(serverItem.events?.[0]?.name);
+          }
+
+          return serverItem.kind === item.kind;
+        });
+
+        return exact;
+      };
+      const browserActivity = this.livewireTrace.activity.map((item) => {
+        const evidence = matchingServerEvidence(item);
+        if (evidence.length === 0) return item;
+
+        const renders = evidence.flatMap((serverItem) => renderEvidence.get(serverItem.id) ?? []);
+        evidence.forEach((serverItem) => consumedServerIds.add(serverItem.id));
+        renders.forEach((render) => consumedServerIds.add(render.id));
+        const requestTimes = evidence
+          .map((serverItem) => serverItem.requestAtMs)
+          .filter((at) => at !== null && at !== undefined)
+          .map(Number)
+          .filter(Number.isFinite);
+        const renderDurations = renders
+          .map((render) => render.durationMs)
+          .filter((duration) => duration !== null && duration !== undefined)
+          .map(Number)
+          .filter(Number.isFinite);
+        const mount = evidence.find((serverItem) => serverItem.kind === 'mount') ?? null;
+
+        return {
+          ...item,
+          requestAtMs: requestTimes.length > 0 ? Math.min(...requestTimes) : null,
+          initialRenderDurationMs: item.kind === 'mount' && renderDurations.length > 0 ? renderDurations[0] : null,
+          serverRenderDurationMs:
+            renderDurations.length > 0 ? renderDurations.reduce((total, duration) => total + duration, 0) : null,
+          serverActivityIds: evidence.map((serverItem) => serverItem.id),
+          serverRenderIds: renders.map((render) => render.id),
+          serverMountId: mount?.id ?? null,
+          serverRenderId: item.kind === 'mount' ? (renders[0]?.id ?? null) : null,
+        };
+      });
+
+      const unmatchedServerActivity = serverActivity.flatMap((item) => {
+        if (consumedServerIds.has(item.id)) return [];
+        if (item.kind === 'render') return [item];
+
+        const renders = (renderEvidence.get(item.id) ?? []).filter((render) => !consumedServerIds.has(render.id));
+        renders.forEach((render) => consumedServerIds.add(render.id));
+        const renderDurations = renders
+          .map((render) => render.durationMs)
+          .filter((duration) => duration !== null && duration !== undefined)
+          .map(Number)
+          .filter(Number.isFinite);
+
+        return [
+          {
+            ...item,
+            initialRenderDurationMs: item.kind === 'mount' && renderDurations.length > 0 ? renderDurations[0] : null,
+            serverRenderDurationMs:
+              renderDurations.length > 0 ? renderDurations.reduce((total, duration) => total + duration, 0) : null,
+            serverActivityIds: [item.id],
+            serverRenderIds: renders.map((render) => render.id),
+            serverMountId: item.kind === 'mount' ? item.id : null,
+            serverRenderId: item.kind === 'mount' ? (renders[0]?.id ?? null) : null,
+          },
+        ];
+      });
+
+      return [...browserActivity, ...unmatchedServerActivity]
+        .sort((left, right) => {
+          const leftAt = Number(left.requestAtMs);
+          const rightAt = Number(right.requestAtMs);
+          const leftHasTime = left.requestAtMs !== null && left.requestAtMs !== undefined && Number.isFinite(leftAt);
+          const rightHasTime =
+            right.requestAtMs !== null && right.requestAtMs !== undefined && Number.isFinite(rightAt);
+
+          if (leftHasTime && rightHasTime && leftAt !== rightAt) return leftAt - rightAt;
+          if (leftHasTime !== rightHasTime) return leftHasTime ? -1 : 1;
+
+          const sequence = Number(left.sequence ?? 0) - Number(right.sequence ?? 0);
+          return sequence !== 0 ? sequence : String(left.id).localeCompare(String(right.id));
+        })
+        .map((item, index) => ({ ...item, sequence: index + 1 }));
     },
 
     get filteredLivewireActivity() {
@@ -2164,6 +2290,7 @@ export function createNewDebugBar(
     setLivewireDetailTab(tab) {
       const allowed = this.livewireTab === 'activity' ? ['overview', 'trace'] : ['properties', 'source'];
       if (!allowed.includes(tab)) return;
+      if (tab === 'trace' && (this.selectedLivewireActivity?.phases?.length ?? 0) === 0) return;
 
       this.livewireDetailTab = tab;
       this.$nextTick?.(() => browser.highlight?.());
@@ -2260,6 +2387,12 @@ export function createNewDebugBar(
 
     livewireActivityComponentTitle(item) {
       return this.livewireActivityComponent(item)?.title ?? item?.componentTitle ?? 'Livewire component';
+    },
+
+    livewireActivityParentTitle(item) {
+      const component = this.livewireActivityComponent(item);
+
+      return component?.parentId ? this.livewireComponentTitle(component.parentId) : 'Top level';
     },
 
     livewireActivityShowsComponent(item) {
@@ -2394,6 +2527,62 @@ export function createNewDebugBar(
       if (item?.durationMs === null || item?.durationMs === undefined)
         return item?.status === 'updating' ? 'In progress' : '—';
       return `${Number(item.durationMs).toFixed(item.durationMs < 10 ? 1 : 0)} ms`;
+    },
+
+    livewireInitialRenderDuration(item) {
+      if (item?.initialRenderDurationMs === null || item?.initialRenderDurationMs === undefined) return 'Not captured';
+      const duration = Number(item?.initialRenderDurationMs);
+      if (!Number.isFinite(duration)) return 'Not captured';
+
+      return this.livewireDuration({
+        durationMs: duration,
+        status: 'complete',
+      });
+    },
+
+    livewireMountTime(item) {
+      if (item?.requestAtMs === null || item?.requestAtMs === undefined) return 'Not captured';
+      const at = Number(item?.requestAtMs);
+      if (!Number.isFinite(at)) return 'Not captured';
+
+      return `+${at.toFixed(3)} ms`;
+    },
+
+    livewireActivityTime(item) {
+      return item?.kind === 'mount' && item?.requestAtMs !== null && item?.requestAtMs !== undefined
+        ? this.livewireMountTime(item)
+        : this.livewireActivityAge(item);
+    },
+
+    livewireActivityDuration(item) {
+      if (item?.kind !== 'mount') return this.livewireDuration(item);
+
+      const duration = this.livewireInitialRenderDuration(item);
+
+      return duration === 'Not captured' ? 'Render —' : `Render ${duration}`;
+    },
+
+    livewireComponentPropertyCount(component) {
+      return Array.isArray(component?.properties) ? component.properties.length : 0;
+    },
+
+    livewireComponentPropertyCountLabel(component) {
+      const count = this.livewireComponentPropertyCount(component);
+
+      return `${count} ${count === 1 ? 'property' : 'properties'}`;
+    },
+
+    livewireComponentPropertyStateSummary(component) {
+      const descriptors = Array.isArray(component?.server?.properties) ? component.server.properties : [];
+      const editable = descriptors.filter(
+        (property) => property?.writable === true || property?.array_leaf_writable === true,
+      ).length;
+      const changed =
+        String(component?.id ?? '') === String(this.selectedLivewireComponent?.id ?? '')
+          ? this.livewirePropertyRows.filter((row) => row.depth === 0 && row.state === 'Dirty').length
+          : 0;
+
+      return `${changed} changed, ${editable} editable`;
     },
 
     livewireActivityAge(item) {

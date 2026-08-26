@@ -220,6 +220,9 @@ test('orders several roots and nested instances while preserving stable instance
     ],
   );
   assert.equal(state.livewireSelectedComponentId, 'root-1');
+  assert.equal(state.livewireComponentPropertyCount(state.selectedLivewireComponent), 4);
+  assert.equal(state.livewireComponentPropertyCountLabel(state.selectedLivewireComponent), '4 properties');
+  assert.equal(state.livewireComponentPropertyStateSummary(state.selectedLivewireComponent), '0 changed, 3 editable');
   state.livewireSearch = 'metric';
   assert.deepEqual(
     state.filteredLivewireComponents.map(({ id }) => id),
@@ -379,6 +382,14 @@ test('filters activity and moves between activity and component details', () => 
   assert.equal(state.livewireTab, 'activity');
   assert.equal(state.livewireDetailTab, 'overview');
   assert.equal(state.livewireSelectedActivityId, 'activity-2');
+  state.setLivewireDetailTab('trace');
+  assert.equal(state.livewireDetailTab, 'overview');
+  state.livewireTrace = {
+    ...state.livewireTrace,
+    activity: state.livewireTrace.activity.map((item) =>
+      item.id === 'activity-2' ? { ...item, phases: [{ name: 'Queued', at: item.startedAt }] } : item,
+    ),
+  };
   state.setLivewireDetailTab('trace');
   assert.equal(state.livewireDetailTab, 'trace');
   state.setLivewireDetailTab('source');
@@ -1042,4 +1053,93 @@ test('falls back to stored server evidence when browser evidence is unavailable'
   assert.deepEqual(state.livewireActivity[0].effects, { redirect: true });
   state.destroy();
   assert.deepEqual(trace.calls.at(-1), ['unsubscribe']);
+});
+
+test('pairs retained initial render evidence with a trace-ready browser mount', () => {
+  const browserMount = {
+    ...activity[0],
+    durationMs: null,
+    phases: [],
+  };
+  const trace = traceHarness({
+    ready: true,
+    components: [browserComponents[0]],
+    activity: [browserMount],
+    dropped: { components: 0, activity: 0 },
+  });
+  const state = createNewDebugBar(livewireSummary, runtime(), [], 20, trace);
+  state.$root = { querySelectorAll: () => [], querySelector: () => null };
+  state.$nextTick = (callback) => callback();
+  state.init();
+  state.mergeLivewireServer({
+    components: [],
+    activity: [
+      {
+        id: 'root-1-server-1',
+        component_id: 'root-1',
+        component_name: 'benchmark.control-panel',
+        component_title: 'Control Panel',
+        name: 'Control Panel mounted',
+        type: 'mount',
+        status: 'complete',
+        at_ms: 12.345,
+      },
+      {
+        id: 'root-1-server-2',
+        component_id: 'root-1',
+        component_name: 'benchmark.control-panel',
+        component_title: 'Control Panel',
+        name: 'Control Panel rendered',
+        type: 'render',
+        status: 'complete',
+        at_ms: 18.2,
+        duration_ms: 2.75,
+      },
+      {
+        id: 'server-only-server-3',
+        component_id: 'server-only',
+        component_name: 'benchmark.server-only',
+        component_title: 'Server Only',
+        name: 'Warm ran',
+        type: 'action',
+        status: 'complete',
+        method: 'warm',
+        params: [],
+        at_ms: 20,
+        duration_ms: 1.25,
+      },
+      {
+        id: 'server-only-server-4',
+        component_id: 'server-only',
+        component_name: 'benchmark.server-only',
+        component_title: 'Server Only',
+        name: 'Server Only rendered',
+        type: 'render',
+        status: 'complete',
+        at_ms: 22,
+        duration_ms: 0.75,
+      },
+    ],
+  });
+
+  assert.equal(state.livewireActivity.length, 2);
+  assert.deepEqual(
+    state.livewireActivity.map(({ id, sequence }) => [id, sequence]),
+    [
+      ['activity-1', 1],
+      ['server-only-server-3', 2],
+    ],
+  );
+  assert.equal(state.livewireActivity[0].id, 'activity-1');
+  assert.equal(state.livewireActivity[0].serverMountId, 'root-1-server-1');
+  assert.equal(state.livewireActivity[0].serverRenderId, 'root-1-server-2');
+  assert.equal(state.livewireActivity[0].requestAtMs, 12.345);
+  assert.equal(state.livewireActivity[0].initialRenderDurationMs, 2.75);
+  assert.equal(state.livewireActivityTime(state.livewireActivity[0]), '+12.345 ms');
+  assert.equal(state.livewireActivityDuration(state.livewireActivity[0]), 'Render 2.8 ms');
+  assert.equal(state.livewireMountTime(state.livewireActivity[0]), '+12.345 ms');
+  assert.equal(state.livewireInitialRenderDuration(state.livewireActivity[0]), '2.8 ms');
+  assert.deepEqual(state.livewireActivity[1].serverActivityIds, ['server-only-server-3']);
+  assert.deepEqual(state.livewireActivity[1].serverRenderIds, ['server-only-server-4']);
+  assert.equal(state.livewireActivity[1].serverRenderDurationMs, 0.75);
 });

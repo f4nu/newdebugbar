@@ -27,7 +27,10 @@
         </x-slot:aside>
     </x-newdebugbar::inspector-detail-header>
 
-    <x-newdebugbar::inspector-detail-tabs label="Livewire activity detail">
+    <x-newdebugbar::inspector-detail-tabs
+        label="Livewire activity detail"
+        x-show.important="selectedLivewireActivity.phases.length > 0"
+    >
         <x-newdebugbar::filter-tab
             variant="segmented"
             data-ndb-livewire-detail-tab="overview"
@@ -50,40 +53,77 @@
 
     <template x-if="livewireDetailTab === 'overview'">
         <div data-ndb-livewire-detail-panel="overview" class="ndb:space-y-5 ndb:p-4">
-            <x-newdebugbar::inspector-facts columns="4">
-                <x-newdebugbar::inspector-fact label="Component">
-                    <x-slot:value>
-                        <button
-                            type="button"
-                            @click="inspectLivewireActivityComponent()"
-                            class="ndb:max-w-full ndb:truncate ndb:bg-transparent ndb:p-0 ndb:text-left ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:underline ndb:decoration-zinc-300 ndb:underline-offset-2 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-200 ndb:dark:decoration-zinc-600 ndb:dark:hover:text-white"
-                            x-text="livewireActivityComponentTitle(selectedLivewireActivity)"
-                        ></button>
-                    </x-slot:value>
-                </x-newdebugbar::inspector-fact>
-                <x-newdebugbar::inspector-fact label="Type">
-                    <x-slot:value
-                        class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
-                        x-text="
-                            selectedLivewireActivity.kind
-                                .replaceAll('_', ' ')
-                                .replace(/\b\w/g, (letter) => letter.toUpperCase())
-                        "
-                    ></x-slot:value>
-                </x-newdebugbar::inspector-fact>
-                <x-newdebugbar::inspector-fact label="Happened">
-                    <x-slot:value
-                        class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
-                        x-text="livewireActivityAge(selectedLivewireActivity)"
-                    ></x-slot:value>
-                </x-newdebugbar::inspector-fact>
-                <x-newdebugbar::inspector-fact label="Duration">
-                    <x-slot:value
-                        class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
-                        x-text="livewireDuration(selectedLivewireActivity)"
-                    ></x-slot:value>
-                </x-newdebugbar::inspector-fact>
-            </x-newdebugbar::inspector-facts>
+            <div x-show.important="selectedLivewireActivity.kind === 'mount'" data-ndb-livewire-mount-facts>
+                <x-newdebugbar::inspector-facts columns="2">
+                    <x-newdebugbar::inspector-fact label="Component">
+                        <x-slot:value>
+                            <button
+                                type="button"
+                                @click="inspectLivewireActivityComponent()"
+                                class="ndb:max-w-full ndb:truncate ndb:bg-transparent ndb:p-0 ndb:text-left ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:underline ndb:decoration-zinc-300 ndb:underline-offset-2 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-200 ndb:dark:decoration-zinc-600 ndb:dark:hover:text-white"
+                                x-text="livewireActivityComponentTitle(selectedLivewireActivity)"
+                            ></button>
+                        </x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                    <x-newdebugbar::inspector-fact label="Parent">
+                        <x-slot:value
+                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
+                            x-text="livewireActivityParentTitle(selectedLivewireActivity)"
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                    <x-newdebugbar::inspector-fact label="Mounted at">
+                        <x-slot:value
+                            data-ndb-livewire-mount-time
+                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
+                            x-text="livewireMountTime(selectedLivewireActivity)"
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                    <x-newdebugbar::inspector-fact label="Initial render">
+                        <x-slot:value
+                            data-ndb-livewire-initial-render-duration
+                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
+                            x-text="livewireInitialRenderDuration(selectedLivewireActivity)"
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                </x-newdebugbar::inspector-facts>
+            </div>
+
+            <div x-show.important="selectedLivewireActivity.kind !== 'mount'">
+                <x-newdebugbar::inspector-facts columns="4">
+                    <x-newdebugbar::inspector-fact label="Component">
+                        <x-slot:value>
+                            <button
+                                type="button"
+                                @click="inspectLivewireActivityComponent()"
+                                class="ndb:max-w-full ndb:truncate ndb:bg-transparent ndb:p-0 ndb:text-left ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:underline ndb:decoration-zinc-300 ndb:underline-offset-2 ndb:hover:text-zinc-950 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-200 ndb:dark:decoration-zinc-600 ndb:dark:hover:text-white"
+                                x-text="livewireActivityComponentTitle(selectedLivewireActivity)"
+                            ></button>
+                        </x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                    <x-newdebugbar::inspector-fact label="Type">
+                        <x-slot:value
+                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
+                            x-text="
+                                selectedLivewireActivity.kind
+                                    .replaceAll('_', ' ')
+                                    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+                            "
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                    <x-newdebugbar::inspector-fact label="Happened">
+                        <x-slot:value
+                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
+                            x-text="livewireActivityAge(selectedLivewireActivity)"
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                    <x-newdebugbar::inspector-fact label="Duration">
+                        <x-slot:value
+                            class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
+                            x-text="livewireDuration(selectedLivewireActivity)"
+                        ></x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                </x-newdebugbar::inspector-facts>
+            </div>
 
             <div
                 x-show.important="selectedLivewireActivity.error"
@@ -203,7 +243,7 @@
         </div>
     </template>
 
-    <template x-if="livewireDetailTab === 'trace'">
+    <template x-if="livewireDetailTab === 'trace' && selectedLivewireActivity.phases.length > 0">
         <div data-ndb-livewire-detail-panel="trace" class="ndb:p-4">
             <x-newdebugbar::inspector-explanation
                 title="Where did this update spend time?"
@@ -246,9 +286,6 @@
                 </template>
             </div>
 
-            <div x-show.important="selectedLivewireActivity.phases.length === 0" class="ndb:mt-3">
-                <x-newdebugbar::empty-state label="Browser phases were not available for this stored request." />
-            </div>
         </div>
     </template>
 </article>

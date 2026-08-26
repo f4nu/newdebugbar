@@ -76,23 +76,18 @@
                         "
                     ></x-slot:value>
                 </x-newdebugbar::inspector-fact>
-                <x-newdebugbar::inspector-fact label="Instance">
+                <x-newdebugbar::inspector-fact label="Properties">
                     <x-slot:value
+                        data-ndb-livewire-component-property-count
                         class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
-                        ::title="selectedLivewireComponent.id"
-                        x-text="selectedLivewireComponent.id"
+                        x-text="livewireComponentPropertyCountLabel(selectedLivewireComponent)"
                     ></x-slot:value>
                 </x-newdebugbar::inspector-fact>
-                <x-newdebugbar::inspector-fact label="Implementation">
+                <x-newdebugbar::inspector-fact label="Changed / editable">
                     <x-slot:value
-                        class="ndb:truncate ndb:text-[11px] ndb:font-semibold"
-                        x-text="
-                            selectedLivewireComponent.server?.implementation === 'single_file'
-                                ? 'Single file'
-                                : selectedLivewireComponent.server?.implementation === 'class'
-                                  ? 'Class'
-                                  : 'Browser only'
-                        "
+                        data-ndb-livewire-component-property-summary
+                        class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
+                        x-text="livewireComponentPropertyStateSummary(selectedLivewireComponent)"
                     ></x-slot:value>
                 </x-newdebugbar::inspector-fact>
             </x-newdebugbar::inspector-facts>
@@ -192,7 +187,10 @@
                     data-ndb-livewire-property-empty
                     class="ndb:mt-3"
                 >
-                    <x-newdebugbar::empty-state label="This component has no serialized public properties." />
+                    <x-newdebugbar::empty-state
+                        label="No serialized public properties."
+                        description="Source and recent activity are still available for this component."
+                    />
                 </div>
             </section>
         </div>
@@ -201,6 +199,27 @@
     <template x-if="livewireDetailTab === 'source'">
         <div data-ndb-livewire-detail-panel="source" class="ndb:space-y-4 ndb:p-4">
             <dl class="ndb:grid ndb:grid-cols-1 ndb:gap-2 ndb:sm:grid-cols-2">
+                <x-newdebugbar::inspector-source-fact label="Implementation">
+                    <x-slot:value
+                        x-text="
+                            selectedLivewireComponent.server?.implementation === 'single_file'
+                                ? 'Single file'
+                                : selectedLivewireComponent.server?.implementation === 'class'
+                                  ? 'Class'
+                                  : 'Browser only'
+                        "
+                    ></x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
+                <x-newdebugbar::inspector-source-fact label="Instance">
+                    <x-slot:value>
+                        <span
+                            data-ndb-livewire-component-instance
+                            class="ndb:block ndb:truncate ndb:text-[11px] ndb:font-semibold"
+                            ::title="selectedLivewireComponent.id"
+                            x-text="selectedLivewireComponent.id"
+                        ></span>
+                    </x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
                 <x-newdebugbar::inspector-source-fact
                     label="Component file"
                     x-show.important="selectedLivewireComponent.server?.source?.file"
