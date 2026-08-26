@@ -106,10 +106,7 @@
                 </div>
                 <div class="ndb:pb-6">
                     <h3 class="ndb:text-sm ndb:font-bold ndb:leading-5">Received</h3>
-                    <p class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        Laravel received the request.
-                    </p>
-                    <dl class="ndb:mt-4 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
+                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
                         @foreach ([
                             ['URL', ($requestPayload['url'] ?? null) ?: '—'],
                             ['Host', $requestHost],
@@ -142,10 +139,7 @@
                 </div>
                 <div class="ndb:pb-6">
                     <h3 class="ndb:text-sm ndb:font-bold ndb:leading-5">Matched</h3>
-                    <p class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        Laravel matched the route and middleware.
-                    </p>
-                    <dl class="ndb:mt-4 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
+                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
                         <div class="ndb:min-w-0">
                             <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                 Route
@@ -199,10 +193,7 @@
                 </div>
                 <div>
                     <h3 class="ndb:text-sm ndb:font-bold ndb:leading-5">Responded</h3>
-                    <p class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        Laravel sent the response to the client.
-                    </p>
-                    <dl class="ndb:mt-4 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
+                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
                         @foreach ([
                             ['Status', $requestStatus ?: '—'],
                             ['Response size', $formatRequestBytes((int) ($requestPayload['response_size_bytes'] ?? 0))],
