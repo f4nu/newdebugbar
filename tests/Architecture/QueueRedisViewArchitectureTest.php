@@ -40,17 +40,24 @@ it('composes Redis from the shared inspector workspace grammar', function () {
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
         ->toContain('<x-newdebugbar::inspector-detail-pane')
-        ->toContain('<x-newdebugbar::inspector-detail-tabs')
-        ->toContain('variant="segmented"')
         ->toContain('<template x-if="selectedRedisCommand">')
-        ->toContain('<template x-if="redisDetailTab === \'overview\'">')
-        ->toContain('<template x-if="redisDetailTab === \'keys\'">')
+        ->toContain('data-ndb-redis-detail-body')
+        ->toContain('data-ndb-redis-key-evidence')
+        ->toContain('data-ndb-redis-copy-keys')
+        ->toContain('Why are these identifiers protected?')
         ->toContain('data-ndb-redis-payload')
         ->toContain('No key metadata was retained for this command.')
         ->not->toContain('<input')
         ->not->toContain('<select')
+        ->not->toContain('redisDetailTab')
+        ->not->toContain('setRedisDetailTab')
+        ->not->toContain('data-ndb-redis-detail-tab')
+        ->not->toContain('This list contains direct Redis commands.')
         ->not->toContain('redisSort')
         ->not->toContain('Succeeded')
         ->not->toContain('Oldest')
         ->not->toContain('Slowest');
+
+    expect(substr_count($view, 'x-text="selectedRedisCommand.key_count"'))->toBe(0)
+        ->and(substr_count($view, 'x-text="selectedRedisCommand.status_label"'))->toBe(1);
 });

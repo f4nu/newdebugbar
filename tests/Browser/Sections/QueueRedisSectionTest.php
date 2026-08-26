@@ -102,28 +102,27 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
 
     $page
         ->assertAttribute('[data-ndb-redis-item="1"]', 'aria-pressed', 'true')
-        ->assertAttribute('[data-ndb-redis-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertSee('This list contains direct Redis commands.')
+        ->assertSee('Keys used')
+        ->assertSee('private-direct-key')
+        ->assertVisible('[data-ndb-redis-copy-keys]')
         ->assertScript(<<<'JS'
             (() => {
                 const payload = JSON.parse(atob(document.querySelector('[data-ndb-redis-payload]').textContent.trim()));
                 const primary = [...document.querySelectorAll('[data-ndb-redis-key-label]')].map((item) => item.textContent.trim());
                 const hashes = payload.flatMap((command) => command.key_hashes ?? []);
 
-                return document.querySelectorAll('[data-ndb-redis-detail-panel]').length === 1
+                return document.querySelector('[data-ndb-redis-detail-body]') !== null
+                    && document.querySelector('[data-ndb-redis-key-evidence]') !== null
+                    && document.querySelector('[data-ndb-redis-detail-tab]') === null
                     && primary.every((label) => !hashes.includes(label))
                     && document.querySelector('[data-ndb-redis-sort]') === null;
             })()
             JS)
-        ->click('[data-ndb-redis-detail-tab="keys"]')
-        ->assertAttribute('[data-ndb-redis-detail-tab="keys"]', 'aria-pressed', 'true')
-        ->assertSee('Which Redis keys were used?')
-        ->assertSee('private-direct-key')
-        ->assertScript('document.querySelectorAll("[data-ndb-redis-detail-panel]").length', 1)
         ->assertValue('[data-ndb-redis-filter]', 'all')
         ->select('[data-ndb-redis-filter]', 'failed')
         ->assertScript('document.querySelectorAll("[data-ndb-redis-item]:not([hidden])").length', 1)
         ->assertSee('RuntimeException')
+        ->assertSee('What should I check after this failure?')
         ->assertScript('document.querySelector("[data-ndb-redis-failed=\\"true\\"]").textContent.includes("—")')
         ->assertNoJavaScriptErrors();
 });
@@ -137,8 +136,9 @@ it('shows protected Redis identifiers in the interface typeface', function () {
     DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-redis-workspace]');
 
     $page
-        ->click('[data-ndb-redis-detail-tab="keys"]')
         ->assertVisible('[data-ndb-redis-key-hash]')
+        ->assertSee('Why are these identifiers protected?')
+        ->assertSee('Copy identifiers')
         ->assertScript(<<<'JS'
             (() => {
                 const identifier = document.querySelector('[data-ndb-redis-key-hash]');
@@ -175,7 +175,7 @@ it('uses a focused Redis detail with Back on mobile light mode', function () {
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
         ->click('[data-ndb-redis-item="1"]')
         ->assertVisible('[data-ndb-redis-back]')
-        ->click('[data-ndb-redis-detail-tab="keys"]')
+        ->assertVisible('[data-ndb-redis-key-evidence]')
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-redis-workspace]');

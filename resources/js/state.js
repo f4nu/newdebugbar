@@ -382,7 +382,6 @@ export function createNewDebugBar(
     redisSearch: '',
     redisSelected: null,
     redisDetailOpen: false,
-    redisDetailTab: 'overview',
     visibleRedisCount: summary.section_counts?.redis ?? 0,
     queryFilter: 'all',
     querySearch: '',
@@ -1957,7 +1956,6 @@ export function createNewDebugBar(
       this.redisSearch = '';
       this.redisSelected = null;
       this.redisDetailOpen = false;
-      this.redisDetailTab = 'overview';
       this.visibleRedisCount = 0;
       this.queryFilter = 'all';
       this.querySearch = '';
@@ -2761,7 +2759,6 @@ export function createNewDebugBar(
       this.redisSearch = '';
       this.redisSelected = this.redisCommands[0]?.execution ?? null;
       this.redisDetailOpen = false;
-      this.redisDetailTab = 'overview';
       this.$nextTick?.(() => this.applyRedisView());
     },
 
@@ -2777,15 +2774,7 @@ export function createNewDebugBar(
 
       this.redisSelected = execution;
       this.redisDetailOpen = true;
-      this.redisDetailTab = 'overview';
       this.resetRedisDetail(true);
-    },
-
-    setRedisDetailTab(tab) {
-      if (!['overview', 'keys'].includes(tab)) return;
-
-      this.redisDetailTab = tab;
-      this.resetRedisDetail(false);
     },
 
     closeRedisDetail() {
@@ -2841,7 +2830,6 @@ export function createNewDebugBar(
 
       if (!selectedVisible) {
         this.redisSelected = firstVisible;
-        this.redisDetailTab = 'overview';
         if (firstVisible === null) this.redisDetailOpen = false;
       }
     },

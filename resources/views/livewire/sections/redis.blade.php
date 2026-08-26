@@ -53,10 +53,7 @@
             'after_response_ms' => $afterResponse,
             'after_response_label' => $afterResponse === null ? null : $formatDuration($afterResponse),
             'key_count' => $keyCount,
-            'key_retained' => $retainedCount,
             'key_dropped' => $droppedCount,
-            'key_policy' => ($item['key_policy'] ?? null) === 'full' ? 'full' : 'hash',
-            'key_capture_label' => ($item['key_policy'] ?? null) === 'full' ? 'Full keys' : 'Protected identifiers',
             'key_label' => $keyLabel,
             'keys' => $keys,
             'key_hashes' => $hashes,
@@ -202,51 +199,17 @@
                                     class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
                                     :class="selectedRedisCommand.failed
                                         ? 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300'
-                                        : 'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300'"
+                                        : 'ndb:bg-zinc-100 ndb:text-zinc-600 ndb:dark:bg-zinc-800 ndb:dark:text-zinc-300'"
                                     x-text="selectedRedisCommand.status_label"
                                 ></span>
                             </x-slot:aside>
-                            <x-slot:metadata>
-                                <div>
-                                    <dt class="ndb:text-zinc-400">Connection</dt>
-                                    <dd class="ndb:font-semibold" x-text="selectedRedisCommand.connection"></dd>
-                                </div>
-                                <div>
-                                    <dt class="ndb:text-zinc-400">Captured at</dt>
-                                    <dd
-                                        class="ndb:font-semibold ndb:tabular-nums"
-                                        x-text="selectedRedisCommand.at_label"
-                                    ></dd>
-                                </div>
-                            </x-slot:metadata>
                         </x-newdebugbar::inspector-detail-header>
 
-                        <x-newdebugbar::inspector-detail-tabs label="Redis command detail">
-                            @foreach (['overview' => 'Overview', 'keys' => 'Keys'] as $tab => $label)
-                                <x-newdebugbar::filter-tab
-                                    variant="segmented"
-                                    data-ndb-redis-detail-tab="{{ $tab }}"
-                                    @click="setRedisDetailTab('{{ $tab }}')"
-                                    ::aria-pressed="redisDetailTab === '{{ $tab }}'"
-                                    class="ndb:h-auto ndb:min-h-8"
-                                >{{ $label }}</x-newdebugbar::filter-tab>
-                            @endforeach
-                            <x-slot:aside>
-                                <x-newdebugbar::inspector-action
-                                    icon="copy"
-                                    data-ndb-redis-copy-keys
-                                    x-show.important="redisDetailTab === 'keys' && selectedRedisCommand.keys.length"
-                                    @click="copyText(selectedRedisCommand.keys.join('\n'))"
-                                    class="ndb:h-9 ndb:min-h-0 ndb:bg-transparent"
-                                >Copy keys</x-newdebugbar::inspector-action>
-                            </x-slot:aside>
-                        </x-newdebugbar::inspector-detail-tabs>
-
-                        <template x-if="redisDetailTab === 'overview'">
-                            <div data-ndb-redis-detail-panel="overview" class="ndb:space-y-4 ndb:p-4">
+                        <div data-ndb-redis-detail-body class="ndb:flex ndb:flex-col">
+                            <div class="ndb:space-y-4 ndb:p-4">
                                 <x-newdebugbar::inspector-facts columns="4" data-ndb-redis-facts>
-                                    <x-newdebugbar::inspector-fact label="Result"
-                                        ><x-slot:value x-text="selectedRedisCommand.status_label"></x-slot:value
+                                    <x-newdebugbar::inspector-fact label="Connection"
+                                        ><x-slot:value x-text="selectedRedisCommand.connection"></x-slot:value
                                     ></x-newdebugbar::inspector-fact>
                                     <x-newdebugbar::inspector-fact label="Duration"
                                         ><x-slot:value
@@ -254,10 +217,10 @@
                                             x-text="selectedRedisCommand.duration_label"
                                         ></x-slot:value
                                     ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Keys"
+                                    <x-newdebugbar::inspector-fact label="Captured at"
                                         ><x-slot:value
                                             class="ndb:tabular-nums"
-                                            x-text="selectedRedisCommand.key_count"
+                                            x-text="selectedRedisCommand.at_label"
                                         ></x-slot:value
                                     ></x-newdebugbar::inspector-fact>
                                     <x-newdebugbar::inspector-fact label="Phase"
@@ -272,65 +235,74 @@
                                 >
                                     <x-newdebugbar::inspector-explanation
                                         title="What should I check after this failure?"
-                                        description="The captured exception class identifies the failed Redis client path. Check the application log and this connection for the full failure message."
+                                        description="Find this exception in the application log for the failure message, then verify the selected Redis connection."
                                     />
+                                    <code
+                                        data-ndb-language="php"
+                                        x-show.important="selectedRedisCommand.exception_class"
+                                        class="ndb:mt-2 ndb:block ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
+                                        x-text="selectedRedisCommand.exception_class"
+                                    ></code>
                                     <p
-                                        class="ndb:mt-2 ndb:break-all ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
-                                        x-text="selectedRedisCommand.exception_class ?? 'Exception class unavailable'"
-                                    ></p>
+                                        x-show.important="! selectedRedisCommand.exception_class"
+                                        class="ndb:mt-2 ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
+                                    >
+                                        Exception class was not retained.
+                                    </p>
                                 </section>
 
-                                <p class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    This list contains direct Redis commands. Matching commands already shown as cache
-                                    operations are removed.
-                                </p>
                                 <p
                                     data-ndb-redis-after-response
                                     x-show.important="selectedRedisCommand.lifecycle === 'after_response'"
                                     class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                >
-                                    This command ran after the response<span
-                                        x-show.important="selectedRedisCommand.after_response_label"
-                                    >
-                                        at
-                                        <span
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedRedisCommand.after_response_label"
-                                        ></span></span
-                                    >, so its time is not part of the response time.
-                                </p>
+                                    x-text="
+                                        selectedRedisCommand.after_response_label
+                                            ? `This command ran ${selectedRedisCommand.after_response_label} after the response was sent, so its time is not part of the response time.`
+                                            : 'This command ran after the response was sent, so its time is not part of the response time.'
+                                    "
+                                ></p>
                             </div>
-                        </template>
 
-                        <template x-if="redisDetailTab === 'keys'">
-                            <div data-ndb-redis-detail-panel="keys" class="ndb:space-y-4 ndb:p-4">
+                            <section
+                                data-ndb-redis-key-evidence
+                                aria-labelledby="newdebugbar-redis-keys-heading"
+                                class="ndb:space-y-4 ndb:border-t ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800"
+                            >
+                                <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:justify-between ndb:gap-3">
+                                    <h4
+                                        id="newdebugbar-redis-keys-heading"
+                                        class="ndb:text-sm ndb:font-bold ndb:text-zinc-950 ndb:dark:text-white"
+                                    >
+                                        Keys used
+                                    </h4>
+                                    <x-newdebugbar::inspector-action
+                                        icon="copy"
+                                        data-ndb-redis-copy-keys
+                                        x-show.important="
+                                            selectedRedisCommand.keys.length || selectedRedisCommand.key_hashes.length
+                                        "
+                                        @click="
+                                            copyText(
+                                                (selectedRedisCommand.keys.length
+                                                    ? selectedRedisCommand.keys
+                                                    : selectedRedisCommand.key_hashes
+                                                ).join('\n'),
+                                            )
+                                        "
+                                        class="ndb:h-9 ndb:min-h-0 ndb:shrink-0 ndb:bg-transparent"
+                                        ><span
+                                            x-text="selectedRedisCommand.keys.length ? 'Copy keys' : 'Copy identifiers'"
+                                        ></span
+                                    ></x-newdebugbar::inspector-action>
+                                </div>
+
                                 <x-newdebugbar::inspector-explanation
-                                    title="Which Redis keys were used?"
-                                    description="Full keys are shown when full local capture is active. Otherwise, stable protected identifiers let you match repeated access without showing key text."
+                                    x-show.important="
+                                        selectedRedisCommand.keys.length === 0 && selectedRedisCommand.key_hashes.length
+                                    "
+                                    title="Why are these identifiers protected?"
+                                    description="Full key text was not retained. Use these stable identifiers to match repeated access; use full local capture only when you need the key itself."
                                 />
-                                <x-newdebugbar::inspector-facts columns="4" data-ndb-redis-key-facts>
-                                    <x-newdebugbar::inspector-fact label="Recognized"
-                                        ><x-slot:value
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedRedisCommand.key_count"
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Retained"
-                                        ><x-slot:value
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedRedisCommand.key_retained"
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Omitted"
-                                        ><x-slot:value
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedRedisCommand.key_dropped"
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Capture"
-                                        ><x-slot:value x-text="selectedRedisCommand.key_capture_label"></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                </x-newdebugbar::inspector-facts>
 
                                 <template x-if="selectedRedisCommand.keys.length">
                                     <x-newdebugbar::inspector-definition-list data-ndb-redis-keys>
@@ -385,10 +357,16 @@
                                     class="ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                 >
                                     <span class="ndb:tabular-nums" x-text="selectedRedisCommand.key_dropped"></span>
-                                    additional key identifiers were omitted by the nested item limit.
+                                    <span
+                                        x-text="
+                                            selectedRedisCommand.key_dropped === 1
+                                                ? 'more key was not retained because this command reached the capture limit.'
+                                                : 'more keys were not retained because this command reached the capture limit.'
+                                        "
+                                    ></span>
                                 </p>
-                            </div>
-                        </template>
+                            </section>
+                        </div>
                     </div>
                 </template>
 

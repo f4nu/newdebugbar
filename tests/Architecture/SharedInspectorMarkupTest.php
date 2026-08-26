@@ -41,6 +41,16 @@ it('keeps protected Redis identifiers in the interface typeface', function () {
         ->not->toContain('ndb:font-mono');
 });
 
+it('uses code type only for Redis commands and exception classes', function () {
+    $redis = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/sections/redis.blade.php');
+
+    expect($redis)
+        ->toContain('data-ndb-language="php"')
+        ->toMatch('/ndb:font-mono[^\"]*\"\s+x-text=\"selectedRedisCommand\.command\"/')
+        ->toMatch('/ndb:font-mono[^\"]*\"\s+x-text=\"selectedRedisCommand\.exception_class/')
+        ->not->toMatch('/ndb:font-mono[^\"]*\"\s+x-text=\"selectedRedisCommand\.(connection|key_count|phase_label)/');
+});
+
 it('uses code type only for Queue class references', function () {
     $queue = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/sections/queue.blade.php');
 

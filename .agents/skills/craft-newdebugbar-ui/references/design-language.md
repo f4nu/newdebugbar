@@ -126,6 +126,7 @@ Do not explain Source, repeat a heading, or narrate ordinary table columns. A ne
 - Requests: preserve the lifecycle trace and collapsed Request details disclosure. It is an intentional exception to the shared inspector-workspace presentation; keep the newer global section shell, height chain, and host isolation around it without replacing its internal flow with tabs or list/detail controls.
 - HTTP Client: list filter uses a dropdown; detail begins with Response, then Request, then Source.
 - Cache: list operation filter uses a dropdown; operation badge and key share one header line; Raw precedes Source when raw data is useful.
+- Redis: keep command facts and key evidence in one selected-command reading view. Do not split sparse Overview and Keys content into tabs; place the copy action beside the keys and explain protected identifiers only when they are shown.
 - Mail: the entire list item opens the message; detail tabs may remain left-aligned when sharing a control row.
 - Notifications: show actual channel outcomes; do not add a redundant “needs attention” badge to the detail panel.
 - Models: no default selection; Records is the default selected-model tab; model list keeps a table header and a search field; drivers use the interface typeface; records, writes, and sources are separate useful views; do not duplicate table data in the header.

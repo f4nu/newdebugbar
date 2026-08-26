@@ -134,14 +134,15 @@ it('keeps protected Redis identifiers out of rows and failure timing truthful', 
 
     expect($html)
         ->toContain('data-ndb-redis-workspace')
-        ->not->toContain('data-ndb-redis-sort', 'Succeeded')
+        ->toContain('data-ndb-redis-detail-body', 'data-ndb-redis-key-evidence')
+        ->not->toContain('data-ndb-redis-detail-tab', 'data-ndb-redis-sort', 'Succeeded')
         ->and($rows->length)->toBe(2)
         ->and(trim((string) $rows->item(0)?->textContent))->toContain('trip:kyoto')
         ->and(trim((string) $rows->item(0)?->textContent))->not->toContain($protected)
         ->and($failedRow)->toContain('1 protected key', '—')
         ->and($items[1])
         ->duration_label->toBe('—')
-        ->key_capture_label->toBe('Protected identifiers')
+        ->key_count->toBe(1)
         ->key_hashes->toBe([$protected]);
 });
 

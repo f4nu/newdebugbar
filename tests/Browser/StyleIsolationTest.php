@@ -360,7 +360,8 @@ it('keeps host styles and package styles isolated', function () {
                 const key = item.querySelector('[data-ndb-redis-key-label]');
                 const detail = document.querySelector('[data-ndb-redis-detail]');
                 const status = document.querySelector('[data-ndb-redis-detail-status]');
-                const tabs = [...document.querySelectorAll('[data-ndb-redis-detail-tab]')];
+                const body = document.querySelector('[data-ndb-redis-detail-body]');
+                const keyEvidence = document.querySelector('[data-ndb-redis-key-evidence]');
 
                 return getComputedStyle(root).borderLeftWidth === '0px'
                     && getComputedStyle(root).backgroundColor === 'rgba(0, 0, 0, 0)'
@@ -376,10 +377,10 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(detail).borderLeftWidth === '0px'
                     && Number.parseFloat(getComputedStyle(status).fontSize) === 11
                     && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
-                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
+                    && body !== null
+                    && keyEvidence !== null;
             })()
             JS)
-        ->click('[data-ndb-redis-detail-tab="keys"]')
         ->assertVisible('[data-ndb-redis-copy-keys]')
         ->assertScript(<<<'JS'
             (() => {

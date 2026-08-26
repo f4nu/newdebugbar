@@ -192,11 +192,10 @@ test('Redis builds bounded search state and keeps failed filtering truthful', ()
   assert.equal(state.redisDetailOpen, true);
   assert.deepEqual(focused.at(-1), ['detail', { preventScroll: true }]);
 
-  state.setRedisDetailTab('keys');
-  state.setRedisDetailTab('source');
   state.setRedisFilter('succeeded');
   state.selectRedisCommand(99);
-  assert.equal(state.redisDetailTab, 'keys');
+  assert.equal('redisDetailTab' in state, false);
+  assert.equal(typeof state.setRedisDetailTab, 'undefined');
   assert.equal(state.redisFilter, 'all');
   assert.equal(state.redisSelected, 1);
 
