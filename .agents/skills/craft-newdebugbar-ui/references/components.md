@@ -63,7 +63,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-explanation` | Friendly help for ambiguous evidence and a conditional next check. Use `heading` and `body` slots when Alpine supplies the wording; do not explain obvious labels. |
 | `inspector-fact` | One compact labeled fact inside `inspector-facts`. |
 | `inspector-facts` | Responsive fact tracks. Use two to four columns and omit its border when the parent already supplies the divider. |
-| `inspector-list-controls` | Optional list summary plus search and one or two trailing filters. Use the secondary filter only when two independent filters are necessary; do not rebuild its responsive grid. |
+| `inspector-list-controls` | Optional list summary plus search and one or two trailing filters. Use `layout="compact"` inside a narrow split-pane list so search owns the first row and two filters share the second. Use the secondary filter only when two independent filters are necessary; do not rebuild either shared grid. |
 | `inspector-list-panel` | List controls, the list scroll owner, and the filtered empty state. |
 | `inspector-source-fact` | Source-like fact card. Set `code` only when the value itself is code, not merely a file location. This treatment is a merge candidate; do not create another source-fact variant. |
 | `inspector-source-panel` | Source facts followed by the bounded application stack. Use its optional `actions` slot for evidence-wide actions, and use it as the complete Source tab body instead of rebuilding panel padding or stack placement. |
