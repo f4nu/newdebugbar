@@ -95,7 +95,7 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
             })()
             JS)
         ->drag('[data-ndb-toolbar-shell]', '[data-testid="mobile-toolbar-top-drop-target"]')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'top')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13')
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
         ->assertScript(<<<'JS'

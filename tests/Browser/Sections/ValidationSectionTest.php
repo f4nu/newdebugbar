@@ -24,7 +24,7 @@ it('shows Livewire validation messages rules and source on desktop and mobile', 
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const validation = state.recentProfiles.find((profile) => /^\/livewire-[0-9a-f]{8}\/update$/i.test(profile.path));
-                const option = document.querySelector(`[data-ndb-request-option][data-profile-id="${validation?.id}"]`);
+                const option = document.querySelector(`[data-ndb-request-option][data-ndb-profile-id="${validation?.id}"]`);
 
                 option?.click();
 

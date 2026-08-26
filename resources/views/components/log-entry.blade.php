@@ -58,13 +58,13 @@
     data-ndb-log-record-count="{{ $repeatCount }}"
     data-ndb-log-first-sequence="{{ $firstSequence }}"
     wire:key="log-entry-{{ $firstSequence }}"
-    x-id="['log-details-trigger', 'log-details-popover', 'log-details-title']"
+    x-id="['newdebugbar-log-details-trigger', 'newdebugbar-log-details-popover', 'newdebugbar-log-details-title']"
     @keydown.escape="
         if (logDetailSequence === {{ $firstSequence }}) {
             $event.stopPropagation();
             $event.preventDefault();
             logDetailSequence = null;
-            document.getElementById($id('log-details-trigger'))?.focus();
+            document.getElementById($id('newdebugbar-log-details-trigger'))?.focus();
         }
     "
     class="ndb:border-0 ndb:bg-transparent ndb:p-0"
@@ -115,8 +115,8 @@
         <button
             type="button"
             data-ndb-log-details-trigger
-            :id="$id('log-details-trigger')"
-            :aria-controls="$id('log-details-popover')"
+            :id="$id('newdebugbar-log-details-trigger')"
+            :aria-controls="$id('newdebugbar-log-details-popover')"
             :aria-expanded="logDetailSequence === {{ $firstSequence }}"
             @click.stop="logDetailSequence = logDetailSequence === {{ $firstSequence }} ? null : {{ $firstSequence }}"
             :class="logDetailSequence === {{ $firstSequence }}
@@ -132,15 +132,15 @@
         <template x-teleport="#newdebugbar">
             <x-newdebugbar::popover-surface
                 :anchored="true"
-                x-anchor.bottom-end.offset.12.fixed="document.getElementById($id('log-details-trigger'))"
+                x-anchor.bottom-end.offset.12.fixed="document.getElementById($id('newdebugbar-log-details-trigger'))"
                 @click.outside="logDetailSequence = null"
                 @keydown.escape.stop.prevent="
                     logDetailSequence = null;
-                    document.getElementById($id('log-details-trigger'))?.focus();
+                    document.getElementById($id('newdebugbar-log-details-trigger'))?.focus();
                 "
                 data-ndb-log-details-popover
-                ::id="$id('log-details-popover')"
-                ::aria-labelledby="$id('log-details-title')"
+                ::id="$id('newdebugbar-log-details-popover')"
+                ::aria-labelledby="$id('newdebugbar-log-details-title')"
                 ::style="{ visibility: $anchor.x !== 0 || $anchor.y !== 0 ? 'visible' : 'hidden' }"
                 role="region"
                 width-class="ndb:w-[min(44rem,calc(100vw-3rem))]"
@@ -151,7 +151,7 @@
                 <header class="ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800">
                     <p
                         data-ndb-log-details-title
-                        ::id="$id('log-details-title')"
+                        ::id="$id('newdebugbar-log-details-title')"
                         class="ndb:bg-transparent ndb:text-[13px] ndb:font-bold ndb:text-zinc-900 ndb:dark:text-zinc-100"
                     >
                         Log {{ $recordLabel }}

@@ -1,4 +1,4 @@
-<div data-ndb-cache-detail-panel="overview" x-show.important="cacheDetailTab === 'overview'">
+<div data-ndb-cache-detail-panel="overview" x-show.important="cacheDetailTab === 'overview'" class="ndb:p-4">
     <x-newdebugbar::cache-overview-facts />
 
     <x-newdebugbar::inspector-definition-list

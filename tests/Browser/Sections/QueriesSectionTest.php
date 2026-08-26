@@ -188,14 +188,14 @@ it('filters searches sorts and shows repeated query evidence without another dis
                 const items = Array.from(document.querySelectorAll('[data-ndb-query-item]'));
                 const groups = Array.from(document.querySelectorAll('[data-ndb-query-group]'));
                 const groupedCount = (type = null) => groups
-                    .filter((group) => type === null || group.dataset.type === type)
-                    .reduce((count, group) => count + Number(group.dataset.resultCount), 0);
+                    .filter((group) => type === null || group.dataset.ndbType === type)
+                    .reduce((count, group) => count + Number(group.dataset.ndbResultCount), 0);
                 const expected = {
                     all: items.length + groupedCount(),
                     attention: groupedCount()
-                        + items.filter((item) => item.dataset.repeated !== 'true' && item.dataset.slow === 'true').length,
-                    read: items.filter((item) => item.dataset.type === 'read').length + groupedCount('read'),
-                    write: items.filter((item) => item.dataset.type === 'write').length + groupedCount('write'),
+                        + items.filter((item) => item.dataset.ndbRepeated !== 'true' && item.dataset.ndbSlow === 'true').length,
+                    read: items.filter((item) => item.dataset.ndbType === 'read').length + groupedCount('read'),
+                    write: items.filter((item) => item.dataset.ndbType === 'write').length + groupedCount('write'),
                 };
 
                 return Object.entries(expected).every(([filter, count]) =>
@@ -243,7 +243,7 @@ it('filters searches sorts and shows repeated query evidence without another dis
         ->assertScript(<<<'JS'
             (() => {
                 const durations = Array.from(document.querySelectorAll('[data-ndb-query-group]:not([hidden]) [data-ndb-query-group-execution]'))
-                    .map((query) => Number(query.dataset.duration));
+                    .map((query) => Number(query.dataset.ndbDuration));
 
                 return durations.every((duration, index) => index === 0 || durations[index - 1] >= duration);
             })()

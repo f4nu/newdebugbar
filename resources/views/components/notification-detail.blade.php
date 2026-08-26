@@ -59,7 +59,35 @@
 
             <x-newdebugbar::notification-delivery-panel />
             <x-newdebugbar::notification-payload-panel />
-            <x-newdebugbar::notification-source-panel />
+            <x-newdebugbar::inspector-source-panel
+                frames="selectedNotification.stack"
+                data-ndb-notification-detail-panel="source"
+                x-show.important="notificationDetailTab === 'source'"
+            >
+                <x-newdebugbar::inspector-source-fact label="Notification class" :code="true">
+                    <x-slot:value x-text="selectedNotification.notification"></x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
+                <x-newdebugbar::inspector-source-fact label="Defined at">
+                    <x-slot:value
+                        x-text="
+                            selectedNotification.notification_source
+                                ? selectedNotification.notification_source.file +
+                                  ':' +
+                                  selectedNotification.notification_source.line
+                                : 'Source unavailable'
+                        "
+                    ></x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
+                <x-newdebugbar::inspector-source-fact label="Triggered at">
+                    <x-slot:value x-text="selectedNotification.callsite_label"></x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
+                <x-newdebugbar::inspector-source-fact
+                    label="Notification ID"
+                    x-show="selectedNotification.notification_id"
+                >
+                    <x-slot:value x-text="selectedNotification.notification_id"></x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
+            </x-newdebugbar::inspector-source-panel>
         </div>
     </template>
 </x-newdebugbar::inspector-detail-pane>

@@ -82,7 +82,7 @@ it('collects background requests in the split button without changing the host p
                 return true;
             })()
             JS)
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom-right')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'bottom-right')
         ->assertSeeIn('[data-ndb-request-badge="corner"]', '3')
         ->click('[data-ndb-request-picker-trigger="corner"]')
         ->assertVisible('#newdebugbar-request-list-corner')
@@ -160,7 +160,7 @@ it('collects background requests in the split button without changing the host p
                 return state.laterRequestCount === 3
                     && options.length >= 4
                     && groups.map((group) => group.dataset.ndbRequestGroup).join(',') === 'current,later'
-                    && groups[0].querySelector('[data-ndb-request-option]').dataset.profileId === window.__newDebugBarActiveProfile
+                    && groups[0].querySelector('[data-ndb-request-option]').dataset.ndbProfileId === window.__newDebugBarActiveProfile
                     && groups[1].querySelectorAll('[data-ndb-request-option]').length === 3
                     && Number.parseFloat(getComputedStyle(groups[1]).borderTopWidth) === 0
                     && options.filter((option) => option.textContent.includes('/api/plain-json')).length >= 3
@@ -216,7 +216,7 @@ it('collects background requests in the split button without changing the host p
             (() => {
                 const state = Alpine.$data(document.getElementById('newdebugbar'));
                 const option = Array.from(document.querySelectorAll('#newdebugbar-request-list-toolbar [data-ndb-request-option]'))
-                    .find((candidate) => candidate.dataset.profileId !== state.summary.id && candidate.textContent.includes('/api/plain-json'));
+                    .find((candidate) => candidate.dataset.ndbProfileId !== state.summary.id && candidate.textContent.includes('/api/plain-json'));
 
                 option.click();
 
@@ -248,7 +248,7 @@ it('collects background requests in the split button without changing the host p
                     '#newdebugbar-request-list-header [data-ndb-request-group="later"] [data-ndb-request-option][aria-selected="true"]',
                 );
 
-                return current?.dataset.profileId === window.__newDebugBarActiveProfile
+                return current?.dataset.ndbProfileId === window.__newDebugBarActiveProfile
                     && selectedLater !== null
                     && Alpine.$data(document.getElementById('newdebugbar')).selected === 'request';
             })()

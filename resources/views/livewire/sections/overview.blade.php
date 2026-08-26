@@ -65,7 +65,7 @@
             </label>
             <div class="ndb:relative">
                 <select
-                    id="ndb-runtime-detail-select"
+                    id="newdebugbar-runtime-detail-select"
                     data-ndb-runtime-detail-select
                     x-model="runtimeDetail"
                     class="ndb:h-10 ndb:w-full ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-300 ndb:bg-white ndb:px-3 ndb:pr-9 ndb:text-xs ndb:font-bold ndb:text-zinc-950 ndb:shadow-xs ndb:outline-none ndb:transition ndb:focus:border-indigo-500 ndb:focus:ring-2 ndb:focus:ring-indigo-500/20 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-950 ndb:dark:text-white ndb:dark:focus:border-indigo-400 ndb:dark:focus:ring-indigo-400/20"

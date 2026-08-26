@@ -75,9 +75,9 @@
                 @foreach ($viewGroups as $index => $group)
                     <details
                         data-ndb-view-group
-                        data-order="{{ $index }}"
-                        data-count="{{ $group['count'] }}"
-                        data-name="{{ mb_strtolower($group['name']) }}"
+                        data-ndb-order="{{ $index }}"
+                        data-ndb-count="{{ $group['count'] }}"
+                        data-ndb-name="{{ mb_strtolower($group['name']) }}"
                         wire:key="view-group-{{ $index }}"
                         class="ndb:group"
                     >
@@ -98,7 +98,7 @@
                                 <article data-ndb-view-render="{{ $view['render_order'] }}" class="ndb:py-4">
                                     <div
                                         x-data="newDebugBar.viewData($wire, {{ $view['render_order'] }})"
-                                        x-id="['view-data-trigger', 'view-data-popover']"
+                                        x-id="['newdebugbar-view-data-trigger', 'newdebugbar-view-data-popover']"
                                         @click.outside="viewDataOpen = false"
                                         @keydown.escape.stop.prevent="
                                             if (viewDataOpen) {
@@ -133,8 +133,8 @@
                                                 x-ref="viewDataButton"
                                                 type="button"
                                                 data-ndb-view-data-trigger
-                                                :id="$id('view-data-trigger')"
-                                                :aria-controls="$id('view-data-popover')"
+                                                :id="$id('newdebugbar-view-data-trigger')"
+                                                :aria-controls="$id('newdebugbar-view-data-popover')"
                                                 :aria-expanded="viewDataOpen"
                                                 @click.stop="
                                                     viewDataOpen = ! viewDataOpen;
@@ -156,9 +156,9 @@
                                             x-transition:leave-start="ndb:translate-y-0 ndb:scale-100 ndb:opacity-100"
                                             x-transition:leave-end="ndb:translate-y-1 ndb:scale-95 ndb:opacity-0"
                                             data-ndb-view-data-popover
-                                            ::id="$id('view-data-popover')"
+                                            ::id="$id('newdebugbar-view-data-popover')"
                                             ::aria-labelledby="$id(
-                                                'view-data-trigger',
+                                                'newdebugbar-view-data-trigger',
                                             )"
                                             role="region"
                                             direction="below"

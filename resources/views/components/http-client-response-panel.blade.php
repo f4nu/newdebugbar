@@ -1,4 +1,4 @@
-<div data-ndb-http-client-detail-panel="response" x-show.important="httpClientDetailTab === 'response'">
+<div data-ndb-http-client-detail-panel="response" x-show.important="httpClientDetailTab === 'response'" class="ndb:p-4">
     <x-newdebugbar::inspector-facts columns="4" data-ndb-http-client-response-facts>
         <x-newdebugbar::inspector-fact label="Status">
             <x-slot:value

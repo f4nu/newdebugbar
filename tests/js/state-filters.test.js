@@ -348,9 +348,9 @@ test('mail defaults to all and preview while keeping a visible message selected'
   let detailResets = 0;
   const element = (execution, attachments, search) => ({
     dataset: {
-      execution: String(execution),
-      attachments: String(attachments),
-      search,
+      ndbExecution: String(execution),
+      ndbAttachments: String(attachments),
+      ndbSearch: search,
     },
     hidden: false,
     style: {
@@ -811,14 +811,14 @@ test('query controls filter search and sort captured evidence', () => {
   const groupAppended = [];
   const item = (execution, duration, type, slow, search, repeated = false) => ({
     dataset: {
-      execution: String(execution),
-      duration: String(duration),
-      type,
-      slow: String(slow),
-      search,
-      queryKind: 'item',
-      repeated: String(repeated),
-      resultCount: '1',
+      ndbExecution: String(execution),
+      ndbDuration: String(duration),
+      ndbType: type,
+      ndbSlow: String(slow),
+      ndbSearch: search,
+      ndbQueryKind: 'item',
+      ndbRepeated: String(repeated),
+      ndbResultCount: '1',
     },
     hidden: false,
   });
@@ -830,13 +830,13 @@ test('query controls filter search and sort captured evidence', () => {
   const groupedSecond = item(2, 6, 'read', false, 'select users 2');
   const group = {
     dataset: {
-      execution: '1',
-      duration: '10',
-      type: 'read',
-      slow: 'false',
-      search: 'select repeated users',
-      queryKind: 'group',
-      resultCount: '2',
+      ndbExecution: '1',
+      ndbDuration: '10',
+      ndbType: 'read',
+      ndbSlow: 'false',
+      ndbSearch: 'select repeated users',
+      ndbQueryKind: 'group',
+      ndbResultCount: '2',
     },
     hidden: false,
     querySelector: () => ({
@@ -995,9 +995,9 @@ test('authorization controls filter search selection detail and overview navigat
 
 test('view headers sort names and render counts in both directions', () => {
   const state = createNewDebugBar(summary, runtime());
-  const first = { dataset: { order: '0', count: '1', name: 'zeta' } };
-  const second = { dataset: { order: '1', count: '3', name: 'alpha' } };
-  const third = { dataset: { order: '2', count: '3', name: 'beta' } };
+  const first = { dataset: { ndbOrder: '0', ndbCount: '1', ndbName: 'zeta' } };
+  const second = { dataset: { ndbOrder: '1', ndbCount: '3', ndbName: 'alpha' } };
+  const third = { dataset: { ndbOrder: '2', ndbCount: '3', ndbName: 'beta' } };
   const children = [first, second, third];
   state.$refs = {
     viewGroups: {
@@ -1067,7 +1067,10 @@ test('timeline controls filter sections and search labels', () => {
     ...summary,
     sections: [...summary.sections, { key: 'timeline', label: 'Timeline' }, { key: 'events', label: 'Events' }],
   }, runtime());
-  const item = (section, search, key = false) => ({ dataset: { section, search, key: String(key) }, hidden: false });
+  const item = (section, search, key = false) => ({
+    dataset: { ndbSection: section, ndbSearch: search, ndbKey: String(key) },
+    hidden: false,
+  });
   const query = item('queries', 'select users', true);
   const event = item('events', 'clinic ready');
   state.$refs = { timelineList: { children: [query, event] } };

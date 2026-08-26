@@ -21,7 +21,7 @@
         x-transition:leave="ndb:transition ndb:duration-150 ndb:ease-in ndb:motion-reduce:transition-none"
         x-transition:leave-start="ndb-inspector-onscreen"
         x-transition:leave-end="ndb-inspector-offscreen"
-        :data-placement="toolbarVerticalPlacement"
+        :data-ndb-placement="toolbarVerticalPlacement"
         :class="toolbarIsTop
             ? 'ndb:top-0 ndb:rounded-b-2xl ndb:border-x ndb:border-b ndb:shadow-[0_24px_80px_-28px_rgba(24,24,27,0.5)]'
             : 'ndb:bottom-0 ndb:rounded-t-2xl ndb:border-x ndb:border-t ndb:shadow-[0_-24px_80px_-28px_rgba(24,24,27,0.5)]'"
@@ -171,11 +171,7 @@
                 data-ndb-inspector-content
                 x-ref="content"
                 :inert="mobileSectionsOpen"
-                :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'models', 'notifications'].includes(
-                    selected,
-                )
-                    ? 'ndb:lg:flex ndb:lg:flex-col'
-                    : ''"
+                :class="selectedSection.layout === 'workspace' ? 'ndb:lg:flex ndb:lg:flex-col' : ''"
                 class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
             >
                 <x-newdebugbar::section-heading>
@@ -197,15 +193,7 @@
                 <div
                     data-ndb-section-stage
                     :aria-busy="sectionLoading ? 'true' : 'false'"
-                    :class="[
-                        'authorization',
-                        'cache',
-                        'events',
-                        'http_client',
-                        'mail',
-                        'models',
-                        'notifications',
-                    ].includes(selected)
+                    :class="selectedSection.layout === 'workspace'
                         ? 'ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
                         : ''"
                     class="ndb:relative ndb:min-h-64"
@@ -237,15 +225,7 @@
                     <div
                         data-ndb-section-content
                         :class="(sectionTransitioning ? 'ndb:opacity-0' : 'ndb:opacity-100') +
-                        ([
-                            'authorization',
-                            'cache',
-                            'events',
-                            'http_client',
-                            'mail',
-                            'models',
-                            'notifications',
-                        ].includes(selected)
+                        (selectedSection.layout === 'workspace'
                             ? ' ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
                             : '')"
                         class="ndb:transition-opacity ndb:duration-150 ndb:ease-out ndb:motion-reduce:transition-none"

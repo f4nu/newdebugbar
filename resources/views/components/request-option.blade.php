@@ -3,7 +3,7 @@
     type="button"
     role="option"
     data-ndb-request-option
-    :data-profile-id="request.id"
+    :data-ndb-profile-id="request.id"
     :aria-selected="request.id === summary.id"
     :aria-busy="requestSelectionPending === request.id"
     @click="selectRequest(request.id)"

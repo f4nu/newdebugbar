@@ -187,6 +187,22 @@
         ['function' => 'App\\Http\\Controllers\\TripController->show', 'file' => 'app/Http/Controllers/TripController.php', 'line' => 31],
     ];
 @endphp
+@component('newdebugbar::studio.component', ['component' => 'inspector-source-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
+    <div
+        x-data="{ newdebugbarStudioSourceFrames: @js($newdebugbarStudioFrames) }"
+        class="ndb:max-w-2xl ndb:bg-white ndb:dark:bg-zinc-950"
+    >
+        <x-newdebugbar::inspector-source-panel frames="newdebugbarStudioSourceFrames">
+            <x-newdebugbar::inspector-source-fact label="Service class" :code="true">
+                App\Services\WeatherClient
+            </x-newdebugbar::inspector-source-fact>
+            <x-newdebugbar::inspector-source-fact label="Triggered at">
+                app/Actions/Trips/RefreshTripWorkspace.php:150
+            </x-newdebugbar::inspector-source-fact>
+        </x-newdebugbar::inspector-source-panel>
+    </div>
+@endcomponent
+
 @component('newdebugbar::studio.component', ['component' => 'inspector-stack', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div x-data="{ newdebugbarStudioFrames: @js($newdebugbarStudioFrames) }" class="ndb:max-w-2xl">
         <x-newdebugbar::inspector-stack frames="newdebugbarStudioFrames" />

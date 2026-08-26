@@ -28,7 +28,7 @@ it('composes Notifications from the canonical inspector grammar', function () {
         ->toContain('<x-newdebugbar::notification-header')
         ->toContain('<x-newdebugbar::notification-delivery-panel')
         ->toContain('<x-newdebugbar::notification-payload-panel')
-        ->toContain('<x-newdebugbar::notification-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-panel')
         ->not->toContain('<select')
         ->not->toContain('x-ref="notificationDetail"');
 

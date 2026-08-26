@@ -690,6 +690,7 @@ export function createNewDebugBar(
           key: 'overview',
           label: 'Overview',
           description: '',
+          layout: 'flow',
           count: null,
         }
       );
@@ -1099,7 +1100,7 @@ export function createNewDebugBar(
             const selector =
               filter === 'repeated'
                 ? '[data-ndb-query-group]:not([hidden])'
-                : '[data-ndb-query-item][data-slow="true"]:not([hidden]), [data-ndb-query-group][data-slow="true"]:not([hidden])';
+                : '[data-ndb-query-item][data-ndb-slow="true"]:not([hidden]), [data-ndb-query-group][data-ndb-slow="true"]:not([hidden])';
             this.$refs?.queryResults?.querySelector?.(selector)?.scrollIntoView?.({ block: 'start' });
           }
         }
@@ -2936,12 +2937,12 @@ export function createNewDebugBar(
 
       [...list.children].forEach((item) => {
         const matches =
-          (this.mailFilter === 'all' || item.dataset.attachments === 'true') &&
-          (search === '' || item.dataset.search?.includes(search));
+          (this.mailFilter === 'all' || item.dataset.ndbAttachments === 'true') &&
+          (search === '' || item.dataset.ndbSearch?.includes(search));
         item.hidden = !matches;
         if (matches) {
           item.style.removeProperty('display');
-          const execution = Number(item.dataset.execution);
+          const execution = Number(item.dataset.ndbExecution);
           firstVisible ??= execution;
           selectedVisible ||= execution === this.mailSelected;
           visible++;
@@ -3119,16 +3120,16 @@ export function createNewDebugBar(
         [...results.children]
           .sort((left, right) => this.compareQueries(left, right))
           .forEach((result) => {
-            const isGroup = result.dataset.queryKind === 'group';
-            const isRepeatedItem = result.dataset.queryKind === 'item' && result.dataset.repeated === 'true';
+            const isGroup = result.dataset.ndbQueryKind === 'group';
+            const isRepeatedItem = result.dataset.ndbQueryKind === 'item' && result.dataset.ndbRepeated === 'true';
             const matchesFilter =
               this.queryFilter === 'all' ||
-              (this.queryFilter === 'attention' && (isGroup || result.dataset.slow === 'true')) ||
-              (this.queryFilter === 'read' && result.dataset.type === 'read') ||
-              (this.queryFilter === 'write' && result.dataset.type === 'write');
-            const matchesSearch = search === '' || result.dataset.search?.includes(search);
+              (this.queryFilter === 'attention' && (isGroup || result.dataset.ndbSlow === 'true')) ||
+              (this.queryFilter === 'read' && result.dataset.ndbType === 'read') ||
+              (this.queryFilter === 'write' && result.dataset.ndbType === 'write');
+            const matchesSearch = search === '' || result.dataset.ndbSearch?.includes(search);
             result.hidden = isRepeatedItem || !matchesFilter || !matchesSearch;
-            if (!result.hidden) visible += Number(result.dataset.resultCount ?? 1);
+            if (!result.hidden) visible += Number(result.dataset.ndbResultCount ?? 1);
             results.appendChild?.(result);
 
             if (isGroup) {
@@ -3149,12 +3150,12 @@ export function createNewDebugBar(
     compareQueries(left, right) {
       if (this.querySort === 'duration') {
         return (
-          Number(right.dataset.duration ?? 0) - Number(left.dataset.duration ?? 0) ||
-          Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0)
+          Number(right.dataset.ndbDuration ?? 0) - Number(left.dataset.ndbDuration ?? 0) ||
+          Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0)
         );
       }
 
-      return Number(left.dataset.execution ?? 0) - Number(right.dataset.execution ?? 0);
+      return Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
     },
 
     toggleViewSort(sort) {
@@ -3181,16 +3182,16 @@ export function createNewDebugBar(
 
           if (this.viewSort === 'count') {
             return (
-              (Number(left.dataset.count ?? 0) - Number(right.dataset.count ?? 0)) * direction ||
-              Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0)
+              (Number(left.dataset.ndbCount ?? 0) - Number(right.dataset.ndbCount ?? 0)) * direction ||
+              Number(left.dataset.ndbOrder ?? 0) - Number(right.dataset.ndbOrder ?? 0)
             );
           }
 
           return (
-            String(left.dataset.name ?? '').localeCompare(String(right.dataset.name ?? ''), undefined, {
+            String(left.dataset.ndbName ?? '').localeCompare(String(right.dataset.ndbName ?? ''), undefined, {
               numeric: true,
               sensitivity: 'base',
-            }) * direction || Number(left.dataset.order ?? 0) - Number(right.dataset.order ?? 0)
+            }) * direction || Number(left.dataset.ndbOrder ?? 0) - Number(right.dataset.ndbOrder ?? 0)
           );
         })
         .forEach((group) => groups.appendChild?.(group));
@@ -3323,9 +3324,9 @@ export function createNewDebugBar(
       [...list.children].forEach((item) => {
         const matches =
           (this.timelineFilter === 'all' ||
-            (this.timelineFilter === 'key' && item.dataset.key === 'true') ||
-            item.dataset.section === this.timelineFilter) &&
-          (search === '' || item.dataset.search?.includes(search));
+            (this.timelineFilter === 'key' && item.dataset.ndbKey === 'true') ||
+            item.dataset.ndbSection === this.timelineFilter) &&
+          (search === '' || item.dataset.ndbSearch?.includes(search));
         item.hidden = !matches;
         if (matches) visible++;
       });
@@ -3674,7 +3675,7 @@ export function createNewDebugBar(
             this.requestPickerReturnFocus?.closest?.('[data-ndb-request-switcher]') ??
             this.$root?.querySelector?.(`[data-ndb-request-switcher="${scope}"]`);
           const options = [...(switcher?.querySelectorAll?.('[data-ndb-request-option]') ?? [])];
-          const selected = options.find((option) => option.dataset.profileId === this.summary.id);
+          const selected = options.find((option) => option.dataset.ndbProfileId === this.summary.id);
 
           (selected ?? options[0])?.focus?.();
         };
@@ -3723,7 +3724,7 @@ export function createNewDebugBar(
       if (options.length === 0) return;
 
       const active = options.indexOf(browser.activeElement?.());
-      const selected = options.findIndex((option) => option.dataset.profileId === this.summary.id);
+      const selected = options.findIndex((option) => option.dataset.ndbProfileId === this.summary.id);
       const current = active >= 0 ? active : Math.max(0, selected);
       const next = (current + direction + options.length) % options.length;
 

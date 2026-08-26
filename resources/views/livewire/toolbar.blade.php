@@ -7,13 +7,13 @@
     aria-label="Debug toolbar"
     aria-describedby="newdebugbar-toolbar-drag-hint"
     data-ndb-toolbar-shell
-    :data-placement="toolbarPlacement"
-    :data-preferred-placement="toolbarPreferredPlacement"
-    :data-dragging="toolbarDragging"
-    :data-drag-target="toolbarDragTarget"
-    :data-rebasing="toolbarRebasing"
-    :data-snapping="toolbarSnapping"
-    :data-form="toolbarIsCorner ? 'corner' : 'center'"
+    :data-ndb-placement="toolbarPlacement"
+    :data-ndb-preferred-placement="toolbarPreferredPlacement"
+    :data-ndb-dragging="toolbarDragging"
+    :data-ndb-drag-target="toolbarDragTarget"
+    :data-ndb-rebasing="toolbarRebasing"
+    :data-ndb-snapping="toolbarSnapping"
+    :data-ndb-form="toolbarIsCorner ? 'corner' : 'center'"
     :style="{
         '--ndb-toolbar-drag-x': toolbarDragOffsetX + 'px',
         '--ndb-toolbar-drag-y': toolbarDragOffsetY + 'px',

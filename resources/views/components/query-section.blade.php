@@ -112,13 +112,13 @@
             @php($groupSlow = collect($group['executions'])->contains(fn (array $execution): bool => $execution['slow']))
             <article
                 data-ndb-query-group="{{ $group['fingerprint'] }}"
-                data-query-kind="group"
-                data-result-count="{{ $group['count'] }}"
-                data-execution="{{ $group['executions'][0]['execution'] }}"
-                data-duration="{{ $group['duration_ms'] }}"
-                data-type="{{ $group['query_type'] }}"
-                data-slow="{{ $groupSlow ? 'true' : 'false' }}"
-                data-search="{{ $groupSearch }}"
+                data-ndb-query-kind="group"
+                data-ndb-result-count="{{ $group['count'] }}"
+                data-ndb-execution="{{ $group['executions'][0]['execution'] }}"
+                data-ndb-duration="{{ $group['duration_ms'] }}"
+                data-ndb-type="{{ $group['query_type'] }}"
+                data-ndb-slow="{{ $groupSlow ? 'true' : 'false' }}"
+                data-ndb-search="{{ $groupSearch }}"
                 class="ndb:scroll-mt-16 ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/40"
             >
                 <div class="ndb:flex ndb:flex-wrap ndb:items-start ndb:gap-x-6 ndb:gap-y-3 ndb:px-4 ndb:py-4">

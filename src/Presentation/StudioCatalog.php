@@ -68,7 +68,6 @@ final class StudioCatalog
             'cache-overview-facts',
             'cache-overview-panel',
             'cache-raw-panel',
-            'cache-source-panel',
             'cache-workspace',
         ],
         'events' => [
@@ -84,7 +83,6 @@ final class StudioCatalog
             'http-client-no-response',
             'http-client-request-panel',
             'http-client-response-panel',
-            'http-client-source-panel',
             'http-client-workspace',
         ],
         'livewire' => [
@@ -98,7 +96,6 @@ final class StudioCatalog
             'mail-actions',
             'mail-header',
             'mail-message-details',
-            'mail-source-panel',
         ],
         'models' => [
             'model-group',
@@ -109,7 +106,6 @@ final class StudioCatalog
             'notification-detail',
             'notification-header',
             'notification-payload-panel',
-            'notification-source-panel',
         ],
         'queries' => [
             'query-actions',
@@ -272,6 +268,13 @@ final class StudioCatalog
         'inspector-source-fact' => [
             'title' => 'Inspector Source Fact',
             'description' => 'Shows one source-like fact while preserving interface typography for locations.',
+            'demo' => 'inspector',
+            'kind' => 'patterns',
+            'navigation' => 'content',
+        ],
+        'inspector-source-panel' => [
+            'title' => 'Inspector Source Panel',
+            'description' => 'Combines source facts and the retained application stack with one spacing system.',
             'demo' => 'inspector',
             'kind' => 'patterns',
             'navigation' => 'content',

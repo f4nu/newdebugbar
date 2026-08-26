@@ -9,7 +9,7 @@
 <div
     aria-hidden="true"
     data-ndb-toolbar-anchor="{{ $placement }}"
-    :data-active="toolbarDragging && toolbarDragTarget === '{{ $placement }}'"
+    :data-ndb-active="toolbarDragging && toolbarDragTarget === '{{ $placement }}'"
     :style="{
         width: toolbarPreviewWidth('{{ $placement }}') + 'px',
         height: toolbarPreviewHeight('{{ $placement }}') + 'px',

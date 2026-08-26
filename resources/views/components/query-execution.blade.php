@@ -21,16 +21,16 @@
 
 <details
     wire:key="query-{{ $identity }}"
-    data-execution="{{ $query['execution'] }}"
-    data-duration="{{ $query['duration_ms'] }}"
-    data-slow="{{ $query['slow'] ? 'true' : 'false' }}"
+    data-ndb-execution="{{ $query['execution'] }}"
+    data-ndb-duration="{{ $query['duration_ms'] }}"
+    data-ndb-slow="{{ $query['slow'] ? 'true' : 'false' }}"
     @if ($filterable)
         data-ndb-query-item
-        data-query-kind="item"
-        data-result-count="1"
-        data-type="{{ $query['query_type'] }}"
-        data-repeated="{{ $query['repeated'] ? 'true' : 'false' }}"
-        data-search="{{ $search }}"
+        data-ndb-query-kind="item"
+        data-ndb-result-count="1"
+        data-ndb-type="{{ $query['query_type'] }}"
+        data-ndb-repeated="{{ $query['repeated'] ? 'true' : 'false' }}"
+        data-ndb-search="{{ $search }}"
     @endif
     @if ($grouped) data-ndb-query-group-execution @endif
     @if ($expanded) open @endif
@@ -117,10 +117,10 @@
                             <button
                                 type="button"
                                 role="tab"
-                                id="ndb-query-{{ $identity }}-bindings-tab"
+                                id="newdebugbar-query-{{ $identity }}-bindings-tab"
                                 data-ndb-query-tab="bindings"
                                 data-ndb-query-bindings="{{ $identity }}"
-                                aria-controls="ndb-query-{{ $identity }}-bindings-panel"
+                                aria-controls="newdebugbar-query-{{ $identity }}-bindings-panel"
                                 :aria-selected="queryTab === 'bindings'"
                                 :tabindex="queryTab === 'bindings' ? 0 : -1"
                                 @click="queryTab = 'bindings'"
@@ -142,9 +142,9 @@
                             <button
                                 type="button"
                                 role="tab"
-                                id="ndb-query-{{ $identity }}-stack-tab"
+                                id="newdebugbar-query-{{ $identity }}-stack-tab"
                                 data-ndb-query-tab="stack"
-                                aria-controls="ndb-query-{{ $identity }}-stack-panel"
+                                aria-controls="newdebugbar-query-{{ $identity }}-stack-panel"
                                 :aria-selected="queryTab === 'stack'"
                                 :tabindex="queryTab === 'stack' ? 0 : -1"
                                 @click="queryTab = 'stack'"
@@ -183,8 +183,8 @@
                     @else
                         data-ndb-query-evidence-direct="bindings"
                     @endif
-                    id="ndb-query-{{ $identity }}-bindings-panel"
-                    @if ($hasMultipleEvidence) aria-labelledby="ndb-query-{{ $identity }}-bindings-tab" @endif
+                    id="newdebugbar-query-{{ $identity }}-bindings-panel"
+                    @if ($hasMultipleEvidence) aria-labelledby="newdebugbar-query-{{ $identity }}-bindings-tab" @endif
                 >
                     <x-newdebugbar::code-block
                         language="json"
@@ -203,8 +203,8 @@
                     @else
                         data-ndb-query-evidence-direct="stack"
                     @endif
-                    id="ndb-query-{{ $identity }}-stack-panel"
-                    @if ($hasMultipleEvidence) aria-labelledby="ndb-query-{{ $identity }}-stack-tab" @endif
+                    id="newdebugbar-query-{{ $identity }}-stack-panel"
+                    @if ($hasMultipleEvidence) aria-labelledby="newdebugbar-query-{{ $identity }}-stack-tab" @endif
                     class="ndb:border-t ndb:border-zinc-200/80 ndb:px-4 ndb:dark:border-zinc-800"
                 >
                     <ol class="ndb:divide-y ndb:divide-zinc-100 ndb:dark:divide-zinc-800/80">

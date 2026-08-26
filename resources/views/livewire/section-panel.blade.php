@@ -1,25 +1,26 @@
 {{-- Renders the one collector section selected by the inspector. --}}
 @if ($profile !== [] && is_array($section))
+    @php
+        $sectionMetadata = collect($this->summary['sections'] ?? [])->firstWhere('key', $sectionKey);
+        $sectionLayout = is_array($sectionMetadata) ? ($sectionMetadata['layout'] ?? 'flow') : 'flow';
+        $usesWorkspace = $sectionLayout === 'workspace';
+    @endphp
     <div
         data-ndb-loaded-section="{{ $sectionKey }}"
         wire:key="profile-section-{{ $profileId }}-{{ $sectionKey }}"
         x-cloak
         x-show.important="loadedSection === @js($sectionKey) || requestedSection === @js($sectionKey)"
-        :class="['authorization', 'cache', 'events', 'http_client', 'mail', 'models', 'notifications'].includes(
-            selected,
-        )
-            ? 'ndb:lg:min-h-0 ndb:lg:flex-1'
-            : ''"
+        :class="selectedSection.layout === 'workspace' ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
         @class([
-            'ndb:p-4 ndb:sm:p-6' => ! in_array($sectionKey, ['cache', 'http_client', 'mail', 'models', 'notifications'], true),
-            'ndb:p-4 ndb:sm:px-0 ndb:sm:py-6' => in_array($sectionKey, ['cache', 'http_client', 'mail', 'models', 'notifications'], true),
+            'ndb:p-4 ndb:sm:p-6' => ! $usesWorkspace,
+            'ndb:p-4 ndb:sm:px-0 ndb:sm:py-6' => $usesWorkspace,
         ])
     >
         <section
             data-ndb-section-panel="{{ $sectionKey }}"
             @class([
-                'ndb:space-y-4' => ! in_array($sectionKey, ['authorization', 'cache', 'events', 'http_client', 'mail', 'models', 'notifications'], true),
-                'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => in_array($sectionKey, ['authorization', 'cache', 'events', 'http_client', 'mail', 'models', 'notifications'], true),
+                'ndb:space-y-4' => ! $usesWorkspace,
+                'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => $usesWorkspace,
             ])
         >
             @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))

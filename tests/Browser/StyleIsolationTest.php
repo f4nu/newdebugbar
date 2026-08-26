@@ -199,7 +199,8 @@ it('keeps host styles and package styles isolated', function () {
         ->click('[data-ndb-http-client-detail-tab="source"]')
         ->assertScript(<<<'JS'
             (() => {
-                const facts = document.querySelector('[data-ndb-http-client-source-facts]');
+                const sourcePanel = document.querySelector('[data-ndb-http-client-source-facts]');
+                const facts = sourcePanel.querySelector('dl');
                 const source = document.querySelector('[data-ndb-http-client-detail-source]');
                 const fact = source.closest('[data-ndb-inspector-source-fact]');
                 const stack = document.querySelector('[data-ndb-http-client-detail-panel="source"] [data-ndb-inspector-stack]');

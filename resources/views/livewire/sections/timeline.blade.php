@@ -109,13 +109,13 @@
             @foreach ($timelineItems as $item)
                 <li
                     data-ndb-timeline-item="{{ $item['id'] }}"
-                    data-section="{{ $item['section'] }}"
-                    data-kind="{{ $item['kind'] }}"
-                    data-key="{{ in_array($item['section'], $timelineKeySections, true) ? 'true' : 'false' }}"
-                    data-position="{{ $item['at_percent'] }}"
-                    @if ($item['start_percent'] !== null) data-start="{{ $item['start_percent'] }}" @endif
-                    @if ($item['duration_percent'] !== null) data-duration="{{ $item['duration_percent'] }}" @endif
-                    data-search="{{ mb_strtolower($item['label'].' '.$item['section']) }}"
+                    data-ndb-section="{{ $item['section'] }}"
+                    data-ndb-kind="{{ $item['kind'] }}"
+                    data-ndb-key="{{ in_array($item['section'], $timelineKeySections, true) ? 'true' : 'false' }}"
+                    data-ndb-position="{{ $item['at_percent'] }}"
+                    @if ($item['start_percent'] !== null) data-ndb-start="{{ $item['start_percent'] }}" @endif
+                    @if ($item['duration_percent'] !== null) data-ndb-duration="{{ $item['duration_percent'] }}" @endif
+                    data-ndb-search="{{ mb_strtolower($item['label'].' '.$item['section']) }}"
                     class="ndb:grid ndb:min-h-14 ndb:grid-cols-[minmax(190px,0.8fr)_minmax(420px,2fr)_88px]"
                     style="--ndb-timeline-at: {{ $item['at_percent'] }}%; --ndb-timeline-start: {{ $item['start_percent'] ?? $item['at_percent'] }}%; --ndb-timeline-width: {{ $item['duration_percent'] ?? 0 }}%;"
                 >

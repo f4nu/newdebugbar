@@ -3,7 +3,7 @@
 it('moves the compact toolbar away from host dialogs at either screen edge', function () {
     $page = visit('/profiled')
         ->resize(1440, 900)
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom');
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'bottom');
 
     $page->script(<<<'JS'
         const dialog = document.createElement('dialog');
@@ -20,7 +20,7 @@ it('moves the compact toolbar away from host dialogs at either screen edge', fun
         JS);
 
     $page
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'top')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13');
 
     $page->script(<<<'JS'
@@ -29,7 +29,7 @@ it('moves the compact toolbar away from host dialogs at either screen edge', fun
         JS);
 
     $page
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'bottom')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().bottom >= window.innerHeight - 13')
         ->assertNoJavaScriptErrors();
 });
@@ -39,7 +39,7 @@ it('opens the inspector from the active toolbar anchor', function () {
 
     $page
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
-        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'bottom')
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-ndb-placement', 'bottom')
         ->assertScript(<<<'JS'
             (() => {
                 const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
@@ -61,7 +61,7 @@ it('opens the inspector from the active toolbar anchor', function () {
                 return true;
             })()
             JS)
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'top')
         ->assertScript(<<<'JS'
             (() => {
                 const control = document.querySelector('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]');
@@ -83,14 +83,14 @@ it('opens the inspector from the active toolbar anchor', function () {
                     requestAnimationFrame(sample);
                 }, { capture: true, once: true });
 
-                return panel.dataset.placement === 'top'
+                return panel.dataset.ndbPlacement === 'top'
                     && panel.getAttribute('x-transition:enter-start') === 'ndb-inspector-offscreen'
                     && panel.getAttribute('x-transition:leave-end') === 'ndb-inspector-offscreen';
             })()
             JS)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
-        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'top')
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-ndb-placement', 'top')
         ->assertScript(<<<'JS'
             (() => {
                 const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
@@ -114,7 +114,7 @@ it('opens the inspector from the active toolbar anchor', function () {
 it('drags the compact toolbar between animated persistent anchors', function () {
     $page = visit('/profiled')
         ->resize(1440, 900)
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'bottom')
         ->assertScript(<<<'JS'
             (() => {
                 const top = document.createElement('div');
@@ -143,14 +143,14 @@ it('drags the compact toolbar between animated persistent anchors', function () 
 
     $page
         ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-top-drop-target"]')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-preferred-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-preferred-placement', 'top')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13')
-        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").dataset.dragging !== "true"')
-        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").dataset.snapping !== "true"')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").dataset.ndbDragging !== "true"')
+        ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").dataset.ndbSnapping !== "true"')
         ->assertScript("JSON.parse(localStorage.getItem('newdebugbar.preferences.v1')).toolbarAnchor === 'top'")
         ->refresh()
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'top')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().top <= 13');
 
     $page->script(<<<'JS'
@@ -169,8 +169,8 @@ it('drags the compact toolbar between animated persistent anchors', function () 
 
     $page
         ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-bottom-drop-target"]')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-preferred-placement', 'bottom')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'bottom')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-preferred-placement', 'bottom')
         ->assertScript('document.querySelector("[data-ndb-toolbar-shell]").getBoundingClientRect().bottom >= window.innerHeight - 13')
         ->assertNoJavaScriptErrors();
 });
@@ -188,8 +188,8 @@ it('uses only the existing request split button at every corner', function () {
                     return true;
                 })()
                 JS)
-            ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', $placement)
-            ->assertAttribute('[data-ndb-toolbar-shell]', 'data-form', 'corner')
+            ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', $placement)
+            ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-form', 'corner')
             ->assertScript(<<<'JS'
                 (() => {
                     const toolbar = document.querySelector('[data-ndb-toolbar-shell]');
@@ -208,7 +208,7 @@ it('uses only the existing request split button at every corner', function () {
                     const methodBox = method.getBoundingClientRect();
                     const pathBox = path.getBoundingClientRect();
                     const statusBox = status.getBoundingClientRect();
-                    const placement = toolbar.dataset.placement;
+                    const placement = toolbar.dataset.ndbPlacement;
                     const topInset = placement.startsWith('top') ? box.top : window.innerHeight - box.bottom;
                     const sideInset = placement.endsWith('left') ? box.left : window.innerWidth - box.right;
 
@@ -261,7 +261,7 @@ it('uses only the existing request split button at every corner', function () {
                 const preview = document.querySelector('[data-ndb-toolbar-anchor="bottom-right"]');
                 const box = preview.getBoundingClientRect();
 
-                return preview.dataset.active === 'true'
+                return preview.dataset.ndbActive === 'true'
                     && Math.abs(box.width - 196) <= 1
                     && Math.abs(box.height - 56) <= 1
                     && Math.abs(window.innerWidth - box.right - 12) <= 1
@@ -281,7 +281,7 @@ it('uses only the existing request split button at every corner', function () {
             JS)
         ->click('[data-ndb-corner-request]')
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
-        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-placement', 'bottom')
+        ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-ndb-placement', 'bottom')
         ->assertVisible('[data-ndb-section-panel="request"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Requests"')
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
@@ -321,7 +321,7 @@ it('animates from the toolbar release point to the nearest anchor', function () 
 
     $page
         ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-middle-top-target"]')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'top')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'top')
         ->assertScript(<<<'JS'
             (() => {
                 const drop = window.__ndbToolbarDropTop;
@@ -364,7 +364,7 @@ it('animates from the toolbar release point to the nearest anchor', function () 
 
     $page
         ->drag('[data-ndb-toolbar-shell]', '[data-testid="toolbar-middle-bottom-target"]')
-        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-placement', 'bottom')
+        ->assertAttribute('[data-ndb-toolbar-shell]', 'data-ndb-placement', 'bottom')
         ->assertScript(<<<'JS'
             (() => {
                 const drop = window.__ndbToolbarDropTop;

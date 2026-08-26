@@ -267,9 +267,9 @@
                         <button
                             type="button"
                             data-ndb-mail-item="{{ $message['execution'] }}"
-                            data-execution="{{ $message['execution'] }}"
-                            data-attachments="{{ $message['attachment_count'] > 0 ? 'true' : 'false' }}"
-                            data-search="{{ $message['search'] }}"
+                            data-ndb-execution="{{ $message['execution'] }}"
+                            data-ndb-attachments="{{ $message['attachment_count'] > 0 ? 'true' : 'false' }}"
+                            data-ndb-search="{{ $message['search'] }}"
                             @click="selectMailMessage({{ $message['execution'] }})"
                             :aria-pressed="mailSelected === {{ $message['execution'] }}"
                             :class="mailSelected === {{ $message['execution'] }}

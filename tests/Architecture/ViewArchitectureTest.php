@@ -166,6 +166,50 @@ it('keeps package interface text at a readable minimum size', function () {
     expect($undersizedText)->toBe([]);
 });
 
+it('namespaces package-owned Blade identifiers away from host pages', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $attributeViolations = [];
+    $literalIdViolations = [];
+    $alpineIdViolations = [];
+
+    foreach (ProjectFiles::bladeFilesIn($views) as $file) {
+        $relativePath = ProjectFiles::relativePath($file, $views);
+        $contents = file_get_contents($file->getPathname());
+
+        preg_match_all('/(?:^|\s):?data-(?<name>[a-z0-9_-]+)/m', $contents, $attributes);
+
+        foreach (array_unique($attributes['name']) as $name) {
+            if (! str_starts_with($name, 'ndb-')) {
+                $attributeViolations[] = $relativePath.': data-'.$name;
+            }
+        }
+
+        preg_match_all('/(?:^|\s)(?:::|:)?id="(?<id>[^"]+)"/m', $contents, $ids);
+
+        foreach (array_unique($ids['id']) as $id) {
+            if (! str_contains($id, '{{') && ! str_contains($id, '$id(') && ! str_starts_with($id, 'newdebugbar')) {
+                $literalIdViolations[] = $relativePath.': '.$id;
+            }
+        }
+
+        preg_match_all('/x-id="\[(?<ids>[^]]+)]"/', $contents, $alpineGroups);
+
+        foreach ($alpineGroups['ids'] as $group) {
+            preg_match_all("/'(?<id>[^']+)'/", $group, $alpineIds);
+
+            foreach ($alpineIds['id'] as $id) {
+                if (! str_starts_with($id, 'newdebugbar')) {
+                    $alpineIdViolations[] = $relativePath.': '.$id;
+                }
+            }
+        }
+    }
+
+    expect($attributeViolations)->toBe([])
+        ->and($literalIdViolations)->toBe([])
+        ->and($alpineIdViolations)->toBe([]);
+});
+
 it('uses one popover surface for toolbar and inspector menus', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
 
@@ -218,7 +262,6 @@ it('composes the HTTP Client workspace from focused view components', function (
     $header = file_get_contents($views.'/components/http-client-header.blade.php');
     $request = file_get_contents($views.'/components/http-client-request-panel.blade.php');
     $response = file_get_contents($views.'/components/http-client-response-panel.blade.php');
-    $source = file_get_contents($views.'/components/http-client-source-panel.blade.php');
 
     expect($section)
         ->toContain('<x-newdebugbar::http-client-workspace')
@@ -239,7 +282,8 @@ it('composes the HTTP Client workspace from focused view components', function (
         ->toContain('<x-newdebugbar::http-client-detail-tabs')
         ->toContain('<x-newdebugbar::http-client-request-panel')
         ->toContain('<x-newdebugbar::http-client-response-panel')
-        ->toContain('<x-newdebugbar::http-client-source-panel');
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-fact');
 
     expect($controls)
         ->toContain('<x-newdebugbar::inspector-list-controls')
@@ -265,9 +309,6 @@ it('composes the HTTP Client workspace from focused view components', function (
         ->toContain('<x-newdebugbar::inspector-evidence')
         ->toContain('<x-newdebugbar::http-client-no-response');
 
-    expect($source)
-        ->toContain('<x-newdebugbar::inspector-source-fact')
-        ->toContain('<x-newdebugbar::inspector-stack');
 });
 
 it('composes the Cache workspace from the shared inspector components', function () {
@@ -280,7 +321,6 @@ it('composes the Cache workspace from the shared inspector components', function
     $listItem = file_get_contents($views.'/components/cache-list-item.blade.php');
     $overview = file_get_contents($views.'/components/cache-overview-panel.blade.php');
     $raw = file_get_contents($views.'/components/cache-raw-panel.blade.php');
-    $source = file_get_contents($views.'/components/cache-source-panel.blade.php');
 
     expect($section)
         ->toContain('<x-newdebugbar::cache-workspace')
@@ -301,7 +341,8 @@ it('composes the Cache workspace from the shared inspector components', function
         ->toContain('<x-newdebugbar::cache-detail-tabs')
         ->toContain('<x-newdebugbar::cache-overview-panel')
         ->toContain('<x-newdebugbar::cache-raw-panel')
-        ->toContain('<x-newdebugbar::cache-source-panel');
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-fact');
 
     expect($controls)
         ->toContain('<x-newdebugbar::inspector-list-controls')
@@ -326,9 +367,6 @@ it('composes the Cache workspace from the shared inspector components', function
         ->not->toContain('Check next');
 
     expect($raw)->toContain('<x-newdebugbar::inspector-evidence');
-    expect($source)
-        ->toContain('<x-newdebugbar::inspector-source-fact')
-        ->toContain('<x-newdebugbar::inspector-stack');
 });
 
 it('composes Models as a shared split inspector with reusable explanations', function () {
@@ -383,19 +421,23 @@ it('uses one calm source presentation across inspector sections', function () {
     }
 
     foreach ([
-        'components/cache-source-panel.blade.php',
-        'components/http-client-source-panel.blade.php',
-        'components/mail-source-panel.blade.php',
-        'components/notification-source-panel.blade.php',
+        'components/cache-detail.blade.php',
+        'components/http-client-detail.blade.php',
+        'components/mail-message-details.blade.php',
+        'components/notification-detail.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
-            ->toContain('<x-newdebugbar::inspector-source-fact')
-            ->toContain('<x-newdebugbar::inspector-stack');
+            ->toContain('<x-newdebugbar::inspector-source-panel')
+            ->toContain('<x-newdebugbar::inspector-source-fact');
     }
 
     expect(file_get_contents($views.'/components/mail-message-details.blade.php'))
-        ->toContain('<x-newdebugbar::mail-source-panel')
-        ->not->toContain('data-ndb-mail-detail-panel="source"');
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('data-ndb-mail-detail-panel="source"');
+
+    expect(file_get_contents($views.'/components/inspector-source-panel.blade.php'))
+        ->toContain('<x-newdebugbar::inspector-stack')
+        ->toContain('data-ndb-inspector-source-panel');
 
     expect(file_get_contents($resources.'/css/newdebugbar.css'))
         ->toContain('@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2')

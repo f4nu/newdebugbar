@@ -60,21 +60,21 @@ it('filters the timeline without inventing spans for point events', function () 
         ->assertValue('[data-ndb-timeline-filter]', 'queries')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.dataset.section === 'queries')
+                .every((item) => item.dataset.ndbSection === 'queries')
             JS)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item][hidden]'))
                 .every((item) => getComputedStyle(item).display === 'none')
             JS)
         ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-item][data-section="queries"]'))
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item][data-ndb-section="queries"]'))
                 .every((item) => {
                     const track = item.querySelector('[data-ndb-timeline-track]').getBoundingClientRect();
                     const mark = item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect();
 
-                    return item.dataset.kind === 'span'
-                        && Number(item.dataset.start) < Number(item.dataset.position)
-                        && Number(item.dataset.duration) > 0
+                    return item.dataset.ndbKind === 'span'
+                        && Number(item.dataset.ndbStart) < Number(item.dataset.ndbPosition)
+                        && Number(item.dataset.ndbDuration) > 0
                         && mark.width >= 3
                         && mark.left >= track.left
                         && mark.right <= track.right + 1;
@@ -83,14 +83,14 @@ it('filters the timeline without inventing spans for point events', function () 
         ->select('[data-ndb-timeline-filter]', 'events')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.dataset.kind === 'point'
+                .every((item) => item.dataset.ndbKind === 'point'
                     && item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect().width > 0)
             JS)
         ->select('[data-ndb-timeline-filter]', 'request')
         ->assertValue('[data-ndb-timeline-filter]', 'request')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.dataset.section === 'request')
+                .every((item) => item.dataset.ndbSection === 'request')
             JS)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item][hidden]'))

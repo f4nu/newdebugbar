@@ -141,4 +141,15 @@
     </details>
 </div>
 
-<x-newdebugbar::mail-source-panel />
+<x-newdebugbar::inspector-source-panel
+    frames="selectedMailMessage.stack"
+    data-ndb-mail-detail-panel="source"
+    x-show.important="mailDetailTab === 'source'"
+>
+    <x-newdebugbar::inspector-source-fact label="Mailable or notification" :code="true">
+        <x-slot:value x-text="selectedMailMessage.source || 'No source class was captured.'"></x-slot:value>
+    </x-newdebugbar::inspector-source-fact>
+    <x-newdebugbar::inspector-source-fact label="Triggered at">
+        <x-slot:value x-text="selectedMailMessage.callsite_label"></x-slot:value>
+    </x-newdebugbar::inspector-source-fact>
+</x-newdebugbar::inspector-source-panel>

@@ -1,6 +1,6 @@
 <div
     x-data="{}"
-    x-id="['livewire-edit-trigger', 'livewire-edit-popover', 'livewire-edit-title']"
+    x-id="['newdebugbar-livewire-edit-trigger', 'newdebugbar-livewire-edit-popover', 'newdebugbar-livewire-edit-title']"
     class="ndb:relative ndb:w-full ndb:sm:w-auto ndb:sm:justify-self-end"
     @keydown.escape.stop="
         if (livewireDrafts[livewireDraftKey(row)]) {
@@ -12,9 +12,9 @@
         x-ref="livewireEditButton"
         x-show.important="row.editable"
         type="button"
-        :id="$id('livewire-edit-trigger')"
+        :id="$id('newdebugbar-livewire-edit-trigger')"
         :data-ndb-livewire-edit-key="livewireDraftKey(row)"
-        :aria-controls="$id('livewire-edit-popover')"
+        :aria-controls="$id('newdebugbar-livewire-edit-popover')"
         :aria-expanded="Boolean(
             livewireDrafts[livewireDraftKey(row)] && livewireDrafts[livewireDraftKey(row)]?.status !== 'closing',
         )"
@@ -31,7 +31,7 @@
         <template x-teleport="#newdebugbar">
             <x-newdebugbar::popover-surface
                 :anchored="true"
-                x-anchor.bottom-end.offset.12.fixed="document.getElementById($id('livewire-edit-trigger'))"
+                x-anchor.bottom-end.offset.12.fixed="document.getElementById($id('newdebugbar-livewire-edit-trigger'))"
                 x-init="
                     $nextTick(() => {
                         $el.querySelector('[data-ndb-livewire-edit-control]')?.focus();
@@ -39,10 +39,10 @@
                 "
                 @keydown.escape.stop.prevent="cancelLivewireDraft(row, true)"
                 @keydown.meta.enter.stop.prevent="
-                    applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))
+                    applyLivewireDraft(row, document.getElementById($id('newdebugbar-livewire-edit-trigger')))
                 "
                 @keydown.ctrl.enter.stop.prevent="
-                    applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))
+                    applyLivewireDraft(row, document.getElementById($id('newdebugbar-livewire-edit-trigger')))
                 "
                 @click.outside="
                     if (livewireDrafts[livewireDraftKey(row)]?.status !== 'updating') {
@@ -50,8 +50,8 @@
                     }
                 "
                 data-ndb-livewire-property-popover
-                ::id="$id('livewire-edit-popover')"
-                ::aria-labelledby="$id('livewire-edit-title')"
+                ::id="$id('newdebugbar-livewire-edit-popover')"
+                ::aria-labelledby="$id('newdebugbar-livewire-edit-title')"
                 ::style="{
           visibility:
             $anchor.x !== 0 || $anchor.y !== 0 ? 'visible' : 'hidden',
@@ -66,7 +66,7 @@
             >
                 <div class="ndb:border-b ndb:border-zinc-200/80 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-700/80">
                     <p
-                        :id="$id('livewire-edit-title')"
+                        :id="$id('newdebugbar-livewire-edit-title')"
                         class="ndb:truncate ndb:text-xs ndb:font-bold"
                         :title="row.path"
                     >
@@ -166,7 +166,12 @@
                             data-ndb-livewire-edit-apply
                             type="button"
                             aria-keyshortcuts="Meta+Enter Control+Enter"
-                            @click="applyLivewireDraft(row, document.getElementById($id('livewire-edit-trigger')))"
+                            @click="
+                                applyLivewireDraft(
+                                    row,
+                                    document.getElementById($id('newdebugbar-livewire-edit-trigger')),
+                                )
+                            "
                             :disabled="livewireDrafts[livewireDraftKey(row)]?.status === 'updating'"
                             class="ndb:h-9 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-white ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:opacity-50 ndb:dark:bg-indigo-500"
                         >

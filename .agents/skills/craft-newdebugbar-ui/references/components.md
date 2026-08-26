@@ -68,6 +68,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-list-controls` | Optional list summary plus search and an optional trailing filter. Pass section-owned labels and state through its slots; do not rebuild its responsive grid. |
 | `inspector-list-panel` | List controls, the list scroll owner, and the filtered empty state. |
 | `inspector-source-fact` | Source-like fact card. Set `code` only when the value itself is code, not merely a file location. This treatment is a merge candidate; do not create another source-fact variant. |
+| `inspector-source-panel` | Source facts followed by the bounded application stack. Use it as the complete Source tab body instead of rebuilding panel padding or stack placement. |
 | `inspector-stack` | Bounded application call stack. Pass retained application frames and an accurate empty label. |
 | `inspector-workspace` | Shared split or focused workspace. Use `top` framing for edge-to-edge sections and a namespaced `detailId` in focus mode. |
 | `popover-surface` | Shared elevated menu surface. Use `anchored` only with Alpine Anchor and choose direction and alignment deliberately. |

@@ -1,4 +1,4 @@
-<div data-ndb-http-client-detail-panel="request" x-show.important="httpClientDetailTab === 'request'">
+<div data-ndb-http-client-detail-panel="request" x-show.important="httpClientDetailTab === 'request'" class="ndb:p-4">
     <div class="ndb:flex ndb:flex-col ndb:items-stretch ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800">
         <x-newdebugbar::inspector-facts
             :bordered="false"

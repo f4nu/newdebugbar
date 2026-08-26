@@ -59,9 +59,9 @@ it('loads one render data payload only when its popover opens', function () {
         ->click('[data-ndb-select-section="views"]')
         ->assertMissing('[data-ndb-view-data]')
         ->assertDontSee('view-data-value')
-        ->click('[data-ndb-view-group][data-name="context"] > summary')
+        ->click('[data-ndb-view-group][data-ndb-name="context"] > summary')
         ->assertPresent('[data-ndb-view-data-loading]')
-        ->click('[data-ndb-view-group][data-name="context"] [data-ndb-view-data-trigger]')
+        ->click('[data-ndb-view-group][data-ndb-name="context"] [data-ndb-view-data-trigger]')
         ->waitForText('view-data-value')
         ->assertVisible('[data-ndb-view-data]')
         ->assertNoJavaScriptErrors();
