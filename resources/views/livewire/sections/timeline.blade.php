@@ -222,7 +222,8 @@
                                 class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-3 ndb:py-3"
                             >
                                 <p class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    Showing {{ number_format($timelineLoaded) }} of {{ number_format($timelineTotal) }} timeline events.
+                                    Showing {{ number_format($timelineLoaded) }} of {{ number_format($timelineTotal) }} timeline
+                                    events.
                                 </p>
                                 <x-newdebugbar::inspector-action
                                     icon="activity"
@@ -285,7 +286,10 @@
                                     ></x-slot:value>
                                 </x-newdebugbar::inspector-fact>
                                 <x-newdebugbar::inspector-fact label="Type">
-                                    <x-slot:value class="ndb:text-xs ndb:font-semibold" x-text="selectedTimelineItem.kind"></x-slot:value>
+                                    <x-slot:value
+                                        class="ndb:text-xs ndb:font-semibold"
+                                        x-text="selectedTimelineItem.kind"
+                                    ></x-slot:value>
                                 </x-newdebugbar::inspector-fact>
                                 <x-newdebugbar::inspector-fact label="Started">
                                     <x-slot:value

@@ -48,11 +48,17 @@
                                 class="ndb:min-w-0 ndb:text-xs ndb:text-zinc-700 ndb:dark:text-zinc-200"
                             >
                                 <strong class="ndb:font-bold">
-                                    <span data-ndb-view-visible-count x-text="visibleViewCount">{{ number_format($viewDefaultGroupCount) }}</span>
+                                    <span
+                                        data-ndb-view-visible-count
+                                        x-text="visibleViewCount"
+                                    >{{ number_format($viewDefaultGroupCount) }}</span>
                                     <span x-text="visibleViewCount === 1 ? 'view' : 'views'">{{ \Illuminate\Support\Str::plural('view', $viewDefaultGroupCount) }}</span>
                                 </strong>
                                 <span class="ndb:text-[11px] ndb:font-medium ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    <span data-ndb-view-visible-render-count x-text="visibleViewRenderCount">{{ number_format($viewDefaultRenderCount) }}</span>
+                                    <span
+                                        data-ndb-view-visible-render-count
+                                        x-text="visibleViewRenderCount"
+                                    >{{ number_format($viewDefaultRenderCount) }}</span>
                                     <span x-text="visibleViewRenderCount === 1 ? 'render' : 'renders'">{{ \Illuminate\Support\Str::plural('render', $viewDefaultRenderCount) }}</span>
                                     shown
                                 </span>
@@ -78,7 +84,9 @@
                                 @change="setViewFilter($event.target.value)"
                                 class="ndb:py-0"
                             >
-                                <option value="application">Application ({{ number_format($viewApplicationCount) }})</option>
+                                <option value="application">
+                                    Application ({{ number_format($viewApplicationCount) }})
+                                </option>
                                 <option value="all">All ({{ number_format($viewRenderCount) }})</option>
                                 <option value="framework">Framework ({{ number_format($viewFrameworkCount) }})</option>
                             </x-newdebugbar::select-field>
@@ -156,7 +164,11 @@
                             <x-slot:title class="ndb:min-w-0">
                                 <p
                                     class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
-                                    x-text="selectedViewGroup.origin === 'application' ? 'Application view' : 'Framework view'"
+                                    x-text="
+                                        selectedViewGroup.origin === 'application'
+                                            ? 'Application view'
+                                            : 'Framework view'
+                                    "
                                 ></p>
                                 <h3
                                     data-ndb-view-detail-name
@@ -203,7 +215,10 @@
                                         class="ndb:w-32"
                                     >
                                         <template x-for="view in selectedViewGroup.items" :key="view.render_order">
-                                            <option :value="view.render_order" x-text="`Render #${view.render_order}`"></option>
+                                            <option
+                                                :value="view.render_order"
+                                                x-text="`Render #${view.render_order}`"
+                                            ></option>
                                         </template>
                                     </x-newdebugbar::select-field>
                                 </template>
@@ -315,9 +330,15 @@
                             <div x-show.important="selectedViewRender.composers.length > 0" data-ndb-view-composers>
                                 <h4 class="ndb:text-xs ndb:font-bold">View composers</h4>
                                 <ul class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                                    <template x-for="composer in selectedViewRender.composers" :key="`${composer.name}:${composer.source_label ?? ''}`">
+                                    <template
+                                        x-for="composer in selectedViewRender.composers"
+                                        :key="`${composer.name}:${composer.source_label ?? ''}`"
+                                    >
                                         <li class="ndb:min-w-0 ndb:py-2.5">
-                                            <p class="ndb:break-words ndb:text-xs ndb:font-semibold" x-text="composer.name"></p>
+                                            <p
+                                                class="ndb:break-words ndb:text-xs ndb:font-semibold"
+                                                x-text="composer.name"
+                                            ></p>
                                             <p
                                                 x-show.important="composer.source_label"
                                                 class="ndb:mt-0.5 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
