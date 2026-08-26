@@ -506,14 +506,13 @@ it('keeps host styles and package styles isolated', function () {
                 const entry = document.querySelector('[data-ndb-log-entry]');
                 const severity = entry?.querySelector('[data-ndb-log-severity]');
                 const levelSelect = document.querySelector('[data-ndb-log-level-select]');
-                const summary = entry?.querySelector('[data-ndb-log-summary]');
-                const trigger = entry?.querySelector('[data-ndb-log-details-trigger]');
+                const summary = entry?.matches('[data-ndb-log-summary]') ? entry : null;
 
-                if (! entry || ! severity || ! levelSelect || ! summary || ! trigger) return false;
+                if (! entry || ! severity || ! levelSelect || ! summary) return false;
 
                 return getComputedStyle(entry).borderLeftWidth !== '20px'
                     && getComputedStyle(entry).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(entry).paddingLeft === '0px'
+                    && getComputedStyle(entry).paddingLeft === '12px'
                     && Number.parseFloat(getComputedStyle(severity).fontSize) === 11
                     && getComputedStyle(severity).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(severity).borderRadius === '0px'
@@ -523,43 +522,54 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(levelSelect).backgroundColor !== 'rgb(255, 0, 0)'
                     && Number.parseFloat(getComputedStyle(summary).fontSize) === 12
                     && getComputedStyle(summary).color !== 'rgb(255, 0, 0)'
-                    && trigger.getBoundingClientRect().height === 32
-                    && getComputedStyle(trigger).backgroundColor !== 'rgb(255, 0, 255)'
-                    && getComputedStyle(trigger).color !== 'rgb(0, 128, 0)';
+                    && summary.querySelector('button') === null
+                    && summary.getBoundingClientRect().height < 91;
             })()
             JS)
-        ->click('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]')
-        ->assertVisible('[data-ndb-log-details-popover] [data-ndb-log-related-exception]')
+        ->click('[data-ndb-log-entry][data-ndb-log-level="error"]')
+        ->assertVisible('[data-ndb-log-detail] [data-ndb-log-related-exception]')
         ->assertScript(<<<'JS'
             (() => {
-                const popover = document.querySelector('[data-ndb-log-details-popover]');
-                const surface = popover.querySelector('[data-ndb-popover-surface]');
-                const title = popover.querySelector('[data-ndb-log-details-title]');
-                const actions = popover.querySelector('[data-ndb-log-actions]');
-                const context = popover.querySelector('[data-ndb-log-context]');
+                const detail = document.querySelector('[data-ndb-log-detail]');
+                const title = detail.querySelector('[data-ndb-log-details-title]');
+                const actions = detail.querySelector('[data-ndb-log-actions]');
+                const context = detail.querySelector('[data-ndb-log-context]');
                 const contextTerm = context.querySelector('dt');
-                const exception = popover.querySelector('[data-ndb-log-related-exception]');
-                const exceptionLabel = exception.querySelector('h3');
-                const review = popover.querySelector('[data-ndb-log-review-exception]');
+                const exception = detail.querySelector('[data-ndb-log-related-exception]');
+                const exceptionClass = exception.querySelector('code');
+                const exceptionMessage = exception.querySelector('p');
+                const review = detail.querySelector('[data-ndb-log-review-exception]');
+                const source = detail.querySelector('[data-ndb-log-source]');
+                const selected = document.querySelector('[data-ndb-log-entry][aria-pressed="true"]');
 
-                return actions === null
-                    && getComputedStyle(popover).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(popover).borderLeftWidth === '0px'
-                    && getComputedStyle(popover).paddingLeft === '0px'
-                    && getComputedStyle(surface).backgroundColor !== 'rgb(255, 0, 0)'
-                    && Number.parseFloat(getComputedStyle(title).fontSize) === 13
-                    && getComputedStyle(title).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(title).color !== 'rgb(0, 128, 0)'
-                    && getComputedStyle(context).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(context).paddingLeft === '0px'
-                    && Number.parseFloat(getComputedStyle(contextTerm).fontSize) === 11
-                    && getComputedStyle(contextTerm).color !== 'rgb(0, 128, 0)'
-                    && getComputedStyle(exception).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(exception).borderRadius === '0px'
-                    && review.getBoundingClientRect().height < 24
-                    && Math.abs(review.getBoundingClientRect().top - exceptionLabel.getBoundingClientRect().top) <= 1
-                    && getComputedStyle(review).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(review).color !== 'rgb(0, 128, 0)';
+                const checks = {
+                    noActions: actions === null,
+                    noPopover: document.querySelector('[data-ndb-log-details-popover]') === null,
+                    titleSize: Number.parseFloat(getComputedStyle(title).fontSize) === 14,
+                    titleBackground: getComputedStyle(title).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    titleColor: getComputedStyle(title).color !== 'rgb(0, 128, 0)',
+                    contextBackground: getComputedStyle(context).backgroundColor !== 'rgb(255, 0, 0)',
+                    contextPadding: getComputedStyle(context).paddingLeft === '0px',
+                    contextTermSize: Number.parseFloat(getComputedStyle(contextTerm).fontSize) === 12,
+                    contextTermColor: getComputedStyle(contextTerm).color !== 'rgb(0, 128, 0)',
+                    exceptionBackground: getComputedStyle(exception).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    exceptionPadding: getComputedStyle(exception).paddingLeft === '0px',
+                    exceptionRadius: getComputedStyle(exception).borderRadius === '0px',
+                    exceptionClassColor: getComputedStyle(exceptionClass).color !== 'rgb(0, 128, 0)',
+                    exceptionMessageColor: getComputedStyle(exceptionMessage).color !== 'rgb(0, 128, 0)',
+                    sourceBackground: getComputedStyle(source).backgroundColor !== 'rgb(255, 0, 0)',
+                    sourcePadding: getComputedStyle(source).paddingLeft === '16px',
+                    reviewHeight: review.getBoundingClientRect().height < 91,
+                    reviewBackground: getComputedStyle(review).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    reviewColor: getComputedStyle(review).color !== 'rgb(0, 128, 0)',
+                    selectedBackground: getComputedStyle(selected).backgroundColor !== 'rgb(255, 0, 0)',
+                    selectedTreatment: getComputedStyle(selected).boxShadow === 'none',
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Logs style isolation failed: ' + failures.join(', '));
+
+                return true;
             })()
             JS)
         ->click('[data-ndb-section="events"]')
@@ -830,10 +840,10 @@ it('keeps host styles and package styles isolated', function () {
                     background: getComputedStyle(detail).backgroundColor !== 'rgb(255, 0, 0)',
                     border: getComputedStyle(detail).borderLeftWidth !== '20px',
                     padding: Number.parseFloat(getComputedStyle(detail).paddingLeft) < 50,
-                    nameSize: Number.parseFloat(getComputedStyle(name).fontSize) === 16,
+                    nameSize: Number.parseFloat(getComputedStyle(name).fontSize) === 14,
                     nameFont: !getComputedStyle(name).fontFamily.includes('monospace'),
                     nameColor: getComputedStyle(name).color !== 'rgb(0, 128, 0)',
-                    tabCount: tabs.length === 3,
+                    tabCount: tabs.length === 2,
                     tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
                     tabBackground: tabs.every(
                         (tab) => getComputedStyle(tab).backgroundColor !== 'rgb(255, 0, 255)',
