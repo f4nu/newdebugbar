@@ -45,7 +45,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `icon-button` | Accessible icon-only action. Always provide an accessible name. |
 | `inspector-action` | Compact labeled action beside the evidence it affects. |
 | `inspector-operation-badge` | Neutral equal-width HTTP method or cache-operation badge. Use `wide` for longer operations and `outlined` in detail headers. |
-| `inspector-source-link` | Underlined application-source action with no ornamental icon, padding, or hover fill. |
+| `inspector-source-link` | Underlined application-source action with no ornamental icon, padding, or hover fill. Pass `copy` when activation should copy the displayed location; keep that interaction inside the shared component. |
 | `search-field` | Shared labeled search input with the icon fixed on the left and balanced inset spacing. Do not add a right-icon variant. |
 | `select-field` | Native select with stable field geometry. Use for one list-filter dimension rather than a segmented strip. |
 

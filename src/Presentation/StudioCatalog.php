@@ -124,6 +124,9 @@ final class StudioCatalog
             'toolbar-button',
             'window-controls',
         ],
+        'validation' => [
+            'validation-entry',
+        ],
     ];
 
     /**

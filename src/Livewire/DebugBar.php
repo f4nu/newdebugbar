@@ -26,8 +26,10 @@ final class DebugBar extends Component
         'http_client',
         'logs',
         'mail',
+        'messages',
         'models',
         'notifications',
+        'validation',
     ];
 
     /** @var array<string, string> */
