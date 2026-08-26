@@ -897,7 +897,9 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   state.selectQueryExecution(2);
   assert.equal(state.querySelectedExecution, 2);
   state.setQueryDetailTab('bindings');
-  assert.equal(state.queryDetailTab, 'bindings');
+  assert.equal(state.queryDetailTab, 'query');
+  state.setQueryDetailTab('source');
+  assert.equal(state.queryDetailTab, 'source');
 
   assert.equal(state.beginQueryExplain(), 2);
   assert.equal(state.queryExplainLoading, true);

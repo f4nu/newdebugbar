@@ -3473,7 +3473,7 @@ export function createNewDebugBar(
     },
 
     setQueryDetailTab(tab) {
-      if (!['query', 'bindings', 'source', 'explain'].includes(tab)) return;
+      if (!['query', 'source', 'explain'].includes(tab)) return;
 
       this.queryDetailTab = tab;
       this.$nextTick?.(() => {

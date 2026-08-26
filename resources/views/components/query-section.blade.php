@@ -22,6 +22,9 @@
         $runnableAvailable = ($query['runnable_available'] ?? false)
             && is_string($query['runnable_sql'] ?? null)
             && $query['runnable_sql'] !== '';
+        $displaySql = $runnableAvailable
+            ? (string) $query['runnable_sql']
+            : (string) ($query['sql'] ?? '');
 
         return [
             ...$query,
@@ -39,6 +42,8 @@
             'duration_ms' => round((float) ($query['duration_ms'] ?? 0), 2),
             'query_time_percent' => round((float) ($query['query_time_percent'] ?? 0), 1),
             'runnable_available' => $runnableAvailable,
+            'display_sql' => $displaySql,
+            'display_sql_complete' => $runnableAvailable || $bindings === [],
             'explain_available' => $queryType === 'read' && $runnableAvailable,
             'explain_unavailable_reason' => $queryType !== 'read'
                 ? 'EXPLAIN is available for read queries only.'

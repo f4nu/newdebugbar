@@ -38,18 +38,16 @@ it('presents repeated queries as one shared list detail record', function () {
         ->assertScript('document.querySelector("[data-ndb-query-execution-select]").options.length', 3)
         ->select('[data-ndb-query-execution-select]', '2')
         ->assertValue('[data-ndb-query-execution-select]', '2')
-        ->click('[data-ndb-query-detail-tab="bindings"]')
-        ->assertAttribute('[data-ndb-query-detail-tab="bindings"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-query-detail-panel="bindings"]')
-        ->assertVisible('[data-ndb-query-copy-runnable]')
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-queries]');
-                const bindings = root.querySelector('[data-ndb-query-bindings][data-highlighted]');
+                const query = root.querySelector('[data-ndb-query-sql][data-highlighted]');
 
-                return bindings !== null
+                return query?.textContent.trim() === 'select 2 as number'
+                    && root.querySelector('[data-ndb-query-detail-tab="bindings"]') === null
+                    && root.querySelector('[data-ndb-query-detail-panel="bindings"]') === null
                     && root.querySelectorAll('[data-ndb-query-detail-panel]').length === 1
-                    && root.querySelector('[data-ndb-query-detail-panel="query"]') === null
+                    && root.querySelector('[data-ndb-query-detail-panel="query"]') !== null
                     && root.querySelector('[data-ndb-query-detail-panel="source"]') === null;
             })()
             JS)
@@ -172,7 +170,7 @@ it('keeps an EXPLAIN failure visible with a recovery path', function () {
         ->click('[data-ndb-query-explain-action]')
         ->waitForText('The database could not explain this query.')
         ->assertVisible('[data-ndb-query-explain-error]')
-        ->assertSee('copy runnable SQL from Bindings')
+        ->assertSee('copy the full query from Query')
         ->assertSeeIn('[data-ndb-query-explain-action]', 'Run EXPLAIN again')
         ->assertNoJavaScriptErrors();
 });
@@ -198,7 +196,7 @@ it('moves from the query list to one focused mobile detail', function () {
         ->assertVisible('[data-ndb-query-detail]')
         ->assertVisible('[data-ndb-query-detail-back]')
         ->assertSeeIn('[data-ndb-query-detail-tab="query"]', 'Query')
-        ->assertSeeIn('[data-ndb-query-detail-tab="bindings"]', 'Bindings')
+        ->assertMissing('[data-ndb-query-detail-tab="bindings"]')
         ->assertSeeIn('[data-ndb-query-detail-tab="source"]', 'Source')
         ->assertSeeIn('[data-ndb-query-detail-tab="explain"]', 'EXPLAIN')
         ->assertScript(<<<'JS'

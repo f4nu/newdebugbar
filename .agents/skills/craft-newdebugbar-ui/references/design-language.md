@@ -128,6 +128,7 @@ Do not explain Source, repeat a heading, or narrate ordinary table columns. A ne
 - Mail: the entire list item opens the message; detail tabs may remain left-aligned when sharing a control row.
 - Notifications: show actual channel outcomes; do not add a redundant “needs attention” badge to the detail panel.
 - Models: no default selection; Records is the default selected-model tab; model list keeps a table header and a search field; drivers use the interface typeface; records, writes, and sources are separate useful views; do not duplicate table data in the header.
+- Queries: show the runnable SQL with retained binding values already inserted. Do not split a query and its bindings into separate tabs; explain only when capture limits leave placeholders unresolved. Keep Source and EXPLAIN separate because they answer different developer questions.
 - Events: an Application default can be better than All when framework events dominate.
 
 ### Notification outcome language

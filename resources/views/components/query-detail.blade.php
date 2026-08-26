@@ -54,7 +54,7 @@
             </x-newdebugbar::inspector-detail-header>
 
             <x-newdebugbar::inspector-detail-tabs label="Query evidence">
-                @foreach (['query' => 'Query', 'bindings' => 'Bindings', 'source' => 'Source', 'explain' => 'EXPLAIN'] as $tab => $label)
+                @foreach (['query' => 'Query', 'source' => 'Source', 'explain' => 'EXPLAIN'] as $tab => $label)
                     <x-newdebugbar::filter-tab
                         variant="segmented"
                         data-ndb-query-detail-tab="{{ $tab }}"
@@ -63,13 +63,6 @@
                         class="ndb:h-auto ndb:min-h-8"
                     >
                         {{ $label }}
-                        @if ($tab === 'bindings')
-                            <span
-                                data-ndb-query-bindings-count
-                                class="ndb:tabular-nums ndb:opacity-60"
-                                x-text="selectedQuery.bindings_count"
-                            ></span>
-                        @endif
                     </x-newdebugbar::filter-tab>
                 @endforeach
             </x-newdebugbar::inspector-detail-tabs>
@@ -130,25 +123,33 @@
                         </x-newdebugbar::inspector-fact>
                     </x-newdebugbar::inspector-facts>
 
-                    <x-newdebugbar::inspector-evidence label="SQL" language="sql">
+                    <x-newdebugbar::inspector-evidence label="Full query" language="sql">
                         <x-slot:aside>
                             <x-newdebugbar::inspector-action
                                 icon="copy"
                                 data-ndb-query-copy-sql
-                                @click="copyText(selectedQuery.sql)"
+                                @click="copyText(selectedQuery.display_sql)"
                             >
-                                Copy SQL
+                                Copy query
                             </x-newdebugbar::inspector-action>
                         </x-slot:aside>
                         <x-slot:value
                             data-ndb-query-sql
-                            x-text="selectedQuery.sql"
+                            x-text="selectedQuery.display_sql"
                             x-effect="
                                 selectedQuery?.execution;
                                 $nextTick(() => highlightQueryCode($el));
                             "
                         ></x-slot:value>
                     </x-newdebugbar::inspector-evidence>
+
+                    <p
+                        data-ndb-query-incomplete-bindings
+                        x-show.important="! selectedQuery.display_sql_complete"
+                        class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                    >
+                        Some binding values were not retained, so the remaining placeholders cannot be filled in.
+                    </p>
 
                     <x-newdebugbar::inspector-explanation
                         x-show.important="selectedQueryRecord.likely_n_plus_one"
@@ -165,45 +166,6 @@
                         title="Why this query needs attention"
                         description="It crossed the configured slow-query threshold. If the delay is unexpected, inspect EXPLAIN for scans and indexes, then use Source to find the calling code."
                     />
-                </section>
-            </template>
-
-            <template x-if="queryDetailTab === 'bindings'">
-                <section data-ndb-query-detail-panel="bindings" class="ndb:space-y-4 ndb:p-4">
-                    <template x-if="selectedQuery.bindings_count > 0">
-                        <x-newdebugbar::inspector-evidence label="Bindings" language="json">
-                            <x-slot:value
-                                data-ndb-query-bindings
-                                x-text="formatQueryEvidence(selectedQuery.bindings)"
-                                x-effect="
-                                    selectedQuery?.execution;
-                                    $nextTick(() => highlightQueryCode($el));
-                                "
-                            ></x-slot:value>
-                        </x-newdebugbar::inspector-evidence>
-                    </template>
-
-                    <x-newdebugbar::empty-state
-                        x-show.important="selectedQuery.bindings_count === 0"
-                        label="This query has no bindings."
-                    />
-
-                    <div x-show.important="selectedQuery.runnable_available" class="ndb:flex ndb:justify-end">
-                        <x-newdebugbar::inspector-action
-                            icon="copy"
-                            data-ndb-query-copy-runnable
-                            @click="copyText(selectedQuery.runnable_sql)"
-                        >
-                            Copy runnable SQL
-                        </x-newdebugbar::inspector-action>
-                    </div>
-
-                    <p
-                        x-show.important="selectedQuery.bindings_complete === false"
-                        class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                    >
-                        Some bindings were omitted, so runnable SQL is unavailable.
-                    </p>
                 </section>
             </template>
 
@@ -305,8 +267,8 @@
                             x-text="queryExplainError"
                         ></p>
                         <p class="ndb:mt-1 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                            Check the error, then copy runnable SQL from Bindings if you need to inspect it in a
-                            database client.
+                            Check the error, then copy the full query from Query if you need to inspect it in a database
+                            client.
                         </p>
                     </div>
                 </section>
