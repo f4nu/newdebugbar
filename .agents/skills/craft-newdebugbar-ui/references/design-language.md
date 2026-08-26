@@ -122,6 +122,7 @@ Do not explain Source, repeat a heading, or narrate ordinary table columns. A ne
 
 ## Section-specific defaults
 
+- Inspector: do not expose a top-level Overview section unless user demand proves it useful. Open Requests by default, while retaining captured overview/runtime evidence for summaries, MCP, and other non-UI consumers. This does not affect section-specific detail tabs named Overview.
 - Requests: preserve the lifecycle trace and collapsed Request details disclosure. It is an intentional exception to the shared inspector-workspace presentation; keep the newer global section shell, height chain, and host isolation around it without replacing its internal flow with tabs or list/detail controls.
 - HTTP Client: list filter uses a dropdown; detail begins with Response, then Request, then Source.
 - Cache: list operation filter uses a dropdown; operation badge and key share one header line; Raw precedes Source when raw data is useful.
