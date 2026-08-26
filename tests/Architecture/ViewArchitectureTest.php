@@ -537,7 +537,6 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'livewire/sections/events.blade.php',
         'livewire/sections/exceptions.blade.php',
         'livewire/sections/logs.blade.php',
-        'livewire/sections/messages.blade.php',
         'livewire/sections/livewire.blade.php',
         'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
@@ -698,28 +697,6 @@ it('composes Logs as a shared list-detail workspace', function () {
         ->toContain(':frames="\Illuminate\Support\Js::from($stack)"')
         ->toContain('<x-newdebugbar::inspector-action')
         ->not->toContain('<x-newdebugbar::popover-surface');
-});
-
-it('composes Checkpoints as an explained chronological diagnostic stream', function () {
-    $views = dirname(__DIR__, 2).'/resources/views';
-    $section = file_get_contents($views.'/livewire/sections/messages.blade.php');
-    $item = file_get_contents($views.'/components/checkpoint-item.blade.php');
-
-    expect($section)
-        ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"')
-        ->toContain('<x-newdebugbar::inspector-explanation')
-        ->toContain('<x-newdebugbar::checkpoint-item')
-        ->toContain('data-ndb-checkpoint-list')
-        ->toContain('https://laravel.com/docs/logging#writing-log-messages')
-        ->not->toContain('<x-newdebugbar::inspector-list-controls');
-
-    expect($item)
-        ->toContain('<x-newdebugbar::inspector-source-link')
-        ->toContain('<x-newdebugbar::inspector-definition-list')
-        ->toContain('<x-newdebugbar::inspector-definition-row')
-        ->toContain('<x-newdebugbar::code-block')
-        ->toContain('data-ndb-checkpoint-connector')
-        ->toContain('data-ndb-checkpoint-context');
 });
 
 it('composes Validation as a shared diagnostic stream', function () {

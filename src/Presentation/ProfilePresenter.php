@@ -31,6 +31,8 @@ final class ProfilePresenter
             return [];
         }
 
+        unset($profile['sections']['messages']);
+
         $profile = $this->background->present($profile);
 
         $queryItems = $profile['sections']['queries']['payload']['items'] ?? [];

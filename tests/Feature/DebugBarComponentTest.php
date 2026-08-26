@@ -110,6 +110,41 @@ it('keeps captured overview diagnostics out of the inspector UI', function () {
         ->assertStatus(422);
 });
 
+it('removes legacy message sections from the inspector and timeline', function () {
+    $id = (string) Str::uuid();
+    app(ProfileStore::class)->put([
+        'id' => $id,
+        'environment' => 'testing',
+        'metrics' => ['duration_ms' => 12, 'peak_memory_mb' => 8],
+        'sections' => [
+            'request' => [
+                'label' => 'Request',
+                'summary' => ['method' => 'GET', 'status' => 200],
+                'payload' => ['path' => '/legacy', 'method' => 'GET', 'status' => 200],
+            ],
+            'messages' => [
+                'label' => 'Messages',
+                'summary' => ['count' => 1],
+                'payload' => ['items' => [[
+                    'label' => 'Legacy developer message',
+                    'at_ms' => 5,
+                ]]],
+            ],
+        ],
+    ]);
+
+    $presented = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($id));
+
+    expect($presented['sections'])->not->toHaveKey('messages')
+        ->and(array_column($presented['sections']['timeline']['payload']['items'], 'section'))
+        ->not->toContain('messages');
+
+    Livewire::test(DebugBar::class, ['profileId' => $id])
+        ->assertSet('summary.sections', fn (array $sections): bool => collect($sections)->doesntContain('key', 'messages'))
+        ->call('loadSection', 'messages')
+        ->assertStatus(422);
+});
+
 it('summarizes warnings, slow queries, and duplicate sql', function () {
     $id = (string) Str::uuid();
     app(ProfileStore::class)->put([

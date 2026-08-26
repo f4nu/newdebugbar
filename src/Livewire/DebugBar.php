@@ -30,7 +30,6 @@ final class DebugBar extends Component
         'logs' => 'Review log messages, their context, and the application code that wrote them.',
         'livewire' => 'Inspect Livewire activity and mounted components.',
         'mail' => 'Inspect mail created during the request, including recipients, metadata, and previews.',
-        'messages' => 'Follow checkpoints your app added with New Debug Bar while this request ran.',
         'models' => 'Review Eloquent retrievals, writes, repeated records, and application sources.',
         'notifications' => 'Inspect notification recipients, channel deliveries, failures, payloads, and source code.',
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
@@ -315,11 +314,9 @@ final class DebugBar extends Component
                 continue;
             }
 
-            $label = match ($key) {
-                'request' => 'Requests',
-                'messages' => 'Checkpoints',
-                default => (string) ($section['label'] ?? ucfirst($key)),
-            };
+            $label = $key === 'request'
+                ? 'Requests'
+                : (string) ($section['label'] ?? ucfirst($key));
             $count = match ($key) {
                 'models' => $section['summary']['activity_count'] ?? $section['summary']['count'] ?? null,
                 'notifications' => $section['summary']['notification_count'] ?? $section['summary']['count'] ?? null,

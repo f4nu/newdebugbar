@@ -316,7 +316,7 @@ it('keeps Events selection focused with one mobile scroll owner', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('presents Laravel decisions checkpoints and source context without editor links', function () {
+it('presents Laravel decisions and source context without editor links', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertMissing('[data-ndb-findings]');
@@ -346,10 +346,7 @@ it('presents Laravel decisions checkpoints and source context without editor lin
         ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.ndbAuthorizationResult === "allowed"')
         ->assertSee('inspect-profile');
 
-    $page
-        ->click('[data-ndb-select-section="messages"]')
-        ->assertSee('Checkout checkpoint')
-        ->click('[data-ndb-select-section="events"]');
+    $page->click('[data-ndb-select-section="events"]');
 
     DebugBarBrowser::waitForDetails($page);
 

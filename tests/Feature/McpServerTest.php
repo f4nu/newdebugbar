@@ -447,7 +447,7 @@ it('exposes every recorded context section through the bounded section tool', fu
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
     $profileId = $response->headers->get('X-NewDebugBar-Profile');
 
-    foreach (['authorization', 'validation', 'messages'] as $section) {
+    foreach (['authorization', 'validation'] as $section) {
         $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
             'profile_id' => $profileId,
             'section' => $section,
@@ -457,17 +457,11 @@ it('exposes every recorded context section through the bounded section tool', fu
             ->and($content['data']['section'])->toBe($section);
     }
 
-    $checkpoints = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
-        'profile_id' => $profileId,
-        'section' => 'messages',
-    ])->assertOk());
+    $missing = app(McpProfilePresenter::class)->section($profileId, 'messages', 0, 50);
 
-    expect($checkpoints['data'])
-        ->section->toBe('messages')
-        ->label->toBe('Checkpoints')
-        ->and($checkpoints['data']['payload']['items'][0]['callsite'])
-        ->file->toBe('tests/Support/DefinesTestApplication.php')
-        ->line->toBeGreaterThan(0);
+    expect($missing['status'])->toBe('not_found')
+        ->and($missing['data']['available_sections'])->not->toContain('messages')
+        ->and(app(McpProfilePresenter::class)->sectionNames())->not->toContain('messages');
 });
 
 it('keeps captured mail content out of MCP responses', function () {

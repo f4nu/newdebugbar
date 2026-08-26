@@ -35,7 +35,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
-use NewDebugBar\Debug;
 use NewDebugBar\Http\Middleware\ProfileRequest;
 use NewDebugBar\ProfileManager;
 use NewDebugBar\Storage\BackgroundActivityStore;
@@ -407,10 +406,6 @@ trait DefinesTestApplication
             Gate::define('delete-profile', fn (): bool => false);
             Gate::allows('inspect-profile', [new ProfiledModel]);
             Gate::allows('delete-profile', [new ProfiledModel]);
-            Debug::message('Checkout checkpoint', [
-                'step' => 2,
-                'token' => 'private-developer-token',
-            ]);
             Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
             Event::listen(ProfiledApplicationEvent::class, ProfiledApplicationListener::class);
             Event::listen(ProfiledApplicationEvent::class, ProfiledQueuedApplicationListener::class);
@@ -430,16 +425,6 @@ trait DefinesTestApplication
             ])->render();
 
             return response('<!doctype html><html><body>'.$view.'</body></html>');
-        });
-
-        $router->middleware(ProfileRequest::class)->get('/profiled-checkpoints', function () {
-            Debug::message('Checkout started', [
-                'cart_id' => 42,
-                'token' => 'private-checkpoint-token',
-            ]);
-            Debug::message('Checkout view ready');
-
-            return response('<!doctype html><html><body><main>Checkout checkpoints</main></body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-authorization-rich', function () {

@@ -28,7 +28,6 @@ final class McpProfilePresenter
         'events',
         'authorization',
         'validation',
-        'messages',
         'logs',
         'exceptions',
         'livewire',

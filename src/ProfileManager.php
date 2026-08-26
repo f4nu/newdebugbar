@@ -225,22 +225,6 @@ final class ProfileManager
         return $normalized;
     }
 
-    /** @param array<string, mixed> $context */
-    public function message(string $label, array $context = []): void
-    {
-        if (! $this->collecting) {
-            return;
-        }
-
-        $location = $this->callSites?->capture();
-
-        $this->record('messages', [
-            'label' => $label,
-            'context' => $context,
-            'callsite' => is_array($location['callsite'] ?? null) ? $location['callsite'] : null,
-        ]);
-    }
-
     public function recordValidationException(ValidationException $exception): void
     {
         $exceptionId = spl_object_id($exception);

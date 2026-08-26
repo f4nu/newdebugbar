@@ -17,7 +17,7 @@ use NewDebugBar\Tests\Fixtures\Events\ProfiledApplicationListener;
 use NewDebugBar\Tests\Fixtures\Events\ProfiledQueuedApplicationListener;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 
-it('captures Laravel decisions sources transactions and redacted checkpoints', function () {
+it('captures Laravel decisions sources transactions and view data', function () {
     $response = $this->get('/profiled-context', ['Accept' => 'text/html'])->assertOk();
     $stored = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
     $profile = app(ProfilePresenter::class)->present($stored);
@@ -32,13 +32,6 @@ it('captures Laravel decisions sources transactions and redacted checkpoints', f
         ->rollback_count->toBe(1)
         ->and(array_column($profile['sections']['queries']['payload']['transactions'], 'kind'))
         ->toBe(['begin', 'rollback'])
-        ->and($profile['sections']['messages']['label'])->toBe('Checkpoints')
-        ->and($profile['sections']['messages']['payload']['items'][0])
-        ->label->toBe('Checkout checkpoint')
-        ->context->step->toBe(2)
-        ->context->token->toBe('[redacted]')
-        ->callsite->file->toBe('tests/Support/DefinesTestApplication.php')
-        ->callsite->line->toBeGreaterThan(0)
         ->and($profile['sections']['views']['payload']['items'][0])
         ->data->label->toBe('Context view')
         ->data->private_value->toBe('view-data-value')
@@ -49,7 +42,7 @@ it('captures Laravel decisions sources transactions and redacted checkpoints', f
         ]])
         ->render_order->toBe(1)
         ->source->file->toBe('tests/Fixtures/views/context.blade.php')
-        ->and(json_encode($profile))->not->toContain('private-developer-token');
+        ->and($profile['sections'])->not->toHaveKey('messages');
 
     $event = collect($profile['sections']['events']['payload']['items'])
         ->firstWhere('name', ProfiledApplicationEvent::class);
