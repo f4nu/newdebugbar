@@ -227,11 +227,7 @@ it('uses one popover surface for toolbar and inspector menus', function () {
 it('uses one filter tab treatment across inspector sections', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
 
-    foreach ([
-        'livewire/livewire/view-tabs.blade.php',
-        'livewire/sections/authorization.blade.php',
-        'livewire/sections/events.blade.php',
-    ] as $view) {
+    foreach (['livewire/livewire/view-tabs.blade.php'] as $view) {
         $contents = file_get_contents($views.'/'.$view);
 
         expect($contents)
@@ -240,7 +236,9 @@ it('uses one filter tab treatment across inspector sections', function () {
     }
 
     foreach ([
+        'components/authorization-detail.blade.php',
         'components/cache-detail-tabs.blade.php',
+        'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',
         'components/query-detail.blade.php',
     ] as $view) {

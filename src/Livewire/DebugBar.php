@@ -32,6 +32,7 @@ final class DebugBar extends Component
         'models',
         'notifications',
         'overview',
+        'queries',
         'validation',
     ];
 
