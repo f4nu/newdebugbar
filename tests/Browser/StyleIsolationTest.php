@@ -635,7 +635,7 @@ it('keeps host styles and package styles isolated', function () {
                     '[data-ndb-model-extra-column]',
                 ];
                 const elements = selectors.map((selector) => document.querySelector(selector));
-                const total = getComputedStyle(document.querySelector('[data-ndb-model-summary] dl > div:nth-child(2) dd'));
+                const summaryCount = getComputedStyle(document.querySelector('[data-ndb-model-summary-count]'));
                 const modelClass = document.querySelector('[data-ndb-model-class]');
                 const tabs = [...document.querySelectorAll('[data-ndb-model-detail-tab]')];
 
@@ -645,9 +645,9 @@ it('keeps host styles and package styles isolated', function () {
                     borders: elements.every((element) => getComputedStyle(element).borderLeftWidth !== '20px'),
                     colors: elements.every((element) => getComputedStyle(element).color !== 'rgb(0, 128, 0)'),
                     typeSizes: elements.every((element) => Number.parseFloat(getComputedStyle(element).fontSize) < 42),
-                    totalBackground: total.backgroundColor === 'rgba(0, 0, 0, 0)',
-                    totalColor: total.color !== 'rgb(0, 128, 0)',
-                    totalSize: Number.parseFloat(total.fontSize) === 12,
+                    summaryBackground: summaryCount.backgroundColor === 'rgba(0, 0, 0, 0)',
+                    summaryColor: summaryCount.color !== 'rgb(0, 128, 0)',
+                    summarySize: Number.parseFloat(summaryCount.fontSize) === 12,
                     classBackground: getComputedStyle(modelClass).backgroundColor === 'rgba(0, 0, 0, 0)',
                     classFont: ! getComputedStyle(modelClass).fontFamily.includes('JetBrains Mono'),
                     tabs: tabs.length === 2,

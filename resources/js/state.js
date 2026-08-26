@@ -417,9 +417,6 @@ export function createNewDebugBar(
     modelGroupCount: 0,
     modelSearch: '',
     visibleModelCount: 0,
-    visibleModelRetrievalCount: 0,
-    visibleModelWriteCount: 0,
-    visibleModelExtraCount: 0,
     modelSelected: null,
     modelDetailOpen: false,
     modelDetailTab: 'records',
@@ -1913,9 +1910,6 @@ export function createNewDebugBar(
       this.modelGroupCount = 0;
       this.modelSearch = '';
       this.visibleModelCount = 0;
-      this.visibleModelRetrievalCount = 0;
-      this.visibleModelWriteCount = 0;
-      this.visibleModelExtraCount = 0;
       this.modelSelected = null;
       this.modelDetailOpen = false;
       this.modelDetailTab = 'records';
@@ -2457,15 +2451,12 @@ export function createNewDebugBar(
       }
     },
 
-    initializeModels(count, retrievalCount = 0, writeCount = 0, extraCount = 0) {
+    initializeModels(count) {
       const normalized = Number(count);
 
       this.modelGroupCount = Number.isInteger(normalized) && normalized > 0 ? normalized : 0;
       this.modelSearch = '';
       this.visibleModelCount = this.modelGroupCount;
-      this.visibleModelRetrievalCount = Math.max(0, Number(retrievalCount) || 0);
-      this.visibleModelWriteCount = Math.max(0, Number(writeCount) || 0);
-      this.visibleModelExtraCount = Math.max(0, Number(extraCount) || 0);
       this.modelSelected = null;
       this.modelDetailOpen = false;
       this.modelDetailTab = 'records';
@@ -2476,9 +2467,6 @@ export function createNewDebugBar(
       const rows = [...(this.$refs?.modelList?.querySelectorAll?.('[data-ndb-model-group]') ?? [])];
       const search = this.modelSearch.toLowerCase().trim();
       let visible = 0;
-      let retrievals = 0;
-      let writes = 0;
-      let extras = 0;
 
       rows.forEach((row) => {
         const matches = search === '' || row.dataset.ndbModelSearchValue?.includes(search);
@@ -2487,18 +2475,12 @@ export function createNewDebugBar(
         if (matches) {
           row.style.removeProperty('display');
           visible++;
-          retrievals += Number(row.dataset.ndbModelRetrievals) || 0;
-          writes += Number(row.dataset.ndbModelWrites) || 0;
-          extras += Number(row.dataset.ndbModelRepeats) || 0;
         } else {
           row.style.setProperty('display', 'none', 'important');
         }
       });
 
       this.visibleModelCount = visible;
-      this.visibleModelRetrievalCount = retrievals;
-      this.visibleModelWriteCount = writes;
-      this.visibleModelExtraCount = extras;
 
       if (Number.isInteger(this.modelSelected) && rows[this.modelSelected]?.hidden) {
         this.modelSelected = null;

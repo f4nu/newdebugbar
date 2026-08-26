@@ -313,7 +313,7 @@ final class StudioCatalog
         ],
         'inspector-list-controls' => [
             'title' => 'List Controls',
-            'description' => 'Aligns an optional list summary, search field, and trailing filter without section-specific markup.',
+            'description' => 'Aligns an optional list summary, search field, and optional trailing filter without section-specific markup.',
             'demo' => 'inspector',
             'kind' => 'patterns',
             'navigation' => 'layout',

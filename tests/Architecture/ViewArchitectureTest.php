@@ -341,9 +341,12 @@ it('composes Models as a shared split inspector with reusable explanations', fun
         ->toContain('<x-newdebugbar::inspector-workspace')
         ->toContain('frame="top"')
         ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('data-ndb-model-summary-count')
         ->toContain('<x-newdebugbar::inspector-detail-pane')
         ->toContain('<x-newdebugbar::model-group')
-        ->toContain('<x-newdebugbar::model-group-detail');
+        ->toContain('<x-newdebugbar::model-group-detail')
+        ->not->toContain('Model activity totals');
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-header')

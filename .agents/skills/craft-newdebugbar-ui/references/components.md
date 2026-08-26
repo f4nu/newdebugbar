@@ -65,7 +65,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-explanation` | Friendly help for ambiguous evidence and a conditional next check. Do not explain obvious labels. |
 | `inspector-fact` | One compact labeled fact inside `inspector-facts`. |
 | `inspector-facts` | Responsive fact tracks. Use two to four columns and omit its border when the parent already supplies the divider. |
-| `inspector-list-controls` | Optional list summary plus search and trailing filter. Pass section-owned labels and state through its slots; do not rebuild its two-column grid. |
+| `inspector-list-controls` | Optional list summary plus search and an optional trailing filter. Pass section-owned labels and state through its slots; do not rebuild its responsive grid. |
 | `inspector-list-panel` | List controls, the list scroll owner, and the filtered empty state. |
 | `inspector-source-fact` | Source-like fact card. Set `code` only when the value itself is code, not merely a file location. This treatment is a merge candidate; do not create another source-fact variant. |
 | `inspector-stack` | Bounded application call stack. Pass retained application frames and an accurate empty label. |

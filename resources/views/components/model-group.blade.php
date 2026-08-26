@@ -6,7 +6,6 @@
     $retrievalCount = (int) ($group['load_count'] ?? 0);
     $changeCount = (int) ($group['change_count'] ?? 0);
     $repeatCount = (int) ($group['repeated_load_count'] ?? 0);
-    $recordCount = (int) ($group['record_count'] ?? 0);
     $connection = is_string($group['connection'] ?? null) && $group['connection'] !== '' ? $group['connection'] : '—';
     $table = is_string($group['table'] ?? null) && $group['table'] !== '' ? $group['table'] : '—';
 @endphp
@@ -15,10 +14,6 @@
     type="button"
     data-ndb-model-group
     data-ndb-model-short-name="{{ $shortName }}"
-    data-ndb-model-retrievals="{{ $retrievalCount }}"
-    data-ndb-model-records="{{ $recordCount }}"
-    data-ndb-model-repeats="{{ $repeatCount }}"
-    data-ndb-model-writes="{{ $changeCount }}"
     data-ndb-model-search-value="{{ \Illuminate\Support\Str::lower($group['model'].' '.$connection.' '.$table) }}"
     wire:key="model-group-{{ $index }}"
     aria-controls="newdebugbar-model-detail"

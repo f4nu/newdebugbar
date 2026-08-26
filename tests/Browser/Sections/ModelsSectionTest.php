@@ -36,10 +36,9 @@ it('presents model activity as a persistent two column inspector', function () {
                 const heading = document.querySelector('[data-ndb-model-list-heading]');
                 const row = document.querySelector('[data-ndb-model-group]');
                 const modelList = document.querySelector('[data-ndb-model-list]');
-                const rows = [...document.querySelectorAll('[data-ndb-model-group]')];
                 const summary = document.querySelector('[data-ndb-model-summary]');
-                const summaryGrid = summary.querySelector('dl');
                 const search = document.querySelector('[data-ndb-model-search]');
+                const controls = summary.closest('[data-ndb-inspector-list-controls]');
                 const empty = document.querySelector('[data-ndb-model-detail-empty]');
                 const prompt = empty.querySelector('p');
                 const rowCells = [
@@ -49,7 +48,6 @@ it('presents model activity as a persistent two column inspector', function () {
                     row.querySelector('[data-ndb-model-extra-column]'),
                 ];
                 const headingCells = [...heading.children];
-                const summaryCells = [...summaryGrid.children];
 
                 const checks = {
                     grid: getComputedStyle(workspace).display === 'grid',
@@ -72,17 +70,14 @@ it('presents model activity as a persistent two column inspector', function () {
                     searchHeader: list.firstElementChild.contains(search)
                         && list.children[1] === modelList
                         && modelList.firstElementChild === heading,
-                    totalsAtEnd: modelList.lastElementChild === summary
-                        && rows.every((modelRow) =>
-                            Boolean(modelRow.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING)
-                        ),
-                    totalColumns: getComputedStyle(summaryGrid).display === 'grid'
-                        && summaryCells.length === 4
-                        && summaryCells.every((cell, index) =>
-                            Math.abs(cell.getBoundingClientRect().left - headingCells[index].getBoundingClientRect().left) <= 1
-                        )
-                        && summaryCells[0].querySelector('dt').textContent.trim() === 'Counts'
-                        && summaryCells.slice(1).map((cell) => cell.querySelector('dd').textContent.trim()).join('|') === '44|0|20',
+                    summaryHeader: controls !== null
+                        && controls === search.closest('[data-ndb-inspector-list-controls]')
+                        && list.firstElementChild.contains(summary)
+                        && ! modelList.contains(summary)
+                        && summary.getBoundingClientRect().bottom < search.getBoundingClientRect().top
+                        && document.querySelector('[aria-label="Model activity totals"]') === null,
+                    summaryCount: summary.querySelector('[data-ndb-model-summary-count]').textContent.trim() === '5 models'
+                        && getComputedStyle(summary.querySelector('[data-ndb-model-visible-count]').parentElement).display === 'none',
                     fullHeight: getComputedStyle(content).display === 'flex'
                         && getComputedStyle(stage).display === 'flex'
                         && getComputedStyle(sectionContent).display === 'flex'
@@ -119,10 +114,13 @@ it('presents model activity as a persistent two column inspector', function () {
         ->assertScript('document.querySelectorAll("[data-ndb-model-group]:not([hidden])").length', 1)
         ->assertScript(<<<'JS'
             (() => {
-                const cells = [...document.querySelectorAll('[data-ndb-model-summary] dl > div')];
+                const summary = document.querySelector('[data-ndb-model-summary]');
+                const visible = summary.querySelector('[data-ndb-model-visible-count]');
 
-                return cells[0].querySelector('dt').textContent.trim() === 'Counts'
-                    && cells.slice(1).map((cell) => cell.querySelector('dd').textContent.trim()).join('|') === '8|0|3';
+                return summary.querySelector('[data-ndb-model-summary-count]').textContent.trim() === '5 models'
+                    && visible.textContent.trim() === '1'
+                    && getComputedStyle(visible.parentElement).display !== 'none'
+                    && summary.textContent.includes('shown');
             })()
             JS)
         ->fill('[data-ndb-model-search]', '')
@@ -214,12 +212,13 @@ it('adapts the model list and details into a mobile drill in flow', function () 
             (() => {
                 const list = document.querySelector('[data-ndb-model-list]');
                 const summary = document.querySelector('[data-ndb-model-summary]');
-                const metrics = [...summary.querySelectorAll('dl > div')];
+                const controls = summary.closest('[data-ndb-inspector-list-controls]');
 
-                return list.lastElementChild === summary
-                    && metrics.length === 4
-                    && metrics[0].querySelector('dt').textContent.trim() === 'Counts'
-                    && metrics.slice(1).map((metric) => metric.querySelector('dd').textContent.trim()).join('|') === '44|0|20';
+                return controls !== null
+                    && controls.contains(document.querySelector('[data-ndb-model-search]'))
+                    && ! list.contains(summary)
+                    && summary.querySelector('[data-ndb-model-summary-count]').textContent.trim() === '5 models'
+                    && getComputedStyle(summary.querySelector('[data-ndb-model-visible-count]').parentElement).display === 'none';
             })()
             JS)
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-detail-pane]")).display === "none"')
@@ -276,7 +275,10 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
         ->assertScript('document.querySelector("[data-ndb-select-section=models]").textContent.trim().endsWith("48")')
         ->assertScript(<<<'JS'
             JSON.stringify([...document.querySelectorAll('[data-ndb-model-group]')]
-                .map((group) => [group.dataset.ndbModelShortName, group.dataset.ndbModelWrites]))
+                .map((group) => [
+                    group.dataset.ndbModelShortName,
+                    group.querySelector('[data-ndb-model-write-column]').textContent.trim(),
+                ]))
                 === JSON.stringify([
                     ['Client', '1'],
                     ['ProofVersion', '1'],
