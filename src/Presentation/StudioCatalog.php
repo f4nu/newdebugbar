@@ -393,16 +393,13 @@ final class StudioCatalog
 
     /**
      * @return array<string, array{
-     *     slug: string,
      *     title: string,
      *     description: string,
      *     kind: string,
      *     kindTitle: string,
-     *     kindSingular: string,
      *     kindDescription: string,
      *     group: string,
      *     groupTitle: string,
-     *     groupDescription: string,
      *     members: list<string>
      * }>
      */
@@ -423,16 +420,13 @@ final class StudioCatalog
             }
 
             $components[$component] = [
-                'slug' => $component,
                 'title' => $metadata['title'],
                 'description' => $metadata['description'],
                 'kind' => $metadata['kind'],
                 'kindTitle' => $kind['title'],
-                'kindSingular' => $kind['singular'],
                 'kindDescription' => $kind['description'],
                 'group' => $metadata['demo'],
                 'groupTitle' => $group['title'],
-                'groupDescription' => $group['description'],
                 'members' => $metadata['members'] ?? [$component],
             ];
         }
@@ -450,25 +444,5 @@ final class StudioCatalog
     public static function privateComponents(): array
     {
         return self::PRIVATE_COMPONENTS;
-    }
-
-    /**
-     * @return array{
-     *     slug: string,
-     *     title: string,
-     *     description: string,
-     *     kind: string,
-     *     kindTitle: string,
-     *     kindSingular: string,
-     *     kindDescription: string,
-     *     group: string,
-     *     groupTitle: string,
-     *     groupDescription: string,
-     *     members: list<string>
-     * }|null
-     */
-    public static function component(string $slug): ?array
-    {
-        return self::components()[$slug] ?? null;
     }
 }

@@ -42,16 +42,12 @@ final class StudioController
         $previewWidth = is_numeric($requestedWidth) ? (int) $requestedWidth : 1024;
         $previewWidth = max(320, min(1440, $previewWidth));
         $view = $preview ? 'newdebugbar::studio.catalog' : 'newdebugbar::studio.shell';
-        $groups = StudioCatalog::groups();
 
         return view($view, [
-            'groups' => $groups,
-            'kinds' => StudioCatalog::kinds(),
             'navigationGroups' => StudioCatalog::navigationGroups(),
             'components' => $components,
             'selected' => $component,
             'selectedComponent' => $selectedComponent,
-            'selectedGroup' => $groups[$selectedComponent['group']],
             'theme' => $theme,
             'previewWidth' => $previewWidth,
             'stylesheetUrl' => $this->assets->for('newdebugbar.css'),

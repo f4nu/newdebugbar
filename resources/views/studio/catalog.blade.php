@@ -28,7 +28,6 @@
     >
         <main class="ndb:min-h-screen">
             @include('newdebugbar::studio.demos.'.$selectedComponent['group'], [
-                'components' => $selectedGroup['components'],
                 'selected' => $selected,
                 'selectedComponent' => $selectedComponent,
             ])
