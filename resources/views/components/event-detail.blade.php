@@ -167,7 +167,7 @@
                         </div>
                     </section>
 
-                    <section data-ndb-event-next-step class="ndb:mt-6">
+                    <section data-ndb-event-next-step class="ndb:mt-6 ndb:bg-transparent ndb:text-inherit">
                         <x-newdebugbar::inspector-explanation>
                             <x-slot:heading>What should I inspect if this event looks wrong?</x-slot:heading>
                             <x-slot:body x-text="selectedEvent.next_step"></x-slot:body>

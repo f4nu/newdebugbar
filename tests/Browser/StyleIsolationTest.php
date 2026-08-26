@@ -240,6 +240,7 @@ it('keeps host styles and package styles isolated', function () {
             })()
             JS)
         ->click('[data-ndb-http-client-detail-tab="source"]')
+        ->waitForText('Application stack')
         ->assertScript(<<<'JS'
             (() => {
                 const sourcePanel = document.querySelector('[data-ndb-http-client-source-facts]');
@@ -248,7 +249,7 @@ it('keeps host styles and package styles isolated', function () {
                 const fact = source.closest('[data-ndb-inspector-source-fact]');
                 const stack = document.querySelector('[data-ndb-http-client-detail-panel="source"] [data-ndb-inspector-stack]');
                 const functionCall = stack.querySelector('li code');
-                const stackPath = stack.querySelector('li > span:last-child > span');
+                const stackPath = stack.querySelector('[data-ndb-inspector-source-link] > span');
 
                 return getComputedStyle(facts).display === 'grid'
                     && getComputedStyle(source).backgroundColor === 'rgba(0, 0, 0, 0)'
@@ -508,15 +509,17 @@ it('keeps host styles and package styles isolated', function () {
                 const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
                 const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
 
-                return getComputedStyle(detail).borderLeftWidth === '0px'
-                    && getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)'
-                    && metadataTerms.every((term) => getComputedStyle(term).backgroundColor !== 'rgb(255, 0, 0)')
-                    && metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)')
-                    && metadataTerms.every((term) => Number.parseFloat(getComputedStyle(term).fontSize) < 42)
-                    && tabs.length === 2
-                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
+                return [
+                    getComputedStyle(detail).borderLeftWidth === '0px',
+                    getComputedStyle(metadata).backgroundColor !== 'rgb(255, 0, 0)',
+                    metadataTerms.every((term) => getComputedStyle(term).backgroundColor !== 'rgb(255, 0, 0)'),
+                    metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)'),
+                    metadataTerms.every((term) => Number.parseFloat(getComputedStyle(term).fontSize) < 42),
+                    tabs.length === 2,
+                    tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                ];
             })()
-            JS)
+            JS, [true, true, true, true, true, true, true])
         ->click('[data-ndb-section="logs"]')
         ->assertVisible('[data-ndb-section-panel="logs"]')
         ->assertScript(<<<'JS'
@@ -597,7 +600,6 @@ it('keeps host styles and package styles isolated', function () {
                 const outcome = document.querySelector('[data-ndb-event-listener-outcome]');
                 const nextStep = document.querySelector('[data-ndb-event-next-step]');
                 const listenerRow = document.querySelector('[data-ndb-event-listener-row]');
-                const timeline = document.querySelector('[data-ndb-event-timeline]');
                 const tabs = [...document.querySelectorAll('[data-ndb-event-detail-tab]')];
                 const tabIcons = [...document.querySelectorAll('[data-ndb-event-detail-tab-icon]')];
                 const color = (value) => {
@@ -652,9 +654,6 @@ it('keeps host styles and package styles isolated', function () {
                     nextStepColor: getComputedStyle(nextStep).color !== 'rgb(0, 128, 0)',
                     listenerBackground: getComputedStyle(listenerRow).backgroundColor === 'rgba(0, 0, 0, 0)',
                     listenerPadding: Number.parseFloat(getComputedStyle(listenerRow).paddingLeft) === 0,
-                    timelineBackground: getComputedStyle(timeline).backgroundColor === 'rgba(0, 0, 0, 0)',
-                    timelineBorder: getComputedStyle(timeline).borderLeftWidth === '0px',
-                    timelinePadding: Number.parseFloat(getComputedStyle(timeline).paddingTop) === 0,
                     tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
                     tabIconCount: tabIcons.length === 3,
                     tabIconSize: tabIcons.every((icon) => Number.parseFloat(getComputedStyle(icon).width) === 14),
@@ -664,6 +663,17 @@ it('keeps host styles and package styles isolated', function () {
                 if (failures.length > 0) throw new Error('Event isolation failed: ' + failures.join(', '));
 
                 return true;
+            })()
+            JS)
+        ->click('[data-ndb-event-detail-tab="source"]')
+        ->waitForText('Dispatch locations')
+        ->assertScript(<<<'JS'
+            (() => {
+                const timeline = document.querySelector('[data-ndb-event-timeline]');
+
+                return getComputedStyle(timeline).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(timeline).borderLeftWidth === '0px'
+                    && Number.parseFloat(getComputedStyle(timeline).paddingTop) === 0;
             })()
             JS)
         ->click('[data-ndb-section="models"]')

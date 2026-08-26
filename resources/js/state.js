@@ -690,7 +690,7 @@ export function createNewDebugBar(
           key: 'overview',
           label: 'Overview',
           description: '',
-          layout: 'flow',
+          layout: 'workspace',
           count: null,
         }
       );

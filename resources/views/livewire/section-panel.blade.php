@@ -1,27 +1,15 @@
 {{-- Renders the one collector section selected by the inspector. --}}
 @if ($profile !== [] && is_array($section))
-    @php
-        $sectionMetadata = collect($this->summary['sections'] ?? [])->firstWhere('key', $sectionKey);
-        $sectionLayout = is_array($sectionMetadata) ? ($sectionMetadata['layout'] ?? 'flow') : 'flow';
-        $usesWorkspace = $sectionLayout === 'workspace';
-    @endphp
     <div
         data-ndb-loaded-section="{{ $sectionKey }}"
         wire:key="profile-section-{{ $profileId }}-{{ $sectionKey }}"
         x-cloak
         x-show.important="loadedSection === @js($sectionKey) || requestedSection === @js($sectionKey)"
-        :class="selectedSection.layout === 'workspace' ? 'ndb:lg:min-h-0 ndb:lg:flex-1' : ''"
-        @class([
-            'ndb:p-4 ndb:sm:p-6' => ! $usesWorkspace,
-            'ndb:p-4 ndb:sm:px-0 ndb:sm:py-6' => $usesWorkspace,
-        ])
+        class="ndb:p-4 ndb:sm:px-0 ndb:sm:py-6 ndb:lg:min-h-0 ndb:lg:flex-1"
     >
         <section
             data-ndb-section-panel="{{ $sectionKey }}"
-            @class([
-                'ndb:space-y-4' => ! $usesWorkspace,
-                'ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0' => $usesWorkspace,
-            ])
+            class="ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0"
         >
             @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))
             @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? [])))

@@ -171,8 +171,7 @@
                 data-ndb-inspector-content
                 x-ref="content"
                 :inert="mobileSectionsOpen"
-                :class="selectedSection.layout === 'workspace' ? 'ndb:lg:flex ndb:lg:flex-col' : ''"
-                class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:dark:bg-zinc-950/70"
+                class="ndb-scrollbar ndb:min-w-0 ndb:flex-1 ndb:overflow-y-auto ndb:bg-white/70 ndb:lg:flex ndb:lg:flex-col ndb:dark:bg-zinc-950/70"
             >
                 <x-newdebugbar::section-heading>
                     <x-slot:heading
@@ -193,10 +192,7 @@
                 <div
                     data-ndb-section-stage
                     :aria-busy="sectionLoading ? 'true' : 'false'"
-                    :class="selectedSection.layout === 'workspace'
-                        ? 'ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
-                        : ''"
-                    class="ndb:relative ndb:min-h-64"
+                    class="ndb:relative ndb:min-h-64 ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
                 >
                     <div
                         x-cloak
@@ -224,11 +220,8 @@
 
                     <div
                         data-ndb-section-content
-                        :class="(sectionTransitioning ? 'ndb:opacity-0' : 'ndb:opacity-100') +
-                        (selectedSection.layout === 'workspace'
-                            ? ' ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col'
-                            : '')"
-                        class="ndb:transition-opacity ndb:duration-150 ndb:ease-out ndb:motion-reduce:transition-none"
+                        :class="sectionTransitioning ? 'ndb:opacity-0' : 'ndb:opacity-100'"
+                        class="ndb:transition-opacity ndb:duration-150 ndb:ease-out ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col ndb:motion-reduce:transition-none"
                     >
                         <div
                             x-cloak

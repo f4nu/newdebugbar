@@ -18,28 +18,6 @@ final class DebugBar extends Component
 {
     private const TIMELINE_PAGE_SIZE = 50;
 
-    /** @var list<string> */
-    private const WORKSPACE_SECTIONS = [
-        'authorization',
-        'cache',
-        'default',
-        'events',
-        'exceptions',
-        'http_client',
-        'logs',
-        'livewire',
-        'mail',
-        'messages',
-        'models',
-        'notifications',
-        'overview',
-        'queries',
-        'request',
-        'timeline',
-        'validation',
-        'views',
-    ];
-
     /** @var array<string, string> */
     private const SECTION_DESCRIPTIONS = [
         'overview' => 'Review the important request activity and the runtime behind it.',
@@ -349,7 +327,7 @@ final class DebugBar extends Component
                 'key' => $key,
                 'label' => $label,
                 'description' => $this->sectionDescription((string) $key, $label),
-                'layout' => in_array($key, self::WORKSPACE_SECTIONS, true) ? 'workspace' : 'flow',
+                'layout' => 'workspace',
                 'count' => $count,
                 'active' => $count === null || (int) $count > 0 || $attention,
                 'attention' => $attention,
