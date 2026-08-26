@@ -46,8 +46,7 @@ it('keeps the desktop waterfall useful inside the shared timeline workspace', fu
     $page->script("document.querySelector('[data-ndb-timeline-page-sentinel]').scrollIntoView({ block: 'end' })");
 
     $page
-        ->waitForText('100 loaded')
-        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]").length > 50')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]").length >= 100')
         ->select('[data-ndb-timeline-filter]', 'queries')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
@@ -112,7 +111,7 @@ it('turns the timeline into a mobile chronological drill-in without horizontal o
     $page->script("document.querySelector('[data-ndb-timeline-page-sentinel]').scrollIntoView({ block: 'end' })");
 
     $page
-        ->waitForText('100 loaded')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]").length >= 100')
         ->click('[data-ndb-timeline-item="request-start"]')
         ->assertVisible('[data-ndb-timeline-detail-content]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-list]").closest("[data-ndb-inspector-focus-list]")).display === "none"')
