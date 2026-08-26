@@ -160,47 +160,14 @@
                         data-ndb-view-detail
                         class="ndb:flex ndb:min-h-0 ndb:flex-col ndb:border-l-0 ndb:bg-transparent ndb:p-0"
                     >
-                        <x-newdebugbar::inspector-detail-header>
+                        <x-newdebugbar::inspector-detail-header layout="wrap" data-ndb-view-detail-header>
                             <x-slot:title class="ndb:min-w-0">
-                                <p
-                                    class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400"
-                                    x-text="
-                                        selectedViewGroup.origin === 'application'
-                                            ? 'Application view'
-                                            : 'Framework view'
-                                    "
-                                ></p>
                                 <h3
                                     data-ndb-view-detail-name
-                                    class="ndb:mt-0.5 ndb:break-words ndb:font-sans ndb:text-base ndb:font-bold ndb:leading-6 ndb:text-zinc-950 ndb:dark:text-white"
+                                    class="ndb:min-w-0 ndb:break-words ndb:font-sans ndb:text-sm ndb:font-bold ndb:leading-5 ndb:text-zinc-950 ndb:dark:text-white"
                                     x-text="selectedViewGroup.display_name"
                                 ></h3>
                             </x-slot:title>
-
-                            <x-slot:aside>
-                                <span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-300">
-                                    <span x-text="selectedViewGroup.count"></span>
-                                    <span x-text="selectedViewGroup.count === 1 ? 'render' : 'renders'"></span>
-                                </span>
-                            </x-slot:aside>
-                        </x-newdebugbar::inspector-detail-header>
-
-                        <x-newdebugbar::inspector-detail-tabs label="View detail">
-                            @foreach (['overview' => 'Overview', 'data' => 'Data', 'source' => 'Source'] as $tab => $label)
-                                <x-newdebugbar::filter-tab
-                                    variant="segmented"
-                                    data-ndb-view-detail-tab="{{ $tab }}"
-                                    @click="
-                                        setViewDetailTab({{ \Illuminate\Support\Js::from($tab) }});
-                                        if (viewDetailTab === 'data') loadSelectedViewData($wire);
-                                    "
-                                    role="tab"
-                                    ::aria-selected="viewDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
-                                    class="ndb:h-auto"
-                                >
-                                    {{ $label }}
-                                </x-newdebugbar::filter-tab>
-                            @endforeach
 
                             <x-slot:aside>
                                 <template x-if="selectedViewGroup.items.length > 1">
@@ -223,44 +190,87 @@
                                     </x-newdebugbar::select-field>
                                 </template>
                             </x-slot:aside>
+
+                            <x-slot:metadata data-ndb-view-detail-metadata class="ndb:gap-x-6 ndb:gap-y-2">
+                                <div class="ndb:min-w-0">
+                                    <dt class="ndb:text-zinc-400">Origin</dt>
+                                    <dd
+                                        class="ndb:font-semibold"
+                                        x-text="
+                                            selectedViewGroup.origin === 'application' ? 'Application' : 'Framework'
+                                        "
+                                    ></dd>
+                                </div>
+                                <div class="ndb:min-w-0">
+                                    <dt class="ndb:text-zinc-400">Passed values</dt>
+                                    <dd
+                                        class="ndb:font-semibold ndb:tabular-nums"
+                                        x-text="selectedViewRender.data_key_count"
+                                    ></dd>
+                                </div>
+                                <template x-if="selectedViewRender.composer_count > 0">
+                                    <div class="ndb:min-w-0" data-ndb-view-composer-count>
+                                        <dt class="ndb:text-zinc-400">Composers</dt>
+                                        <dd
+                                            class="ndb:font-semibold ndb:tabular-nums"
+                                            x-text="selectedViewRender.composer_count"
+                                        ></dd>
+                                    </div>
+                                </template>
+                            </x-slot:metadata>
+                        </x-newdebugbar::inspector-detail-header>
+
+                        <x-newdebugbar::inspector-detail-tabs label="View detail">
+                            @foreach (['overview' => 'Overview', 'data' => 'Data'] as $tab => $label)
+                                <x-newdebugbar::filter-tab
+                                    variant="segmented"
+                                    data-ndb-view-detail-tab="{{ $tab }}"
+                                    @click="
+                                        setViewDetailTab({{ \Illuminate\Support\Js::from($tab) }});
+                                        if (viewDetailTab === 'data') loadSelectedViewData($wire);
+                                    "
+                                    role="tab"
+                                    ::aria-selected="viewDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
+                                    class="ndb:h-auto"
+                                >
+                                    {{ $label }}
+                                </x-newdebugbar::filter-tab>
+                            @endforeach
                         </x-newdebugbar::inspector-detail-tabs>
 
                         <template x-if="viewDetailTab === 'overview'">
                             <section
                                 data-ndb-view-detail-panel="overview"
                                 role="tabpanel"
-                                class="ndb:border-l-0 ndb:bg-transparent ndb:p-4"
+                                class="ndb:space-y-4 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
                             >
-                                <x-newdebugbar::inspector-facts :columns="4">
-                                    <x-newdebugbar::inspector-fact label="Origin">
-                                        <x-slot:value
-                                            class="ndb:text-xs ndb:font-semibold ndb:capitalize"
-                                            x-text="selectedViewGroup.origin"
-                                        ></x-slot:value>
-                                    </x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Render">
-                                        <x-slot:value
-                                            class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                            x-text="`#${selectedViewRender.render_order}`"
-                                        ></x-slot:value>
-                                    </x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Passed values">
-                                        <x-slot:value
-                                            class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                            x-text="selectedViewRender.data_key_count"
-                                        ></x-slot:value>
-                                    </x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Composers">
-                                        <x-slot:value
-                                            class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                            x-text="selectedViewRender.composer_count"
-                                        ></x-slot:value>
-                                    </x-newdebugbar::inspector-fact>
-                                </x-newdebugbar::inspector-facts>
-
-                                <x-newdebugbar::inspector-source-fact label="Rendered from" class="ndb:mt-4">
+                                <x-newdebugbar::inspector-source-fact label="Render source">
                                     <x-slot:value x-text="selectedViewRender.source_label ?? 'Template source was not captured.'"></x-slot:value>
                                 </x-newdebugbar::inspector-source-fact>
+
+                                <template x-if="selectedViewRender.composers.length > 0">
+                                    <div data-ndb-view-composers>
+                                        <h4 class="ndb:text-xs ndb:font-bold">View composers</h4>
+                                        <ul class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                            <template
+                                                x-for="composer in selectedViewRender.composers"
+                                                :key="`${composer.name}:${composer.source_label ?? ''}`"
+                                            >
+                                                <li class="ndb:min-w-0 ndb:py-2.5">
+                                                    <p
+                                                        class="ndb:break-words ndb:text-xs ndb:font-semibold"
+                                                        x-text="composer.name"
+                                                    ></p>
+                                                    <p
+                                                        x-show.important="composer.source_label"
+                                                        class="ndb:mt-0.5 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                        x-text="composer.source_label"
+                                                    ></p>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </template>
                             </section>
                         </template>
 
@@ -308,60 +318,6 @@
                                         </x-newdebugbar::inspector-action>
                                     </div>
                                 </template>
-                            </section>
-                        </template>
-
-                        <template x-if="viewDetailTab === 'source'">
-                            <section
-                                data-ndb-view-detail-panel="source"
-                                role="tabpanel"
-                                class="ndb:space-y-4 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
-                            >
-                                <dl class="ndb:grid ndb:grid-cols-1 ndb:gap-2 ndb:sm:grid-cols-2">
-                                    <x-newdebugbar::inspector-source-fact label="View identifier">
-                                        <x-slot:value x-text="selectedViewGroup.name"></x-slot:value>
-                                    </x-newdebugbar::inspector-source-fact>
-                                    <x-newdebugbar::inspector-source-fact label="Source type">
-                                        <x-slot:value x-text="selectedViewSourceKindLabel"></x-slot:value>
-                                    </x-newdebugbar::inspector-source-fact>
-                                    <x-newdebugbar::inspector-source-fact
-                                        label="Render source"
-                                        class="ndb:sm:col-span-2"
-                                    >
-                                        <x-slot:value
-                                            x-text="
-                                                selectedViewRender.source_label ?? 'Template source was not captured.'
-                                            "
-                                        ></x-slot:value>
-                                    </x-newdebugbar::inspector-source-fact>
-                                </dl>
-
-                                <div x-show.important="selectedViewRender.composers.length > 0" data-ndb-view-composers>
-                                    <h4 class="ndb:text-xs ndb:font-bold">View composers</h4>
-                                    <ul class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                                        <template
-                                            x-for="composer in selectedViewRender.composers"
-                                            :key="`${composer.name}:${composer.source_label ?? ''}`"
-                                        >
-                                            <li class="ndb:min-w-0 ndb:py-2.5">
-                                                <p
-                                                    class="ndb:break-words ndb:text-xs ndb:font-semibold"
-                                                    x-text="composer.name"
-                                                ></p>
-                                                <p
-                                                    x-show.important="composer.source_label"
-                                                    class="ndb:mt-0.5 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                                    x-text="composer.source_label"
-                                                ></p>
-                                            </li>
-                                        </template>
-                                    </ul>
-                                </div>
-
-                                <x-newdebugbar::empty-state
-                                    x-show.important="selectedViewRender.composers.length === 0"
-                                    label="No view composers were captured for this render."
-                                />
                             </section>
                         </template>
                     </div>

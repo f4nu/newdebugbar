@@ -1186,8 +1186,15 @@ test('Views defaults to application records and lazily loads only the selected r
   assert.equal(state.viewDetailOpen, true);
   assert.equal(state.selectedViewGroup.name, 'trips.show');
   assert.equal(state.selectedViewRender.render_order, 1);
+  assert.equal(state.viewDetailTab, 'overview');
   assert.equal(detailFocuses, 1);
   assert.equal(state.$refs.content.scrollTop, 0);
+
+  state.setViewDetailTab('source');
+  assert.equal(state.viewDetailTab, 'overview');
+  state.setViewDetailTab('data');
+  assert.equal(state.viewDetailTab, 'data');
+  state.setViewDetailTab('overview');
 
   const wire = {
     loadViewData: async (renderOrder) => {

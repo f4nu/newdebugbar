@@ -44,7 +44,29 @@ it('keeps application views primary and lazily inspects one desktop render', fun
         ->assertVisible('[data-ndb-view-detail]')
         ->assertSee('original-response')
         ->assertVisible('[data-ndb-view-render-select]')
+        ->assertVisible('[data-ndb-view-detail-panel="overview"]')
+        ->assertSee('tests/Fixtures/views/original-response.blade.php:1')
+        ->assertMissing('[data-ndb-view-detail-tab="source"]')
+        ->assertMissing('[data-ndb-view-detail-panel="source"]')
+        ->assertMissing('[data-ndb-view-composers]')
+        ->assertMissing('[data-ndb-view-composer-count]')
         ->assertScript('document.querySelectorAll("[data-ndb-view-detail]").length === 1')
+        ->assertScript(<<<'JS'
+            (() => {
+                const header = document.querySelector('[data-ndb-view-detail-header]');
+                const primary = header.querySelector('[data-ndb-inspector-detail-header-primary]');
+                const metadata = header.querySelector('[data-ndb-view-detail-metadata]');
+                const select = header.querySelector('[data-ndb-view-render-select]');
+                const tabs = document.querySelector('[data-ndb-view-detail-tab="overview"]').closest('[data-ndb-filter-tabs]').parentElement;
+
+                return getComputedStyle(primary).display === 'flex'
+                    && getComputedStyle(metadata).display === 'flex'
+                    && metadata.querySelectorAll(':scope > div').length === 2
+                    && select !== null
+                    && tabs.querySelector('[data-ndb-view-render-select]') === null
+                    && header.scrollWidth <= header.clientWidth;
+            })()
+            JS)
         ->click('[data-ndb-view-detail-tab="data"]')
         ->waitForText('First response')
         ->assertVisible('[data-ndb-view-data]')
@@ -60,8 +82,8 @@ it('keeps application views primary and lazily inspects one desktop render', fun
                     && code.querySelector('.hljs-string') !== null;
             })()
             JS)
-        ->click('[data-ndb-view-detail-tab="source"]')
-        ->assertVisible('[data-ndb-view-detail-panel="source"]')
+        ->click('[data-ndb-view-detail-tab="overview"]')
+        ->assertVisible('[data-ndb-view-detail-panel="overview"]')
         ->assertSee('tests/Fixtures/views/original-response.blade.php:1')
         ->select('[data-ndb-view-filter]', 'framework')
         ->assertScript('document.querySelectorAll("[data-ndb-view-group]:not([hidden])").length', 0)
@@ -108,7 +130,9 @@ it('uses a bounded mobile list drill-in with a working Views back action', funct
         ->click('[data-ndb-view-group="view-2"]')
         ->assertVisible('[data-ndb-view-detail]')
         ->assertVisible('[data-ndb-view-detail-back]')
-        ->click('[data-ndb-view-detail-tab="source"]')
+        ->assertVisible('[data-ndb-view-detail-panel="overview"]')
+        ->assertMissing('[data-ndb-view-detail-tab="source"]')
+        ->assertMissing('[data-ndb-view-composers]')
         ->assertSee('tests/Fixtures/views/original-response.blade.php:1')
         ->assertScript(<<<'JS'
             (() => {

@@ -56,15 +56,20 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
             '<x-newdebugbar::search-field',
             '<x-newdebugbar::select-field',
             '<x-newdebugbar::inspector-detail-pane',
+            '<x-newdebugbar::inspector-detail-header',
             '<x-newdebugbar::inspector-detail-tabs',
+            '<x-newdebugbar::inspector-source-fact',
             '<template x-if="selectedViewGroup">',
             '<template x-if="viewDetailTab === \'overview\'">',
             '<template x-if="viewDetailTab === \'data\'">',
-            '<template x-if="viewDetailTab === \'source\'">',
+            '<template x-if="selectedViewRender.composers.length > 0">',
         )
         ->not->toContain(
             '<details',
             '<x-newdebugbar::popover-surface',
+            '<template x-if="viewDetailTab === \'source\'">',
+            'data-ndb-view-detail-tab="source"',
+            'No view composers were captured for this render.',
             'data-ndb-view-sort',
             'newDebugBar.viewData',
             'x-show.important="viewDetailTab ===',
@@ -76,6 +81,7 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
             'viewSortDirection:',
             'toggleViewSort(',
             'applyViewSort(',
+            'selectedViewSourceKindLabel',
         );
 });
 

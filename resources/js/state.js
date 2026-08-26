@@ -817,15 +817,6 @@ export function createNewDebugBar(
       return JSON.stringify(this.viewData ?? {}, null, 2);
     },
 
-    get selectedViewSourceKindLabel() {
-      return {
-        compiled: 'Compiled Laravel view',
-        framework: 'Package or framework view',
-        template: 'Application template',
-        unavailable: 'Source unavailable',
-      }[this.selectedViewRender?.source_kind] ?? 'Source unavailable';
-    },
-
     get selectedEvent() {
       return this.eventGroups.find((event) => event.id === this.eventSelected) ?? null;
     },
@@ -3801,7 +3792,7 @@ export function createNewDebugBar(
     },
 
     setViewDetailTab(tab) {
-      if (!['overview', 'data', 'source'].includes(tab)) return;
+      if (!['overview', 'data'].includes(tab)) return;
 
       this.viewDetailTab = tab;
     },
