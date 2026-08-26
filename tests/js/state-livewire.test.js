@@ -1143,3 +1143,205 @@ test('pairs retained initial render evidence with a trace-ready browser mount', 
   assert.deepEqual(state.livewireActivity[1].serverRenderIds, ['server-only-server-4']);
   assert.equal(state.livewireActivity[1].serverRenderDurationMs, 0.75);
 });
+
+test('reconciles retained lifecycle evidence without dropping browser-only or orphan records', () => {
+  const traceActivity = [
+    {
+      ...activity[2],
+      id: 'browser-action',
+      sequence: 1,
+      componentId: 'root-1',
+      status: 'complete',
+      actions: [{ name: 'refresh' }],
+    },
+    {
+      ...activity[1],
+      id: 'browser-change',
+      sequence: 2,
+      kind: 'mutation',
+      actions: [],
+      changes: [{ path: 'count', before: 1, submitted: 2, server: 2 }],
+    },
+    {
+      ...activity[1],
+      id: 'browser-dispatch',
+      sequence: 3,
+      kind: 'event',
+      actions: [
+        { name: '__dispatch', params: ['saved'] },
+        { name: '__dispatch', params: [] },
+      ],
+      changes: [],
+      events: [],
+    },
+    {
+      ...activity[1],
+      id: 'browser-received',
+      sequence: 4,
+      kind: 'event_received',
+      actions: [],
+      changes: [],
+      events: [{ name: 'synced' }],
+    },
+    {
+      ...activity[1],
+      id: 'browser-hydrate',
+      sequence: 5,
+      kind: 'hydrate',
+      actions: [],
+      changes: [],
+      events: [],
+    },
+    {
+      ...activity[2],
+      id: 'browser-only',
+      sequence: 4,
+      componentId: 'child-1',
+      status: 'complete',
+      actions: [{ name: 'browserOnly' }],
+    },
+  ];
+  const trace = traceHarness({
+    ready: true,
+    components: browserComponents,
+    activity: traceActivity,
+    dropped: { components: 0, activity: 0 },
+  });
+  const state = createNewDebugBar(livewireSummary, runtime(), [], 20, trace);
+  state.$root = { querySelectorAll: () => [], querySelector: () => null };
+  state.$nextTick = (callback) => callback();
+  state.init();
+  state.mergeLivewireServer({
+    components: [],
+    activity: [
+      {
+        id: 'orphan-render',
+        component_id: 'orphan',
+        name: 'Orphan rendered',
+        type: 'render',
+        at_ms: 1,
+        duration_ms: 0.4,
+      },
+      {
+        id: 'action-1',
+        component_id: 'root-1',
+        name: 'Refresh ran',
+        type: 'action',
+        method: 'refresh',
+        at_ms: 8,
+      },
+      {
+        id: 'action-render-1',
+        component_id: 'root-1',
+        name: 'Control Panel rendered',
+        type: 'render',
+        duration_ms: 1.25,
+      },
+      {
+        id: 'action-2',
+        component_id: 'root-1',
+        name: 'Refresh ran again',
+        type: 'action',
+        method: 'refresh',
+        at_ms: 10,
+      },
+      {
+        id: 'action-render-2',
+        component_id: 'root-1',
+        name: 'Control Panel rendered again',
+        type: 'render',
+        duration_ms: 2,
+      },
+      {
+        id: 'change-1',
+        component_id: 'root-1',
+        name: 'Count changed',
+        type: 'change',
+        property: 'count',
+        at_ms: 12,
+      },
+      {
+        id: 'change-render',
+        component_id: 'root-1',
+        name: 'Control Panel rendered after change',
+        type: 'render',
+      },
+      {
+        id: 'event-1',
+        component_id: 'root-1',
+        name: 'Saved dispatched',
+        type: 'event',
+        event: 'saved',
+        at_ms: 13,
+      },
+      {
+        id: 'received-1',
+        component_id: 'root-1',
+        name: 'Synced received',
+        type: 'event_received',
+        event: 'synced',
+      },
+      {
+        id: 'hydrate-1',
+        component_id: 'root-1',
+        name: 'Control Panel hydrated',
+        type: 'hydrate',
+        at_ms: 13,
+      },
+      {
+        id: 'server-mount',
+        component_id: 'server-only',
+        name: 'Server Only mounted',
+        type: 'mount',
+      },
+      {
+        id: 'server-mount-render',
+        component_id: 'server-only',
+        name: 'Server Only rendered',
+        type: 'render',
+      },
+    ],
+  });
+
+  const reconciled = Object.fromEntries(state.livewireActivity.map((item) => [item.id, item]));
+
+  assert.equal(state.livewireActivity.length, 8);
+  assert.deepEqual(reconciled['browser-action'].serverActivityIds, ['action-1', 'action-2']);
+  assert.deepEqual(reconciled['browser-action'].serverRenderIds, ['action-render-1', 'action-render-2']);
+  assert.equal(reconciled['browser-action'].requestAtMs, 8);
+  assert.equal(reconciled['browser-action'].serverRenderDurationMs, 3.25);
+  assert.deepEqual(reconciled['browser-change'].serverActivityIds, ['change-1']);
+  assert.equal(reconciled['browser-change'].serverRenderDurationMs, null);
+  assert.deepEqual(reconciled['browser-dispatch'].serverActivityIds, ['event-1']);
+  assert.deepEqual(reconciled['browser-received'].serverActivityIds, ['received-1']);
+  assert.deepEqual(reconciled['browser-hydrate'].serverActivityIds, ['hydrate-1']);
+  assert.equal(reconciled['browser-only'].serverActivityIds, undefined);
+  assert.equal(reconciled['orphan-render'].kind, 'render');
+  assert.deepEqual(reconciled['server-mount'].serverRenderIds, ['server-mount-render']);
+  assert.equal(reconciled['server-mount'].initialRenderDurationMs, null);
+  assert.equal(reconciled['server-mount'].serverMountId, 'server-mount');
+  assert.equal(reconciled['server-mount'].serverRenderId, 'server-mount-render');
+  assert.deepEqual(
+    state.livewireActivity.map((item) => item.sequence),
+    [1, 2, 3, 4, 5, 6, 7, 8],
+  );
+  assert.deepEqual(
+    state.livewireActivity.slice(-3).map((item) => item.id),
+    ['browser-only', 'browser-received', 'server-mount'],
+  );
+});
+
+test('formats sparse Livewire evidence as deliberate unavailable and zero states', () => {
+  const { state } = stateHarness();
+
+  assert.equal(state.livewireInitialRenderDuration({ initialRenderDurationMs: null }), 'Not captured');
+  assert.equal(state.livewireInitialRenderDuration({ initialRenderDurationMs: 'invalid' }), 'Not captured');
+  assert.equal(state.livewireMountTime({ requestAtMs: null }), 'Not captured');
+  assert.equal(state.livewireMountTime({ requestAtMs: 'invalid' }), 'Not captured');
+  assert.equal(state.livewireActivityTime({ kind: 'action', occurredAt: 0 }), 'Current request');
+  assert.equal(state.livewireActivityDuration({ kind: 'mount', initialRenderDurationMs: null }), 'Render —');
+  assert.equal(state.livewireActivityDuration({ kind: 'action', durationMs: 12, status: 'complete' }), '12 ms');
+  assert.equal(state.livewireComponentPropertyCount(null), 0);
+  assert.equal(state.livewireComponentPropertyCountLabel({ properties: [{}] }), '1 property');
+  assert.equal(state.livewireComponentPropertyStateSummary({ id: 'not-selected', properties: [] }), '0 changed, 0 editable');
+});
