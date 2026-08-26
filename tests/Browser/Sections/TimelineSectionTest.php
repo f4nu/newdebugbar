@@ -3,7 +3,7 @@
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
 it('keeps the desktop waterfall useful inside the shared timeline workspace', function () {
-    $page = visit('/profiled');
+    $page = visit('/profiled-timeline-long');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'dark', favorites: []}))");
 
     $page
@@ -19,9 +19,15 @@ it('keeps the desktop waterfall useful inside the shared timeline workspace', fu
         ->assertPresent('[data-ndb-timeline-workspace]')
         ->assertVisible('[data-ndb-timeline-waterfall-header]')
         ->assertValue('[data-ndb-timeline-filter]', 'key')
-        ->assertAttribute('[data-ndb-timeline-page-sentinel]', 'role', 'status')
-        ->assertAttribute('[data-ndb-timeline-page-sentinel]', 'aria-live', 'polite')
-        ->assertMissing('[data-ndb-timeline-load-more]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const sentinel = document.querySelector('[data-ndb-timeline-page-sentinel]');
+
+                return sentinel?.getAttribute('role') === 'status'
+                    && sentinel.getAttribute('aria-live') === 'polite'
+                    && document.querySelector('[data-ndb-timeline-load-more]') === null;
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const controls = document.querySelector('[data-ndb-timeline-list-panel] [data-ndb-inspector-list-controls]');
@@ -35,34 +41,12 @@ it('keeps the desktop waterfall useful inside the shared timeline workspace', fu
                     && workspace.getBoundingClientRect().height > 400
                     && workspace.scrollWidth <= workspace.clientWidth;
             })()
-            JS)
-        ->script(<<<'JS'
-            new Promise((resolve, reject) => {
-                const list = document.querySelector('[data-ndb-timeline-list]');
-                const initialCount = document.querySelectorAll('[data-ndb-timeline-item]').length;
-                const deadline = performance.now() + 10000;
+            JS);
 
-                list.scrollTop = list.scrollHeight;
+    $page->script("document.querySelector('[data-ndb-timeline-page-sentinel]').scrollIntoView({ block: 'end' })");
 
-                const check = () => {
-                    if (document.querySelectorAll('[data-ndb-timeline-item]').length > initialCount) {
-                        resolve(true);
-
-                        return;
-                    }
-
-                    if (performance.now() >= deadline) {
-                        reject(new Error('Timed out waiting for the next Timeline page.'));
-
-                        return;
-                    }
-
-                    requestAnimationFrame(check);
-                };
-
-                check();
-            })
-            JS)
+    $page
+        ->waitForText('100 loaded')
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]").length > 50')
         ->select('[data-ndb-timeline-filter]', 'queries')
         ->assertScript(<<<'JS'
@@ -100,7 +84,7 @@ it('keeps the desktop waterfall useful inside the shared timeline workspace', fu
 });
 
 it('turns the timeline into a mobile chronological drill-in without horizontal overflow', function () {
-    $page = visit('/profiled');
+    $page = visit('/profiled-timeline-long');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
 
     $page
@@ -123,34 +107,12 @@ it('turns the timeline into a mobile chronological drill-in without horizontal o
                     && panel.scrollWidth <= panel.clientWidth
                     && row.scrollWidth <= row.clientWidth;
             })()
-            JS)
-        ->script(<<<'JS'
-            new Promise((resolve, reject) => {
-                const list = document.querySelector('[data-ndb-timeline-list]');
-                const initialCount = document.querySelectorAll('[data-ndb-timeline-item]').length;
-                const deadline = performance.now() + 10000;
+            JS);
 
-                list.scrollTop = list.scrollHeight;
+    $page->script("document.querySelector('[data-ndb-timeline-page-sentinel]').scrollIntoView({ block: 'end' })");
 
-                const check = () => {
-                    if (document.querySelectorAll('[data-ndb-timeline-item]').length > initialCount) {
-                        resolve(true);
-
-                        return;
-                    }
-
-                    if (performance.now() >= deadline) {
-                        reject(new Error('Timed out waiting for the next mobile Timeline page.'));
-
-                        return;
-                    }
-
-                    requestAnimationFrame(check);
-                };
-
-                check();
-            })
-            JS)
+    $page
+        ->waitForText('100 loaded')
         ->click('[data-ndb-timeline-item="request-start"]')
         ->assertVisible('[data-ndb-timeline-detail-content]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-list]").closest("[data-ndb-inspector-focus-list]")).display === "none"')

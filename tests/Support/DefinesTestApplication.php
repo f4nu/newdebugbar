@@ -109,6 +109,20 @@ trait DefinesTestApplication
             fn () => $profiledPage('Second request', '/profiled', 'Previous request'),
         );
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-timeline-long', function () {
+            foreach (range(1, 110) as $number) {
+                DB::select('select ? as timeline_number', [$number]);
+            }
+
+            return response(<<<'HTML'
+                <!doctype html>
+                <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Long timeline</title></head>
+                    <body><main><h1 data-testid="host-page">Long timeline</h1></main></body>
+                </html>
+                HTML);
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-logs', function () {
             Log::debug('Preparing the journey workspace.', ['trip_id' => 1]);
             Log::channel('newdebugbar-audit')->info('Audit channel accepted the refresh.', [
