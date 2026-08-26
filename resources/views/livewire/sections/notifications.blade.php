@@ -325,70 +325,52 @@
 
     @if ($notificationGroups !== [])
         <x-newdebugbar::inspector-workspace frame="top" data-ndb-notification-workspace>
-            <div
-                :class="notificationDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
-                class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
-            >
-                <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
-                    <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
-                        <p
-                            data-ndb-notification-summary
-                            class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                        >
-                            <span data-ndb-notification-summary-count class="ndb:block">
-                                {{ number_format((int) ($notificationSummary['notification_count'] ?? count($notificationGroups))) }} {{ \Illuminate\Support\Str::plural('notification', (int) ($notificationSummary['notification_count'] ?? count($notificationGroups))) }}
-                            </span>
-                            <span
-                                data-ndb-notification-summary-runtime
-                                class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400"
+            <x-newdebugbar::inspector-list-panel detail-open="notificationDetailOpen" list-ref="notificationList">
+                <x-slot:controls>
+                    <x-newdebugbar::inspector-list-controls :show-search="count($notificationGroups) > 5">
+                        <x-slot:leading>
+                            <p
+                                data-ndb-notification-summary
+                                class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
                             >
-                                {{ number_format((float) ($notificationSummary['duration_ms'] ?? 0), 2) }} ms total
-                            </span>
-                        </p>
+                                <span data-ndb-notification-summary-count class="ndb:block">
+                                    {{ number_format((int) ($notificationSummary['notification_count'] ?? count($notificationGroups))) }} {{ \Illuminate\Support\Str::plural('notification', (int) ($notificationSummary['notification_count'] ?? count($notificationGroups))) }}
+                                </span>
+                                <span
+                                    data-ndb-notification-summary-runtime
+                                    class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400"
+                                >
+                                    {{ number_format((float) ($notificationSummary['duration_ms'] ?? 0), 2) }} ms total
+                                </span>
+                            </p>
+                        </x-slot:leading>
 
-                        <label class="ndb:relative ndb:shrink-0">
-                            <span class="ndb:sr-only">Filter captured notifications</span>
-                            <select
+                        <x-slot:search>
+                            <x-newdebugbar::search-field
+                                label="Search captured notifications"
+                                placeholder="Search notification or recipient"
+                                data-ndb-notification-search
+                                x-model="notificationSearch"
+                                @input.debounce.100ms="applyNotificationView()"
+                            />
+                        </x-slot:search>
+
+                        <x-slot:filter>
+                            <x-newdebugbar::select-field
+                                label="Filter captured notifications"
                                 data-ndb-notification-filter
                                 x-model="notificationFilter"
                                 @change="setNotificationFilter($event.target.value)"
-                                class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                             >
                                 @foreach ($notificationFilters as $filter => [$label, $count])
                                     <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
                                 @endforeach
-                            </select>
-                            <x-newdebugbar::icon
-                                name="chevron-down"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                            />
-                        </label>
-                    </div>
+                            </x-newdebugbar::select-field>
+                        </x-slot:filter>
+                    </x-newdebugbar::inspector-list-controls>
+                </x-slot:controls>
 
-                    @if (count($notificationGroups) > 5)
-                        <label class="ndb:relative ndb:block">
-                            <span class="ndb:sr-only">Search captured notifications</span>
-                            <input
-                                data-ndb-notification-search
-                                x-model="notificationSearch"
-                                @input.debounce.100ms="applyNotificationView()"
-                                type="search"
-                                placeholder="Search notification or recipient"
-                                class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                            />
-                            <x-newdebugbar::icon
-                                name="search"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                            />
-                        </label>
-                    @endif
-                </div>
-
-                <div
-                    x-ref="notificationList"
-                    data-ndb-notification-list
-                    class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:overflow-y-auto ndb:dark:divide-zinc-800"
-                >
+                <x-slot:list data-ndb-notification-list>
                     @foreach ($notificationGroups as $notification)
                         <button
                             type="button"
@@ -438,12 +420,12 @@
                             </span>
                         </button>
                     @endforeach
-                </div>
+                </x-slot:list>
 
-                <div x-show.important="visibleNotificationCount === 0" class="ndb:p-3">
+                <x-slot:empty x-show.important="visibleNotificationCount === 0">
                     <x-newdebugbar::empty-state label="No notifications match these filters." />
-                </div>
-            </div>
+                </x-slot:empty>
+            </x-newdebugbar::inspector-list-panel>
 
             <x-newdebugbar::notification-detail />
         </x-newdebugbar::inspector-workspace>

@@ -93,6 +93,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const metadata = document.querySelector('[data-ndb-notification-metadata]');
                 const metadataGrid = metadata.querySelector('[data-ndb-notification-facts]');
                 const metadataFacts = [...metadata.querySelectorAll('[data-ndb-notification-fact]')];
+                const sharedMetadataFacts = [...metadata.querySelectorAll('[data-ndb-inspector-fact]')];
                 const sourceLink = metadata.querySelector('[data-ndb-inspector-source-link]');
                 const metadataLabels = metadataFacts.map((fact) => fact.querySelector('dt').textContent.trim());
                 const recipient = document.querySelector('[data-ndb-notification-recipient]');
@@ -127,8 +128,9 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && getComputedStyle(listStatus).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(listStatus).color !== getComputedStyle(listTitle).color
                     && selected.querySelector('[data-ndb-notification-outcomes]') === null
-                    && summary.parentElement.contains(filter)
+                    && summary.closest('[data-ndb-inspector-list-controls]') === filter.closest('[data-ndb-inspector-list-controls]')
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
+                    && Math.abs(summary.getBoundingClientRect().top - filter.getBoundingClientRect().top) <= 1
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
                     && filter.options[0].value === 'all'
                     && tabs.length === 1
@@ -142,6 +144,8 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     ) <= 1
                     && getComputedStyle(channelControl).display === 'none'
                     && metadataFacts.length === 4
+                    && sharedMetadataFacts.length === 4
+                    && metadataFacts.every((fact) => fact.matches('[data-ndb-inspector-fact]'))
                     && metadataLabels.join('|') === 'Channels|Duration|Execution|Source'
                     && sourceLink !== null
                     && !getComputedStyle(sourceLink).fontFamily.includes('JetBrains Mono')
@@ -246,6 +250,21 @@ it('keeps many recipients readable without widening the inspector', function () 
         ->assertSee('8 recipients')
         ->assertVisible('[data-ndb-notification-search]')
         ->assertVisible('[data-ndb-notification-view-mail]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const search = document.querySelector('[data-ndb-notification-search]');
+                const filter = document.querySelector('[data-ndb-notification-filter]');
+
+                if (!search || !filter) {
+                    return false;
+                }
+
+                const searchBox = search.getBoundingClientRect();
+
+                return search.closest('[data-ndb-inspector-list-controls]') === filter.closest('[data-ndb-inspector-list-controls]')
+                    && Math.abs(searchBox.height - filter.getBoundingClientRect().height) <= 1;
+            })()
+            JS)
         ->assertScript('document.querySelectorAll("[data-ndb-notification-item]").length', 9)
         ->assertScript(
             'document.querySelector("[data-ndb-notification-list]").scrollHeight > document.querySelector("[data-ndb-notification-list]").clientHeight',

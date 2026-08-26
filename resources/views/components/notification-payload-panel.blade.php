@@ -3,19 +3,16 @@
     x-show.important="notificationDetailTab === 'payload'"
     class="ndb:space-y-5 ndb:p-4"
 >
-    <section>
-        <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
-            <h4 class="ndb:text-xs ndb:font-bold">Application payload</h4>
+    <x-newdebugbar::inspector-evidence label="Application payload" language="json">
+        <x-slot:aside>
             <span
                 x-show="selectedNotification.locale"
                 class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
                 x-text="'Locale ' + selectedNotification.locale"
             ></span>
-        </div>
-        <x-newdebugbar::code-block language="json" class="ndb:mt-2">
-            <x-slot:value x-text="formatNotificationEvidence(selectedNotification.notification_data)"></x-slot:value>
-        </x-newdebugbar::code-block>
-    </section>
+        </x-slot:aside>
+        <x-slot:value x-text="formatNotificationEvidence(selectedNotification.notification_data)"></x-slot:value>
+    </x-newdebugbar::inspector-evidence>
 
     <section class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800">
         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
@@ -25,42 +22,62 @@
                 x-text="selectedNotificationDelivery?.channel_label"
             ></span>
         </div>
-        <dl class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
-            <template
-                x-for="
-                    field in
-                    [
-                        ['Destination', selectedNotificationDelivery?.destination_label, false],
-                        ['Status', selectedNotificationDelivery?.status_label, false],
-                        ['Response type', selectedNotificationDelivery?.response_type, false],
-                        ['Exception', selectedNotificationDelivery?.exception_class, true],
-                        [
-                            'Failed at',
-                            selectedNotificationDelivery?.exception_location
-                                ? selectedNotificationDelivery.exception_location.file +
-                                  ':' +
-                                  selectedNotificationDelivery.exception_location.line
-                                : null,
-                            false,
-                        ],
-                        ['Message ID', selectedNotificationDelivery?.mail_message_id, false],
-                    ]
-                "
-                :key="field[0]"
+        <x-newdebugbar::inspector-definition-list class="ndb:mt-2">
+            <x-newdebugbar::inspector-definition-row
+                label="Destination"
+                x-show.important="selectedNotificationDelivery?.destination_label"
             >
-                <div
-                    x-show.important="field[1]"
-                    class="ndb:grid ndb:gap-1 ndb:py-2 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4"
-                >
-                    <dt class="ndb:text-[11px] ndb:font-bold" x-text="field[0]"></dt>
-                    <dd
-                        :class="field[2] ? 'ndb:font-mono ndb:text-[11px]' : 'ndb:text-xs'"
-                        class="ndb:break-all ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                        x-text="field[1]"
-                    ></dd>
-                </div>
-            </template>
-        </dl>
+                <x-slot:value
+                    class="ndb:break-all"
+                    x-text="selectedNotificationDelivery?.destination_label"
+                ></x-slot:value>
+            </x-newdebugbar::inspector-definition-row>
+            <x-newdebugbar::inspector-definition-row
+                label="Status"
+                x-show.important="selectedNotificationDelivery?.status_label"
+            >
+                <x-slot:value x-text="selectedNotificationDelivery?.status_label"></x-slot:value>
+            </x-newdebugbar::inspector-definition-row>
+            <x-newdebugbar::inspector-definition-row
+                label="Response type"
+                x-show.important="selectedNotificationDelivery?.response_type"
+            >
+                <x-slot:value class="ndb:break-all" x-text="selectedNotificationDelivery?.response_type"></x-slot:value>
+            </x-newdebugbar::inspector-definition-row>
+            <x-newdebugbar::inspector-definition-row
+                label="Exception"
+                x-show.important="selectedNotificationDelivery?.exception_class"
+            >
+                <x-slot:value
+                    class="ndb:break-all ndb:font-mono ndb:text-[11px]"
+                    x-text="selectedNotificationDelivery?.exception_class"
+                ></x-slot:value>
+            </x-newdebugbar::inspector-definition-row>
+            <x-newdebugbar::inspector-definition-row
+                label="Failed at"
+                x-show.important="selectedNotificationDelivery?.exception_location"
+            >
+                <x-slot:value
+                    class="ndb:break-all"
+                    x-text="
+                        selectedNotificationDelivery?.exception_location
+                            ? selectedNotificationDelivery.exception_location.file +
+                              ':' +
+                              selectedNotificationDelivery.exception_location.line
+                            : ''
+                    "
+                ></x-slot:value>
+            </x-newdebugbar::inspector-definition-row>
+            <x-newdebugbar::inspector-definition-row
+                label="Message ID"
+                x-show.important="selectedNotificationDelivery?.mail_message_id"
+            >
+                <x-slot:value
+                    class="ndb:break-all"
+                    x-text="selectedNotificationDelivery?.mail_message_id"
+                ></x-slot:value>
+            </x-newdebugbar::inspector-definition-row>
+        </x-newdebugbar::inspector-definition-list>
         <x-newdebugbar::code-block language="json" class="ndb:mt-2">
             <x-slot:value
                 x-text="
@@ -90,13 +107,12 @@
         </div>
     </section>
 
-    <section
+    <x-newdebugbar::inspector-evidence
+        label="Anonymous routes"
+        language="json"
         x-show="Object.keys(selectedNotification.routes).length > 0"
         class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
     >
-        <h4 class="ndb:text-xs ndb:font-bold">Anonymous routes</h4>
-        <x-newdebugbar::code-block language="json" class="ndb:mt-2">
-            <x-slot:value x-text="formatNotificationEvidence(selectedNotification.routes)"></x-slot:value>
-        </x-newdebugbar::code-block>
-    </section>
+        <x-slot:value x-text="formatNotificationEvidence(selectedNotification.routes)"></x-slot:value>
+    </x-newdebugbar::inspector-evidence>
 </div>
