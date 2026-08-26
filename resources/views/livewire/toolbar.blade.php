@@ -56,7 +56,6 @@
             class="ndb-toolbar-facts ndb:hidden ndb:min-w-0 ndb:flex-1 ndb:items-stretch ndb:gap-1 ndb:sm:ml-auto ndb:sm:flex ndb:sm:flex-none"
         >
             <x-newdebugbar::toolbar-button
-                section="request"
                 data-ndb-toolbar="environment"
                 class="ndb:order-1 ndb:hidden ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:md:flex ndb:lg:px-2.5"
             >
@@ -96,7 +95,6 @@
             </x-newdebugbar::toolbar-button>
 
             <x-newdebugbar::toolbar-button
-                section="request"
                 data-ndb-toolbar="memory"
                 class="ndb:order-4 ndb:flex ndb:min-w-max ndb:shrink-0 ndb:sm:px-2 ndb:lg:px-2.5"
             >

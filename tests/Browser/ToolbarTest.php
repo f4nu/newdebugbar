@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('opens every compact toolbar destination and shrinks cleanly', function () {
+it('opens every actionable compact toolbar destination and leaves display facts inert', function () {
     $page = visit('/profiled')
         ->assertPresent('[data-testid="host-page"]')
         ->assertVisible('[role="toolbar"][aria-label="Debug toolbar"]')
@@ -28,14 +28,27 @@ it('opens every compact toolbar destination and shrinks cleanly', function () {
 
                 return Math.abs(center(theme) - center(icon)) <= 0.5;
             })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const environment = document.querySelector('[data-ndb-toolbar="environment"]');
+                const peak = document.querySelector('[data-ndb-toolbar="memory"]');
+                const duration = document.querySelector('[data-ndb-toolbar="duration"]');
+                const queries = document.querySelector('[data-ndb-toolbar="queries"]');
+
+                return environment.tagName === 'DIV'
+                    && peak.tagName === 'DIV'
+                    && environment.closest('button') === null
+                    && peak.closest('button') === null
+                    && duration.tagName === 'BUTTON'
+                    && queries.tagName === 'BUTTON';
+            })()
             JS);
 
     foreach ([
         'expand' => 'request',
         'request' => 'request',
-        'environment' => 'request',
         'duration' => 'request',
-        'memory' => 'request',
         'queries' => 'queries',
     ] as $toolbar => $section) {
         $selector = $toolbar === 'expand'
@@ -51,6 +64,21 @@ it('opens every compact toolbar destination and shrinks cleanly', function () {
             $page
                 ->assertScript('document.querySelector("[data-ndb-header-memory]").textContent.includes("MB")')
                 ->assertMissing('[data-ndb-header-status-meaning]')
+                ->assertScript(<<<'JS'
+                    (() => {
+                        const environment = document.querySelector('[data-ndb-header-fact="environment"]');
+                        const peak = document.querySelector('[data-ndb-header-fact="memory"]');
+                        const duration = document.querySelector('[data-ndb-header-fact="duration"]');
+                        const queries = document.querySelector('[data-ndb-header-fact="queries"]');
+
+                        return environment.tagName === 'DIV'
+                            && peak.tagName === 'DIV'
+                            && environment.closest('button') === null
+                            && peak.closest('button') === null
+                            && duration.tagName === 'BUTTON'
+                            && queries.tagName === 'BUTTON';
+                    })()
+                    JS)
                 ->assertScript(<<<'JS'
                     (() => {
                         const center = (element) => {

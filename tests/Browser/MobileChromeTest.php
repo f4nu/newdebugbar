@@ -11,7 +11,9 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
             (() => {
                 const toolbar = document.querySelector('[role="toolbar"][aria-label="Debug toolbar"]');
                 const metrics = document.querySelector('[data-ndb-mobile-request-metrics="toolbar"]');
-                const buttons = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
+                const metricItems = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
+                const buttons = Array.from(metrics.querySelectorAll('button[data-ndb-mobile-toolbar-metric]'));
+                const peak = metrics.querySelector('[data-ndb-mobile-toolbar-metric="memory"]');
                 const values = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]'));
                 const labels = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric-label]'));
 
@@ -19,11 +21,14 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
                     && metrics.getAttribute('role') === 'group'
                     && metrics.getAttribute('aria-label') === 'Request metrics'
                     && getComputedStyle(metrics).gridTemplateColumns.split(' ').length === 3
-                    && buttons.length === 3
-                    && buttons.every((button) => button.getBoundingClientRect().height >= 44)
-                    && buttons.every((button) => button.querySelector('svg') === null)
-                    && buttons.every((button) => button.querySelector('[aria-hidden="true"]') === null)
+                    && metricItems.length === 3
+                    && metricItems.every((item) => item.getBoundingClientRect().height >= 44)
+                    && metricItems.every((item) => item.querySelector('svg') === null)
+                    && metricItems.every((item) => item.querySelector('[aria-hidden="true"]') === null)
+                    && buttons.length === 2
                     && buttons.every((button) => button.getAttribute('aria-label')?.startsWith('Open '))
+                    && peak.tagName === 'DIV'
+                    && peak.getAttribute('aria-label') === null
                     && values.every((value) => value.getBoundingClientRect().width > 0 && value.scrollWidth <= value.clientWidth)
                     && values[0].textContent.trim() !== ''
                     && labels[0].textContent.includes('QRY')
@@ -36,9 +41,6 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
         ->assertVisible('[data-ndb-section-panel="queries"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Queries"')
         ->click('[data-ndb-mobile-toolbar-metric-scope="header"][data-ndb-mobile-toolbar-metric="duration"]')
-        ->assertVisible('[data-ndb-section-panel="request"]')
-        ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Requests"')
-        ->click('[data-ndb-mobile-toolbar-metric-scope="header"][data-ndb-mobile-toolbar-metric="memory"]')
         ->assertVisible('[data-ndb-section-panel="request"]')
         ->assertScript('document.querySelector("[data-ndb-section-heading]").textContent.trim() === "Requests"')
         ->click('[data-ndb-header-mobile-trigger="actions"]')
