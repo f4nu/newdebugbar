@@ -488,6 +488,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
         'livewire/sections/notifications.blade.php',
+        'livewire/sections/overview.blade.php',
         'livewire/sections/validation.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
@@ -572,6 +573,23 @@ it('composes Messages and Validation as shared diagnostic streams', function () 
         ->toContain('<x-newdebugbar::inspector-source-link')
         ->toContain('<x-newdebugbar::inspector-explanation')
         ->not->toContain('ndb:font-mono ndb:text-xs ndb:font-semibold ndb:text-indigo');
+});
+
+it('composes Overview and fallback data as shared full-height streams', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+
+    foreach (['overview', 'default'] as $section) {
+        expect(file_get_contents($views.'/livewire/sections/'.$section.'.blade.php'))
+            ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"');
+    }
+
+    expect(file_get_contents($views.'/livewire/sections/overview.blade.php'))
+        ->toContain('<x-newdebugbar::overview-runtime-details');
+
+    expect(file_get_contents($views.'/components/overview-runtime-details.blade.php'))
+        ->toContain('<x-newdebugbar::filter-tabs')
+        ->toContain('<x-newdebugbar::select-field')
+        ->not->toContain('ndb:font-mono ndb:text-[11px] ndb:font-medium');
 });
 
 it('uses centered segmented controls across inspector detail panels', function () {

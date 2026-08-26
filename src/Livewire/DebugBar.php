@@ -22,6 +22,7 @@ final class DebugBar extends Component
     private const WORKSPACE_SECTIONS = [
         'authorization',
         'cache',
+        'default',
         'events',
         'http_client',
         'logs',
@@ -29,6 +30,7 @@ final class DebugBar extends Component
         'messages',
         'models',
         'notifications',
+        'overview',
         'validation',
     ];
 
