@@ -228,7 +228,12 @@ it('uses one popover surface for toolbar and inspector menus', function () {
 it('uses one filter tab treatment across inspector sections', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
 
-    foreach (['components/query-section.blade.php'] as $view) {
+    foreach ([
+        'components/query-section.blade.php',
+        'livewire/livewire/view-tabs.blade.php',
+        'livewire/sections/authorization.blade.php',
+        'livewire/sections/events.blade.php',
+    ] as $view) {
         $contents = file_get_contents($views.'/'.$view);
 
         expect($contents)
@@ -403,6 +408,51 @@ it('composes Models as a shared split inspector with reusable explanations', fun
         ->toContain('ndb:text-[11px] ndb:leading-5');
 });
 
+it('composes Livewire as one shared inspector workspace with focused details', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/livewire.blade.php');
+    $controls = file_get_contents($views.'/livewire/livewire/controls.blade.php');
+    $activityDetail = file_get_contents($views.'/livewire/livewire/activity-detail.blade.php');
+    $componentDetail = file_get_contents($views.'/livewire/livewire/component-detail.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('x-if="livewireTab === \'activity\'"')
+        ->toContain('x-if="livewireTab === \'components\'"')
+        ->not->toContain('<x-newdebugbar::livewire-split-view');
+
+    expect($controls)
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::select-field')
+        ->not->toContain('livewireActivityOrder')
+        ->not->toContain('Newest first')
+        ->not->toContain('Oldest first');
+
+    foreach ([$activityDetail, $componentDetail] as $detail) {
+        expect($detail)
+            ->toContain('<x-newdebugbar::inspector-detail-header')
+            ->toContain('<x-newdebugbar::inspector-detail-tabs')
+            ->toContain('variant="segmented"')
+            ->toContain('<x-newdebugbar::inspector-facts');
+    }
+
+    expect($activityDetail)
+        ->toContain('data-ndb-livewire-detail-panel="overview"')
+        ->toContain('data-ndb-livewire-detail-panel="trace"')
+        ->toContain('<x-newdebugbar::inspector-explanation');
+
+    expect($componentDetail)
+        ->toContain('data-ndb-livewire-detail-panel="properties"')
+        ->toContain('data-ndb-livewire-detail-panel="source"')
+        ->toContain('<x-newdebugbar::livewire-property-editor')
+        ->toContain('<x-newdebugbar::inspector-source-fact')
+        ->toContain('<x-newdebugbar::inspector-evidence');
+});
+
 it('uses one calm source presentation across inspector sections', function () {
     $resources = dirname(__DIR__, 2).'/resources';
     $views = $resources.'/views';
@@ -485,6 +535,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'livewire/sections/events.blade.php',
         'livewire/sections/logs.blade.php',
         'livewire/sections/messages.blade.php',
+        'livewire/sections/livewire.blade.php',
         'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
         'livewire/sections/notifications.blade.php',
@@ -600,6 +651,8 @@ it('uses centered segmented controls across inspector detail panels', function (
         'components/cache-detail-tabs.blade.php',
         'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',
+        'livewire/livewire/activity-detail.blade.php',
+        'livewire/livewire/component-detail.blade.php',
         'components/model-group-detail.blade.php',
         'components/notification-detail.blade.php',
     ] as $view) {

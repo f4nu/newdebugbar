@@ -336,14 +336,7 @@ test('filters activity and moves between activity and component details', () => 
     state.filteredLivewireActivity.map(({ id }) => id),
     ['activity-3', 'activity-2', 'activity-1'],
   );
-  state.setLivewireActivityOrder('oldest');
-  assert.deepEqual(
-    state.filteredLivewireActivity.map(({ id }) => id),
-    ['activity-1', 'activity-2', 'activity-3'],
-  );
-  state.setLivewireActivityOrder('newest');
-  state.setLivewireActivityOrder('missing');
-  assert.equal(state.livewireActivityOrder, 'newest');
+  assert.equal(state.livewireDetailTab, 'overview');
   state.setLivewireActivityType('mutation');
   assert.deepEqual(
     state.filteredLivewireActivity.map(({ id }) => id),
@@ -376,23 +369,36 @@ test('filters activity and moves between activity and component details', () => 
 
   state.inspectLivewireActivityComponent();
   assert.equal(state.livewireTab, 'components');
+  assert.equal(state.livewireDetailTab, 'properties');
   assert.equal(state.livewireSelectedComponentId, 'root-1');
+  state.setLivewireDetailTab('source');
+  assert.equal(state.livewireDetailTab, 'source');
+  state.setLivewireDetailTab('trace');
+  assert.equal(state.livewireDetailTab, 'source');
   state.inspectLivewireComponentActivity();
   assert.equal(state.livewireTab, 'activity');
+  assert.equal(state.livewireDetailTab, 'overview');
   assert.equal(state.livewireSelectedActivityId, 'activity-2');
+  state.setLivewireDetailTab('trace');
+  assert.equal(state.livewireDetailTab, 'trace');
+  state.setLivewireDetailTab('source');
+  assert.equal(state.livewireDetailTab, 'trace');
   state.inspectLivewireComponent('child-1');
   assert.equal(state.livewireTab, 'components');
+  assert.equal(state.livewireDetailTab, 'properties');
   assert.equal(state.livewireSelectedComponentId, 'child-1');
   state.setLivewireTab('components');
   assert.equal(state.livewireTab, 'components');
   assert.equal(state.livewireDetailOpen, false);
   state.selectLivewireComponent('child-1');
   assert.equal(state.livewireSelectedComponentId, 'child-1');
+  assert.equal(state.livewireDetailTab, 'properties');
   assert.equal(state.livewireDetailOpen, true);
   state.selectLivewireComponent('missing');
   assert.equal(state.livewireSelectedComponentId, 'child-1');
   state.selectLivewireActivity('activity-1');
   assert.equal(state.livewireSelectedActivityId, 'activity-1');
+  assert.equal(state.livewireDetailTab, 'overview');
   state.selectLivewireActivity('missing');
   assert.equal(state.livewireSelectedActivityId, 'activity-1');
   state.setLivewireTab('invalid');

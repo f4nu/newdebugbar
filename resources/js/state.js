@@ -449,7 +449,7 @@ export function createNewDebugBar(
     livewireTab: 'activity',
     livewireSearch: '',
     livewireActivityType: 'all',
-    livewireActivityOrder: 'newest',
+    livewireDetailTab: 'overview',
     livewireSelectedActivityId: null,
     livewireActivitySelectionPinned: false,
     livewireSelectedComponentId: null,
@@ -898,11 +898,7 @@ export function createNewDebugBar(
           ),
       );
 
-      return [...items].sort((left, right) => {
-        const difference = Number(left.sequence ?? 0) - Number(right.sequence ?? 0);
-
-        return this.livewireActivityOrder === 'oldest' ? difference : -difference;
-      });
+      return [...items].sort((left, right) => Number(right.sequence ?? 0) - Number(left.sequence ?? 0));
     },
 
     get livewireActivityTypes() {
@@ -1981,7 +1977,7 @@ export function createNewDebugBar(
       const selectedActivityIsVisible = visibleActivity.some((item) => item.id === this.livewireSelectedActivityId);
       const defaultActivityId = visibleActivity[0]?.id ?? null;
 
-      if (!this.livewireActivitySelectionPinned && this.livewireActivityOrder === 'newest') {
+      if (!this.livewireActivitySelectionPinned) {
         this.livewireSelectedActivityId = defaultActivityId;
       } else if (!selectedActivityIsVisible) {
         this.livewireSelectedActivityId = defaultActivityId;
@@ -1999,6 +1995,7 @@ export function createNewDebugBar(
       if (!['activity', 'components'].includes(tab)) return;
       this.closeLivewireDrafts();
       this.livewireTab = tab;
+      this.livewireDetailTab = tab === 'activity' ? 'overview' : 'properties';
       this.livewireDetailOpen = false;
       this.livewireSearch = '';
       this.syncLivewireSelection();
@@ -2010,16 +2007,11 @@ export function createNewDebugBar(
       this.syncLivewireSelection();
     },
 
-    setLivewireActivityOrder(order) {
-      if (!['newest', 'oldest'].includes(order)) return;
-      this.livewireActivityOrder = order;
-      this.syncLivewireSelection();
-    },
-
     selectLivewireActivity(id) {
       if (!this.livewireActivity.some((item) => item.id === id)) return;
       this.livewireSelectedActivityId = id;
       this.livewireActivitySelectionPinned = true;
+      this.livewireDetailTab = 'overview';
       this.livewireDetailOpen = true;
       this.$nextTick?.(() => browser.highlight?.());
     },
@@ -2028,7 +2020,16 @@ export function createNewDebugBar(
       if (!this.livewireComponents.some((component) => component.id === id)) return;
       this.closeLivewireDrafts();
       this.livewireSelectedComponentId = id;
+      this.livewireDetailTab = 'properties';
       this.livewireDetailOpen = true;
+    },
+
+    setLivewireDetailTab(tab) {
+      const allowed = this.livewireTab === 'activity' ? ['overview', 'trace'] : ['properties', 'source'];
+      if (!allowed.includes(tab)) return;
+
+      this.livewireDetailTab = tab;
+      this.$nextTick?.(() => browser.highlight?.());
     },
 
     syncLivewireComponentCollapseState() {
@@ -2080,6 +2081,7 @@ export function createNewDebugBar(
       if (!id || !this.livewireComponents.some((component) => component.id === String(id))) return;
       this.livewireSelectedComponentId = String(id);
       this.livewireTab = 'components';
+      this.livewireDetailTab = 'properties';
       this.livewireDetailOpen = true;
       this.livewireSearch = '';
     },
@@ -2090,6 +2092,7 @@ export function createNewDebugBar(
       this.livewireSelectedActivityId = id;
       this.livewireActivitySelectionPinned = true;
       this.livewireTab = 'activity';
+      this.livewireDetailTab = 'overview';
       this.livewireDetailOpen = true;
       this.livewireSearch = '';
       this.$nextTick?.(() => browser.highlight?.());

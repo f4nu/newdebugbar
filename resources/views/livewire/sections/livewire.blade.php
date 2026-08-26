@@ -1,101 +1,115 @@
-{{-- Renders the page-session Livewire activity and component inspector. --}}
+{{-- Renders current-page Livewire activity and mounted components in one shared workspace. --}}
 @php($livewirePayload = $section['payload'] ?? ['components' => [], 'activity' => []])
 
 <div
     data-ndb-livewire
-    x-init="mergeLivewireServer({{
-        \Illuminate\Support\Js::encode([
-            'components' => $livewirePayload['components'] ?? [],
-            'activity' => $livewirePayload['activity'] ?? [],
-        ])
-    }})"
-    class="ndb:space-y-4"
+    x-init="mergeLivewireServer(JSON.parse(atob($el.querySelector('[data-ndb-livewire-payload]').textContent.trim())))"
+    class="ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
 >
-    <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-center ndb:sm:justify-between">
-        <x-newdebugbar::filter-tabs label="Livewire view" class="ndb:shrink-0">
-            <x-newdebugbar::filter-tab
-                data-ndb-livewire-tab="activity"
-                @click="setLivewireTab('activity')"
-                ::aria-pressed="livewireTab === 'activity'"
-            >
-                <span>Activity</span>
-                <span
-                    class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
-                    x-text="livewireActivity.length"
-                ></span>
-            </x-newdebugbar::filter-tab>
-            <x-newdebugbar::filter-tab
-                data-ndb-livewire-tab="components"
-                @click="setLivewireTab('components')"
-                ::aria-pressed="livewireTab === 'components'"
-            >
-                <span>Components</span>
-                <span
-                    class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
-                    x-text="livewireComponents.length"
-                ></span>
-            </x-newdebugbar::filter-tab>
-        </x-newdebugbar::filter-tabs>
-
-        <div class="ndb:grid ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_auto] ndb:gap-2 ndb:sm:w-[28rem]">
-            <label class="ndb:relative ndb:min-w-0">
-                <span
-                    class="ndb:sr-only"
-                    x-text="livewireTab === 'activity' ? 'Search Livewire activity' : 'Search Livewire components'"
-                ></span>
-                <input
-                    data-ndb-livewire-search
-                    x-model="livewireSearch"
-                    @input="$nextTick(() => syncLivewireSelection())"
-                    type="search"
-                    :placeholder="livewireTab === 'activity' ? 'Search Livewire activity' : 'Search components'"
-                    class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                />
-                <x-newdebugbar::icon
-                    name="search"
-                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                />
-            </label>
-            <label x-show.important="livewireTab === 'activity'" class="ndb:relative">
-                <span class="ndb:sr-only">Filter Livewire activity</span>
-                <select
-                    data-ndb-livewire-type
-                    x-model="livewireActivityType"
-                    @change="setLivewireActivityType($event.target.value)"
-                    class="ndb:h-9 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-8 ndb:pl-3 ndb:text-xs ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                >
-                    <option value="all">All activity</option>
-                    <template x-for="type in livewireActivityTypes" :key="type">
-                        <option
-                            :value="type"
-                            x-text="type.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())"
-                        ></option>
-                    </template>
-                </select>
-                <x-newdebugbar::icon
-                    name="chevron-down"
-                    class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                />
-            </label>
-            <span x-show.important="livewireTab === 'components'" aria-hidden="true" class="ndb:w-0"></span>
-        </div>
-    </div>
+    <script type="application/json" data-ndb-livewire-payload>
+        {{
+            base64_encode(json_encode([
+                'components' => $livewirePayload['components'] ?? [],
+                'activity' => $livewirePayload['activity'] ?? [],
+            ], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE))
+        }}
+    </script>
 
     <div
         x-show.important="(livewireTrace.dropped?.components ?? 0) + (livewireTrace.dropped?.activity ?? 0) > 0"
         role="status"
-        class="ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
+        class="ndb:mb-4 ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
     >
         Capture limit reached.
         <span x-text="livewireTrace.dropped.activity"></span> activity records and
         <span x-text="livewireTrace.dropped.components"></span> component records were omitted.
     </div>
 
-    <div x-show.important="livewireTab === 'activity'">
-        @include('newdebugbar::livewire.livewire.activity')
-    </div>
+    <x-newdebugbar::inspector-workspace
+        frame="top"
+        data-ndb-livewire-workspace
+        class="ndb:border-l-0 ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+    >
+        <x-newdebugbar::inspector-list-panel detail-open="livewireDetailOpen" list-ref="livewireList">
+            <x-slot:controls>
+                @include('newdebugbar::livewire.livewire.controls')
+            </x-slot:controls>
 
-    <div x-show.important="livewireTab === 'components'">
-        @include('newdebugbar::livewire.livewire.components')
-    </div>
+            <x-slot:list data-ndb-livewire-list class="ndb:p-0">
+                <template x-if="livewireTab === 'activity'">
+                    <div data-ndb-livewire-activity>
+                        @include('newdebugbar::livewire.livewire.activity')
+                    </div>
+                </template>
+
+                <template x-if="livewireTab === 'components'">
+                    <div data-ndb-livewire-components>
+                        @include('newdebugbar::livewire.livewire.components')
+                    </div>
+                </template>
+            </x-slot:list>
+        </x-newdebugbar::inspector-list-panel>
+
+        <x-newdebugbar::inspector-detail-pane
+            detail-open="livewireDetailOpen"
+            detail-ref="livewireDetail"
+            detail-label="Selected Livewire details"
+            back-label="Livewire"
+            close-action="livewireDetailOpen = false"
+            id="newdebugbar-livewire-detail"
+            data-ndb-livewire-detail-pane
+            class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+        >
+            <x-slot:back>
+                <x-newdebugbar::inspector-detail-back
+                    data-ndb-livewire-detail-back
+                    @click="livewireDetailOpen = false"
+                    label="Livewire"
+                    class="ndb:bg-transparent"
+                />
+            </x-slot:back>
+
+            <template x-if="livewireTab === 'activity'">
+                <div class="ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col">
+                    <template x-if="selectedLivewireActivity">
+                        @include('newdebugbar::livewire.livewire.activity-detail')
+                    </template>
+
+                    <x-newdebugbar::inspector-detail-empty
+                        data-ndb-livewire-activity-detail-empty="selection"
+                        label="Choose an interaction to inspect what changed."
+                        x-show.important="! selectedLivewireActivity && filteredLivewireActivity.length > 0"
+                        class="ndb:flex-1"
+                    />
+                    <x-newdebugbar::inspector-detail-empty
+                        data-ndb-livewire-activity-detail-empty="filter"
+                        label="No activity matches this view."
+                        x-show.important="filteredLivewireActivity.length === 0"
+                        class="ndb:flex-1"
+                    />
+                </div>
+            </template>
+
+            <template x-if="livewireTab === 'components'">
+                <div class="ndb:flex ndb:min-h-0 ndb:flex-1 ndb:flex-col">
+                    <template x-if="selectedLivewireComponent">
+                        @include('newdebugbar::livewire.livewire.component-detail')
+                    </template>
+
+                    <x-newdebugbar::inspector-detail-empty
+                        data-ndb-livewire-component-detail-empty="selection"
+                        label="Choose a mounted component to inspect its state."
+                        x-show.important="! selectedLivewireComponent && matchingLivewireComponents.length > 0"
+                        class="ndb:flex-1"
+                    />
+                    <x-newdebugbar::inspector-detail-empty
+                        data-ndb-livewire-component-detail-empty="filter"
+                        label="No components match this search."
+                        x-show.important="matchingLivewireComponents.length === 0"
+                        class="ndb:flex-1"
+                    />
+                </div>
+            </template>
+        </x-newdebugbar::inspector-detail-pane>
+    </x-newdebugbar::inspector-workspace>
 </div>

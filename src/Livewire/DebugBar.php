@@ -26,6 +26,7 @@ final class DebugBar extends Component
         'events',
         'http_client',
         'logs',
+        'livewire',
         'mail',
         'messages',
         'models',

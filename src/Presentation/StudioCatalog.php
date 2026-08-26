@@ -87,7 +87,6 @@ final class StudioCatalog
         ],
         'livewire' => [
             'livewire-property-editor',
-            'livewire-split-view',
         ],
         'logs' => [
             'log-entry',
