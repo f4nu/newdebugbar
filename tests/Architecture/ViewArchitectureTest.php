@@ -355,7 +355,8 @@ it('composes the HTTP Client workspace from focused view components', function (
 
     expect($section)
         ->toContain('<x-newdebugbar::http-client-workspace')
-        ->toContain('<x-newdebugbar::http-client-empty')
+        ->toContain('<x-newdebugbar::empty-state')
+        ->toContain('data-ndb-http-client-empty')
         ->not->toContain('data-ndb-http-client-list');
 
     expect($workspace)
@@ -414,7 +415,8 @@ it('composes the Cache workspace from the shared inspector components', function
 
     expect($section)
         ->toContain('<x-newdebugbar::cache-workspace')
-        ->toContain('<x-newdebugbar::cache-empty')
+        ->toContain('<x-newdebugbar::empty-state')
+        ->toContain('data-ndb-cache-empty')
         ->not->toContain('data-ndb-cache-list');
 
     expect($workspace)

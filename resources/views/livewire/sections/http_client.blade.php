@@ -29,6 +29,11 @@
     @if ($httpItems !== [])
         <x-newdebugbar::http-client-workspace :items="$httpItems" :summary="$httpSummary" />
     @else
-        <x-newdebugbar::http-client-empty />
+        <x-newdebugbar::empty-state
+            centered
+            data-ndb-http-client-empty
+            label="No outbound HTTP requests were captured for this request."
+            description="Requests made through Laravel's HTTP client will appear here with their response, timing, and source."
+        />
     @endif
 </div>

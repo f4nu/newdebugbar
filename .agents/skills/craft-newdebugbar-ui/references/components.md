@@ -39,7 +39,7 @@ Similar section layouts do not justify a large component with many conditional p
 | Component | Use |
 | --- | --- |
 | `code-block` | Syntax-highlighted code or retained code-like data. Pass the real language; never use it for an ordinary path or label. |
-| `empty-state` | Calm no-results or section-empty message. `success` is only for a genuinely positive empty state. |
+| `empty-state` | Calm no-results or section-empty message. Use `description` only for useful next context, `centered` for a full workspace empty state, and `success` only for a genuinely positive result. |
 | `filter-tab` | One option inside `filter-tabs`. Express selection with `aria-selected` or `aria-pressed`; do not use it alone. |
 | `icon` | Package-owned SVG at an explicit supported size. Prefer text when an icon would be ambiguous. |
 | `icon-button` | Accessible icon-only action. Always provide an accessible name. |

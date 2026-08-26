@@ -16,6 +16,11 @@
     @if ($cacheItems !== [])
         <x-newdebugbar::cache-workspace :items="$cacheItems" :summary="$cacheSummary" />
     @else
-        <x-newdebugbar::cache-empty />
+        <x-newdebugbar::empty-state
+            centered
+            data-ndb-cache-empty
+            label="No cache operations were captured for this request."
+            description="Reads, writes, deletes, and store flushes will appear here when Laravel emits them."
+        />
     @endif
 </div>
