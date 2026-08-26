@@ -373,6 +373,49 @@ it('keeps host styles and package styles isolated', function () {
                     && communicationsAreStructured;
             })()
             JS)
+        ->click('[data-ndb-section="redis"]')
+        ->assertVisible('[data-ndb-section-panel="redis"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-redis]');
+                const item = document.querySelector('[data-ndb-redis-item]');
+                const command = item.querySelector('[data-ndb-redis-command]');
+                const key = item.querySelector('[data-ndb-redis-key-label]');
+                const detail = document.querySelector('[data-ndb-redis-detail]');
+                const status = document.querySelector('[data-ndb-redis-detail-status]');
+                const tabs = [...document.querySelectorAll('[data-ndb-redis-detail-tab]')];
+
+                return getComputedStyle(root).borderLeftWidth === '0px'
+                    && getComputedStyle(root).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(item).borderLeftWidth === '0px'
+                    && getComputedStyle(item).backgroundColor !== 'rgb(255, 0, 0)'
+                    && item.getBoundingClientRect().height < 91
+                    && Number.parseFloat(getComputedStyle(command).fontSize) === 12
+                    && getComputedStyle(command).fontFamily.includes('JetBrains Mono')
+                    && getComputedStyle(command).backgroundColor !== 'rgb(255, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(key).fontSize) === 12
+                    && !getComputedStyle(key).fontFamily.includes('JetBrains Mono')
+                    && getComputedStyle(key).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(detail).borderLeftWidth === '0px'
+                    && Number.parseFloat(getComputedStyle(status).fontSize) === 11
+                    && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
+                    && tabs.every((tab) => tab.getBoundingClientRect().height < 91);
+            })()
+            JS)
+        ->click('[data-ndb-redis-detail-tab="keys"]')
+        ->assertVisible('[data-ndb-redis-copy-keys]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const copy = document.querySelector('[data-ndb-redis-copy-keys]');
+                const key = document.querySelector('[data-ndb-redis-key]');
+
+                return copy.getBoundingClientRect().height === 36
+                    && getComputedStyle(copy).backgroundColor !== 'rgb(255, 0, 255)'
+                    && Number.parseFloat(getComputedStyle(key).fontSize) === 12
+                    && !getComputedStyle(key).fontFamily.includes('JetBrains Mono')
+                    && getComputedStyle(key).backgroundColor === 'rgba(0, 0, 0, 0)';
+            })()
+            JS)
         ->click('[data-ndb-section="notifications"]')
         ->assertVisible('[data-ndb-section-panel="notifications"]')
         ->assertVisible('[data-ndb-notification-profile-link]')

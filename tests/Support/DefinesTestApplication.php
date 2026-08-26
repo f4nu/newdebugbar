@@ -623,6 +623,7 @@ trait DefinesTestApplication
                 'hostile-http.test/*' => Http::response(['message' => 'Hostile upstream failure.'], 503),
             ]);
             Http::delete('https://hostile-http.test/v1/kyoto/'.str_repeat('long-path-', 8).'end');
+            Event::dispatch(new CommandExecuted('get', ['hostile-direct-key'], 1.25, new ProfiledRedisConnection));
             Log::warning('Hostile style log needs attention.', [
                 'trip_id' => 41,
                 'actor' => ['type' => 'planner', 'id' => 7],
@@ -671,6 +672,9 @@ trait DefinesTestApplication
                             [data-ndb-queue-item], [data-ndb-notification-item], [data-ndb-event-item] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-event-listener-outcome] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-redis], [data-ndb-redis-item], [data-ndb-redis-detail], [data-ndb-redis-key-label] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); }
+                            [data-ndb-redis-command], [data-ndb-redis-detail-status], [data-ndb-redis-key] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
+                            [data-ndb-redis-copy-keys] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-mail-facts], [data-ndb-notification-facts], [data-ndb-event-facts] { background: rgb(255, 0, 0); border-top: 20px solid rgb(255, 0, 0); display: block; padding: 50px; }
                             [data-ndb-mail-fact], [data-ndb-notification-fact], [data-ndb-event-fact] { background: rgb(255, 0, 0); }
                             [data-ndb-mail-attachment-download] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }

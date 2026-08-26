@@ -1,0 +1,152 @@
+<?php
+
+use NewDebugBar\Tests\Support\DebugBarBrowser;
+
+it('filters queue activity and instantiates only the active detail evidence', function () {
+    $page = visit('/profiled-queue')
+        ->resize(1440, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="queue"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-queue-workspace]');
+
+    $page
+        ->assertValue('[data-ndb-queue-filter]', 'all')
+        ->assertAttribute('[data-ndb-queue-item="1"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertSee('ProfiledJob')
+        ->assertSee('What happened to this job?')
+        ->assertScript('document.querySelectorAll("[data-ndb-queue-item]:not([hidden])").length', 3)
+        ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-panel]").length', 1)
+        ->select('[data-ndb-queue-filter]', 'failed')
+        ->assertScript('document.querySelectorAll("[data-ndb-queue-item]:not([hidden])").length', 1)
+        ->assertAttribute('[data-ndb-queue-item="3"]', 'aria-pressed', 'true')
+        ->assertSee('RuntimeException')
+        ->click('[data-ndb-queue-detail-tab="attempts"]')
+        ->assertAttribute('[data-ndb-queue-detail-tab="attempts"]', 'aria-pressed', 'true')
+        ->assertSee('No worker attempt has been linked yet.')
+        ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-panel]").length', 1)
+        ->assertScript('document.querySelector("[data-ndb-queue-sort]") === null')
+        ->assertNoJavaScriptErrors();
+});
+
+it('uses a focused Queue detail with Back on mobile dark mode', function () {
+    $preferences = json_encode(['theme' => 'dark', 'favorites' => []], JSON_THROW_ON_ERROR);
+    $page = visit('/profiled-queue')->resize(390, 844);
+
+    $page
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
+        ->refresh()
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="queue"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-queue-workspace]');
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
+        ->click('[data-ndb-queue-item="3"]')
+        ->assertVisible('[data-ndb-queue-back]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-queue-workspace]');
+                const [list, detail] = workspace.children;
+                const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+
+                return getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && dialog.scrollWidth <= dialog.clientWidth + 1;
+            })()
+            JS)
+        ->click('[data-ndb-queue-back]')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-queue-item=\\"3\\"]")')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows Redis command and bounded key evidence without primary hashes', function () {
+    $page = visit('/profiled-redis')
+        ->resize(1440, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="redis"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-redis-workspace]');
+
+    $page
+        ->assertAttribute('[data-ndb-redis-item="1"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-redis-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertSee('This list contains direct Redis commands.')
+        ->assertScript(<<<'JS'
+            (() => {
+                const payload = JSON.parse(atob(document.querySelector('[data-ndb-redis-payload]').textContent.trim()));
+                const primary = [...document.querySelectorAll('[data-ndb-redis-key-label]')].map((item) => item.textContent.trim());
+                const hashes = payload.flatMap((command) => command.key_hashes ?? []);
+
+                return document.querySelectorAll('[data-ndb-redis-detail-panel]').length === 1
+                    && primary.every((label) => !hashes.includes(label))
+                    && document.querySelector('[data-ndb-redis-sort]') === null;
+            })()
+            JS)
+        ->click('[data-ndb-redis-detail-tab="keys"]')
+        ->assertAttribute('[data-ndb-redis-detail-tab="keys"]', 'aria-pressed', 'true')
+        ->assertSee('Which Redis keys were used?')
+        ->assertSee('private-direct-key')
+        ->assertScript('document.querySelectorAll("[data-ndb-redis-detail-panel]").length', 1)
+        ->assertValue('[data-ndb-redis-filter]', 'all')
+        ->select('[data-ndb-redis-filter]', 'failed')
+        ->assertScript('document.querySelectorAll("[data-ndb-redis-item]:not([hidden])").length', 1)
+        ->assertSee('RuntimeException')
+        ->assertScript('document.querySelector("[data-ndb-redis-failed=\\"true\\"]").textContent.includes("—")')
+        ->assertNoJavaScriptErrors();
+});
+
+it('uses a focused Redis detail with Back on mobile light mode', function () {
+    $preferences = json_encode(['theme' => 'light', 'favorites' => []], JSON_THROW_ON_ERROR);
+    $page = visit('/profiled-redis')->resize(390, 844);
+
+    $page
+        ->assertScript(<<<JS
+            (() => {
+                localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
+
+                return true;
+            })()
+            JS)
+        ->refresh()
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="redis"]');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-redis-workspace]');
+
+    $page
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
+        ->click('[data-ndb-redis-item="1"]')
+        ->assertVisible('[data-ndb-redis-back]')
+        ->click('[data-ndb-redis-detail-tab="keys"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const workspace = document.querySelector('[data-ndb-redis-workspace]');
+                const [list, detail] = workspace.children;
+                const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+
+                return getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && dialog.scrollWidth <= dialog.clientWidth + 1;
+            })()
+            JS)
+        ->click('[data-ndb-redis-back]')
+        ->assertScript('document.activeElement === document.querySelector("[data-ndb-redis-item=\\"1\\"]")')
+        ->assertNoJavaScriptErrors();
+});
