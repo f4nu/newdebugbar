@@ -8,6 +8,8 @@
     $firstAt = $entry['first_at_ms'] ?? $entry['at_ms'] ?? null;
     $lastAt = $entry['last_at_ms'] ?? $firstAt;
     $contextFields = array_values($entry['context_fields'] ?? []);
+    $message = (string) ($entry['message'] ?? '');
+    $displayMessage = $message === '' ? '—' : $message;
     $callsite = is_array($entry['callsite'] ?? null) ? $entry['callsite'] : null;
     $relatedException = is_array($entry['related_exception'] ?? null) ? $entry['related_exception'] : null;
     $stack = array_values(is_array($entry['stack'] ?? null) ? $entry['stack'] : []);
@@ -47,10 +49,12 @@
     <x-newdebugbar::inspector-detail-header layout="wrap">
         <x-slot:title>
             <div class="ndb:min-w-0">
-                <h3
-                    data-ndb-log-details-title
-                    class="ndb:bg-transparent ndb:whitespace-pre-wrap ndb:break-words ndb:text-sm ndb:font-bold ndb:leading-5 ndb:text-zinc-900 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-100"
-                >{{ ($entry['message'] ?? '') === '' ? '—' : $entry['message'] }}</h3>
+                <h3 class="ndb:bg-transparent">
+                    <span
+                        data-ndb-log-details-title
+                        class="ndb:block ndb:whitespace-pre-wrap ndb:break-words ndb:bg-transparent ndb:text-sm ndb:font-bold ndb:leading-5 ndb:text-zinc-900 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-100"
+                    >{{ $displayMessage }}</span>
+                </h3>
                 <p class="ndb:mt-1 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
                     Log {{ $recordLabel }}
                 </p>
@@ -89,6 +93,7 @@
 
         @if ($relatedException !== null)
             @php($exceptionSource = isset($relatedException['file'], $relatedException['line']) ? $relatedException['file'].':'.$relatedException['line'] : null)
+            @php($exceptionMessage = trim((string) ($relatedException['message'] ?? '')))
             <section
                 data-ndb-log-detail-group="related-exception"
                 data-ndb-log-related-exception
@@ -110,7 +115,9 @@
                     <code class="ndb:block ndb:break-words ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-900 ndb:dark:text-zinc-100">
                         {{ $relatedException['class'] ?? '—' }}
                     </code>
-                    <p class="ndb:mt-1 ndb:whitespace-pre-wrap ndb:break-words ndb:bg-transparent ndb:text-xs ndb:font-medium ndb:leading-5 ndb:text-zinc-700 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-200">{{ ($relatedException['message'] ?? '') === '' ? '—' : trim((string) $relatedException['message']) }}</p>
+                    <p class="ndb:mt-1 ndb:break-words ndb:bg-transparent ndb:text-xs ndb:font-medium ndb:leading-5 ndb:text-zinc-700 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-200">
+                        <span class="ndb:block ndb:whitespace-pre-wrap">{{ $exceptionMessage === '' ? '—' : $exceptionMessage }}</span>
+                    </p>
                     @if ($exceptionSource !== null)
                         <p class="ndb:mt-1 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
                             {{ $exceptionSource }}
@@ -121,7 +128,12 @@
         @endif
 
         @if ($contextFields !== [])
-            <section data-ndb-log-detail-group="context" data-ndb-log-context aria-label="Log context" class="ndb:bg-transparent ndb:p-4">
+            <section
+                data-ndb-log-detail-group="context"
+                data-ndb-log-context
+                aria-label="Log context"
+                class="ndb:bg-transparent ndb:p-4"
+            >
                 <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Context</h4>
                 <x-newdebugbar::inspector-definition-list class="ndb:mt-2">
                     @foreach ($contextFields as $field)
@@ -143,7 +155,12 @@
         @endif
 
         @if ($repeatCount > 1)
-            <section data-ndb-log-detail-group="occurrences" data-ndb-log-occurrences aria-label="Repeated log occurrences" class="ndb:p-4">
+            <section
+                data-ndb-log-detail-group="occurrences"
+                data-ndb-log-occurrences
+                aria-label="Repeated log occurrences"
+                class="ndb:p-4"
+            >
                 <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
                     <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Occurrences</h4>
                     <span class="ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400">

@@ -285,7 +285,6 @@
                     </section>
                 </template>
             </div>
-
         </div>
     </template>
 </article>

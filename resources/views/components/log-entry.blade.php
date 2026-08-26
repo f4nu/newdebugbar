@@ -52,7 +52,11 @@
             data-ndb-log-metadata
             class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-baseline ndb:gap-x-3 ndb:gap-y-0.5 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400"
         >
-            <span data-ndb-log-channel-label class="ndb:min-w-0 ndb:truncate" title="{{ $channelLabel }}">{{ $channelLabel }}</span>
+            <span
+                data-ndb-log-channel-label
+                class="ndb:min-w-0 ndb:truncate"
+                title="{{ $channelLabel }}"
+            >{{ $channelLabel }}</span>
             <span data-ndb-log-request-time class="ndb:shrink-0 ndb:tabular-nums">{{ $requestTimeLabel }}</span>
             @if ($repeatCount > 1)
                 <span data-ndb-log-repeat-label class="ndb:shrink-0 ndb:font-medium ndb:tabular-nums">

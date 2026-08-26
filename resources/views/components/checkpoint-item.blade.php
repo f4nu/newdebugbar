@@ -80,10 +80,12 @@
                                         class="ndb:max-w-full"
                                     >{{ json_encode($contextValue, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) }}</x-newdebugbar::code-block>
                                 @else
-                                    <span @class([
-                                        'ndb:whitespace-pre-wrap ndb:break-words ndb:[overflow-wrap:anywhere]',
-                                        'ndb:tabular-nums' => is_int($contextValue) || is_float($contextValue),
-                                    ])>{{ $contextPreview }}</span>
+                                    <span
+                                        @class([
+                                            'ndb:whitespace-pre-wrap ndb:break-words ndb:[overflow-wrap:anywhere]',
+                                            'ndb:tabular-nums' => is_int($contextValue) || is_float($contextValue),
+                                        ])
+                                    >{{ $contextPreview }}</span>
                                 @endif
                             </x-slot:value>
                         </x-newdebugbar::inspector-definition-row>
