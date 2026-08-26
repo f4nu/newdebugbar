@@ -21,13 +21,25 @@ it('uses the shared edge-to-edge workspace and renders only the active Livewire 
                 const durationEdges = items.map((item) =>
                     item.querySelector('[data-ndb-livewire-activity-duration]').getBoundingClientRect().right,
                 );
+                const dots = items.map((item) =>
+                    item.querySelector('[data-ndb-livewire-activity-dot]').getBoundingClientRect(),
+                );
+                const connectors = items.slice(0, -1).map((item) =>
+                    item.querySelector('[data-ndb-livewire-activity-connector]').getBoundingClientRect(),
+                );
                 const workspaceStyle = getComputedStyle(workspace);
                 const listStyle = getComputedStyle(list);
                 const detailStyle = getComputedStyle(detail);
 
                 return items.length > 1
                     && items.every((item) => item.querySelector('[data-ndb-livewire-activity-item]'))
+                    && items.every((item) => item.hasAttribute('data-ndb-livewire-activity-timeline-item'))
                     && durationEdges.every((edge) => Math.abs(edge - durationEdges[0]) <= 0.75)
+                    && dots.every((dot) => Math.abs((dot.left + dot.width / 2) - (dots[0].left + dots[0].width / 2)) <= 0.75)
+                    && connectors.every((connector, index) =>
+                        Math.abs((connector.left + connector.width / 2) - (dots[index].left + dots[index].width / 2)) <= 0.75
+                            && connector.bottom >= dots[index + 1].top
+                    )
                     && parseFloat(workspaceStyle.borderTopWidth) === 1
                     && parseFloat(workspaceStyle.borderRightWidth) === 0
                     && parseFloat(workspaceStyle.borderBottomWidth) === 0

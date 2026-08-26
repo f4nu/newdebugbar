@@ -537,6 +537,12 @@ it('composes Livewire as one shared inspector workspace with focused details', f
         ->toContain('data-ndb-livewire-detail-panel="trace"')
         ->toContain('<x-newdebugbar::inspector-explanation');
 
+    expect(file_get_contents($views.'/livewire/livewire/activity.blade.php'))
+        ->toContain('aria-label="Livewire activity timeline"')
+        ->toContain('data-ndb-livewire-activity-timeline-item')
+        ->toContain('data-ndb-livewire-activity-connector')
+        ->toContain('data-ndb-livewire-activity-dot');
+
     expect($componentDetail)
         ->toContain('data-ndb-livewire-detail-panel="properties"')
         ->toContain('data-ndb-livewire-detail-panel="source"')
