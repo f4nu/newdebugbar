@@ -186,12 +186,22 @@
 
                 <template x-if="selectedRedisCommand">
                     <div class="ndb:flex ndb:flex-col">
-                        <x-newdebugbar::inspector-detail-header data-ndb-redis-detail-header>
+                        <x-newdebugbar::inspector-detail-header layout="wrap" data-ndb-redis-detail-header>
                             <x-slot:title>
-                                <code
-                                    class="ndb:min-w-0 ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-sm ndb:font-bold"
-                                    x-text="selectedRedisCommand.command"
-                                ></code>
+                                <div class="ndb:grid ndb:min-w-0 ndb:flex-1 ndb:grid-cols-[4rem_minmax(0,1fr)] ndb:items-center ndb:gap-2">
+                                    <x-newdebugbar::inspector-operation-badge
+                                        outlined
+                                        wide
+                                        data-ndb-redis-command
+                                        x-text="selectedRedisCommand.command"
+                                    ></x-newdebugbar::inspector-operation-badge>
+                                    <h3
+                                        data-ndb-redis-key-label
+                                        :title="selectedRedisCommand.key_label"
+                                        class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold ndb:leading-5 ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                        x-text="selectedRedisCommand.key_label"
+                                    ></h3>
+                                </div>
                             </x-slot:title>
                             <x-slot:aside>
                                 <span

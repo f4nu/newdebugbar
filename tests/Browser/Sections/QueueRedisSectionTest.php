@@ -105,17 +105,24 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
         ->assertSee('Keys used')
         ->assertSee('private-direct-key')
         ->assertVisible('[data-ndb-redis-copy-keys]')
+        ->assertSeeIn('[data-ndb-redis-detail-header] [data-ndb-redis-command]', 'GET')
+        ->assertSeeIn('[data-ndb-redis-detail-header] [data-ndb-redis-key-label]', 'private-direct-key')
         ->assertScript(<<<'JS'
             (() => {
                 const payload = JSON.parse(atob(document.querySelector('[data-ndb-redis-payload]').textContent.trim()));
                 const primary = [...document.querySelectorAll('[data-ndb-redis-key-label]')].map((item) => item.textContent.trim());
                 const hashes = payload.flatMap((command) => command.key_hashes ?? []);
+                const header = document.querySelector('[data-ndb-redis-detail-header]');
+                const operation = header.querySelector('[data-ndb-redis-command]').getBoundingClientRect();
+                const key = header.querySelector('[data-ndb-redis-key-label]').getBoundingClientRect();
 
                 return document.querySelector('[data-ndb-redis-detail-body]') !== null
                     && document.querySelector('[data-ndb-redis-key-evidence]') !== null
                     && document.querySelector('[data-ndb-redis-detail-tab]') === null
                     && primary.every((label) => !hashes.includes(label))
-                    && document.querySelector('[data-ndb-redis-sort]') === null;
+                    && document.querySelector('[data-ndb-redis-sort]') === null
+                    && Math.abs((operation.top + operation.height / 2) - (key.top + key.height / 2)) <= 1
+                    && header.scrollWidth <= header.clientWidth;
             })()
             JS)
         ->assertValue('[data-ndb-redis-filter]', 'all')
@@ -181,10 +188,12 @@ it('uses a focused Redis detail with Back on mobile light mode', function () {
                 const workspace = document.querySelector('[data-ndb-redis-workspace]');
                 const [list, detail] = workspace.children;
                 const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
+                const header = document.querySelector('[data-ndb-redis-detail-header]');
 
                 return getComputedStyle(list).display === 'none'
                     && getComputedStyle(detail).display === 'flex'
                     && detail.scrollWidth <= detail.clientWidth + 1
+                    && header.scrollWidth <= header.clientWidth + 1
                     && dialog.scrollWidth <= dialog.clientWidth + 1;
             })()
             JS)

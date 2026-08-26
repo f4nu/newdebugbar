@@ -40,6 +40,10 @@ it('composes Redis from the shared inspector workspace grammar', function () {
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
         ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::inspector-operation-badge')
+        ->toContain('layout="wrap" data-ndb-redis-detail-header')
+        ->toContain('data-ndb-redis-command')
+        ->toContain('data-ndb-redis-key-label')
         ->toContain('<template x-if="selectedRedisCommand">')
         ->toContain('data-ndb-redis-detail-body')
         ->toContain('data-ndb-redis-key-evidence')
@@ -55,6 +59,7 @@ it('composes Redis from the shared inspector workspace grammar', function () {
         ->not->toContain('This list contains direct Redis commands.')
         ->not->toContain('redisSort')
         ->not->toContain('Succeeded')
+        ->not->toContain('ndb:font-mono ndb:text-sm ndb:font-bold')
         ->not->toContain('Oldest')
         ->not->toContain('Slowest');
 
