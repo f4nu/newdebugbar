@@ -219,24 +219,51 @@
                         @if ($section['payload']['has_more'] ?? false)
                             <div
                                 data-ndb-timeline-pagination
-                                class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3 ndb:px-3 ndb:py-3"
+                                data-ndb-timeline-page-sentinel
+                                wire:key="timeline-page-sentinel-{{ $timelineLoaded }}"
+                                x-init="$nextTick(() => observeTimelinePageEnd($el, $wire))"
+                                :aria-busy="timelineLoadingMore"
+                                role="status"
+                                aria-live="polite"
+                                aria-atomic="true"
+                                class="ndb:flex ndb:min-h-12 ndb:items-center ndb:justify-center ndb:px-3 ndb:py-3 ndb:text-center"
                             >
-                                <p class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    Showing {{ number_format($timelineLoaded) }} of {{ number_format($timelineTotal) }} timeline
-                                    events.
-                                </p>
-                                <x-newdebugbar::inspector-action
-                                    icon="activity"
-                                    data-ndb-timeline-load-more
-                                    wire:click="loadMoreTimeline"
-                                    wire:loading.attr="disabled"
-                                    wire:target="loadMoreTimeline"
+                                <span
+                                    x-show.important="! timelineLoadingMore && ! timelinePaginationError"
+                                    class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
                                 >
-                                    <span wire:loading.remove wire:target="loadMoreTimeline">
-                                        Load {{ number_format(min(50, $timelineTotal - $timelineLoaded)) }} more
-                                    </span>
-                                    <span wire:loading wire:target="loadMoreTimeline">Loading…</span>
-                                </x-newdebugbar::inspector-action>
+                                    Showing {{ number_format($timelineLoaded) }} of {{ number_format($timelineTotal) }} timeline
+                                    events. More activity loads as you scroll.
+                                </span>
+                                <span
+                                    x-cloak
+                                    x-show.important="timelineLoadingMore"
+                                    data-ndb-timeline-page-loading
+                                    class="ndb:inline-flex ndb:items-center ndb:gap-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-300"
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        class="ndb:size-3 ndb:animate-spin ndb:rounded-full ndb:border-2 ndb:border-zinc-300 ndb:border-t-indigo-500 ndb:dark:border-zinc-700 ndb:dark:border-t-indigo-400"
+                                    ></span>
+                                    Loading up to {{ number_format(min(50, $timelineTotal - $timelineLoaded)) }} more
+                                    timeline events…
+                                </span>
+                                <span
+                                    x-cloak
+                                    x-show.important="timelinePaginationError"
+                                    data-ndb-timeline-page-error
+                                    class="ndb:inline-flex ndb:flex-wrap ndb:items-center ndb:justify-center ndb:gap-x-2 ndb:gap-y-1 ndb:text-[11px] ndb:font-semibold ndb:text-rose-700 ndb:dark:text-rose-300"
+                                >
+                                    More activity could not be loaded.
+                                    <button
+                                        type="button"
+                                        data-ndb-timeline-page-retry
+                                        @click="retryTimelinePage($wire)"
+                                        class="ndb:h-auto ndb:bg-transparent ndb:p-0 ndb:font-bold ndb:underline ndb:decoration-current/50 ndb:underline-offset-2 ndb:hover:decoration-current ndb:focus-visible:rounded-sm ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                    >
+                                        Retry
+                                    </button>
+                                </span>
                             </div>
                         @elseif ($timelineTotal > 50)
                             <p

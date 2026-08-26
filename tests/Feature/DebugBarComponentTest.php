@@ -343,8 +343,10 @@ it('paginates long timelines in deterministic batches', function () {
         ->assertSet('profile.sections.timeline.payload.items', fn (array $items): bool => count($items) === 50)
         ->assertSet('profile.sections.timeline.payload.total_item_count', 122)
         ->assertSet('profile.sections.timeline.payload.has_more', true)
-        ->assertSee('Showing 50 of 122 timeline events.')
-        ->assertSeeHtml('data-ndb-timeline-load-more')
+        ->assertSee('Showing 50 of 122 timeline')
+        ->assertSee('More activity loads as you scroll.')
+        ->assertSeeHtml('data-ndb-timeline-page-sentinel')
+        ->assertDontSeeHtml('data-ndb-timeline-load-more')
         ->call('loadMoreTimeline')
         ->assertSet('timelineLimit', 100)
         ->assertSet('profile.sections.timeline.payload.items', fn (array $items): bool => count($items) === 100)
@@ -352,7 +354,7 @@ it('paginates long timelines in deterministic batches', function () {
         ->assertSet('timelineLimit', 122)
         ->assertSet('profile.sections.timeline.payload.items', fn (array $items): bool => count($items) === 122)
         ->assertSet('profile.sections.timeline.payload.has_more', false)
-        ->assertDontSeeHtml('data-ndb-timeline-load-more')
+        ->assertDontSeeHtml('data-ndb-timeline-page-sentinel')
         ->assertSee('All 122 timeline events are loaded.');
 });
 

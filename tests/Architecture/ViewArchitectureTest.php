@@ -28,6 +28,8 @@ it('keeps Timeline on shared inspector geometry with namespaced behavior hooks',
             '<x-newdebugbar::inspector-list-controls',
             '<x-newdebugbar::search-field',
             '<x-newdebugbar::select-field',
+            'data-ndb-timeline-page-sentinel',
+            'observeTimelinePageEnd($el, $wire)',
         )
         ->not->toContain(
             'data-section=',
@@ -37,6 +39,8 @@ it('keeps Timeline on shared inspector geometry with namespaced behavior hooks',
             'data-duration=',
             'data-search=',
             'ndb:min-w-[760px]',
+            'data-ndb-timeline-load-more',
+            'wire:click="loadMoreTimeline"',
         );
 });
 

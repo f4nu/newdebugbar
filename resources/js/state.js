@@ -255,6 +255,50 @@ const defaultRuntime = () => ({
       if (frame !== null) window.cancelAnimationFrame(frame);
     };
   },
+  observeNearEnd: (target, scrollOwner, callback) => {
+    if (!target || !scrollOwner || typeof callback !== 'function') return null;
+
+    if (typeof window.IntersectionObserver === 'function') {
+      const observer = new window.IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) callback();
+        },
+        {
+          root: scrollOwner,
+          rootMargin: '0px 0px 160px 0px',
+          threshold: 0,
+        },
+      );
+      observer.observe(target);
+
+      return () => observer.disconnect();
+    }
+
+    let frame = null;
+    const check = () => {
+      frame = null;
+      if (!target.isConnected || !scrollOwner.isConnected) return;
+
+      const targetBox = target.getBoundingClientRect();
+      const ownerBox = scrollOwner.getBoundingClientRect();
+
+      if (targetBox.top <= ownerBox.bottom + 160 && targetBox.bottom >= ownerBox.top) callback();
+    };
+    const schedule = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(check);
+    };
+
+    scrollOwner.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    schedule();
+
+    return () => {
+      scrollOwner.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  },
 });
 
 export function createNewDebugBar(
@@ -430,6 +474,10 @@ export function createNewDebugBar(
     timelineSearch: '',
     timelineSelected: null,
     timelineDetailOpen: false,
+    timelineLoadingMore: false,
+    timelinePaginationError: false,
+    timelinePaginationCleanup: null,
+    timelinePaginationRequest: 0,
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
     eventGroups: [],
     eventSource: 'all',
@@ -514,6 +562,7 @@ export function createNewDebugBar(
     },
 
     destroy() {
+      this.resetTimelinePagination();
       this.mailPreviewFrameCleanup?.();
       this.mailPreviewFrameCleanup = null;
       this.colorScheme?.removeEventListener?.('change', this.colorSchemeListener);
@@ -1130,6 +1179,7 @@ export function createNewDebugBar(
       const focusContentHeading = focusHeading || this.mobileSectionsOpen;
       const nextSection = this.sectionKeys.includes(section) ? section : DEFAULT_SECTION;
       const needsSection = this.inspectorOpen && (this.loadedSection !== nextSection || this.sectionError);
+      if (nextSection !== 'timeline') this.resetTimelinePagination();
       this.selected = nextSection;
       if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) {
         this.queryFilter = 'attention';
@@ -1675,6 +1725,7 @@ export function createNewDebugBar(
       if (!this.barVisible) return;
 
       const activeElement = browser.activeElement?.();
+      this.resetTimelinePagination();
       this.barVisible = false;
       this.inspectorOpen = false;
       this.cancelActivityRefresh();
@@ -1881,6 +1932,7 @@ export function createNewDebugBar(
     switchProfile(summary) {
       if (!PROFILE_PATTERN.test(summary?.id ?? '')) return;
 
+      this.resetTimelinePagination();
       const selectedFromPicker = this.requestSelectionPending === summary.id;
       const selectedFromRelation = this.relatedProfileSelection?.id === summary.id;
       const requestedSection = selectedFromPicker
@@ -2000,6 +2052,9 @@ export function createNewDebugBar(
       this.timelineSearch = '';
       this.timelineSelected = null;
       this.timelineDetailOpen = false;
+      this.timelineLoadingMore = false;
+      this.timelinePaginationError = false;
+      this.visibleTimelineCount = 0;
       this.eventGroups = [];
       this.eventSource = 'all';
       this.eventSearch = '';
@@ -3855,6 +3910,84 @@ export function createNewDebugBar(
 
     applyAuthorizationFilters() {
       this.applyAuthorizationView();
+    },
+
+    stopTimelinePagination() {
+      this.timelinePaginationCleanup?.();
+      this.timelinePaginationCleanup = null;
+    },
+
+    resetTimelinePagination() {
+      this.stopTimelinePagination();
+      this.timelinePaginationRequest += 1;
+      this.timelineLoadingMore = false;
+      this.timelinePaginationError = false;
+    },
+
+    observeTimelinePageEnd(element, wire = this.$wire) {
+      this.stopTimelinePagination();
+
+      const scrollOwner = this.$refs?.timelineList;
+      if (!element?.isConnected || !scrollOwner) return;
+
+      this.timelinePaginationCleanup =
+        browser.observeNearEnd?.(element, scrollOwner, () => this.loadNextTimelinePage(wire)) ?? null;
+    },
+
+    loadNextTimelinePage(wire = this.$wire) {
+      if (this.timelineLoadingMore || this.timelinePaginationError || this.selected !== 'timeline') {
+        return Promise.resolve(false);
+      }
+
+      const island = wire?.$island;
+      const scopedWire = typeof island === 'function' ? island.call(wire, 'section-details') : wire;
+      const action = scopedWire?.loadMoreTimeline;
+
+      if (typeof action !== 'function') {
+        this.timelinePaginationError = true;
+
+        return Promise.resolve(false);
+      }
+
+      const request = ++this.timelinePaginationRequest;
+      const profileId = this.summary.id;
+      let loaded = false;
+      this.timelineLoadingMore = true;
+      this.timelinePaginationError = false;
+
+      return Promise.resolve(action.call(scopedWire))
+        .then(() => {
+          if (request !== this.timelinePaginationRequest || profileId !== this.summary.id) return false;
+
+          loaded = true;
+
+          return true;
+        })
+        .catch(() => {
+          if (request === this.timelinePaginationRequest && profileId === this.summary.id) {
+            this.timelinePaginationError = true;
+          }
+
+          return false;
+        })
+        .finally(() => {
+          if (request !== this.timelinePaginationRequest || profileId !== this.summary.id) return;
+
+          this.timelineLoadingMore = false;
+          if (!loaded) return;
+
+          this.stopTimelinePagination();
+          this.$nextTick?.(() => {
+            const sentinel = this.$root?.querySelector?.('[data-ndb-timeline-page-sentinel]');
+            if (sentinel) this.observeTimelinePageEnd(sentinel, wire);
+          });
+        });
+    },
+
+    retryTimelinePage(wire = this.$wire) {
+      this.timelinePaginationError = false;
+
+      return this.loadNextTimelinePage(wire);
     },
 
     setTimelineFilter(filter) {

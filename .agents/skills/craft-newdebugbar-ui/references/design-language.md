@@ -53,6 +53,7 @@ Do not select the first item merely to fill space. When selection is not a delib
 - Give each view one clear vertical scroll owner.
 - Avoid nested full-height scroll regions.
 - Verify that headers and controls stay reachable at short desktop heights.
+- For a long ordered stream, retain bounded server pages and load the next page automatically when its scroll owner nears the end. Keep loading, failure, retry, and completion feedback in the flow; do not make developers press a repeated “Load more” action.
 
 ### Alignment
 
