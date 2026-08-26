@@ -92,7 +92,7 @@
             <section
                 data-ndb-log-detail-group="related-exception"
                 data-ndb-log-related-exception
-                class="ndb:p-4"
+                class="ndb:bg-transparent ndb:p-4"
                 aria-label="Related exception"
             >
                 <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
@@ -121,7 +121,7 @@
         @endif
 
         @if ($contextFields !== [])
-            <section data-ndb-log-detail-group="context" data-ndb-log-context aria-label="Log context" class="ndb:p-4">
+            <section data-ndb-log-detail-group="context" data-ndb-log-context aria-label="Log context" class="ndb:bg-transparent ndb:p-4">
                 <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Context</h4>
                 <x-newdebugbar::inspector-definition-list class="ndb:mt-2">
                     @foreach ($contextFields as $field)
@@ -163,7 +163,7 @@
             </section>
         @endif
 
-        <section data-ndb-log-detail-group="source" data-ndb-log-source>
+        <section data-ndb-log-detail-group="source" data-ndb-log-source class="ndb:bg-transparent ndb:p-0">
             <h4 class="ndb:px-4 ndb:pt-4 ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Source</h4>
             <x-newdebugbar::inspector-source-panel
                 :frames="\Illuminate\Support\Js::from($stack)"
