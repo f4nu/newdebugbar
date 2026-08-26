@@ -14,12 +14,14 @@
 <article data-ndb-exception-detail="{{ $index }}" x-data="{ exceptionDetailTab: 'source' }">
     <x-newdebugbar::inspector-detail-header>
         <x-slot:title>
-            <h3 class="ndb:min-w-0 ndb:text-sm ndb:font-bold">
-                <code class="ndb:block ndb:break-words ndb:font-mono">{{ $exception['class'] }}</code>
-            </h3>
-            <p class="ndb:mt-1 ndb:text-xs ndb:font-semibold ndb:leading-5">
-                {{ $exception['message'] ?: 'No exception message was captured.' }}
-            </p>
+            <div data-ndb-exception-header-copy class="ndb:min-w-0">
+                <h3 class="ndb:min-w-0 ndb:text-sm ndb:font-bold">
+                    <code class="ndb:block ndb:break-words ndb:font-mono">{{ $exception['class'] }}</code>
+                </h3>
+                <p class="ndb:mt-1 ndb:text-xs ndb:font-semibold ndb:leading-5">
+                    {{ $exception['message'] ?: 'No exception message was captured.' }}
+                </p>
+            </div>
         </x-slot:title>
         <x-slot:aside>
             <x-newdebugbar::inspector-source-link
