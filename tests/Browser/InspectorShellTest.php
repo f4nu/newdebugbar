@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('pins requests before alphabetized active sections and keeps quiet sections in the palette', function () {
+it('alphabetizes active sections and keeps quiet sections in the palette', function () {
     $page = visit('/profiled-rich');
     $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', sectionMode: 'all', favorites: []}))");
 
@@ -26,11 +26,9 @@ it('pins requests before alphabetized active sections and keeps quiet sections i
             (() => {
                 const labels = Array.from(document.querySelectorAll('[data-ndb-section-visible="true"] .ndb-section-label'))
                     .map((label) => label.textContent.trim());
-                const remaining = labels.slice(1);
-                const sorted = [...remaining].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+                const sorted = [...labels].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
 
-                return labels[0] === 'Requests'
-                    && JSON.stringify(remaining) === JSON.stringify(sorted);
+                return JSON.stringify(labels) === JSON.stringify(sorted);
             })()
             JS)
         ->assertAttribute('[data-ndb-section="validation"]', 'data-ndb-section-visible', 'false')

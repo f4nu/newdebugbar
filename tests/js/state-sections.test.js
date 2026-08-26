@@ -4,7 +4,7 @@ import test from 'node:test';
 import { createNewDebugBar, STORAGE_KEY } from '../../resources/js/state.js';
 import { runtime, summary } from './state-test-support.js';
 
-test('pins requests before alphabetized active sections while keeping selected and favorite quiet sections', () => {
+test('alphabetizes active sections while keeping selected and favorite quiet sections', () => {
   const browser = runtime();
   const state = createNewDebugBar({
     sections: [
@@ -21,16 +21,16 @@ test('pins requests before alphabetized active sections while keeping selected a
     .filter((section) => state.isSectionVisible(section))
     .map((section) => section.key);
 
-  assert.deepEqual(visibleKeys(), ['request', 'queries']);
-  assert.equal(state.firstVisibleNonFavoriteKey, 'request');
+  assert.deepEqual(visibleKeys(), ['queries', 'request']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'queries');
   assert.equal(state.isSectionVisible(state.summary.sections[2]), false);
 
   state.selectSection('logs');
-  assert.deepEqual(visibleKeys(), ['request', 'logs', 'queries']);
+  assert.deepEqual(visibleKeys(), ['logs', 'queries', 'request']);
 
   state.toggleFavorite('cache');
-  assert.deepEqual(visibleKeys(), ['cache', 'request', 'logs', 'queries']);
-  assert.equal(state.firstVisibleNonFavoriteKey, 'request');
+  assert.deepEqual(visibleKeys(), ['cache', 'logs', 'queries', 'request']);
+  assert.equal(state.firstVisibleNonFavoriteKey, 'logs');
   assert.deepEqual(JSON.parse(browser.values.get(STORAGE_KEY)), {
     theme: 'system',
     toolbarAnchor: 'bottom',
@@ -44,7 +44,7 @@ test('drops a saved Overview favorite after the UI section is removed', () => {
   state.init();
 
   assert.deepEqual(state.favorites, ['logs']);
-  assert.deepEqual(state.orderedSections.map((section) => section.key), ['logs', 'request', 'queries']);
+  assert.deepEqual(state.orderedSections.map((section) => section.key), ['logs', 'queries', 'request']);
 });
 
 test('favorites can be pinned and reordered', () => {
@@ -64,7 +64,7 @@ test('favorites can be pinned and reordered', () => {
 
   state.toggleFavorite('logs');
   assert.deepEqual(state.favorites, ['queries']);
-  assert.deepEqual(visibleKeys(), ['queries', 'request', 'logs']);
+  assert.deepEqual(visibleKeys(), ['queries', 'logs', 'request']);
 
   state.toggleFavorite('request');
   assert.deepEqual(state.favorites, ['queries', 'request']);

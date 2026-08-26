@@ -713,16 +713,15 @@ export function createNewDebugBar(
       const allSections = this.summary.sections ?? [];
       const byKey = new Map(allSections.map((section) => [section.key, section]));
       const favorites = this.favorites.map((key) => byKey.get(key)).filter(Boolean);
-      const request = this.isFavorite(DEFAULT_SECTION) ? null : byKey.get(DEFAULT_SECTION);
       const sections = allSections
-        .filter((section) => section.key !== DEFAULT_SECTION && !this.isFavorite(section.key))
+        .filter((section) => !this.isFavorite(section.key))
         .sort((left, right) =>
           left.label.localeCompare(right.label, undefined, {
             sensitivity: 'base',
           }),
         );
 
-      return [...favorites, ...(request ? [request] : []), ...sections];
+      return [...favorites, ...sections];
     },
 
     get firstVisibleNonFavoriteKey() {
