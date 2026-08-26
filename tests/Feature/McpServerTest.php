@@ -456,6 +456,18 @@ it('exposes every recorded context section through the bounded section tool', fu
         expect($content['status'])->toBe('ok')
             ->and($content['data']['section'])->toBe($section);
     }
+
+    $checkpoints = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'messages',
+    ])->assertOk());
+
+    expect($checkpoints['data'])
+        ->section->toBe('messages')
+        ->label->toBe('Checkpoints')
+        ->and($checkpoints['data']['payload']['items'][0]['callsite'])
+        ->file->toBe('tests/Support/DefinesTestApplication.php')
+        ->line->toBeGreaterThan(0);
 });
 
 it('keeps captured mail content out of MCP responses', function () {

@@ -700,18 +700,35 @@ it('composes Logs as a shared list-detail workspace', function () {
         ->not->toContain('<x-newdebugbar::popover-surface');
 });
 
-it('composes Messages and Validation as shared diagnostic streams', function () {
+it('composes Checkpoints as an explained chronological diagnostic stream', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/messages.blade.php');
+    $item = file_get_contents($views.'/components/checkpoint-item.blade.php');
 
-    foreach (['messages', 'validation'] as $section) {
-        $contents = file_get_contents($views.'/livewire/sections/'.$section.'.blade.php');
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"')
+        ->toContain('<x-newdebugbar::inspector-explanation')
+        ->toContain('<x-newdebugbar::checkpoint-item')
+        ->toContain('data-ndb-checkpoint-list')
+        ->toContain('https://laravel.com/docs/logging#writing-log-messages')
+        ->not->toContain('<x-newdebugbar::inspector-list-controls');
 
-        expect($contents)
-            ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"')
-            ->toContain('<x-newdebugbar::inspector-list-controls');
-    }
+    expect($item)
+        ->toContain('<x-newdebugbar::inspector-source-link')
+        ->toContain('<x-newdebugbar::inspector-definition-list')
+        ->toContain('<x-newdebugbar::inspector-definition-row')
+        ->toContain('<x-newdebugbar::code-block')
+        ->toContain('data-ndb-checkpoint-connector')
+        ->toContain('data-ndb-checkpoint-context');
+});
 
-    expect(file_get_contents($views.'/livewire/sections/validation.blade.php'))
+it('composes Validation as a shared diagnostic stream', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $contents = file_get_contents($views.'/livewire/sections/validation.blade.php');
+
+    expect($contents)
+        ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
         ->toContain('<x-newdebugbar::validation-entry');
 
     expect(file_get_contents($views.'/components/validation-entry.blade.php'))

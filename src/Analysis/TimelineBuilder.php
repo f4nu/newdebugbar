@@ -133,7 +133,7 @@ final class TimelineBuilder
             'exceptions' => $item['class'] ?? 'Exception',
             'authorization' => trim(ucfirst((string) ($item['result'] ?? 'checked')).' '.($item['ability'] ?? 'authorization')),
             'validation' => $this->validationLabel($item),
-            'messages' => $item['label'] ?? 'Developer message',
+            'messages' => $item['label'] ?? 'Checkpoint',
             default => $item['name'] ?? $item['event'] ?? $item['operation'] ?? ucfirst($section),
         };
 

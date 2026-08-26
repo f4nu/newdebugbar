@@ -313,7 +313,7 @@ it('keeps Events selection focused with one mobile scroll owner', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('presents Laravel decisions messages and source context without editor links', function () {
+it('presents Laravel decisions checkpoints and source context without editor links', function () {
     $page = visit('/profiled-context')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertMissing('[data-ndb-findings]');

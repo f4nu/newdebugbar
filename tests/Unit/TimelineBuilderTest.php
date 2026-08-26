@@ -65,7 +65,7 @@ it('keeps point events distinct and visualizes recorded durations', function () 
         ->and(mb_strlen($timeline[3]['label']))->toBeLessThanOrEqual(140);
 });
 
-it('names authorization validation and developer message activity with useful evidence', function () {
+it('names authorization validation and checkpoint activity with useful evidence', function () {
     $timeline = collect((new TimelineBuilder)->build([
         'metrics' => ['duration_ms' => 25],
         'sections' => [
@@ -79,16 +79,21 @@ it('names authorization validation and developer message activity with useful ev
                 'fields' => ['email', 'name', 'dates', 'guests'],
                 'at_ms' => 10,
             ]]]],
-            'messages' => ['payload' => ['items' => [[
-                'label' => 'Checkout checkpoint',
-                'at_ms' => 15,
-            ]]]],
+            'messages' => ['payload' => ['items' => [
+                [
+                    'label' => 'Checkout checkpoint',
+                    'at_ms' => 15,
+                ],
+                [
+                    'at_ms' => 16,
+                ],
+            ]]],
         ],
     ]));
 
     expect($timeline->firstWhere('section', 'authorization')['label'])->toBe('Denied publish-itinerary')
         ->and($timeline->firstWhere('section', 'validation')['label'])->toBe('Validation failed: email, name, dates and 1 more')
-        ->and($timeline->firstWhere('section', 'messages')['label'])->toBe('Checkout checkpoint');
+        ->and($timeline->where('section', 'messages')->pluck('label')->all())->toBe(['Checkout checkpoint', 'Checkpoint']);
 });
 
 it('keeps timeline geometry bounded when events exceed the reported duration', function () {

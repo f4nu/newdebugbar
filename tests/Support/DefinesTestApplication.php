@@ -432,6 +432,16 @@ trait DefinesTestApplication
             return response('<!doctype html><html><body>'.$view.'</body></html>');
         });
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-checkpoints', function () {
+            Debug::message('Checkout started', [
+                'cart_id' => 42,
+                'token' => 'private-checkpoint-token',
+            ]);
+            Debug::message('Checkout view ready');
+
+            return response('<!doctype html><html><body><main>Checkout checkpoints</main></body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-authorization-rich', function () {
             $profile = new ProfiledModel;
             $profile->setRawAttributes(['id' => 84, 'name' => 'Kyoto autumn planning profile'], true);
