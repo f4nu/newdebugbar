@@ -14,7 +14,7 @@ it('presents model activity as a persistent two column inspector', function () {
         ->assertSee('Review Eloquent retrievals, writes, repeated records, and application sources.')
         ->assertSee('Retrieved')
         ->assertSee('Writes')
-        ->assertSee('Extra')
+        ->assertSee('Reloads')
         ->assertVisible('[data-ndb-model-search]')
         ->assertVisible('[data-ndb-model-summary]')
         ->assertAttribute('[data-ndb-model-group]:first-of-type', 'aria-pressed', 'false')
@@ -155,7 +155,7 @@ it('presents model activity as a persistent two column inspector', function () {
                     && ! getComputedStyle(modelClass).fontFamily.includes('JetBrains Mono')
                     && detailMetadata.every((value) => ! getComputedStyle(value).fontFamily.includes('JetBrains Mono'))
                     && Number.parseFloat(getComputedStyle(metadataList).columnGap) >= 32
-                    && headerText.includes('Writes')
+                    && ! headerText.includes('Writes')
                     && ! headerText.includes('Logical writes')
                     && ! ['Retrieved', 'Extra retrievals', 'Identified records', 'First', 'Last', 'Source']
                         .some((label) => headerText.includes(label))
@@ -301,15 +301,14 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
         ->assertDontSeeIn('[data-ndb-model-write-table]', 'Time')
         ->assertScript(<<<'JS'
             (() => {
-                const metadata = [...document.querySelectorAll('[data-ndb-model-header] dl > div')];
-                const writes = metadata.find((fact) => fact.querySelector('dt').textContent.trim() === 'Writes');
+                const header = document.querySelector('[data-ndb-model-header]');
                 const table = document.querySelector('[data-ndb-model-write-table]');
                 const heading = [...table.querySelector('div > div:first-child').children];
                 const tableGrid = heading[0].parentElement.parentElement;
                 const rows = [...table.querySelectorAll('[data-ndb-model-write-operation]')];
                 const cells = [...rows[0].children];
 
-                return writes?.querySelector('dd').textContent.trim() === '1'
+                return ! header.textContent.includes('Writes')
                     && table.closest('[data-ndb-model-detail-panel="records"]') !== null
                     && getComputedStyle(tableGrid).marginTop === '12px'
                     && heading.map((cell) => cell.textContent.trim()).join('|') === 'Operation|Record|Source'
@@ -341,7 +340,7 @@ it('bounds record tables and explains unavailable identifiers', function () {
         ->click('[data-ndb-model-detail-tab="records"]')
         ->assertVisible('[data-ndb-model-missing-identifiers]')
         ->assertSee('A dash means the model identifier was unavailable.')
-        ->assertSee('These retrievals are excluded from the extra-retrieval count.')
+        ->assertSee('These retrievals are excluded from the reload count.')
         ->assertNoJavaScriptErrors();
 });
 
@@ -354,16 +353,18 @@ it('shows application sources without related query controls', function () {
         ->assertVisible('[data-ndb-model-detail-panel="source"]')
         ->assertVisible('[data-ndb-model-source]:first-of-type')
         ->assertDontSee('Start with locations responsible for the most model activity.')
-        ->assertSeeIn('[data-ndb-model-sources]', 'Where this model was used')
-        ->assertSeeIn('[data-ndb-model-sources]', 'Each row points to application code that loaded or changed this model.')
+        ->assertMissing('[data-ndb-model-sources] [data-ndb-inspector-explanation]')
         ->assertScript(<<<'JS'
             (() => {
                 const sources = document.querySelector('[data-ndb-model-sources]');
                 const firstSource = document.querySelector('[data-ndb-model-source]');
-                const sourceList = firstSource.parentElement;
+                const sourceList = document.querySelector('[data-ndb-model-source-list]');
+                const heading = document.querySelector('[data-ndb-model-source-heading]');
 
-                return sources.children[1] === sourceList
-                    && getComputedStyle(sourceList).marginTop === '12px';
+                return sources.firstElementChild === sourceList
+                    && [...heading.children].map((cell) => cell.textContent.trim()).join('|') === 'Source|Activity'
+                    && firstSource.parentElement.parentElement === sourceList
+                    && getComputedStyle(sourceList).marginTop === '0px';
             })()
             JS)
         ->assertDontSee('Related queries')

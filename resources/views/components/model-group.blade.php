@@ -22,7 +22,7 @@
     :class="modelSelected === {{ $index }}
         ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
         : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-    class="ndb:grid ndb:h-auto ndb:w-full ndb:min-w-0 ndb:cursor-pointer ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:gap-y-2 ndb:border-l-0 ndb:bg-transparent ndb:px-3 ndb:py-3 ndb:text-left ndb:text-xs ndb:text-zinc-950 ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-white ndb:sm:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3rem] ndb:sm:gap-x-2"
+    class="ndb:grid ndb:h-auto ndb:w-full ndb:min-w-0 ndb:cursor-pointer ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:gap-y-2 ndb:border-l-0 ndb:bg-transparent ndb:px-3 ndb:py-3 ndb:text-left ndb:text-xs ndb:text-zinc-950 ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-white ndb:sm:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3.75rem] ndb:sm:gap-x-2"
 >
     <span class="ndb:col-start-1 ndb:row-start-1 ndb:min-w-0">
         <span data-ndb-model-name class="ndb:block ndb:truncate ndb:text-xs ndb:font-bold">{{ $shortName }}</span>
@@ -44,7 +44,7 @@
             <strong class="ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-300">{{ number_format($changeCount) }}</strong>
         </span>
         <span>
-            <span class="ndb:text-zinc-400">Extra</span>
+            <span class="ndb:text-zinc-400">Reloads</span>
             <strong
                 @class([
                     'ndb:font-semibold ndb:tabular-nums',

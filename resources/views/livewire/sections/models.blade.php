@@ -57,12 +57,12 @@
                     <div
                         data-ndb-model-list-heading
                         aria-hidden="true"
-                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3rem] ndb:gap-2 ndb:border-l-0 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95 ndb:sm:grid"
+                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3.75rem] ndb:gap-2 ndb:border-l-0 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95 ndb:sm:grid"
                     >
                         <span>Model</span>
                         <span class="ndb:text-right">Retrieved</span>
                         <span class="ndb:text-right">Writes</span>
-                        <span class="ndb:text-right" title="Extra retrievals of identified records">Extra</span>
+                        <span class="ndb:text-right" title="Loads after the first for identified records">Reloads</span>
                     </div>
 
                     @foreach ($modelGroups as $index => $group)

@@ -83,12 +83,6 @@
                 <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Table</dt>
                 <dd class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300">{{ $table }}</dd>
             </div>
-            <div class="ndb:min-w-0">
-                <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Writes</dt>
-                <dd class="ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-300">
-                    {{ number_format($changeCount) }}
-                </dd>
-            </div>
         </x-slot:metadata>
     </x-newdebugbar::inspector-detail-header>
 
@@ -196,7 +190,7 @@
                             class="ndb:mt-2 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
                         >
                             A dash means the model identifier was unavailable. These retrievals are excluded from the
-                            extra-retrieval count.
+                            reload count.
                         </p>
                     @endif
                 </section>
@@ -276,62 +270,73 @@
                 data-ndb-model-sources
                 class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
             >
-                <x-newdebugbar::inspector-explanation
-                    title="Where this model was used"
-                    description="Each row points to application code that loaded or changed this model. Activity shows how many loads and writes came from that place."
-                />
-
                 @if (($group['sources'] ?? []) !== [])
-                    <div class="ndb:mt-3 ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                        @foreach ($group['sources'] as $source)
-                            @php
-                                $callsite = $source['callsite'];
-                                $sourcePath = $callsite['file'].':'.$callsite['line'];
-                                $isCompiledView = ($callsite['kind'] ?? null) === 'compiled_view';
-                                $templateFile = is_string($callsite['template_file'] ?? null) ? $callsite['template_file'] : null;
-                            @endphp
-                            <article
-                                data-ndb-model-source
-                                class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:border-l-0 ndb:bg-transparent ndb:px-0 ndb:py-3 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white ndb:sm:grid-cols-[minmax(0,1fr)_10rem] ndb:sm:items-start"
-                            >
-                                <div class="ndb:min-w-0">
-                                    @if ($isCompiledView && $templateFile !== null)
-                                        <p
-                                            data-ndb-model-compiled-source
-                                            class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
-                                        >
-                                            Blade template
+                    <div
+                        data-ndb-model-source-list
+                        class="ndb:border-y ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
+                    >
+                        <div
+                            data-ndb-model-source-heading
+                            aria-hidden="true"
+                            class="ndb:hidden ndb:grid-cols-[minmax(0,1fr)_10rem] ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:sm:grid"
+                        >
+                            <span>Source</span>
+                            <span class="ndb:text-right">Activity</span>
+                        </div>
+
+                        <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+                            @foreach ($group['sources'] as $source)
+                                @php
+                                    $callsite = $source['callsite'];
+                                    $sourcePath = $callsite['file'].':'.$callsite['line'];
+                                    $isCompiledView = ($callsite['kind'] ?? null) === 'compiled_view';
+                                    $templateFile = is_string($callsite['template_file'] ?? null) ? $callsite['template_file'] : null;
+                                @endphp
+                                <article
+                                    data-ndb-model-source
+                                    class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:border-l-0 ndb:bg-transparent ndb:px-0 ndb:py-3 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white ndb:sm:grid-cols-[minmax(0,1fr)_10rem] ndb:sm:items-start ndb:sm:gap-3"
+                                >
+                                    <div class="ndb:min-w-0">
+                                        @if ($isCompiledView && $templateFile !== null)
+                                            <p
+                                                data-ndb-model-compiled-source
+                                                class="ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400"
+                                            >
+                                                Blade template
+                                            </p>
+                                            <p
+                                                data-ndb-model-source-path="template"
+                                                class="ndb:mt-0.5 ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300"
+                                            >
+                                                {{ $templateFile }}
+                                            </p>
+                                            <p class="ndb:mt-2 ndb:text-[11px] ndb:text-zinc-400">Compiled location</p>
+                                            <p
+                                                data-ndb-model-source-path="compiled"
+                                                class="ndb:mt-0.5 ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                            >
+                                                {{ $sourcePath }}
+                                            </p>
+                                        @else
+                                            <p
+                                                data-ndb-model-source-path="application"
+                                                class="ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300"
+                                            >
+                                                {{ $sourcePath }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                    <div class="ndb:sm:text-right">
+                                        <p class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:hidden">
+                                            Activity
                                         </p>
-                                        <p
-                                            data-ndb-model-source-path="template"
-                                            class="ndb:mt-0.5 ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300"
-                                        >
-                                            {{ $templateFile }}
+                                        <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-600 ndb:dark:text-zinc-300 ndb:sm:mt-0">
+                                            {{ $formatActivity((int) ($source['retrieval_count'] ?? 0), (int) ($source['change_count'] ?? 0)) }}
                                         </p>
-                                        <p class="ndb:mt-2 ndb:text-[11px] ndb:text-zinc-400">Compiled location</p>
-                                        <p
-                                            data-ndb-model-source-path="compiled"
-                                            class="ndb:mt-0.5 ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                        >
-                                            {{ $sourcePath }}
-                                        </p>
-                                    @else
-                                        <p
-                                            data-ndb-model-source-path="application"
-                                            class="ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300"
-                                        >
-                                            {{ $sourcePath }}
-                                        </p>
-                                    @endif
-                                </div>
-                                <div class="ndb:sm:text-right">
-                                    <p class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Activity</p>
-                                    <p class="ndb:mt-0.5 ndb:text-[11px] ndb:text-zinc-600 ndb:dark:text-zinc-300">
-                                        {{ $formatActivity((int) ($source['retrieval_count'] ?? 0), (int) ($source['change_count'] ?? 0)) }}
-                                    </p>
-                                </div>
-                            </article>
-                        @endforeach
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
                     </div>
 
                     @if ((int) ($group['hidden_source_count'] ?? 0) > 0)
