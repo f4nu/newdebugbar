@@ -7,11 +7,6 @@ final class HttpClientAnalyzer
 {
     public function __construct(private readonly float $slowRequestMs = 250) {}
 
-    public function slowThreshold(): float
-    {
-        return $this->slowRequestMs;
-    }
-
     /**
      * @param  list<array<string, mixed>>  $requests
      * @return array{summary: array<string, int|float>, items: list<array<string, mixed>>}

@@ -130,12 +130,11 @@ it('does not let a nested runtime event finish its parent profile', function () 
 
     expect($runtime->start('queue', ProfiledJob::class, ownerKey: 'parent'))->toBeTrue()
         ->and($runtime->finish(ownerKey: 'nested'))->toBeNull()
-        ->and($runtime->ownsProfile())->toBeTrue()
         ->and(app(ProfileManager::class)->isCollecting())->toBeTrue();
 
     $id = $runtime->finish(ownerKey: 'parent');
 
     expect($id)->toBeString()
-        ->and($runtime->ownsProfile())->toBeFalse()
+        ->and(app(ProfileManager::class)->isCollecting())->toBeFalse()
         ->and(app(ProfileStore::class)->get($id))->profile_type->toBe('queue');
 });

@@ -129,19 +129,6 @@ final class ProfileManager
     }
 
     /** @return array<string, mixed> */
-    public function finish(Request $request, ?Response $response = null): array
-    {
-        try {
-            $this->completeRequest($request, $response);
-            $this->responseDurationMs ??= $this->elapsedMilliseconds();
-
-            return $this->buildProfile('complete');
-        } finally {
-            $this->collecting = false;
-        }
-    }
-
-    /** @return array<string, mixed> */
     public function checkpoint(Request $request, ?Response $response = null): array
     {
         $this->completeRequest($request, $response);

@@ -60,9 +60,4 @@ final class RuntimeProfiler
 
         return $this->finish(1, $ownerKey);
     }
-
-    public function ownsProfile(): bool
-    {
-        return $this->ownsProfile;
-    }
 }
