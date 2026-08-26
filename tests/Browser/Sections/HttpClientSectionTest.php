@@ -13,6 +13,9 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
         ->assertScript('document.querySelector("[data-ndb-http-client-attention]") === null')
         ->assertValue('[data-ndb-http-client-filter]', 'all')
         ->assertAttribute('[data-ndb-http-client-detail-tab="response"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-http-client-detail-panel="request"]')
+        ->assertMissing('[data-ndb-http-client-detail-panel="source"]')
         ->assertScript('document.querySelectorAll("[data-ndb-http-client-item]:not([hidden])").length', 7)
         ->assertScript(<<<'JS'
             (() => {
@@ -109,17 +112,15 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
                     && responseFacts.textContent.includes('Response body')
                     && !responseFacts.textContent.includes('Host')
                     && !responseFacts.textContent.includes('Source')
-                    && requestFacts.textContent.includes('Host')
-                    && requestFacts.textContent.includes('Request body')
-                    && !requestFacts.textContent.includes('Status')
-                    && sourceFacts.textContent.includes('Request initiated at')
+                    && requestFacts === null
+                    && sourceFacts === null
                     && header.querySelectorAll('button').length === 1
                     && !getComputedStyle(headerPath).fontFamily.includes('JetBrains Mono')
                     && verticallyAligned([headerMethod, headerPath, urlAction])
                     && urlAction.textContent.trim() === 'Copy URL'
                     && urlIcon.querySelectorAll('path').length === 2
                     && urlIcon.querySelector('rect') === null
-                    && document.querySelectorAll('[data-ndb-http-client-copy-curl]').length === 1
+                    && document.querySelectorAll('[data-ndb-http-client-copy-curl]').length === 0
                     && detailTabs.map((tab) => tab.textContent.trim()).join('|') === 'Response|Request|Source'
                     && detailTabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
                     && detailTabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
@@ -177,7 +178,12 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
         ->wait(0.05)
         ->click('[data-ndb-http-client-detail-tab="request"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="request"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-http-client-detail-panel="response"]')
+        ->assertMissing('[data-ndb-http-client-detail-panel="source"]')
         ->assertSee('Request body')
+        ->assertSeeIn('[data-ndb-http-client-request-facts]', 'Host')
+        ->assertSeeIn('[data-ndb-http-client-request-facts]', 'Request body')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-host]").textContent.trim() === "api.error.test"')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-panel=\"request\"] code[data-ndb-language=\"json\"][data-highlighted]") !== null')
         ->click('[data-ndb-http-client-copy-curl]')
@@ -215,11 +221,18 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
         ->assertScript('window.newdebugbarFallbackClipboard === window.newdebugbarExpectedClipboard.curl')
         ->click('[data-ndb-http-client-detail-tab="response"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="response"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-http-client-detail-panel="request"]')
+        ->assertMissing('[data-ndb-http-client-detail-panel="source"]')
         ->assertSee('Response body')
         ->assertSee('Service unavailable.')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-panel=\"response\"] code[data-ndb-language=\"json\"][data-highlighted]") !== null')
         ->click('[data-ndb-http-client-detail-tab="source"]')
         ->assertVisible('[data-ndb-http-client-detail-panel="source"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-http-client-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-http-client-detail-panel="request"]')
+        ->assertMissing('[data-ndb-http-client-detail-panel="response"]')
+        ->assertSeeIn('[data-ndb-http-client-source-facts]', 'Request initiated at')
         ->assertScript('document.querySelector("[data-ndb-http-client-detail-source]").textContent.includes("tests/Support/DefinesTestApplication.php")')
         ->assertSee('tests/Support/DefinesTestApplication.php')
         ->assertScript(<<<'JS'
@@ -229,7 +242,7 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
                 const stack = document.querySelector('[data-ndb-http-client-detail-panel="source"] [data-ndb-inspector-stack]');
                 const action = document.querySelector('[data-ndb-http-client-copy-url]');
                 const functionCall = stack.querySelector('li code');
-                const stackPath = stack.querySelector('li > span:last-child > span');
+                const stackPath = stack.querySelector('[data-ndb-inspector-source-link] > span');
 
                 return fact !== null
                     && stack !== null

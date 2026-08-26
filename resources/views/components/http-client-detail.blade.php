@@ -20,23 +20,30 @@
             <x-newdebugbar::http-client-detail-tabs />
 
             <div>
-                <x-newdebugbar::http-client-request-panel />
-                <x-newdebugbar::http-client-response-panel />
-                <x-newdebugbar::inspector-source-panel
-                    frames="selectedHttpClientRequest.stack ?? []"
-                    columns="1"
-                    data-ndb-http-client-detail-panel="source"
-                    data-ndb-http-client-source-facts
-                    x-show.important="httpClientDetailTab === 'source'"
-                >
-                    <x-newdebugbar::inspector-source-fact label="Request initiated at">
-                        <x-slot:value
-                            data-ndb-http-client-detail-source
-                            ::title="selectedHttpClientRequest.callsite_label"
-                            x-text="selectedHttpClientRequest.callsite_label"
-                        ></x-slot:value>
-                    </x-newdebugbar::inspector-source-fact>
-                </x-newdebugbar::inspector-source-panel>
+                <template x-if="httpClientDetailTab === 'response'">
+                    <x-newdebugbar::http-client-response-panel />
+                </template>
+
+                <template x-if="httpClientDetailTab === 'request'">
+                    <x-newdebugbar::http-client-request-panel />
+                </template>
+
+                <template x-if="httpClientDetailTab === 'source'">
+                    <x-newdebugbar::inspector-source-panel
+                        frames="selectedHttpClientRequest.stack ?? []"
+                        columns="1"
+                        data-ndb-http-client-detail-panel="source"
+                        data-ndb-http-client-source-facts
+                    >
+                        <x-newdebugbar::inspector-source-fact label="Request initiated at">
+                            <x-slot:value
+                                data-ndb-http-client-detail-source
+                                ::title="selectedHttpClientRequest.callsite_label"
+                                x-text="selectedHttpClientRequest.callsite_label"
+                            ></x-slot:value>
+                        </x-newdebugbar::inspector-source-fact>
+                    </x-newdebugbar::inspector-source-panel>
+                </template>
             </div>
         </div>
     </template>

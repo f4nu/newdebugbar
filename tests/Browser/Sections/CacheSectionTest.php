@@ -28,6 +28,9 @@ it('filters selects and inspects rich cache diagnostics', function () {
         ->assertScript('!document.querySelector("[data-ndb-cache-attention]").textContent.includes("miss rate")')
         ->assertValue('[data-ndb-cache-filter]', 'all')
         ->assertAttribute('[data-ndb-cache-detail-tab="overview"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-cache-detail-panel="raw"]')
+        ->assertMissing('[data-ndb-cache-detail-panel="source"]')
         ->assertScript('document.querySelector("[data-ndb-cache-detail-panel=overview] dd pre").textContent.trim()', 'stale option')
         ->assertScript('document.querySelectorAll("[data-ndb-cache-item]:not([hidden])").length', 17)
         ->assertScript(<<<'JS'
@@ -183,6 +186,9 @@ it('filters selects and inspects rich cache diagnostics', function () {
         ->click('[data-ndb-cache-metadata] button')
         ->assertAttribute('[data-ndb-cache-detail-tab="source"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-cache-detail-panel="source"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-cache-detail-panel="overview"]')
+        ->assertMissing('[data-ndb-cache-detail-panel="raw"]')
         ->assertSee('tests/Support/DefinesTestApplication.php')
         ->assertScript(<<<'JS'
             (() => {
@@ -191,7 +197,7 @@ it('filters selects and inspects rich cache diagnostics', function () {
                 const stack = panel.querySelector('[data-ndb-inspector-stack]');
                 const source = fact.querySelector('dd > span');
                 const functionCall = stack.querySelector('li code');
-                const stackPath = stack.querySelector('li > span:last-child > span');
+                const stackPath = stack.querySelector('[data-ndb-inspector-source-link] > span');
 
                 return fact !== null
                     && stack !== null
@@ -205,6 +211,9 @@ it('filters selects and inspects rich cache diagnostics', function () {
             JS)
         ->click('[data-ndb-cache-detail-tab="raw"]')
         ->assertVisible('[data-ndb-cache-detail-panel="raw"]')
+        ->assertScript('document.querySelectorAll("[data-ndb-cache-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-cache-detail-panel="overview"]')
+        ->assertMissing('[data-ndb-cache-detail-panel="source"]')
         ->assertSee('Captured collector fields only')
         ->assertSee('Values are bounded and sensitive fields are redacted')
         ->assertSee('not retained')
