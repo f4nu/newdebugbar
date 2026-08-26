@@ -51,20 +51,20 @@
                 class="ndb:relative ndb:flex ndb:min-h-11 ndb:min-w-0 ndb:flex-col ndb:items-center ndb:justify-center ndb:px-0.5"
             >
         @endif
-            <span
-                data-ndb-mobile-toolbar-summary="{{ $metric['key'] }}"
-                class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
-                x-text="{{ $metric['value'] }}"
-            ></span>
-            <span
-                data-ndb-mobile-toolbar-metric-label="{{ $metric['key'] }}"
-                class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:leading-[14px] ndb:uppercase ndb:tracking-normal ndb:text-zinc-400"
-                ><span class="ndb:min-[420px]:hidden">{{ $metric['shortLabel'] }}</span
-                ><span class="ndb:hidden ndb:min-[420px]:inline">{{ $metric['label'] }}</span></span>
+        <span
+            data-ndb-mobile-toolbar-summary="{{ $metric['key'] }}"
+            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
+            x-text="{{ $metric['value'] }}"
+        ></span>
+        <span
+            data-ndb-mobile-toolbar-metric-label="{{ $metric['key'] }}"
+            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:leading-[14px] ndb:uppercase ndb:tracking-normal ndb:text-zinc-400"
+            ><span class="ndb:min-[420px]:hidden">{{ $metric['shortLabel'] }}</span
+            ><span class="ndb:hidden ndb:min-[420px]:inline">{{ $metric['label'] }}</span></span>
         @if ($metric['section'])
-            </button>
+        </button>
         @else
-            </div>
+        </div>
         @endif
     @endforeach
 </div>
