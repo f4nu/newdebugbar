@@ -17,6 +17,7 @@ it('presents repeated queries as one shared list detail record', function () {
                 const sql = root.querySelector('[data-ndb-query-sql][data-highlighted]');
                 const list = root.querySelector('[data-ndb-query-list]');
                 const detail = root.querySelector('[data-ndb-query-detail]');
+                const detailHeader = root.querySelector('[data-ndb-query-detail-header]');
                 const search = root.querySelector('[data-ndb-query-search]');
                 const searchIcon = search?.parentElement.querySelector('svg');
 
@@ -27,6 +28,9 @@ it('presents repeated queries as one shared list detail record', function () {
                     && sql?.querySelector('.hljs-keyword') !== null
                     && root.querySelectorAll('[data-ndb-query-detail-panel]').length === 1
                     && root.querySelector('[data-ndb-query-detail-panel="query"]') !== null
+                    && root.querySelector('[data-ndb-query-list-source]') === null
+                    && detailHeader?.querySelector('dl') === null
+                    && detailHeader?.getBoundingClientRect().height <= 54
                     && root.querySelector('details') === null
                     && getComputedStyle(list).overflowY === 'auto'
                     && getComputedStyle(detail).overflowY === 'auto'
@@ -143,10 +147,9 @@ it('runs EXPLAIN for the selected repeated execution', function () {
         ->waitForText('Repeated query pattern')
         ->select('[data-ndb-query-execution-select]', '2')
         ->click('[data-ndb-query-detail-tab="explain"]')
-        ->assertVisible('[data-ndb-query-explain-action]')
-        ->click('[data-ndb-query-explain-action]')
         ->waitForText('EXPLAIN QUERY PLAN')
         ->assertVisible('[data-ndb-query-explain-result]')
+        ->assertVisible('[data-ndb-query-explain-action]')
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.querySelector('[data-ndb-queries]'));
@@ -168,7 +171,6 @@ it('keeps an EXPLAIN failure visible with a recovery path', function () {
         ->fill('[data-ndb-query-search]', 'explain_failure_probe')
         ->waitForText('1 shown')
         ->click('[data-ndb-query-detail-tab="explain"]')
-        ->click('[data-ndb-query-explain-action]')
         ->waitForText('The database could not explain this query.')
         ->assertVisible('[data-ndb-query-explain-error]')
         ->assertSee('copy the full query from Query')

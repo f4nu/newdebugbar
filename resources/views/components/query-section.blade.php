@@ -35,9 +35,6 @@
             'stack' => $stack,
             'source_available' => $sourceAvailable,
             'source_label' => $sourceAvailable ? $file.':'.$line : 'Source unavailable',
-            'source_short_label' => $sourceAvailable
-                ? basename(str_replace('\\', '/', $file)).':'.$line
-                : 'Source unavailable',
             'query_type' => $queryType,
             'duration_ms' => round((float) ($query['duration_ms'] ?? 0), 2),
             'query_time_percent' => round((float) ($query['query_time_percent'] ?? 0), 1),
@@ -234,7 +231,6 @@
                     </div>
 
                     @foreach ($queryRecords as $record)
-                        @php($firstExecution = $record['executions'][0])
                         <button
                             type="button"
                             wire:key="query-record-{{ $record['key'] }}"
@@ -275,17 +271,12 @@
                                     title="{{ $record['sql'] }}"
                                     class="ndb:block ndb:max-h-10 ndb:overflow-hidden ndb:break-words ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-zinc-800 ndb:dark:text-zinc-200"
                                 >{{ $record['sql'] }}</code>
-                                <span class="ndb:mt-0.5 ndb:grid ndb:min-w-0 ndb:grid-cols-[3rem_4.5rem_minmax(0,1fr)] ndb:gap-2 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                <span class="ndb:mt-0.5 ndb:grid ndb:min-w-0 ndb:grid-cols-[3rem_minmax(0,1fr)] ndb:gap-2 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                     <span class="ndb:truncate">{{ ucfirst($record['query_type']) }}</span>
                                     <span
                                         class="ndb:truncate"
                                         title="{{ $record['connection'] }}"
                                     >{{ $record['connection'] }}</span>
-                                    <span
-                                        data-ndb-query-list-source
-                                        title="{{ $firstExecution['source_label'] }}"
-                                        class="ndb:truncate"
-                                    >{{ $firstExecution['source_short_label'] }}</span>
                                 </span>
                             </span>
 

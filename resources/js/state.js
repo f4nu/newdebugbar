@@ -778,6 +778,13 @@ export function createNewDebugBar(
       return executions.find((query) => query.execution === this.querySelectedExecution) ?? executions[0] ?? null;
     },
 
+    get selectedQueryHasSource() {
+      return (
+        this.selectedQuery?.source_available === true ||
+        (Array.isArray(this.selectedQuery?.stack) && this.selectedQuery.stack.length > 0)
+      );
+    },
+
     get selectedQueueActivity() {
       return this.queueActivities.find((activity) => activity.execution === this.queueSelected) ?? null;
     },
@@ -3510,12 +3517,14 @@ export function createNewDebugBar(
       if (!this.selectedQueryRecord?.executions?.some((query) => query.execution === execution)) return;
 
       this.querySelectedExecution = execution;
+      if (this.queryDetailTab === 'source' && !this.selectedQueryHasSource) this.queryDetailTab = 'query';
       this.syncQueryExplain();
       this.$nextTick?.(() => browser.highlight?.());
     },
 
     setQueryDetailTab(tab) {
       if (!['query', 'source', 'explain'].includes(tab)) return;
+      if (tab === 'source' && !this.selectedQueryHasSource) tab = 'query';
 
       this.queryDetailTab = tab;
       this.$nextTick?.(() => {
@@ -3524,25 +3533,49 @@ export function createNewDebugBar(
       });
     },
 
+    openQueryExplain(wire) {
+      this.setQueryDetailTab('explain');
+
+      return this.runQueryExplain(wire);
+    },
+
+    async runQueryExplain(wire, force = false) {
+      if (typeof wire?.explainQuery !== 'function') return;
+
+      const execution = this.beginQueryExplain(force);
+      if (execution === null) return;
+
+      try {
+        await wire.explainQuery(execution);
+      } catch {
+        this.failQueryExplain(execution);
+      }
+    },
+
     syncQueryExplain() {
       this.queryExplain = this.selectedQuery?.explain ?? null;
       this.queryExplainError = this.selectedQuery?.explain_error ?? null;
-      this.queryExplainLoading = false;
+      this.queryExplainLoading = this.selectedQuery?.explain_loading === true;
       this.queryExplainExecution = this.selectedQuery?.execution ?? null;
       this.queryExplainScrollTop = null;
     },
 
-    beginQueryExplain() {
-      if (!this.selectedQuery?.explain_available) return null;
+    beginQueryExplain(force = false) {
+      const query = this.selectedQuery;
+      if (!query?.explain_available || query.explain_loading === true) return null;
+      if (!force && (query.explain != null || query.explain_error != null)) return null;
 
       this.queryDetailTab = 'explain';
+      query.explain = null;
+      query.explain_error = null;
+      query.explain_loading = true;
       this.queryExplain = null;
       this.queryExplainError = null;
       this.queryExplainLoading = true;
-      this.queryExplainExecution = this.selectedQuery.execution;
+      this.queryExplainExecution = query.execution;
       this.queryExplainScrollTop = this.$refs?.queryDetail?.scrollTop ?? null;
 
-      return this.selectedQuery.execution;
+      return query.execution;
     },
 
     receiveQueryExplain(detail = {}) {
@@ -3555,6 +3588,7 @@ export function createNewDebugBar(
 
           query.explain = detail.explain ?? null;
           query.explain_error = detail.error ?? null;
+          query.explain_loading = false;
         }),
       );
 
@@ -3571,7 +3605,23 @@ export function createNewDebugBar(
       });
     },
 
-    failQueryExplain() {
+    failQueryExplain(execution = this.queryExplainExecution) {
+      const normalizedExecution = Number(execution);
+      if (!Number.isFinite(normalizedExecution)) return;
+
+      this.queryRecords.forEach((record) =>
+        (record.executions ?? []).forEach((query) => {
+          if (query.execution !== normalizedExecution) return;
+
+          query.explain = null;
+          query.explain_error = 'EXPLAIN could not be completed.';
+          query.explain_loading = false;
+        }),
+      );
+
+      if (normalizedExecution !== this.querySelectedExecution) return;
+
+      this.queryExplain = null;
       this.queryExplainLoading = false;
       this.queryExplainError = 'EXPLAIN could not be completed.';
     },

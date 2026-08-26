@@ -14,53 +14,56 @@
 
     <template x-if="selectedQueryRecord && selectedQuery">
         <div data-ndb-query-active-detail class="ndb:flex ndb:flex-col">
-            <x-newdebugbar::inspector-detail-header layout="wrap" data-ndb-query-detail-header>
+            <x-newdebugbar::inspector-detail-header data-ndb-query-detail-header>
                 <x-slot:title>
-                    <h3
-                        data-ndb-query-detail-title
-                        class="ndb:text-sm ndb:font-bold ndb:leading-5"
-                        x-text="
-                            selectedQueryRecord.repeated
-                                ? 'Repeated query pattern'
-                                : `Query #${selectedQuery.execution}`
-                        "
-                    ></h3>
+                    <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2">
+                        <h3
+                            data-ndb-query-detail-title
+                            class="ndb:text-sm ndb:font-bold ndb:leading-5"
+                            x-text="
+                                selectedQueryRecord.repeated
+                                    ? 'Repeated query pattern'
+                                    : `Query #${selectedQuery.execution}`
+                            "
+                        ></h3>
+                        <span
+                            x-show.important="selectedQueryRecord.repeated"
+                            class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            x-text="selectedQueryRecord.count + ' runs'"
+                        ></span>
+                    </div>
                 </x-slot:title>
-                <x-slot:aside></x-slot:aside>
-                <x-slot:metadata>
-                    <div x-show.important="selectedQueryRecord.repeated" class="ndb:flex ndb:items-baseline ndb:gap-1">
-                        <dt class="ndb:font-semibold">Executions</dt>
-                        <dd class="ndb:font-semibold ndb:tabular-nums" x-text="selectedQueryRecord.count"></dd>
-                    </div>
-                    <div
-                        x-show.important="selectedQuery.source_available"
-                        class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1"
-                    >
-                        <dt class="ndb:font-semibold">Source</dt>
-                        <dd class="ndb:min-w-0">
-                            <x-newdebugbar::inspector-source-link
-                                ::title="selectedQuery.source_label"
-                                @click="setQueryDetailTab('source')"
-                            >
-                                <x-slot:value x-text="selectedQuery.source_short_label"></x-slot:value>
-                            </x-newdebugbar::inspector-source-link>
-                        </dd>
-                    </div>
-                </x-slot:metadata>
             </x-newdebugbar::inspector-detail-header>
 
             <x-newdebugbar::inspector-detail-tabs label="Query evidence">
-                @foreach (['query' => 'Query', 'source' => 'Source', 'explain' => 'EXPLAIN'] as $tab => $label)
-                    <x-newdebugbar::filter-tab
-                        variant="segmented"
-                        data-ndb-query-detail-tab="{{ $tab }}"
-                        @click="setQueryDetailTab('{{ $tab }}')"
-                        ::aria-pressed="queryDetailTab === '{{ $tab }}'"
-                        class="ndb:h-auto ndb:min-h-8"
-                    >
-                        {{ $label }}
-                    </x-newdebugbar::filter-tab>
-                @endforeach
+                <x-newdebugbar::filter-tab
+                    variant="segmented"
+                    data-ndb-query-detail-tab="query"
+                    @click="setQueryDetailTab('query')"
+                    ::aria-pressed="queryDetailTab === 'query'"
+                    class="ndb:h-auto ndb:min-h-8"
+                >
+                    Query
+                </x-newdebugbar::filter-tab>
+                <x-newdebugbar::filter-tab
+                    variant="segmented"
+                    data-ndb-query-detail-tab="source"
+                    x-show.important="selectedQueryHasSource"
+                    @click="setQueryDetailTab('source')"
+                    ::aria-pressed="queryDetailTab === 'source'"
+                    class="ndb:h-auto ndb:min-h-8"
+                >
+                    Source
+                </x-newdebugbar::filter-tab>
+                <x-newdebugbar::filter-tab
+                    variant="segmented"
+                    data-ndb-query-detail-tab="explain"
+                    @click="openQueryExplain($wire)"
+                    ::aria-pressed="queryDetailTab === 'explain'"
+                    class="ndb:h-auto ndb:min-h-8"
+                >
+                    EXPLAIN
+                </x-newdebugbar::filter-tab>
             </x-newdebugbar::inspector-detail-tabs>
 
             <template x-if="queryDetailTab === 'query'">
@@ -165,7 +168,7 @@
                 </section>
             </template>
 
-            <template x-if="queryDetailTab === 'source'">
+            <template x-if="queryDetailTab === 'source' && selectedQueryHasSource">
                 <div data-ndb-query-detail-panel="source">
                     <x-newdebugbar::inspector-source-panel
                         frames="selectedQuery.stack ?? []"
@@ -198,16 +201,14 @@
                     <x-newdebugbar::inspector-action
                         icon="search"
                         data-ndb-query-explain-action
-                        x-show.important="selectedQuery.explain_available && ! queryExplainLoading"
-                        @click="$wire.explainQuery(beginQueryExplain()).catch(() => failQueryExplain())"
+                        x-show.important="
+                            selectedQuery.explain_available &&
+                            ! queryExplainLoading &&
+                            (queryExplain !== null || queryExplainError !== null)
+                        "
+                        @click="runQueryExplain($wire, true)"
                     >
-                        <span
-                            x-text="
-                                queryExplain === null && queryExplainError === null
-                                    ? 'Run EXPLAIN'
-                                    : 'Run EXPLAIN again'
-                            "
-                        ></span>
+                        Run EXPLAIN again
                     </x-newdebugbar::inspector-action>
 
                     <p

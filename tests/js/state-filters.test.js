@@ -805,7 +805,7 @@ test('notifications default to all and group channel delivery diagnostics', () =
   assert.equal(state.notificationDetailOpen, false);
 });
 
-test('query workspace filters selects and keeps explain evidence scoped to the active execution', () => {
+test('query workspace filters selects and keeps explain evidence scoped to the active execution', async () => {
   const browser = runtime();
   const state = createNewDebugBar({ ...summary, query_count: 4 }, browser);
   const appended = [];
@@ -839,8 +839,22 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
     {
       key: 'group-users',
       executions: [
-        { execution: 1, explain_available: true, explain: null, explain_error: null },
-        { execution: 2, explain_available: true, explain: null, explain_error: null },
+        {
+          execution: 1,
+          explain_available: true,
+          explain: null,
+          explain_error: null,
+          source_available: true,
+          stack: [],
+        },
+        {
+          execution: 2,
+          explain_available: true,
+          explain: null,
+          explain_error: null,
+          source_available: false,
+          stack: [],
+        },
       ],
     },
     { key: 'query-3', executions: [{ execution: 3, explain_available: false }] },
@@ -894,16 +908,27 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   browser.viewportWidth = () => 390;
   state.selectQueryRecord('group-users');
   assert.equal(detailFocused, 1);
-  state.selectQueryExecution(2);
-  assert.equal(state.querySelectedExecution, 2);
   state.setQueryDetailTab('bindings');
   assert.equal(state.queryDetailTab, 'query');
   state.setQueryDetailTab('source');
   assert.equal(state.queryDetailTab, 'source');
+  state.selectQueryExecution(2);
+  assert.equal(state.querySelectedExecution, 2);
+  assert.equal(state.queryDetailTab, 'query');
+  assert.equal(state.selectedQueryHasSource, false);
+  state.setQueryDetailTab('source');
+  assert.equal(state.queryDetailTab, 'query');
 
-  assert.equal(state.beginQueryExplain(), 2);
+  const explained = [];
+  const wire = { explainQuery: async (execution) => explained.push(execution) };
+  await state.openQueryExplain(wire);
+  assert.equal(state.queryDetailTab, 'explain');
+  assert.deepEqual(explained, [2]);
   assert.equal(state.queryExplainLoading, true);
+  assert.equal(records[0].executions[1].explain_loading, true);
   assert.equal(state.queryExplainScrollTop, 42);
+  await state.openQueryExplain(wire);
+  assert.deepEqual(explained, [2]);
   state.receiveQueryExplain({ execution: 1, error: 'Older execution failed.' });
   assert.equal(state.queryExplainLoading, true);
   assert.equal(records[0].executions[0].explain_error, 'Older execution failed.');
@@ -915,7 +940,14 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   });
   assert.equal(state.queryExplain.mode, 'EXPLAIN QUERY PLAN');
   assert.equal(records[0].executions[1].explain.driver, 'sqlite');
+  assert.equal(records[0].executions[1].explain_loading, false);
   assert.deepEqual(scrolls.at(-1), { top: 42, behavior: 'instant' });
+  state.setQueryDetailTab('query');
+  await state.openQueryExplain(wire);
+  assert.deepEqual(explained, [2]);
+  await state.runQueryExplain(wire, true);
+  assert.deepEqual(explained, [2, 2]);
+  assert.equal(state.queryExplainLoading, true);
 
   state.failQueryExplain();
   assert.equal(state.queryExplainLoading, false);
@@ -938,6 +970,8 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
 
   state.selectQueryRecord('query-3');
   assert.equal(state.beginQueryExplain(), null);
+  await state.openQueryExplain(wire);
+  assert.deepEqual(explained, [2, 2]);
   state.selectQueryRecord('group-users');
   state.selectQueryExecution(2);
 
