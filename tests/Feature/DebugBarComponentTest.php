@@ -309,7 +309,7 @@ it('uses the shared presenter for deferred query details and findings', function
         ->assertSet('profile.sections.queries.payload.items.0.repeated_count', 2)
         ->assertSet('profile.findings.0.rule_id', 'query.repeated')
         ->assertSeeHtml('data-ndb-query-group')
-        ->assertDontSeeHtml('data-ndb-query-item');
+        ->assertSeeHtml('data-ndb-query-item');
 });
 
 it('paginates long timelines in deterministic batches', function () {

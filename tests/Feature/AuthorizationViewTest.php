@@ -111,8 +111,7 @@ it('renders decisions for scanning and keeps structured evidence in the inspecto
         ->and($decoded[1]['arguments'])->toBe([])
         ->and($decoded[1]['argument_summary'])->toBe('—')
         ->and($decoded[1]['check_next'])->toBe('Confirm guests should be denied this ability. If this result is unexpected, review the configured Gate callback.')
-        ->and($html)->toContain('Check next')
-        ->and($html)->toContain('Laravel reports the final result.')
+        ->and($html)->toContain('What should I inspect if this result looks wrong?')
         ->and($html)->not->toContain('Laravel allowed this ability')
         ->and($html)->not->toContain('No target or additional arguments were supplied.')
         ->and($html)->not->toContain('→');

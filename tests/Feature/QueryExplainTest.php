@@ -104,9 +104,10 @@ it('keeps repeated execution evidence in one bounded workspace record', function
         ->and($records[0]['repeated'])->toBeTrue()
         ->and($records[0]['count'])->toBe(3)
         ->and($records[0]['executions'])->toHaveCount(3)
-        ->and($records[0]['executions'][2]['bindings'])->toBe([3])
+        ->and($records[0]['executions'][2])->not->toHaveKeys(['bindings', 'runnable_sql', 'bindings_complete'])
+        ->and($records[0]['executions'][2]['display_sql'])->toBe('select 3 as number')
         ->and($records[0]['executions'][2]['stack'][0]['function'])->toBe('loadNumbers')
-        ->and($records[0]['executions'][2]['runnable_sql'])->toBe('select 3 as number');
+        ->and($records[0]['executions'][2]['display_sql_complete'])->toBeTrue();
 
     expect($html)
         ->toContain('data-ndb-query-workspace')
