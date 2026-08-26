@@ -18,6 +18,28 @@ it('keeps every Blade view focused', function () {
     expect($oversizedViews)->toBe([]);
 });
 
+it('keeps Timeline on shared inspector geometry with namespaced behavior hooks', function () {
+    $timeline = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/sections/timeline.blade.php');
+
+    expect($timeline)
+        ->toContain(
+            '<x-newdebugbar::inspector-workspace',
+            '<x-newdebugbar::inspector-list-panel',
+            '<x-newdebugbar::inspector-list-controls',
+            '<x-newdebugbar::search-field',
+            '<x-newdebugbar::select-field',
+        )
+        ->not->toContain(
+            'data-section=',
+            'data-kind=',
+            'data-position=',
+            'data-start=',
+            'data-duration=',
+            'data-search=',
+            'ndb:min-w-[760px]',
+        );
+});
+
 it('catalogs only canonical shared component families in Studio', function () {
     $root = dirname(__DIR__, 2);
     $componentDirectory = $root.'/resources/views/components';

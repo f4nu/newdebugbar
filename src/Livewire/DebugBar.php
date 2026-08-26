@@ -34,6 +34,7 @@ final class DebugBar extends Component
         'notifications',
         'overview',
         'queries',
+        'timeline',
         'validation',
     ];
 

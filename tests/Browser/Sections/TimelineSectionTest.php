@@ -2,116 +2,110 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('filters the timeline without inventing spans for point events', function () {
-    $page = visit('/profiled')
+it('keeps the desktop waterfall useful inside the shared timeline workspace', function () {
+    $page = visit('/profiled');
+    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'dark', favorites: []}))");
+
+    $page
+        ->refresh()
+        ->resize(1280, 720)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="timeline"]');
 
     DebugBarBrowser::assertSectionSelected($page, 'timeline');
 
     $page
-        ->assertPresent('[data-ndb-timeline-item="request-start"]')
-        ->assertVisible('[data-ndb-timeline-waterfall]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const subtitles = Array.from(document.querySelectorAll('[data-ndb-timeline-activity-section]'));
-
-                return subtitles.length > 0
-                    && subtitles.every((subtitle) => getComputedStyle(subtitle).textTransform === 'none');
-            })()
-            JS)
-        ->assertScript(<<<'JS'
-            (() => {
-                const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
-                const toolbarBounds = toolbar.getBoundingClientRect();
-                const overview = document.querySelector('[data-ndb-timeline-overview]').getBoundingClientRect();
-                const filter = document.querySelector('[data-ndb-timeline-filter]').getBoundingClientRect();
-                const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
-
-                return overview.bottom <= toolbarBounds.top
-                    && Math.abs(filter.left - toolbarBounds.left) <= 1
-                    && Math.abs(search.right - toolbarBounds.right) <= 1
-                    && filter.right <= search.left
-                    && toolbar.scrollWidth <= toolbar.clientWidth;
-            })()
-            JS)
-        ->assertMissing('[data-ndb-timeline-tabs]')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
+        ->assertPresent('[data-ndb-timeline-workspace]')
+        ->assertVisible('[data-ndb-timeline-waterfall-header]')
         ->assertValue('[data-ndb-timeline-filter]', 'key')
         ->assertScript(<<<'JS'
             (() => {
-                const values = Array.from(document.querySelector('[data-ndb-timeline-filter]').options)
-                    .map((option) => option.value);
+                const controls = document.querySelector('[data-ndb-timeline-list-panel] [data-ndb-inspector-list-controls]');
+                const search = document.querySelector('[data-ndb-timeline-search-field]').getBoundingClientRect();
+                const filter = document.querySelector('[data-ndb-timeline-filter]').getBoundingClientRect();
+                const workspace = document.querySelector('[data-ndb-timeline-workspace]');
 
-                return JSON.stringify(values.slice(0, 3)) === JSON.stringify(['key', 'all', 'request'])
-                    && new Set(values).size === values.length
-                    && values.includes('queries')
-                    && values.includes('events');
+                return search.left < filter.left
+                    && search.right <= filter.left
+                    && controls.scrollWidth <= controls.clientWidth
+                    && workspace.getBoundingClientRect().height > 400
+                    && workspace.scrollWidth <= workspace.clientWidth;
             })()
             JS)
-        ->select('[data-ndb-timeline-filter]', 'all')
-        ->assertValue('[data-ndb-timeline-filter]', 'all')
-        ->assertScript('document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").getBoundingClientRect().left > document.querySelector("[data-ndb-timeline-tick=\\"0\\"]").parentElement.parentElement.getBoundingClientRect().left + 4')
-        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length > 2')
-        ->assertScript(<<<'JS'
-            Number(document.querySelector('[data-ndb-section-panel="timeline"] [x-text="visibleTimelineCount"]').textContent)
-                === document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])').length
-            JS)
         ->select('[data-ndb-timeline-filter]', 'queries')
-        ->assertValue('[data-ndb-timeline-filter]', 'queries')
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.dataset.ndbSection === 'queries')
+                .every((item) => item.dataset.ndbTimelineSection === 'queries')
             JS)
         ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-item][hidden]'))
-                .every((item) => getComputedStyle(item).display === 'none')
-            JS)
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-item][data-ndb-section="queries"]'))
+            Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
                 .every((item) => {
                     const track = item.querySelector('[data-ndb-timeline-track]').getBoundingClientRect();
                     const mark = item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect();
 
-                    return item.dataset.ndbKind === 'span'
-                        && Number(item.dataset.ndbStart) < Number(item.dataset.ndbPosition)
-                        && Number(item.dataset.ndbDuration) > 0
+                    return item.dataset.ndbTimelineKind === 'Duration'
+                        && Number(item.dataset.ndbTimelineStart) < Number(item.dataset.ndbTimelineAt)
+                        && Number(item.dataset.ndbTimelineDuration) > 0
                         && mark.width >= 3
                         && mark.left >= track.left
                         && mark.right <= track.right + 1;
                 })
             JS)
-        ->select('[data-ndb-timeline-filter]', 'events')
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.dataset.ndbKind === 'point'
-                    && item.querySelector('[data-ndb-timeline-mark]').getBoundingClientRect().width > 0)
-            JS)
-        ->select('[data-ndb-timeline-filter]', 'request')
-        ->assertValue('[data-ndb-timeline-filter]', 'request')
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-item]:not([hidden])'))
-                .every((item) => item.dataset.ndbSection === 'request')
-            JS)
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-timeline-item][hidden]'))
-                .every((item) => getComputedStyle(item).display === 'none')
-            JS)
+        ->click('[data-ndb-timeline-item="queries-0"]')
+        ->assertVisible('[data-ndb-timeline-detail-content]')
+        ->assertVisible('[data-ndb-timeline-open-section]')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-detail-content]").length === 1')
+        ->click('[data-ndb-inspector-focus-back]')
+        ->assertVisible('[data-ndb-timeline-list]');
+
+    DebugBarBrowser::waitForFocus($page, '[data-ndb-timeline-item][aria-pressed="true"]');
+
+    $page
+        ->type('[data-ndb-timeline-search-field]', 'nothing can match this timeline activity')
+        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length', 0)
+        ->assertSee('No timeline activity matches this search and filter.')
+        ->assertNoJavaScriptErrors();
+});
+
+it('turns the timeline into a mobile chronological drill-in without horizontal overflow', function () {
+    $page = visit('/profiled');
+    $page->script("localStorage.setItem('newdebugbar.preferences.v1', JSON.stringify({theme: 'light', favorites: []}))");
+
+    $page
+        ->refresh()
         ->resize(390, 844)
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="timeline"]')
+        ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
         ->assertScript(<<<'JS'
             (() => {
-                const toolbar = document.querySelector('[data-ndb-timeline-toolbar]');
-                const toolbarBounds = toolbar.getBoundingClientRect();
-                const filter = document.querySelector('[data-ndb-timeline-filter]').getBoundingClientRect();
-                const search = document.querySelector('[data-ndb-timeline-search]').getBoundingClientRect();
+                const panel = document.querySelector('[data-ndb-section-panel="timeline"]');
+                const row = document.querySelector('[data-ndb-timeline-item]:not([hidden])');
+                const track = row.querySelector('[data-ndb-timeline-track]');
 
-                return toolbar.scrollWidth <= toolbar.clientWidth
-                    && Math.abs(filter.left - toolbarBounds.left) <= 1
-                    && Math.abs(search.right - toolbarBounds.right) <= 1
-                    && filter.right <= search.left;
+                return getComputedStyle(track).display === 'none'
+                    && panel.scrollWidth <= panel.clientWidth
+                    && row.scrollWidth <= row.clientWidth;
             })()
             JS)
-        ->type('[data-ndb-timeline-search]', 'nothing can match this')
-        ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]:not([hidden])").length', 0)
-        ->assertSee('No timeline events match these filters.')
+        ->click('[data-ndb-timeline-item="request-start"]')
+        ->assertVisible('[data-ndb-timeline-detail-content]')
+        ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-list]").closest("[data-ndb-inspector-focus-list]")).display === "none"')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-section-panel="timeline"]');
+                const detail = document.querySelector('[data-ndb-inspector-focus-detail]');
+
+                return panel.scrollWidth <= panel.clientWidth
+                    && detail.scrollWidth <= detail.clientWidth
+                    && document.querySelectorAll('[data-ndb-timeline-detail-content]').length === 1;
+            })()
+            JS)
+        ->click('[data-ndb-inspector-focus-back]')
+        ->assertVisible('[data-ndb-timeline-list]')
         ->assertNoJavaScriptErrors();
 });

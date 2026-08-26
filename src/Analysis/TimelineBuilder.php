@@ -14,8 +14,10 @@ final class TimelineBuilder
         $timeline = [[
             'id' => 'request-start',
             'section' => 'request',
+            'section_label' => 'Request',
             'kind' => 'milestone',
             'label' => $subject.' started',
+            'source' => null,
             'at_ms' => 0.0,
             'start_ms' => null,
             'duration_ms' => null,
@@ -47,8 +49,10 @@ final class TimelineBuilder
                             ? $section.'-'.$index
                             : $section.'-'.$stream['name'].'-'.$index,
                         'section' => $section,
+                        'section_label' => $this->sectionLabel($section),
                         'kind' => $hasDuration ? 'span' : 'point',
                         'label' => $this->label($section, $item),
+                        'source' => $this->source($item),
                         'at_ms' => round((float) $item['at_ms'], 3),
                         'start_ms' => $hasDuration ? round(max(0, (float) $item['at_ms'] - $spanDuration), 3) : null,
                         'duration_ms' => $hasDuration ? round($spanDuration, 2) : null,
@@ -60,8 +64,10 @@ final class TimelineBuilder
         $timeline[] = [
             'id' => 'request-end',
             'section' => 'request',
+            'section_label' => 'Request',
             'kind' => 'milestone',
             'label' => $subject.' finished',
+            'source' => null,
             'at_ms' => round($duration, 3),
             'start_ms' => null,
             'duration_ms' => null,
@@ -125,12 +131,66 @@ final class TimelineBuilder
             'events' => $item['name'] ?? 'Event dispatched',
             'logs' => strtoupper((string) ($item['level'] ?? 'log')).' '.($item['message'] ?? ''),
             'exceptions' => $item['class'] ?? 'Exception',
+            'authorization' => trim(ucfirst((string) ($item['result'] ?? 'checked')).' '.($item['ability'] ?? 'authorization')),
+            'validation' => $this->validationLabel($item),
+            'messages' => $item['label'] ?? 'Developer message',
             default => $item['name'] ?? $item['event'] ?? $item['operation'] ?? ucfirst($section),
         };
 
         $label = (string) $label;
 
         return mb_strlen($label) > 140 ? mb_substr($label, 0, 139).'…' : $label;
+    }
+
+    private function sectionLabel(string $section): string
+    {
+        return match ($section) {
+            'http_client' => 'HTTP Client',
+            'redis' => 'Redis',
+            'livewire' => 'Livewire',
+            default => str($section)->replace('_', ' ')->title()->toString(),
+        };
+    }
+
+    /** @param array<string, mixed> $item */
+    private function validationLabel(array $item): string
+    {
+        $fields = array_values(array_filter(
+            array_map('strval', is_array($item['fields'] ?? null) ? $item['fields'] : []),
+            static fn (string $field): bool => $field !== '',
+        ));
+
+        if ($fields === []) {
+            return 'Validation failed';
+        }
+
+        $visible = implode(', ', array_slice($fields, 0, 3));
+
+        return count($fields) > 3
+            ? 'Validation failed: '.$visible.' and '.(count($fields) - 3).' more'
+            : 'Validation failed: '.$visible;
+    }
+
+    /** @param array<string, mixed> $item @return array{file: string, line: int}|null */
+    private function source(array $item): ?array
+    {
+        foreach ([$item['callsite'] ?? null, $item['source'] ?? null] as $source) {
+            if (is_array($source) && is_string($source['file'] ?? null) && $source['file'] !== '') {
+                return [
+                    'file' => $source['file'],
+                    'line' => max(1, (int) ($source['line'] ?? 1)),
+                ];
+            }
+        }
+
+        if (is_string($item['file'] ?? null) && $item['file'] !== '') {
+            return [
+                'file' => $item['file'],
+                'line' => max(1, (int) ($item['line'] ?? 1)),
+            ];
+        }
+
+        return null;
     }
 
     private function kindOrder(string $kind): int

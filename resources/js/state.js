@@ -442,6 +442,8 @@ export function createNewDebugBar(
     visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
     timelineFilter: 'key',
     timelineSearch: '',
+    timelineSelected: null,
+    timelineDetailOpen: false,
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
     eventGroups: [],
     eventSource: 'all',
@@ -749,6 +751,10 @@ export function createNewDebugBar(
 
     get selectedEvent() {
       return this.eventGroups.find((event) => event.id === this.eventSelected) ?? null;
+    },
+
+    get selectedTimelineItem() {
+      return this.timelineSelected;
     },
 
     get visibleEventSummary() {
@@ -1949,6 +1955,10 @@ export function createNewDebugBar(
       this.authorizationDetailOpen = false;
       this.authorizationDetailTab = 'decision';
       this.visibleAuthorizationCount = 0;
+      this.timelineFilter = 'key';
+      this.timelineSearch = '';
+      this.timelineSelected = null;
+      this.timelineDetailOpen = false;
       this.eventGroups = [];
       this.eventSource = 'all';
       this.eventSearch = '';
@@ -3506,7 +3516,7 @@ export function createNewDebugBar(
     applyTimelineFilters() {
       const list = this.$refs?.timelineList ?? this.$root?.querySelector?.('[x-ref="timelineList"]');
 
-      if (!list?.children) {
+      if (!list?.querySelectorAll) {
         this.visibleTimelineCount = 0;
 
         return;
@@ -3515,17 +3525,63 @@ export function createNewDebugBar(
       const search = this.timelineSearch.toLowerCase().trim();
       let visible = 0;
 
-      [...list.children].forEach((item) => {
+      [...list.querySelectorAll('[data-ndb-timeline-item]')].forEach((item) => {
         const matches =
           (this.timelineFilter === 'all' ||
-            (this.timelineFilter === 'key' && item.dataset.ndbKey === 'true') ||
-            item.dataset.ndbSection === this.timelineFilter) &&
-          (search === '' || item.dataset.ndbSearch?.includes(search));
+            (this.timelineFilter === 'key' && item.dataset.ndbTimelineKey === 'true') ||
+            item.dataset.ndbTimelineSection === this.timelineFilter) &&
+          (search === '' || item.dataset.ndbTimelineSearchValue?.includes(search));
         item.hidden = !matches;
         if (matches) visible++;
       });
 
       this.visibleTimelineCount = visible;
+
+      if (
+        this.timelineSelected &&
+        ![...list.querySelectorAll('[data-ndb-timeline-item]:not([hidden])')].some(
+          (item) => item.dataset.ndbTimelineItem === this.timelineSelected.id,
+        )
+      ) {
+        this.timelineSelected = null;
+        this.timelineDetailOpen = false;
+      }
+    },
+
+    selectTimelineItem(id) {
+      const items = this.$refs?.timelineList?.querySelectorAll?.('[data-ndb-timeline-item]') ?? [];
+      const item = [...items].find((candidate) => candidate.dataset.ndbTimelineItem === id);
+
+      if (!item || item.hidden) return;
+
+      this.timelineSelected = {
+        id,
+        section: item.dataset.ndbTimelineSection,
+        sectionLabel: item.dataset.ndbTimelineSectionLabel,
+        kind: item.dataset.ndbTimelineKind,
+        label: item.dataset.ndbTimelineLabel,
+        atMs: Number(item.dataset.ndbTimelineAt),
+        atLabel: item.dataset.ndbTimelineAtLabel,
+        startMs: item.dataset.ndbTimelineStart === '' ? null : Number(item.dataset.ndbTimelineStart),
+        startLabel: item.dataset.ndbTimelineStartLabel || null,
+        durationMs: item.dataset.ndbTimelineDuration === '' ? null : Number(item.dataset.ndbTimelineDuration),
+        durationLabel: item.dataset.ndbTimelineDurationLabel || null,
+        source: item.dataset.ndbTimelineSource || null,
+      };
+      this.timelineDetailOpen = true;
+      this.$nextTick?.(() => {
+        if (this.$refs?.content) this.$refs.content.scrollTop = 0;
+        this.$refs?.timelineDetail?.focus?.({ preventScroll: true });
+      });
+    },
+
+    closeTimelineDetail() {
+      const id = this.timelineSelected?.id;
+      this.timelineDetailOpen = false;
+      this.$nextTick?.(() => {
+        const items = this.$refs?.timelineList?.querySelectorAll?.('[data-ndb-timeline-item]') ?? [];
+        [...items].find((item) => item.dataset.ndbTimelineItem === id)?.focus?.({ preventScroll: true });
+      });
     },
 
     initializeEvents(groups) {

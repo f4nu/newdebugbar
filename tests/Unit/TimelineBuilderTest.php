@@ -16,6 +16,7 @@ it('keeps point events distinct and visualizes recorded durations', function () 
                 'operation' => 'hit',
                 'key_hash' => 'abc',
                 'at_ms' => 5,
+                'callsite' => ['file' => 'app/Support/TripCache.php', 'line' => 18],
             ]]]],
             'logs' => ['payload' => ['items' => [[
                 'level' => 'info',
@@ -43,6 +44,8 @@ it('keeps point events distinct and visualizes recorded durations', function () 
         ->start_ms->toBeNull()
         ->duration_ms->toBeNull()
         ->at_percent->toBe(10.0)
+        ->section_label->toBe('Cache')
+        ->source->toBe(['file' => 'app/Support/TripCache.php', 'line' => 18])
         ->and($timeline[2])
         ->kind->toBe('span')
         ->start_ms->toBe(6.0)
@@ -60,6 +63,32 @@ it('keeps point events distinct and visualizes recorded durations', function () 
         ->and($timeline[5])
         ->at_percent->toBe(100.0)
         ->and(mb_strlen($timeline[3]['label']))->toBeLessThanOrEqual(140);
+});
+
+it('names authorization validation and developer message activity with useful evidence', function () {
+    $timeline = collect((new TimelineBuilder)->build([
+        'metrics' => ['duration_ms' => 25],
+        'sections' => [
+            'request' => ['payload' => []],
+            'authorization' => ['payload' => ['items' => [[
+                'ability' => 'publish-itinerary',
+                'result' => 'denied',
+                'at_ms' => 5,
+            ]]]],
+            'validation' => ['payload' => ['items' => [[
+                'fields' => ['email', 'name', 'dates', 'guests'],
+                'at_ms' => 10,
+            ]]]],
+            'messages' => ['payload' => ['items' => [[
+                'label' => 'Checkout checkpoint',
+                'at_ms' => 15,
+            ]]]],
+        ],
+    ]));
+
+    expect($timeline->firstWhere('section', 'authorization')['label'])->toBe('Denied publish-itinerary')
+        ->and($timeline->firstWhere('section', 'validation')['label'])->toBe('Validation failed: email, name, dates and 1 more')
+        ->and($timeline->firstWhere('section', 'messages')['label'])->toBe('Checkout checkpoint');
 });
 
 it('keeps timeline geometry bounded when events exceed the reported duration', function () {

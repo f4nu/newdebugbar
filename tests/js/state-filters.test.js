@@ -1149,13 +1149,41 @@ test('timeline controls filter sections and search labels', () => {
     ...summary,
     sections: [...summary.sections, { key: 'timeline', label: 'Timeline' }, { key: 'events', label: 'Events' }],
   }, runtime());
-  const item = (section, search, key = false) => ({
-    dataset: { ndbSection: section, ndbSearch: search, ndbKey: String(key) },
+  let rowFocuses = 0;
+  let detailFocuses = 0;
+  const item = (id, section, search, key = false) => ({
+    dataset: {
+      ndbTimelineItem: id,
+      ndbTimelineSection: section,
+      ndbTimelineSectionLabel: section === 'queries' ? 'Queries' : 'Events',
+      ndbTimelineKind: section === 'queries' ? 'Duration' : 'Event',
+      ndbTimelineLabel: search,
+      ndbTimelineAt: '12.5',
+      ndbTimelineAtLabel: '12.5 ms',
+      ndbTimelineStart: section === 'queries' ? '10' : '',
+      ndbTimelineStartLabel: section === 'queries' ? '10 ms' : '',
+      ndbTimelineDuration: section === 'queries' ? '2.5' : '',
+      ndbTimelineDurationLabel: section === 'queries' ? '2.5 ms' : '',
+      ndbTimelineSource: section === 'queries' ? 'app/Trips/LoadTrip.php:24' : '',
+      ndbTimelineSearchValue: search,
+      ndbTimelineKey: String(key),
+    },
     hidden: false,
+    focus: () => rowFocuses++,
   });
-  const query = item('queries', 'select users', true);
-  const event = item('events', 'clinic ready');
-  state.$refs = { timelineList: { children: [query, event] } };
+  const query = item('queries-0', 'queries', 'select users', true);
+  const event = item('events-0', 'events', 'clinic ready');
+  const rows = [query, event];
+  state.$refs = {
+    timelineList: {
+      querySelectorAll(selector) {
+        return selector.includes(':not([hidden])') ? rows.filter((row) => !row.hidden) : rows;
+      },
+    },
+    timelineDetail: { focus: () => detailFocuses++ },
+    content: { scrollTop: 19 },
+  };
+  state.$nextTick = (callback) => callback();
 
   state.applyTimelineFilters();
   assert.equal(state.timelineFilter, 'key');
@@ -1166,6 +1194,18 @@ test('timeline controls filter sections and search labels', () => {
   assert.equal(query.hidden, false);
   assert.equal(event.hidden, true);
   assert.equal(state.visibleTimelineCount, 1);
+
+  state.selectTimelineItem('queries-0');
+  assert.equal(state.timelineDetailOpen, true);
+  assert.equal(state.selectedTimelineItem.label, 'select users');
+  assert.equal(state.selectedTimelineItem.durationLabel, '2.5 ms');
+  assert.equal(state.selectedTimelineItem.source, 'app/Trips/LoadTrip.php:24');
+  assert.equal(detailFocuses, 1);
+  assert.equal(state.$refs.content.scrollTop, 0);
+
+  state.closeTimelineDetail();
+  assert.equal(state.timelineDetailOpen, false);
+  assert.equal(rowFocuses, 1);
 
   state.timelineSearch = 'MISSING';
   state.applyTimelineFilters();
