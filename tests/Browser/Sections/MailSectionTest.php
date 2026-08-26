@@ -52,7 +52,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const listStatus = selected.querySelector('[data-ndb-mail-list-status]');
                 const listRecipient = selected.querySelector('[data-ndb-mail-list-recipient]');
                 const listActivity = selected.querySelector('[data-ndb-mail-list-activity]');
-                const tabs = [...document.querySelectorAll('[data-ndb-mail] [data-ndb-filter-tabs]')];
+                const tabs = document.querySelector('[data-ndb-mail-detail-tabs] [data-ndb-filter-tabs]');
                 const frame = document.querySelector('[data-ndb-mail-preview-frame]');
                 const viewportButtons = [...document.querySelectorAll('[data-ndb-mail-preview-viewport]')];
                 const viewportControl = document.querySelector('[data-ndb-mail-preview-viewport-control]');
@@ -64,6 +64,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const summaryCount = document.querySelector('[data-ndb-mail-summary-count]');
                 const summaryRuntime = document.querySelector('[data-ndb-mail-summary-runtime]');
                 const filter = document.querySelector('[data-ndb-mail-filter]');
+                const listControls = document.querySelector('[data-ndb-inspector-list-controls]');
                 const header = detail.querySelector('header');
                 const actions = header.querySelector('[data-ndb-mail-actions]');
                 const visibleHeaderActions = [...actions.parentElement.children]
@@ -106,19 +107,18 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && Math.abs(listStatus.getBoundingClientRect().right - listActivity.getBoundingClientRect().right) <= 1
                     && getComputedStyle(listStatus).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(listStatus).borderWidth === '0px'
-                    && tabs.length === 1
-                    && tabs[0].dataset.ndbFilterTabsVariant === 'segmented'
-                    && [...tabs[0].querySelectorAll('[data-ndb-mail-detail-tab]')]
+                    && tabs.dataset.ndbFilterTabsVariant === 'segmented'
+                    && [...tabs.querySelectorAll('[data-ndb-mail-detail-tab]')]
                         .every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
                     && viewportButtons.length === 2
                     && viewportButtons.every((button) => button.querySelector('svg'))
                     && viewportButtons.every((button) => button.querySelector('svg').getBoundingClientRect().width <= 12.5)
                     && formatControl.getBoundingClientRect().left > viewportControl.getBoundingClientRect().right
-                    && tabs[0].parentElement === previewControls.parentElement
+                    && tabs.parentElement === previewControls.parentElement
                     && Math.abs(
-                        tabs[0].getBoundingClientRect().left
-                        - tabs[0].parentElement.getBoundingClientRect().left
-                        - Number.parseFloat(getComputedStyle(tabs[0].parentElement).paddingLeft)
+                        tabs.getBoundingClientRect().left
+                        - tabs.parentElement.getBoundingClientRect().left
+                        - Number.parseFloat(getComputedStyle(tabs.parentElement).paddingLeft)
                     ) <= 1
                     && actions.open === false
                     && visibleHeaderActions.length === 1
@@ -143,7 +143,8 @@ it('selects and inspects mail with a real in-panel preview', function () {
                     && /^Recipients\s/.test(addressGroups[0].textContent.trim())
                     && /^Sender\s/.test(addressGroups[1].textContent.trim())
                     && ! identity.textContent.includes('→')
-                    && summary.parentElement.contains(filter)
+                    && listControls.contains(summary)
+                    && listControls.contains(filter)
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
                     && detail.scrollHeight >= detail.clientHeight

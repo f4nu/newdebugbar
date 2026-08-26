@@ -517,8 +517,15 @@ it('uses centered segmented controls across inspector detail panels', function (
         ->toContain('ndb:sm:col-start-2');
 
     expect(file_get_contents($views.'/livewire/sections/mail.blade.php'))
-        ->toContain('<x-newdebugbar::filter-tabs label="Mail detail" variant="segmented"')
-        ->toContain('variant="segmented"');
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::select-field')
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::inspector-detail-tabs label="Mail detail" align="left"')
+        ->toContain('<x-newdebugbar::filter-tabs')
+        ->not->toContain('<input')
+        ->not->toContain('<select');
 });
 
 it('uses the shared section heading hierarchy in the inspector shell', function () {

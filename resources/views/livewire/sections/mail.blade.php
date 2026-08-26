@@ -195,74 +195,57 @@
 >
     @if ($mailItems !== [])
         <x-newdebugbar::inspector-workspace frame="top" data-ndb-mail-workspace>
-            <div
-                :class="mailDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
-                class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
-            >
-                <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
-                    <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3">
-                        <p
-                            data-ndb-mail-summary
-                            class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                        >
-                            <span data-ndb-mail-summary-count class="ndb:block">
-                                {{ number_format((int) ($mailSummary['retained_count'] ?? count($mailItems))) }} {{ \Illuminate\Support\Str::plural('message', (int) ($mailSummary['retained_count'] ?? count($mailItems))) }}
-                            </span>
-                            <span
-                                data-ndb-mail-summary-runtime
-                                class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400"
+            <x-newdebugbar::inspector-list-panel detail-open="mailDetailOpen" list-ref="mailList">
+                <x-slot:controls>
+                    <x-newdebugbar::inspector-list-controls :show-search="count($mailItems) > 5">
+                        <x-slot:leading>
+                            <p
+                                data-ndb-mail-summary
+                                class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
                             >
-                                {{ number_format((float) ($mailSummary['duration_ms'] ?? 0), 2) }} ms total
-                            </span>
-                            @if (($mailSummary['dropped_count'] ?? 0) > 0)
-                                <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300">
-                                    {{ number_format((int) $mailSummary['dropped_count']) }} not retained
+                                <span data-ndb-mail-summary-count class="ndb:block">
+                                    {{ number_format((int) ($mailSummary['retained_count'] ?? count($mailItems))) }} {{ \Illuminate\Support\Str::plural('message', (int) ($mailSummary['retained_count'] ?? count($mailItems))) }}
                                 </span>
-                            @endif
-                        </p>
+                                <span
+                                    data-ndb-mail-summary-runtime
+                                    class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400"
+                                >
+                                    {{ number_format((float) ($mailSummary['duration_ms'] ?? 0), 2) }} ms total
+                                </span>
+                                @if (($mailSummary['dropped_count'] ?? 0) > 0)
+                                    <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300">
+                                        {{ number_format((int) $mailSummary['dropped_count']) }} not retained
+                                    </span>
+                                @endif
+                            </p>
+                        </x-slot:leading>
 
-                        <label class="ndb:relative ndb:shrink-0">
-                            <span class="ndb:sr-only">Filter captured mail</span>
-                            <select
+                        <x-slot:search>
+                            <x-newdebugbar::search-field
+                                label="Search captured mail"
+                                placeholder="Search subject or recipient"
+                                data-ndb-mail-search
+                                x-model="mailSearch"
+                                @input.debounce.100ms="applyMailView()"
+                            />
+                        </x-slot:search>
+
+                        <x-slot:filter>
+                            <x-newdebugbar::select-field
+                                label="Filter captured mail"
                                 data-ndb-mail-filter
                                 x-model="mailFilter"
                                 @change="setMailFilter($event.target.value)"
-                                class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                             >
                                 @foreach ($mailFilters as $filter => [$label, $count])
                                     <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
                                 @endforeach
-                            </select>
-                            <x-newdebugbar::icon
-                                name="chevron-down"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                            />
-                        </label>
-                    </div>
+                            </x-newdebugbar::select-field>
+                        </x-slot:filter>
+                    </x-newdebugbar::inspector-list-controls>
+                </x-slot:controls>
 
-                    @if (count($mailItems) > 5)
-                        <label class="ndb:relative ndb:block">
-                            <span class="ndb:sr-only">Search captured mail</span>
-                            <input
-                                data-ndb-mail-search
-                                x-model="mailSearch"
-                                @input.debounce.100ms="applyMailView()"
-                                type="search"
-                                placeholder="Search subject or recipient"
-                                class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                            />
-                            <x-newdebugbar::icon
-                                name="search"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                            />
-                        </label>
-                    @endif
-                </div>
-
-                <div
-                    x-ref="mailList"
-                    class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:overflow-y-auto ndb:dark:divide-zinc-800"
-                >
+                <x-slot:list data-ndb-mail-list>
                     @foreach ($mailItems as $message)
                         <button
                             type="button"
@@ -308,106 +291,98 @@
                             @endif
                         </button>
                     @endforeach
-                </div>
+                </x-slot:list>
 
-                <div x-show.important="visibleMailCount === 0" class="ndb:p-3">
+                <x-slot:empty x-show.important="visibleMailCount === 0">
                     <x-newdebugbar::empty-state label="No mail matches these filters." />
-                </div>
-            </div>
+                </x-slot:empty>
+            </x-newdebugbar::inspector-list-panel>
 
-            <section
-                x-ref="mailDetail"
+            <x-newdebugbar::inspector-detail-pane
+                detail-open="mailDetailOpen"
+                detail-ref="mailDetail"
+                detail-label="Selected mail details"
+                back-label="Messages"
+                close-action="mailDetailOpen = false"
                 data-ndb-mail-detail
-                aria-live="polite"
-                aria-label="Selected mail details"
-                tabindex="0"
-                :class="mailDetailOpen ? 'ndb:flex' : 'ndb:hidden ndb:lg:flex'"
-                class="ndb-scrollbar ndb:min-h-[32rem] ndb:min-w-0 ndb:flex-col ndb:scroll-mt-20 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:min-h-0 ndb:lg:overflow-y-auto"
             >
-                <x-newdebugbar::inspector-detail-back
-                    data-ndb-mail-detail-back
-                    @click="mailDetailOpen = false"
-                    label="Messages"
-                />
+                <x-slot:back>
+                    <x-newdebugbar::inspector-detail-back
+                        data-ndb-mail-detail-back
+                        @click="mailDetailOpen = false"
+                        label="Messages"
+                    />
+                </x-slot:back>
 
                 <template x-if="selectedMailMessage">
                     <div class="ndb:flex ndb:flex-col">
                         <x-newdebugbar::mail-header />
 
-                        <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
-                            <x-newdebugbar::filter-tabs label="Mail detail" variant="segmented" class="ndb:min-w-0">
-                                @foreach (['preview' => ['Preview', 'eye'], 'message' => ['Message', 'mail'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
-                                    <x-newdebugbar::filter-tab
-                                        variant="segmented"
-                                        data-ndb-mail-detail-tab="{{ $tab }}"
-                                        @click="setMailDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
-                                        ::aria-pressed="mailDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
-                                        aria-label="{{ $label }}"
-                                    >
-                                        <x-newdebugbar::icon
-                                            name="{{ $icon }}"
-                                            size="3.5"
-                                            data-ndb-mail-detail-tab-icon="{{ $tab }}"
-                                            class="ndb:sm:hidden"
-                                        />
-                                        <span class="ndb:hidden ndb:sm:inline">{{ $label }}</span>
-                                    </x-newdebugbar::filter-tab>
-                                @endforeach
-                            </x-newdebugbar::filter-tabs>
-                            <div
+                        <x-newdebugbar::inspector-detail-tabs
+                            label="Mail detail"
+                            align="left"
+                            data-ndb-mail-detail-tabs
+                        >
+                            @foreach (['preview' => ['Preview', 'eye'], 'message' => ['Message', 'mail'], 'source' => ['Source', 'code']] as $tab => [$label, $icon])
+                                <x-newdebugbar::filter-tab
+                                    variant="segmented"
+                                    data-ndb-mail-detail-tab="{{ $tab }}"
+                                    @click="setMailDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
+                                    ::aria-pressed="mailDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
+                                    aria-label="{{ $label }}"
+                                >
+                                    <x-newdebugbar::icon
+                                        name="{{ $icon }}"
+                                        size="3.5"
+                                        data-ndb-mail-detail-tab-icon="{{ $tab }}"
+                                        class="ndb:sm:hidden"
+                                    />
+                                    <span class="ndb:hidden ndb:sm:inline">{{ $label }}</span>
+                                </x-newdebugbar::filter-tab>
+                            @endforeach
+
+                            <x-slot:aside
                                 data-ndb-mail-preview-controls
                                 x-show.important="
                                     mailDetailTab === 'preview' &&
                                     (selectedMailMessage.has_html || selectedMailMessage.has_text)
                                 "
-                                class="ndb:ml-auto ndb:flex ndb:items-center ndb:gap-2"
+                                class="ndb:flex ndb:items-center ndb:gap-2"
                             >
-                                <div
-                                    role="group"
-                                    aria-label="Mail preview width"
-                                    :aria-disabled="mailPreviewFormat === 'text'"
+                                <x-newdebugbar::filter-tabs
+                                    label="Mail preview width"
+                                    variant="segmented"
+                                    ::aria-disabled="mailPreviewFormat === 'text'"
                                     data-ndb-mail-preview-viewport-control
-                                    class="ndb:inline-flex ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-zinc-100/80 ndb:p-0.5 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
                                 >
                                     @foreach (['desktop' => ['Desktop preview', 'monitor'], 'mobile' => ['Mobile preview', 'smartphone']] as $viewport => [$label, $icon])
-                                        <button
-                                            type="button"
+                                        <x-newdebugbar::filter-tab
+                                            variant="segmented"
                                             data-ndb-mail-preview-viewport="{{ $viewport }}"
                                             @click="setMailPreviewViewport({{ \Illuminate\Support\Js::from($viewport) }})"
-                                            :disabled="mailPreviewFormat === 'text'"
-                                            :aria-pressed="mailPreviewViewport === {{ \Illuminate\Support\Js::from($viewport) }}"
-                                            :class="mailPreviewViewport === {{ \Illuminate\Support\Js::from($viewport) }}
-                        ? 'ndb:bg-white ndb:text-indigo-600 ndb:shadow-sm ndb:dark:bg-zinc-800 ndb:dark:text-indigo-300'
-                        : 'ndb:text-zinc-400 ndb:hover:text-zinc-700 ndb:dark:hover:text-zinc-200'"
+                                            ::disabled="mailPreviewFormat === 'text'"
+                                            ::aria-pressed="mailPreviewViewport === {{ \Illuminate\Support\Js::from($viewport) }}"
                                             aria-label="{{ $label }}"
                                             title="{{ $label }}"
-                                            class="ndb:inline-flex ndb:size-7 ndb:items-center ndb:justify-center ndb:rounded-md ndb:transition ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:disabled:pointer-events-none ndb:disabled:opacity-40"
+                                            class="ndb:size-7 ndb:p-0 ndb:disabled:pointer-events-none ndb:disabled:opacity-40"
                                         >
                                             <x-newdebugbar::icon name="{{ $icon }}" size="3" />
-                                        </button>
+                                        </x-newdebugbar::filter-tab>
                                     @endforeach
-                                </div>
-                                <label
+                                </x-newdebugbar::filter-tabs>
+                                <x-newdebugbar::select-field
+                                    label="Mail preview format"
                                     x-show="selectedMailMessage.has_html && selectedMailMessage.has_text"
-                                    class="ndb:relative"
+                                    data-ndb-mail-preview-format
+                                    x-model="mailPreviewFormat"
+                                    @change="setMailPreviewFormat($event.target.value)"
+                                    class="ndb:w-20"
                                 >
-                                    <span class="ndb:sr-only">Mail preview format</span>
-                                    <select
-                                        data-ndb-mail-preview-format
-                                        x-model="mailPreviewFormat"
-                                        @change="setMailPreviewFormat($event.target.value)"
-                                        class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
-                                    >
-                                        <option value="html" :disabled="! selectedMailMessage.has_html">HTML</option>
-                                        <option value="text" :disabled="! selectedMailMessage.has_text">Text</option>
-                                    </select>
-                                    <x-newdebugbar::icon
-                                        name="chevron-down"
-                                        class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                                    />
-                                </label>
-                            </div>
-                        </div>
+                                    <option value="html" :disabled="! selectedMailMessage.has_html">HTML</option>
+                                    <option value="text" :disabled="! selectedMailMessage.has_text">Text</option>
+                                </x-newdebugbar::select-field>
+                            </x-slot:aside>
+                        </x-newdebugbar::inspector-detail-tabs>
 
                         <div
                             data-ndb-mail-detail-panel="preview"
@@ -484,7 +459,7 @@
                         <x-newdebugbar::mail-message-details />
                     </div>
                 </template>
-            </section>
+            </x-newdebugbar::inspector-detail-pane>
         </x-newdebugbar::inspector-workspace>
     @else
         <x-newdebugbar::empty-state label="No mail was sent or queued." />
