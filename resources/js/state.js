@@ -370,6 +370,20 @@ export function createNewDebugBar(
     notificationChannel: null,
     visibleNotificationCount: summary.section_counts?.notifications ?? 0,
     queryRecords: [],
+    queueActivities: [],
+    queueFilter: 'all',
+    queueSearch: '',
+    queueSelected: null,
+    queueDetailOpen: false,
+    queueDetailTab: 'overview',
+    visibleQueueCount: summary.section_counts?.queue ?? 0,
+    redisCommands: [],
+    redisFilter: 'all',
+    redisSearch: '',
+    redisSelected: null,
+    redisDetailOpen: false,
+    redisDetailTab: 'overview',
+    visibleRedisCount: summary.section_counts?.redis ?? 0,
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
@@ -714,6 +728,14 @@ export function createNewDebugBar(
       const executions = this.selectedQueryRecord?.executions ?? [];
 
       return executions.find((query) => query.execution === this.querySelectedExecution) ?? executions[0] ?? null;
+    },
+
+    get selectedQueueActivity() {
+      return this.queueActivities.find((activity) => activity.execution === this.queueSelected) ?? null;
+    },
+
+    get selectedRedisCommand() {
+      return this.redisCommands.find((command) => command.execution === this.redisSelected) ?? null;
     },
 
     get selectedAuthorizationDecision() {
@@ -1926,6 +1948,20 @@ export function createNewDebugBar(
       this.notificationChannel = null;
       this.visibleNotificationCount = 0;
       this.queryRecords = [];
+      this.queueActivities = [];
+      this.queueFilter = 'all';
+      this.queueSearch = '';
+      this.queueSelected = null;
+      this.queueDetailOpen = false;
+      this.queueDetailTab = 'overview';
+      this.visibleQueueCount = 0;
+      this.redisCommands = [];
+      this.redisFilter = 'all';
+      this.redisSearch = '';
+      this.redisSelected = null;
+      this.redisDetailOpen = false;
+      this.redisDetailTab = 'overview';
+      this.visibleRedisCount = 0;
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
@@ -2612,6 +2648,224 @@ export function createNewDebugBar(
 
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
+    },
+
+    initializeQueue(activities) {
+      this.queueActivities = Array.isArray(activities)
+        ? activities.map((activity) => ({
+            ...activity,
+            search: [
+              activity?.job,
+              activity?.job_label,
+              activity?.connection,
+              activity?.queue,
+              activity?.job_id,
+              activity?.status,
+              activity?.communication_type,
+              activity?.communication_class,
+              ...(Array.isArray(activity?.channels) ? activity.channels : []),
+              ...(Array.isArray(activity?.notifiable_types) ? activity.notifiable_types : []),
+              activity?.exception_class,
+              ...(Array.isArray(activity?.attempts)
+                ? activity.attempts.map((attempt) => attempt?.exception_class)
+                : []),
+            ]
+              .filter((value) => value !== null && value !== undefined)
+              .join(' ')
+              .toLowerCase(),
+          }))
+        : [];
+      this.queueFilter = 'all';
+      this.queueSearch = '';
+      this.queueSelected = this.queueActivities[0]?.execution ?? null;
+      this.queueDetailOpen = false;
+      this.queueDetailTab = 'overview';
+      this.$nextTick?.(() => this.applyQueueView());
+    },
+
+    setQueueFilter(filter) {
+      if (!['all', 'waiting', 'failed', 'completed'].includes(filter)) return;
+
+      this.queueFilter = filter;
+      this.applyQueueView();
+    },
+
+    selectQueueActivity(execution) {
+      if (!this.queueActivities.some((activity) => activity.execution === execution)) return;
+
+      this.queueSelected = execution;
+      this.queueDetailOpen = true;
+      this.queueDetailTab = 'overview';
+      this.resetQueueDetail(true);
+    },
+
+    setQueueDetailTab(tab) {
+      if (!['overview', 'attempts'].includes(tab)) return;
+
+      this.queueDetailTab = tab;
+      this.resetQueueDetail(false);
+    },
+
+    closeQueueDetail() {
+      const selected = this.queueSelected;
+
+      if (!this.queueDetailOpen) return;
+
+      this.queueDetailOpen = false;
+      this.$nextTick?.(() => {
+        const row = [...(this.$refs?.queueList?.children ?? [])].find(
+          (item) => Number(item.dataset.ndbQueueExecution) === selected,
+        );
+        row?.focus?.({ preventScroll: true });
+      });
+    },
+
+    resetQueueDetail(focus = false) {
+      this.$nextTick?.(() => {
+        this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
+        this.$refs?.queueDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        if (focus) this.$refs?.queueDetail?.focus?.({ preventScroll: true });
+        browser.highlight?.();
+      });
+    },
+
+    applyQueueView() {
+      const list = this.$refs?.queueList;
+      const search = this.queueSearch.toLowerCase().trim();
+      const activities = new Map(this.queueActivities.map((activity) => [activity.execution, activity]));
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      [...(list?.children ?? [])].forEach((item) => {
+        const execution = Number(item.dataset.ndbQueueExecution);
+        const activity = activities.get(execution);
+        const matchesFilter = this.queueFilter === 'all' || item.dataset.ndbQueueGroup === this.queueFilter;
+        const matches = activity !== undefined && matchesFilter && (search === '' || activity.search.includes(search));
+        item.hidden = !matches;
+
+        if (matches) {
+          item.style.removeProperty('display');
+          firstVisible ??= execution;
+          selectedVisible ||= execution === this.queueSelected;
+          visible++;
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
+      });
+
+      this.visibleQueueCount = visible;
+
+      if (!selectedVisible) {
+        this.queueSelected = firstVisible;
+        this.queueDetailTab = 'overview';
+        if (firstVisible === null) this.queueDetailOpen = false;
+      }
+    },
+
+    initializeRedis(commands) {
+      this.redisCommands = Array.isArray(commands)
+        ? commands.map((command) => ({
+            ...command,
+            search: [
+              command?.command,
+              command?.connection,
+              ...(Array.isArray(command?.keys) ? command.keys : []),
+              ...(Array.isArray(command?.key_hashes) ? command.key_hashes : []),
+              command?.exception_class,
+            ]
+              .filter((value) => value !== null && value !== undefined)
+              .join(' ')
+              .toLowerCase(),
+          }))
+        : [];
+      this.redisFilter = 'all';
+      this.redisSearch = '';
+      this.redisSelected = this.redisCommands[0]?.execution ?? null;
+      this.redisDetailOpen = false;
+      this.redisDetailTab = 'overview';
+      this.$nextTick?.(() => this.applyRedisView());
+    },
+
+    setRedisFilter(filter) {
+      if (!['all', 'failed'].includes(filter)) return;
+
+      this.redisFilter = filter;
+      this.applyRedisView();
+    },
+
+    selectRedisCommand(execution) {
+      if (!this.redisCommands.some((command) => command.execution === execution)) return;
+
+      this.redisSelected = execution;
+      this.redisDetailOpen = true;
+      this.redisDetailTab = 'overview';
+      this.resetRedisDetail(true);
+    },
+
+    setRedisDetailTab(tab) {
+      if (!['overview', 'keys'].includes(tab)) return;
+
+      this.redisDetailTab = tab;
+      this.resetRedisDetail(false);
+    },
+
+    closeRedisDetail() {
+      const selected = this.redisSelected;
+
+      if (!this.redisDetailOpen) return;
+
+      this.redisDetailOpen = false;
+      this.$nextTick?.(() => {
+        const row = [...(this.$refs?.redisList?.children ?? [])].find(
+          (item) => Number(item.dataset.ndbRedisExecution) === selected,
+        );
+        row?.focus?.({ preventScroll: true });
+      });
+    },
+
+    resetRedisDetail(focus = false) {
+      this.$nextTick?.(() => {
+        this.$refs?.content?.scrollTo?.({ top: 0, behavior: 'instant' });
+        this.$refs?.redisDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        if (focus) this.$refs?.redisDetail?.focus?.({ preventScroll: true });
+        browser.highlight?.();
+      });
+    },
+
+    applyRedisView() {
+      const list = this.$refs?.redisList;
+      const search = this.redisSearch.toLowerCase().trim();
+      const commands = new Map(this.redisCommands.map((command) => [command.execution, command]));
+      let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
+
+      [...(list?.children ?? [])].forEach((item) => {
+        const execution = Number(item.dataset.ndbRedisExecution);
+        const command = commands.get(execution);
+        const failed = item.dataset.ndbRedisFailed === 'true';
+        const matchesFilter = this.redisFilter === 'all' || (this.redisFilter === 'failed' && failed);
+        const matches = command !== undefined && matchesFilter && (search === '' || command.search.includes(search));
+        item.hidden = !matches;
+
+        if (matches) {
+          item.style.removeProperty('display');
+          firstVisible ??= execution;
+          selectedVisible ||= execution === this.redisSelected;
+          visible++;
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
+      });
+
+      this.visibleRedisCount = visible;
+
+      if (!selectedVisible) {
+        this.redisSelected = firstVisible;
+        this.redisDetailTab = 'overview';
+        if (firstVisible === null) this.redisDetailOpen = false;
+      }
     },
 
     initializeCache(operations) {

@@ -1,36 +1,410 @@
-{{-- Renders captured Redis commands. --}}
-<dl class="ndb:grid ndb:grid-cols-3 ndb:divide-x ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-    @foreach ([['Commands', $section['summary']['count']], ['Total time', $section['summary']['duration_ms'].' ms'], ['Failures', $section['summary']['failed_count']]] as [$label, $value])
-        <div class="ndb:px-3.5 ndb:py-3">
-            <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                {{ $label }}
-            </dt>
-            <dd class="ndb:mt-1 ndb:text-lg ndb:font-bold ndb:tabular-nums">{{ $value }}</dd>
-        </div>
-    @endforeach
-</dl>
-<div class="ndb:space-y-2">
-    @forelse ($section['payload']['items'] as $index => $item)
-        <article
-            wire:key="redis-{{ $index }}"
-            class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3 ndb:rounded-xl ndb:border ndb:px-3.5 ndb:py-3 {{ ($item['failed'] ?? false) ? 'ndb:border-red-200 ndb:bg-red-50/35 ndb:dark:border-red-950 ndb:dark:bg-red-950/15' : 'ndb:border-zinc-200 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/30' }}"
-        >
-            <code class="ndb:w-20 ndb:shrink-0 ndb:text-xs ndb:font-bold">{{ $item['command'] }}</code>
-            <div class="ndb:min-w-0 ndb:flex-1">
-                <p class="ndb:flex ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">
-                    <span>{{ $item['connection'] }}</span><span>{{ $item['key_policy'] ?? 'hash' }} keys</span>
-                </p>
-                @if (($item['keys'] ?? []) !== [])
-                    <code class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px]">{{ implode(', ', $item['keys']) }}</code>
-                @elseif (($item['key_hashes'] ?? []) !== [])
-                    <code class="ndb:mt-1 ndb:block ndb:truncate ndb:text-[11px]">{{ implode(', ', $item['key_hashes']) }}</code>
-                @else
-                    <p class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-400">No key metadata</p>
-                @endif
-            </div>
-            <span class="ndb:shrink-0 ndb:text-xs ndb:font-bold ndb:tabular-nums">{{ $item['duration_ms'] }} ms</span>
-        </article>
-    @empty
+{{-- Presents direct Redis commands in the shared inspector workspace. --}}
+@php
+    $formatDuration = static function (float $duration): string {
+        if ($duration === 0.0) {
+            return '0 ms';
+        }
+
+        return number_format($duration, $duration < 1 ? 3 : 2).' ms';
+    };
+    $redisItems = collect($section['payload']['items'] ?? [])->values()->map(function (array $item, int $index) use ($formatDuration): array {
+        $failed = (bool) ($item['failed'] ?? false);
+        $command = strtoupper((string) ($item['command'] ?? 'COMMAND'));
+        $connection = is_string($item['connection'] ?? null) && $item['connection'] !== ''
+            ? $item['connection']
+            : 'default';
+        $duration = is_numeric($item['duration_ms'] ?? null) ? max(0, (float) $item['duration_ms']) : 0.0;
+        $at = is_numeric($item['at_ms'] ?? null) ? max(0, (float) $item['at_ms']) : null;
+        $afterResponse = is_numeric($item['after_response_ms'] ?? null)
+            ? max(0, (float) $item['after_response_ms'])
+            : null;
+        $keys = array_values(array_filter(
+            (array) ($item['keys'] ?? []),
+            static fn (mixed $key): bool => is_scalar($key),
+        ));
+        $keys = array_map('strval', $keys);
+        $hashes = array_values(array_filter(
+            (array) ($item['key_hashes'] ?? []),
+            static fn (mixed $hash): bool => is_string($hash) && $hash !== '',
+        ));
+        $keyCount = max(0, (int) ($item['key_count'] ?? count($keys)));
+        $retainedCount = max(0, (int) ($item['key_retained'] ?? max(count($keys), count($hashes))));
+        $droppedCount = max(0, (int) ($item['key_dropped'] ?? max(0, $keyCount - $retainedCount)));
+        $keyLabel = match (true) {
+            $keys !== [] && $keyCount > 1 => $keys[0].' and '.number_format($keyCount - 1).' more',
+            $keys !== [] => $keys[0],
+            $keyCount > 0 => number_format($keyCount).' protected '.\Illuminate\Support\Str::plural('key', $keyCount),
+            default => 'No key metadata retained',
+        };
+
+        return [
+            'execution' => $index + 1,
+            'command' => $command,
+            'connection' => $connection,
+            'duration_ms' => $duration,
+            'duration_label' => $failed ? '—' : $formatDuration($duration),
+            'failed' => $failed,
+            'status_label' => $failed ? 'Failed' : 'Completed',
+            'exception_class' => is_string($item['exception_class'] ?? null) ? $item['exception_class'] : null,
+            'at_ms' => $at,
+            'at_label' => $at === null ? '—' : $formatDuration($at),
+            'lifecycle' => is_string($item['lifecycle'] ?? null) ? $item['lifecycle'] : 'request',
+            'phase_label' => ($item['lifecycle'] ?? null) === 'after_response' ? 'After response' : 'During request',
+            'after_response_ms' => $afterResponse,
+            'after_response_label' => $afterResponse === null ? null : $formatDuration($afterResponse),
+            'key_count' => $keyCount,
+            'key_retained' => $retainedCount,
+            'key_dropped' => $droppedCount,
+            'key_policy' => ($item['key_policy'] ?? null) === 'full' ? 'full' : 'hash',
+            'key_capture_label' => ($item['key_policy'] ?? null) === 'full' ? 'Full keys' : 'Protected identifiers',
+            'key_label' => $keyLabel,
+            'keys' => $keys,
+            'key_hashes' => $hashes,
+        ];
+    })->all();
+    $redisCount = count($redisItems);
+    $failureCount = (int) ($section['summary']['failed_count'] ?? collect($redisItems)->where('failed', true)->count());
+    $totalDuration = (float) ($section['summary']['duration_ms'] ?? 0);
+    $summaryParts = [$formatDuration($totalDuration).' total'];
+
+    if ($failureCount > 0) {
+        $summaryParts[] = number_format($failureCount).' '.\Illuminate\Support\Str::plural('failure', $failureCount);
+    }
+@endphp
+
+<div
+    data-ndb-redis
+    x-init="initializeRedis(JSON.parse(atob($el.querySelector('[data-ndb-redis-payload]').textContent.trim())))"
+    class="ndb:border-l-0 ndb:bg-transparent ndb:text-zinc-950 ndb:dark:text-white ndb:lg:flex ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:flex-col"
+>
+    <script type="application/json" data-ndb-redis-payload>
+        {{ base64_encode(json_encode($redisItems, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE)) }}
+    </script>
+
+    @if ($redisItems !== [])
+        <x-newdebugbar::inspector-workspace frame="top" data-ndb-redis-workspace class="ndb:border-x-0">
+            <x-newdebugbar::inspector-list-panel detail-open="redisDetailOpen" list-ref="redisList">
+                <x-slot:controls>
+                    <div class="ndb:min-w-0">
+                        <p class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200">
+                            {{ number_format($redisCount) }} {{ \Illuminate\Support\Str::plural('command', $redisCount) }}
+                            <span
+                                x-show.important="visibleRedisCount !== redisCommands.length"
+                                class="ndb:ml-1 ndb:text-[11px] ndb:font-medium ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            ><span data-ndb-redis-visible-count x-text="visibleRedisCount"></span> shown</span>
+                        </p>
+                        <p class="ndb:mt-0.5 ndb:text-[11px] ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                            {{ implode(', ', $summaryParts) }}
+                        </p>
+                    </div>
+
+                    @if ($redisCount >= 5 || $failureCount > 0)
+                        <x-newdebugbar::inspector-list-controls :show-search="$redisCount >= 5">
+                            <x-slot:search>
+                                <x-newdebugbar::search-field
+                                    label="Search Redis commands"
+                                    placeholder="Search commands or keys"
+                                    data-ndb-redis-search
+                                    x-model="redisSearch"
+                                    @input.debounce.100ms="applyRedisView()"
+                                />
+                            </x-slot:search>
+                            @if ($failureCount > 0)
+                                <x-slot:filter>
+                                    <x-newdebugbar::select-field
+                                        label="Filter Redis commands"
+                                        data-ndb-redis-filter
+                                        x-model="redisFilter"
+                                        @change="setRedisFilter($event.target.value)"
+                                    >
+                                        <option value="all">All ({{ $redisCount }})</option>
+                                        <option value="failed">Failed ({{ $failureCount }})</option>
+                                    </x-newdebugbar::select-field>
+                                </x-slot:filter>
+                            @endif
+                        </x-newdebugbar::inspector-list-controls>
+                    @endif
+                </x-slot:controls>
+
+                <x-slot:list data-ndb-redis-list>
+                    @foreach ($redisItems as $item)
+                        <button
+                            type="button"
+                            wire:key="redis-command-{{ $item['execution'] }}"
+                            data-ndb-redis-item="{{ $item['execution'] }}"
+                            data-ndb-redis-execution="{{ $item['execution'] }}"
+                            data-ndb-redis-failed="{{ $item['failed'] ? 'true' : 'false' }}"
+                            aria-controls="newdebugbar-redis-detail"
+                            @click="selectRedisCommand({{ $item['execution'] }})"
+                            :aria-pressed="redisSelected === {{ $item['execution'] }}"
+                            :class="redisSelected === {{ $item['execution'] }}
+                                ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
+                                : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
+                            class="ndb:grid ndb:h-auto ndb:min-h-0 ndb:w-full ndb:min-w-0 ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-x-2 ndb:border-l-0 ndb:bg-transparent ndb:px-3 ndb:py-2.5 ndb:text-left ndb:text-xs ndb:text-zinc-950 ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-white"
+                        >
+                            <code
+                                data-ndb-redis-command
+                                class="ndb:row-span-2 ndb:min-w-0 ndb:truncate ndb:bg-transparent ndb:font-mono ndb:text-xs ndb:font-bold"
+                            >{{ $item['command'] }}</code>
+                            <span
+                                data-ndb-redis-key-label
+                                class="ndb:min-w-0 ndb:truncate ndb:bg-transparent ndb:text-xs ndb:font-semibold ndb:text-zinc-800 ndb:dark:text-zinc-200"
+                                title="{{ $item['key_label'] }}"
+                            >{{ $item['key_label'] }}</span>
+                            <span
+                                @class([
+                                    'ndb:text-right ndb:text-[11px] ndb:font-bold',
+                                    'ndb:text-red-600 ndb:dark:text-red-300' => $item['failed'],
+                                    'ndb:text-zinc-500 ndb:dark:text-zinc-400' => ! $item['failed'],
+                                ])
+                            >{{ $item['status_label'] }}</span>
+                            <span class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $item['connection'] }}</span>
+                            <span class="ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $item['duration_label'] }}</span>
+                        </button>
+                    @endforeach
+                </x-slot:list>
+
+                <x-slot:empty x-show.important="visibleRedisCount === 0">
+                    <x-newdebugbar::empty-state label="No Redis commands match these controls." />
+                </x-slot:empty>
+            </x-newdebugbar::inspector-list-panel>
+
+            <x-newdebugbar::inspector-detail-pane
+                detail-open="redisDetailOpen"
+                detail-ref="redisDetail"
+                detail-label="Selected Redis command details"
+                back-label="Redis"
+                close-action="closeRedisDetail()"
+                id="newdebugbar-redis-detail"
+                data-ndb-redis-detail
+                class="ndb:border-x-0 ndb:bg-transparent"
+            >
+                <x-slot:back>
+                    <x-newdebugbar::inspector-detail-back
+                        data-ndb-redis-back
+                        @click="closeRedisDetail()"
+                        label="Redis"
+                    />
+                </x-slot:back>
+
+                <template x-if="selectedRedisCommand">
+                    <div class="ndb:flex ndb:flex-col">
+                        <x-newdebugbar::inspector-detail-header data-ndb-redis-detail-header>
+                            <x-slot:title>
+                                <code
+                                    class="ndb:min-w-0 ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-sm ndb:font-bold"
+                                    x-text="selectedRedisCommand.command"
+                                ></code>
+                            </x-slot:title>
+                            <x-slot:aside>
+                                <span
+                                    data-ndb-redis-detail-status
+                                    class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
+                                    :class="selectedRedisCommand.failed
+                                        ? 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300'
+                                        : 'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300'"
+                                    x-text="selectedRedisCommand.status_label"
+                                ></span>
+                            </x-slot:aside>
+                            <x-slot:metadata>
+                                <div>
+                                    <dt class="ndb:text-zinc-400">Connection</dt>
+                                    <dd class="ndb:font-semibold" x-text="selectedRedisCommand.connection"></dd>
+                                </div>
+                                <div>
+                                    <dt class="ndb:text-zinc-400">Captured at</dt>
+                                    <dd
+                                        class="ndb:font-semibold ndb:tabular-nums"
+                                        x-text="selectedRedisCommand.at_label"
+                                    ></dd>
+                                </div>
+                            </x-slot:metadata>
+                        </x-newdebugbar::inspector-detail-header>
+
+                        <x-newdebugbar::inspector-detail-tabs label="Redis command detail">
+                            @foreach (['overview' => 'Overview', 'keys' => 'Keys'] as $tab => $label)
+                                <x-newdebugbar::filter-tab
+                                    variant="segmented"
+                                    data-ndb-redis-detail-tab="{{ $tab }}"
+                                    @click="setRedisDetailTab('{{ $tab }}')"
+                                    ::aria-pressed="redisDetailTab === '{{ $tab }}'"
+                                    class="ndb:h-auto ndb:min-h-8"
+                                >{{ $label }}</x-newdebugbar::filter-tab>
+                            @endforeach
+                            <x-slot:aside>
+                                <x-newdebugbar::inspector-action
+                                    icon="copy"
+                                    data-ndb-redis-copy-keys
+                                    x-show.important="redisDetailTab === 'keys' && selectedRedisCommand.keys.length"
+                                    @click="copyText(selectedRedisCommand.keys.join('\n'))"
+                                    class="ndb:h-9 ndb:min-h-0 ndb:bg-transparent"
+                                >Copy keys</x-newdebugbar::inspector-action>
+                            </x-slot:aside>
+                        </x-newdebugbar::inspector-detail-tabs>
+
+                        <template x-if="redisDetailTab === 'overview'">
+                            <div data-ndb-redis-detail-panel="overview" class="ndb:space-y-4 ndb:p-4">
+                                <x-newdebugbar::inspector-facts columns="4" data-ndb-redis-facts>
+                                    <x-newdebugbar::inspector-fact label="Result"
+                                        ><x-slot:value x-text="selectedRedisCommand.status_label"></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Duration"
+                                        ><x-slot:value
+                                            class="ndb:tabular-nums"
+                                            x-text="selectedRedisCommand.duration_label"
+                                        ></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Keys"
+                                        ><x-slot:value
+                                            class="ndb:tabular-nums"
+                                            x-text="selectedRedisCommand.key_count"
+                                        ></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Phase"
+                                        ><x-slot:value x-text="selectedRedisCommand.phase_label"></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                </x-newdebugbar::inspector-facts>
+
+                                <section
+                                    data-ndb-redis-failure
+                                    x-show.important="selectedRedisCommand.failed"
+                                    class="ndb:rounded-lg ndb:border ndb:border-red-200 ndb:bg-red-50/55 ndb:p-3 ndb:dark:border-red-950 ndb:dark:bg-red-950/20"
+                                >
+                                    <x-newdebugbar::inspector-explanation
+                                        title="What should I check after this failure?"
+                                        description="The captured exception class identifies the failed Redis client path. Check the application log and this connection for the full failure message."
+                                    />
+                                    <p
+                                        class="ndb:mt-2 ndb:break-all ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
+                                        x-text="selectedRedisCommand.exception_class ?? 'Exception class unavailable'"
+                                    ></p>
+                                </section>
+
+                                <p class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    This list contains direct Redis commands. Matching commands already shown as cache
+                                    operations are removed.
+                                </p>
+                                <p
+                                    data-ndb-redis-after-response
+                                    x-show.important="selectedRedisCommand.lifecycle === 'after_response'"
+                                    class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >
+                                    This command ran after the response<span
+                                        x-show.important="selectedRedisCommand.after_response_label"
+                                    >
+                                        at
+                                        <span
+                                            class="ndb:tabular-nums"
+                                            x-text="selectedRedisCommand.after_response_label"
+                                        ></span></span
+                                    >, so its time is not part of the response time.
+                                </p>
+                            </div>
+                        </template>
+
+                        <template x-if="redisDetailTab === 'keys'">
+                            <div data-ndb-redis-detail-panel="keys" class="ndb:space-y-4 ndb:p-4">
+                                <x-newdebugbar::inspector-explanation
+                                    title="Which Redis keys were used?"
+                                    description="Full keys are shown when full local capture is active. Otherwise, stable protected identifiers let you match repeated access without showing key text."
+                                />
+                                <x-newdebugbar::inspector-facts columns="4" data-ndb-redis-key-facts>
+                                    <x-newdebugbar::inspector-fact label="Recognized"
+                                        ><x-slot:value
+                                            class="ndb:tabular-nums"
+                                            x-text="selectedRedisCommand.key_count"
+                                        ></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Retained"
+                                        ><x-slot:value
+                                            class="ndb:tabular-nums"
+                                            x-text="selectedRedisCommand.key_retained"
+                                        ></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Omitted"
+                                        ><x-slot:value
+                                            class="ndb:tabular-nums"
+                                            x-text="selectedRedisCommand.key_dropped"
+                                        ></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Capture"
+                                        ><x-slot:value x-text="selectedRedisCommand.key_capture_label"></x-slot:value
+                                    ></x-newdebugbar::inspector-fact>
+                                </x-newdebugbar::inspector-facts>
+
+                                <template x-if="selectedRedisCommand.keys.length">
+                                    <x-newdebugbar::inspector-definition-list data-ndb-redis-keys>
+                                        <template
+                                            x-for="(key, index) in selectedRedisCommand.keys"
+                                            :key="`${index}:${key}`"
+                                        >
+                                            <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
+                                                <dt
+                                                    class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                                    x-text="`Key ${index + 1}`"
+                                                ></dt>
+                                                <dd
+                                                    data-ndb-redis-key
+                                                    class="ndb:break-all ndb:bg-transparent ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                                    x-text="key"
+                                                ></dd>
+                                            </div>
+                                        </template>
+                                    </x-newdebugbar::inspector-definition-list>
+                                </template>
+
+                                <template
+                                    x-if="
+                                        selectedRedisCommand.keys.length === 0 && selectedRedisCommand.key_hashes.length
+                                    "
+                                >
+                                    <x-newdebugbar::inspector-definition-list data-ndb-redis-protected-keys>
+                                        <template
+                                            x-for="(hash, index) in selectedRedisCommand.key_hashes"
+                                            :key="`${index}:${hash}`"
+                                        >
+                                            <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
+                                                <dt
+                                                    class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                                    x-text="`Identifier ${index + 1}`"
+                                                ></dt>
+                                                <dd
+                                                    data-ndb-redis-key-hash
+                                                    class="ndb:break-all ndb:font-mono ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                                    x-text="hash"
+                                                ></dd>
+                                            </div>
+                                        </template>
+                                    </x-newdebugbar::inspector-definition-list>
+                                </template>
+
+                                <x-newdebugbar::empty-state
+                                    label="No key metadata was retained for this command."
+                                    x-show.important="
+                                        selectedRedisCommand.keys.length === 0 &&
+                                        selectedRedisCommand.key_hashes.length === 0
+                                    "
+                                />
+                                <p
+                                    data-ndb-redis-key-limit
+                                    x-show.important="selectedRedisCommand.key_dropped > 0"
+                                    class="ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >
+                                    <span class="ndb:tabular-nums" x-text="selectedRedisCommand.key_dropped"></span>
+                                    additional key identifiers were omitted by the nested item limit.
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <x-newdebugbar::inspector-detail-empty
+                    label="Choose a command to inspect its Redis evidence."
+                    x-show.important="! selectedRedisCommand"
+                />
+            </x-newdebugbar::inspector-detail-pane>
+        </x-newdebugbar::inspector-workspace>
+    @else
         <x-newdebugbar::empty-state label="No direct Redis commands were captured." />
-    @endforelse
+    @endif
 </div>

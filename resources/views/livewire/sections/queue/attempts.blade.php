@@ -1,0 +1,41 @@
+<template x-if="queueDetailTab === 'attempts'">
+    <div data-ndb-queue-detail-panel="attempts" class="ndb:p-4">
+        <x-newdebugbar::inspector-explanation
+            title="What happened on each worker attempt?"
+            description="Each row is a retained worker outcome for this dispatched job. Open a linked profile when you need the request, exception, or timing evidence from that attempt."
+        />
+        <template x-if="selectedQueueActivity.attempts.length">
+            <div class="ndb:mt-3 ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                <template x-for="attempt in selectedQueueActivity.attempts" :key="attempt.sequence">
+                    <article
+                        data-ndb-queue-attempt
+                        class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:py-3 ndb:sm:grid-cols-[5rem_6rem_minmax(0,1fr)_auto] ndb:sm:items-center"
+                    >
+                        <span
+                            class="ndb:text-xs ndb:font-bold ndb:tabular-nums"
+                            x-text="
+                                attempt.attempt === null ? `Attempt ${attempt.sequence}` : `Attempt ${attempt.attempt}`
+                            "
+                        ></span>
+                        <span class="ndb:text-[11px] ndb:font-semibold" x-text="attempt.status_label"></span>
+                        <span
+                            class="ndb:min-w-0 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            x-text="attempt.exception_class ?? attempt.recorded_at ?? 'No exception recorded'"
+                        ></span>
+                        <x-newdebugbar::inspector-action
+                            icon="external-link"
+                            x-show.important="attempt.profile_id"
+                            @click="openRelatedProfile(attempt.profile_id, 'queue')"
+                            class="ndb:h-9 ndb:min-h-0 ndb:bg-transparent"
+                        >Open worker</x-newdebugbar::inspector-action>
+                    </article>
+                </template>
+            </div>
+        </template>
+        <x-newdebugbar::empty-state
+            label="No worker attempt has been linked yet."
+            x-show.important="selectedQueueActivity.attempts.length === 0"
+            class="ndb:mt-3"
+        />
+    </div>
+</template>
