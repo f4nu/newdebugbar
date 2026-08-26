@@ -149,7 +149,6 @@
                 'callsite_label' => $callsiteLabel,
                 'callsite_short_label' => $callsiteShortLabel,
                 'stack' => $stack,
-                'headers' => is_string($preview['headers'] ?? null) ? $preview['headers'] : '',
                 'attachments' => $attachments,
                 'attachment_count' => $attachmentCount,
                 'downloadable_attachment_count' => $downloadableAttachmentCount,

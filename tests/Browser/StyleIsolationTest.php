@@ -291,13 +291,9 @@ it('keeps host styles and package styles isolated', function () {
         ->click('[data-ndb-mail-detail-tab="message"]')
         ->assertScript(<<<'JS'
             (() => {
-                const summary = document.querySelector('[data-ndb-mail-headers] summary');
                 const download = document.querySelector('[data-ndb-mail-attachment-download]');
-                const style = getComputedStyle(summary);
 
-                return style.fontSize === '12px'
-                    && style.color !== 'rgb(255, 0, 0)'
-                    && download.getBoundingClientRect().height < 91
+                return download.getBoundingClientRect().height < 91
                     && getComputedStyle(download).backgroundColor !== 'rgb(255, 0, 255)'
                     && getComputedStyle(download).textDecorationLine === 'none';
             })()

@@ -3,7 +3,6 @@
 namespace NewDebugBar\Tests\Fixtures\Mail;
 
 use Illuminate\Mail\Mailable;
-use Symfony\Component\Mime\Email;
 
 /** A configurable mailable used to exercise the mail inspector. */
 final class ProfiledMailable extends Mailable
@@ -35,10 +34,7 @@ final class ProfiledMailable extends Mailable
                 'detailValue' => $this->detailValue,
                 'actionLabel' => $this->actionLabel,
             ])
-            ->text('mail.profiled-text')
-            ->withSymfonyMessage(function (Email $message): void {
-                $message->getHeaders()->addTextHeader('X-Northstar-Flow', 'profiled-mail');
-            });
+            ->text('mail.profiled-text');
 
         if ($this->includeHtml) {
             $mail->view('mail.profiled-html');

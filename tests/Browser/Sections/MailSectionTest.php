@@ -275,16 +275,6 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 return values.every((value) => !getComputedStyle(value).fontFamily.includes('JetBrains Mono'));
             })()
             JS)
-        ->click('[data-ndb-mail-headers] summary')
-        ->assertSee('X-Northstar-Flow: profiled-mail')
-        ->assertScript(<<<'JS'
-            (() => {
-                const code = document.querySelector('[data-ndb-mail-headers] code[data-ndb-language="http"][data-highlighted]');
-
-                return code !== null
-                    && code.querySelector('.hljs-attribute') !== null;
-            })()
-            JS)
         ->click('[data-ndb-mail-detail-tab="source"]')
         ->assertVisible('[data-ndb-mail-detail-panel="source"]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-mail-preview-controls]")).display === "none"')

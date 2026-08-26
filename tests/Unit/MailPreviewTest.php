@@ -11,7 +11,6 @@ it('builds bounded html text eml and attachment previews', function () {
         ->text('Plain preview')
         ->html('<h1>HTML preview</h1>')
         ->attach('private attachment', 'private.txt', 'text/plain');
-    $message->getHeaders()->addTextHeader('X-Application-Trace', 'checkout-ready');
 
     $preview = (new MailPreview(maxBodyBytes: 1_000, maxRecipients: 10))->capture($message);
 
@@ -22,7 +21,6 @@ it('builds bounded html text eml and attachment previews', function () {
         ->html->toBe('<h1>HTML preview</h1>')
         ->attachments_omitted->toBe(0)
         ->attachment_metadata_omitted->toBe(0)
-        ->headers->toContain('X-Application-Trace: checkout-ready')
         ->attachments->toBe([[
             'name' => 'private.txt',
             'content_type' => 'text/plain',

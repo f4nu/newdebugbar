@@ -26,7 +26,6 @@ final class MailPreview
         [$subject, $subjectTruncated] = $this->bounded($message->getSubject(), min(2_000, $this->maxBodyBytes));
         [$html, $htmlTruncated] = $this->bounded($message->getHtmlBody());
         [$text, $textTruncated] = $this->bounded($message->getTextBody());
-        [$headers, $headersTruncated] = $this->bounded($message->getHeaders()->toString());
         $addressesOmitted = $this->addressesOmitted($message);
         [$attachments, $attachmentsOmitted] = $this->attachments($message->getAttachments());
         $copy = $this->boundedCopy($message, $subject, $html, $text, $attachments, $attachmentsOmitted);
@@ -42,14 +41,13 @@ final class MailPreview
             'return_path' => $message->getReturnPath()?->toString(),
             'date' => $message->getDate()?->format(DATE_ATOM),
             'priority' => $message->getPriority(),
-            'headers' => $headers,
             'attachments' => $attachments,
             'html' => $html,
             'text' => $text,
             // The inputs are bounded before serialization so the MIME document
             // stays valid instead of being cut through a header or body part.
             'eml' => $copy->toString(),
-            'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated || $headersTruncated || $addressesOmitted > 0,
+            'truncated' => $subjectTruncated || $htmlTruncated || $textTruncated || $addressesOmitted > 0,
             'attachments_omitted' => $attachmentsOmitted,
             'attachment_metadata_omitted' => max(0, count($message->getAttachments()) - count($attachments)),
             'addresses_omitted' => $addressesOmitted,

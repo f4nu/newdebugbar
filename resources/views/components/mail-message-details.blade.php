@@ -128,18 +128,6 @@
         >
             Some message data was bounded to keep this profile responsive.
         </p>
-
-        <details
-            data-ndb-mail-headers
-            class="ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
-        >
-            <summary class="ndb:cursor-pointer ndb:text-xs ndb:font-bold ndb:text-zinc-900 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-100">
-                Raw headers
-            </summary>
-            <x-newdebugbar::code-block language="http" class="ndb:mt-3">
-                <x-slot:value x-text="selectedMailMessage.headers || 'No raw headers were captured.'"></x-slot:value>
-            </x-newdebugbar::code-block>
-        </details>
     </div>
 </template>
 
