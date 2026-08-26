@@ -384,77 +384,75 @@
                             </x-slot:aside>
                         </x-newdebugbar::inspector-detail-tabs>
 
-                        <div
-                            data-ndb-mail-detail-panel="preview"
-                            x-show.important="mailDetailTab === 'preview'"
-                            class="ndb:flex ndb:flex-col"
-                        >
-                            <div
-                                data-ndb-mail-preview-surface
-                                class="ndb:flex ndb:bg-zinc-100/70 ndb:p-3 ndb:dark:bg-zinc-950/65"
-                            >
-                                <template x-if="selectedMailMessage.has_html || selectedMailMessage.has_text">
-                                    <div
-                                        data-ndb-mail-preview-canvas
-                                        :class="mailPreviewFormat === 'html' && mailPreviewViewport === 'mobile'
-                                            ? 'ndb:max-w-[23.4375rem]'
-                                            : 'ndb:max-w-none'"
-                                        class="ndb:relative ndb:mx-auto ndb:h-80 ndb:w-full ndb:flex-1 ndb:overflow-hidden ndb:transition-[max-width]"
-                                    >
-                                        <iframe
-                                            x-ref="mailPreviewFrame"
-                                            data-ndb-mail-preview-frame
-                                            :src="mailPreviewUrl()"
-                                            :title="'Preview of ' + selectedMailMessage.subject"
-                                            x-init="connectMailPreviewFrame($el)"
-                                            @load="resizeMailPreviewFrame($event.currentTarget)"
-                                            sandbox="allow-scripts"
-                                            referrerpolicy="no-referrer"
-                                            class="ndb:absolute ndb:top-0 ndb:left-1/2 ndb:block ndb:h-80 ndb:w-full ndb:max-w-none ndb:origin-top ndb:box-border ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-sm"
-                                        ></iframe>
-                                    </div>
-                                </template>
-                                <template x-if="! selectedMailMessage.has_html && ! selectedMailMessage.has_text">
-                                    <div class="ndb:m-auto ndb:flex ndb:min-h-80 ndb:w-full ndb:flex-col ndb:items-center ndb:justify-center ndb:rounded-lg ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:bg-white/55 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/45">
-                                        <span class="ndb:grid ndb:size-9 ndb:place-items-center ndb:rounded-xl ndb:bg-zinc-100 ndb:text-zinc-400 ndb:dark:bg-zinc-800">
-                                            <x-newdebugbar::icon name="mail" size="4" />
-                                        </span>
-                                        <p
-                                            class="ndb:mt-3 ndb:text-xs ndb:font-bold"
-                                            x-text="
-                                                selectedMailMessage.status === 'failed'
-                                                    ? 'The worker failed before a preview was created.'
-                                                    : 'The preview is created when the worker sends this message.'
-                                            "
-                                        ></p>
-                                        <p
-                                            x-show="
-                                                ['queued', 'delayed', 'processing', 'waiting'].includes(
-                                                    selectedMailMessage.status,
-                                                )
-                                            "
-                                            class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                            x-text="selectedMailMessage.status_label"
-                                        ></p>
-                                        <button
-                                            x-show.important="selectedMailMessage.related_profile_id"
-                                            type="button"
-                                            data-ndb-mail-related-profile
-                                            @click="
-                                                openRelatedProfile(
-                                                    selectedMailMessage.related_profile_id,
-                                                    selectedMailMessage.related_section,
-                                                )
-                                            "
-                                            class="ndb:mt-4 ndb:inline-flex ndb:h-9 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                        <template x-if="mailDetailTab === 'preview'">
+                            <div data-ndb-mail-detail-panel="preview" class="ndb:flex ndb:flex-col">
+                                <div
+                                    data-ndb-mail-preview-surface
+                                    class="ndb:flex ndb:bg-zinc-100/70 ndb:p-3 ndb:dark:bg-zinc-950/65"
+                                >
+                                    <template x-if="selectedMailMessage.has_html || selectedMailMessage.has_text">
+                                        <div
+                                            data-ndb-mail-preview-canvas
+                                            :class="mailPreviewFormat === 'html' && mailPreviewViewport === 'mobile'
+                                                ? 'ndb:max-w-[23.4375rem]'
+                                                : 'ndb:max-w-none'"
+                                            class="ndb:relative ndb:mx-auto ndb:h-80 ndb:w-full ndb:flex-1 ndb:overflow-hidden ndb:transition-[max-width]"
                                         >
-                                            <span x-text="selectedMailMessage.related_label"></span>
-                                            <x-newdebugbar::icon name="external-link" size="3.5" />
-                                        </button>
-                                    </div>
-                                </template>
+                                            <iframe
+                                                x-ref="mailPreviewFrame"
+                                                data-ndb-mail-preview-frame
+                                                :src="mailPreviewUrl()"
+                                                :title="'Preview of ' + selectedMailMessage.subject"
+                                                x-init="connectMailPreviewFrame($el)"
+                                                @load="resizeMailPreviewFrame($event.currentTarget)"
+                                                sandbox="allow-scripts"
+                                                referrerpolicy="no-referrer"
+                                                class="ndb:absolute ndb:top-0 ndb:left-1/2 ndb:block ndb:h-80 ndb:w-full ndb:max-w-none ndb:origin-top ndb:box-border ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white ndb:shadow-sm"
+                                            ></iframe>
+                                        </div>
+                                    </template>
+                                    <template x-if="! selectedMailMessage.has_html && ! selectedMailMessage.has_text">
+                                        <div class="ndb:m-auto ndb:flex ndb:min-h-80 ndb:w-full ndb:flex-col ndb:items-center ndb:justify-center ndb:rounded-lg ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:bg-white/55 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/45">
+                                            <span class="ndb:grid ndb:size-9 ndb:place-items-center ndb:rounded-xl ndb:bg-zinc-100 ndb:text-zinc-400 ndb:dark:bg-zinc-800">
+                                                <x-newdebugbar::icon name="mail" size="4" />
+                                            </span>
+                                            <p
+                                                class="ndb:mt-3 ndb:text-xs ndb:font-bold"
+                                                x-text="
+                                                    selectedMailMessage.status === 'failed'
+                                                        ? 'The worker failed before a preview was created.'
+                                                        : 'The preview is created when the worker sends this message.'
+                                                "
+                                            ></p>
+                                            <p
+                                                x-show="
+                                                    ['queued', 'delayed', 'processing', 'waiting'].includes(
+                                                        selectedMailMessage.status,
+                                                    )
+                                                "
+                                                class="ndb:mt-1 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                x-text="selectedMailMessage.status_label"
+                                            ></p>
+                                            <button
+                                                x-show.important="selectedMailMessage.related_profile_id"
+                                                type="button"
+                                                data-ndb-mail-related-profile
+                                                @click="
+                                                    openRelatedProfile(
+                                                        selectedMailMessage.related_profile_id,
+                                                        selectedMailMessage.related_section,
+                                                    )
+                                                "
+                                                class="ndb:mt-4 ndb:inline-flex ndb:h-9 ndb:items-center ndb:gap-2 ndb:rounded-lg ndb:bg-indigo-600 ndb:px-3 ndb:text-xs ndb:font-bold ndb:text-white ndb:transition ndb:hover:bg-indigo-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
+                                            >
+                                                <span x-text="selectedMailMessage.related_label"></span>
+                                                <x-newdebugbar::icon name="external-link" size="3.5" />
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
-                        </div>
+                        </template>
 
                         <x-newdebugbar::mail-message-details />
                     </div>

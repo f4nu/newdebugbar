@@ -1,3 +1,4 @@
+{{-- Presents one authorization decision through its result and retained source evidence. --}}
 <x-newdebugbar::inspector-detail-pane
     detail-open="authorizationDetailOpen"
     detail-ref="authorizationDetail"
@@ -16,20 +17,21 @@
 
     <template x-if="selectedAuthorizationDecision">
         <div class="ndb:flex ndb:flex-col">
-            <header
-                data-ndb-authorization-header
-                class="ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800"
-            >
-                <code
-                    data-ndb-authorization-detail-ability
-                    class="ndb:block ndb:break-words ndb:font-mono ndb:text-base ndb:font-bold ndb:leading-6"
-                    x-text="selectedAuthorizationDecision.ability"
-                ></code>
-                <p
-                    class="ndb:mt-1 ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
-                    x-text="'Decision #' + selectedAuthorizationDecision.execution"
-                ></p>
-            </header>
+            <x-newdebugbar::inspector-detail-header data-ndb-authorization-header>
+                <x-slot:title>
+                    <div class="ndb:min-w-0">
+                        <code
+                            data-ndb-authorization-detail-ability
+                            class="ndb:block ndb:break-words ndb:font-mono ndb:text-base ndb:font-bold ndb:leading-6"
+                            x-text="selectedAuthorizationDecision.ability"
+                        ></code>
+                        <p
+                            class="ndb:mt-1 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
+                            x-text="'Decision #' + selectedAuthorizationDecision.execution"
+                        ></p>
+                    </div>
+                </x-slot:title>
+            </x-newdebugbar::inspector-detail-header>
 
             <x-newdebugbar::inspector-detail-tabs label="Authorization decision detail">
                 @foreach (['decision' => 'Decision', 'source' => 'Source'] as $tab => $label)
@@ -38,44 +40,30 @@
                         data-ndb-authorization-detail-tab="{{ $tab }}"
                         @click="setAuthorizationDetailTab({{ \Illuminate\Support\Js::from($tab) }})"
                         ::aria-pressed="authorizationDetailTab === {{ \Illuminate\Support\Js::from($tab) }}"
-                        class="ndb:h-auto"
                     >
                         {{ $label }}
                     </x-newdebugbar::filter-tab>
                 @endforeach
             </x-newdebugbar::inspector-detail-tabs>
 
-            <div class="ndb:p-4">
-                <div
-                    data-ndb-authorization-detail-panel="decision"
-                    x-show.important="authorizationDetailTab === 'decision'"
-                    class="ndb:space-y-6"
-                >
-                    <dl
-                        data-ndb-authorization-metadata
-                        class="ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-4 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800"
-                    >
-                        <div class="ndb:min-w-0">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Result
-                            </dt>
-                            <dd
+            <template x-if="authorizationDetailTab === 'decision'">
+                <div data-ndb-authorization-detail-panel="decision" class="ndb:space-y-5 ndb:p-4">
+                    <x-newdebugbar::inspector-facts columns="4" data-ndb-authorization-metadata>
+                        <x-newdebugbar::inspector-fact label="Result">
+                            <x-slot:value
                                 data-ndb-authorization-detail-result
-                                :class="selectedAuthorizationDecision.result === 'allowed'
+                                ::class="selectedAuthorizationDecision.result === 'allowed'
                                     ? 'ndb:text-emerald-700 ndb:dark:text-emerald-300'
                                     : 'ndb:text-red-700 ndb:dark:text-red-300'"
-                                class="ndb:mt-0.5 ndb:bg-transparent ndb:text-xs ndb:font-bold"
+                                class="ndb:text-xs ndb:font-bold"
                                 x-text="selectedAuthorizationDecision.result_label"
-                            ></dd>
-                        </div>
+                            ></x-slot:value>
+                        </x-newdebugbar::inspector-fact>
 
-                        <div data-ndb-authorization-actor-detail class="ndb:min-w-0">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Actor
-                            </dt>
-                            <dd class="ndb:mt-0.5 ndb:min-w-0">
+                        <x-newdebugbar::inspector-fact label="Actor" data-ndb-authorization-actor-detail>
+                            <x-slot:value>
                                 <span
-                                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                                    class="ndb:block ndb:truncate ndb:text-xs ndb:font-semibold"
                                     x-text="selectedAuthorizationDecision.actor_label"
                                 ></span>
                                 <code
@@ -88,66 +76,34 @@
                                     class="ndb:mt-0.5 ndb:flex ndb:min-w-0 ndb:gap-1.5 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                 >
                                     <span x-text="selectedAuthorizationDecision.actor_identifier_name ?? 'Identifier'"></span>
-                                    <code
-                                        class="ndb:min-w-0 ndb:truncate ndb:font-mono ndb:font-semibold"
+                                    <span
+                                        class="ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:tabular-nums"
                                         x-text="selectedAuthorizationDecision.actor_identifier"
-                                    ></code>
+                                    ></span>
                                 </span>
-                            </dd>
-                        </div>
+                            </x-slot:value>
+                        </x-newdebugbar::inspector-fact>
 
-                        <div data-ndb-authorization-handler-detail class="ndb:min-w-0">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Configured handler
-                            </dt>
-                            <dd
-                                :title="selectedAuthorizationDecision.handler_name"
-                                class="ndb:mt-0.5 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                x-text="selectedAuthorizationDecision.handler_short_name"
-                            ></dd>
-                        </div>
-
-                        <div class="ndb:min-w-0">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Source
-                            </dt>
-                            <dd
-                                :title="selectedAuthorizationDecision.callsite_label"
-                                class="ndb:mt-0.5 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                x-text="selectedAuthorizationDecision.callsite_short_label"
-                            ></dd>
-                        </div>
-
-                        <div class="ndb:min-w-0">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                Response code
-                            </dt>
-                            <dd
-                                class="ndb:mt-0.5 ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                        <x-newdebugbar::inspector-fact label="Response code">
+                            <x-slot:value
+                                class="ndb:truncate ndb:text-xs ndb:font-semibold ndb:tabular-nums"
                                 x-text="selectedAuthorizationDecision.result_code ?? '—'"
-                            ></dd>
-                        </div>
+                            ></x-slot:value>
+                        </x-newdebugbar::inspector-fact>
 
-                        <div class="ndb:min-w-0">
-                            <dt class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                HTTP status
-                            </dt>
-                            <dd
-                                class="ndb:mt-0.5 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
+                        <x-newdebugbar::inspector-fact label="HTTP status">
+                            <x-slot:value
+                                class="ndb:truncate ndb:text-xs ndb:font-semibold ndb:tabular-nums"
                                 x-text="selectedAuthorizationDecision.result_status ?? '—'"
-                            ></dd>
-                        </div>
-                    </dl>
+                            ></x-slot:value>
+                        </x-newdebugbar::inspector-fact>
+                    </x-newdebugbar::inspector-facts>
 
-                    <dl
-                        data-ndb-authorization-arguments-detail
-                        class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-b ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800"
-                    >
+                    <x-newdebugbar::inspector-definition-list data-ndb-authorization-arguments-detail>
                         <template x-if="selectedAuthorizationDecision.arguments.length === 0">
-                            <div class="ndb:grid ndb:gap-1 ndb:pb-4 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                                <dt class="ndb:text-xs ndb:font-bold">Arguments</dt>
-                                <dd class="ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">—</dd>
-                            </div>
+                            <x-newdebugbar::inspector-definition-row label="Arguments">
+                                —
+                            </x-newdebugbar::inspector-definition-row>
                         </template>
 
                         <template x-for="argument in selectedAuthorizationDecision.arguments" :key="argument.position">
@@ -170,106 +126,54 @@
                                 </dd>
                             </div>
                         </template>
-                    </dl>
 
-                    <section data-ndb-authorization-reason>
-                        <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                            Explanation
-                        </p>
-                        <p
-                            class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                            x-text="selectedAuthorizationDecision.result_message ?? '—'"
-                        ></p>
-                    </section>
+                        <x-newdebugbar::inspector-definition-row label="Explanation">
+                            <x-slot:value x-text="selectedAuthorizationDecision.result_message ?? '—'"></x-slot:value>
+                        </x-newdebugbar::inspector-definition-row>
+                    </x-newdebugbar::inspector-definition-list>
 
                     <section>
-                        <p
-                            :class="selectedAuthorizationDecision.result === 'denied'
-                                ? 'ndb:text-red-600 ndb:dark:text-red-300'
-                                : 'ndb:text-zinc-400'"
-                            class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider"
-                        >
-                            Check next
-                        </p>
-                        <p
-                            class="ndb:mt-1 ndb:max-w-3xl ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                            x-text="selectedAuthorizationDecision.check_next"
-                        ></p>
+                        <x-newdebugbar::inspector-explanation>
+                            <x-slot:heading>What should I inspect if this result looks wrong?</x-slot:heading>
+                            <x-slot:body x-text="selectedAuthorizationDecision.check_next"></x-slot:body>
+                        </x-newdebugbar::inspector-explanation>
                     </section>
                 </div>
+            </template>
 
-                <div
-                    data-ndb-authorization-detail-panel="source"
-                    x-show.important="authorizationDetailTab === 'source'"
-                >
-                    <div class="ndb:flex ndb:justify-end ndb:pb-2">
-                        <button
-                            type="button"
-                            data-ndb-authorization-copy-evidence
-                            @click="copyText(selectedAuthorizationDecision.copy_evidence)"
-                            class="ndb:inline-flex ndb:min-h-9 ndb:items-center ndb:gap-1.5 ndb:rounded-lg ndb:px-2.5 ndb:text-[11px] ndb:font-bold ndb:text-indigo-600 ndb:transition ndb:hover:bg-indigo-50 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-indigo-300 ndb:dark:hover:bg-indigo-950/50"
-                        >
-                            <x-newdebugbar::icon name="copy" size="3.5" />
-                            Copy evidence
-                        </button>
-                    </div>
+            <template x-if="authorizationDetailTab === 'source'">
+                <div data-ndb-authorization-detail-panel="source">
+                    <x-newdebugbar::inspector-source-panel
+                        frames="selectedAuthorizationDecision.stack"
+                        empty-label="No application stack was captured for this decision."
+                    >
+                        <x-slot:actions>
+                            <x-newdebugbar::inspector-action
+                                icon="copy"
+                                data-ndb-authorization-copy-evidence
+                                @click="copyText(selectedAuthorizationDecision.copy_evidence)"
+                            >
+                                Copy evidence
+                            </x-newdebugbar::inspector-action>
+                        </x-slot:actions>
 
-                    <dl class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-b ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                        <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                            <dt class="ndb:text-xs ndb:font-bold">Handler</dt>
-                            <dd class="ndb:min-w-0">
-                                <code
-                                    class="ndb:block ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                    x-text="selectedAuthorizationDecision.handler_name"
-                                ></code>
-                            </dd>
-                        </div>
-                        <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                            <dt class="ndb:text-xs ndb:font-bold">Handler source</dt>
-                            <dd class="ndb:min-w-0">
-                                <code
-                                    class="ndb:block ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                    x-text="selectedAuthorizationDecision.handler_source_label ?? '—'"
-                                ></code>
-                            </dd>
-                        </div>
-                        <div class="ndb:grid ndb:gap-1 ndb:py-3 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4">
-                            <dt class="ndb:text-xs ndb:font-bold">Evaluation source</dt>
-                            <dd class="ndb:min-w-0">
-                                <code
-                                    class="ndb:block ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                    x-text="selectedAuthorizationDecision.callsite_label ?? '—'"
-                                ></code>
-                            </dd>
-                        </div>
-                    </dl>
+                        <x-newdebugbar::inspector-source-fact label="Handler" :code="true">
+                            <x-slot:value x-text="selectedAuthorizationDecision.handler_name"></x-slot:value>
+                        </x-newdebugbar::inspector-source-fact>
+                        <x-newdebugbar::inspector-source-fact label="Handler source">
+                            <x-slot:value x-text="selectedAuthorizationDecision.handler_source_label ?? '—'"></x-slot:value>
+                        </x-newdebugbar::inspector-source-fact>
+                        <x-newdebugbar::inspector-source-fact label="Evaluation source">
+                            <x-slot:value x-text="selectedAuthorizationDecision.callsite_label ?? '—'"></x-slot:value>
+                        </x-newdebugbar::inspector-source-fact>
+                    </x-newdebugbar::inspector-source-panel>
 
-                    <section x-show.important="selectedAuthorizationDecision.stack.length > 0" class="ndb:mt-6">
-                        <p class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
-                            Application stack
-                        </p>
-                        <div class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
-                            <template x-for="(frame, index) in selectedAuthorizationDecision.stack" :key="index">
-                                <div class="ndb:py-3 ndb:first:pt-0">
-                                    <code
-                                        class="ndb:block ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-indigo-600 ndb:dark:text-indigo-300"
-                                        x-text="frame.file + ':' + frame.line"
-                                    ></code>
-                                    <p
-                                        class="ndb:mt-1 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                        x-text="frame.function || 'Application call'"
-                                    ></p>
-                                </div>
-                            </template>
-                        </div>
-                    </section>
-
-                    <p class="ndb:mt-6 ndb:max-w-3xl ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                        Laravel reports the final result. It does not identify whether a Gate before or after hook made
-                        the decision.
+                    <p class="ndb:px-4 ndb:pb-4 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                        Laravel reports the final result, but it cannot identify whether a Gate before or after hook
+                        made the decision.
                     </p>
                 </div>
-            </div>
+            </template>
         </div>
     </template>
 

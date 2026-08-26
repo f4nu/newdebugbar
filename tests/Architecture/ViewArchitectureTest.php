@@ -55,12 +55,16 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
             '<x-newdebugbar::inspector-detail-pane',
             '<x-newdebugbar::inspector-detail-tabs',
             '<template x-if="selectedViewGroup">',
+            '<template x-if="viewDetailTab === \'overview\'">',
+            '<template x-if="viewDetailTab === \'data\'">',
+            '<template x-if="viewDetailTab === \'source\'">',
         )
         ->not->toContain(
             '<details',
             '<x-newdebugbar::popover-surface',
             'data-ndb-view-sort',
             'newDebugBar.viewData',
+            'x-show.important="viewDetailTab ===',
         )
         ->and($state)
         ->not->toContain(
@@ -451,9 +455,10 @@ it('composes Models as a shared split inspector with reusable explanations', fun
     expect(substr_count($detail, '<x-newdebugbar::inspector-explanation'))->toBe(3);
 
     expect($explanation)
-        ->toContain("@props(['title', 'description'])")
-        ->toContain('{{ $title }}')
-        ->toContain('{{ $description }}')
+        ->toContain("'title' => null")
+        ->toContain("'description' => null")
+        ->toContain('@isset($heading)')
+        ->toContain('@isset($body)')
         ->toContain('ndb:text-xs ndb:font-bold')
         ->toContain('ndb:text-[11px] ndb:leading-5');
 });
@@ -655,7 +660,15 @@ it('composes Authorization from the shared inspector workspace anatomy', functio
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')
-        ->toContain('<x-newdebugbar::inspector-detail-empty');
+        ->toContain('<x-newdebugbar::inspector-detail-empty')
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-explanation')
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-fact')
+        ->toContain('<template x-if="authorizationDetailTab === \'decision\'">')
+        ->toContain('<template x-if="authorizationDetailTab === \'source\'">')
+        ->not->toContain('x-show.important="authorizationDetailTab ===');
 });
 
 it('composes Events from the shared inspector workspace anatomy', function () {
@@ -675,7 +688,14 @@ it('composes Events from the shared inspector workspace anatomy', function () {
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')
-        ->toContain('<x-newdebugbar::inspector-detail-empty');
+        ->toContain('<x-newdebugbar::inspector-detail-empty')
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-explanation')
+        ->toContain('<x-newdebugbar::inspector-source-link')
+        ->toContain('<template x-if="eventDetailTab === \'overview\'">')
+        ->toContain('<template x-if="eventDetailTab === \'payload\'">')
+        ->toContain('<template x-if="eventDetailTab === \'source\'">')
+        ->not->toContain('x-show.important="eventDetailTab ===');
 });
 
 it('composes Exceptions as a shared list-detail workspace', function () {
@@ -796,6 +816,36 @@ it('uses centered segmented controls across inspector detail panels', function (
         ->toContain('<x-newdebugbar::filter-tabs')
         ->not->toContain('<input')
         ->not->toContain('<select');
+});
+
+it('mounts only the active evidence tab in high-payload detail panes', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $notificationDetail = file_get_contents($views.'/components/notification-detail.blade.php');
+    $mail = file_get_contents($views.'/livewire/sections/mail.blade.php');
+    $mailDetails = file_get_contents($views.'/components/mail-message-details.blade.php');
+    $runtime = file_get_contents($views.'/components/overview-runtime-details.blade.php');
+
+    expect($notificationDetail)
+        ->toContain(
+            '<template x-if="notificationDetailTab === \'delivery\'">',
+            '<template x-if="notificationDetailTab === \'payload\'">',
+            '<template x-if="notificationDetailTab === \'source\'">',
+        );
+
+    expect($mail)
+        ->toContain('<template x-if="mailDetailTab === \'preview\'">')
+        ->not->toContain('x-show.important="mailDetailTab === \'preview\'"');
+
+    expect($mailDetails)
+        ->toContain(
+            '<template x-if="mailDetailTab === \'message\'">',
+            '<template x-if="mailDetailTab === \'source\'">',
+        )
+        ->not->toContain('x-show.important="mailDetailTab ===');
+
+    expect($runtime)
+        ->toContain('<template x-if="runtimeDetail === @js($key)">')
+        ->not->toContain('x-show.important="runtimeDetail ===');
 });
 
 it('uses the shared section heading hierarchy in the inspector shell', function () {

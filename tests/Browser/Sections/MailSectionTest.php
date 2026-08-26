@@ -297,7 +297,7 @@ it('selects and inspects mail with a real in-panel preview', function () {
                 const sourceClass = facts[0].querySelector('dd > code');
                 const triggerPath = facts[1].querySelector('dd > span');
                 const functionCall = stack.querySelector('li code');
-                const stackPath = stack.querySelector('li > span:last-child > span');
+                const stackPath = stack.querySelector('li [data-ndb-inspector-source-link]');
 
                 return facts.length === 2
                     && stack !== null

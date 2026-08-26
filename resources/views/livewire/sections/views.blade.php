@@ -225,135 +225,145 @@
                             </x-slot:aside>
                         </x-newdebugbar::inspector-detail-tabs>
 
-                        <section
-                            x-show.important="viewDetailTab === 'overview'"
-                            data-ndb-view-detail-panel="overview"
-                            role="tabpanel"
-                            class="ndb:border-l-0 ndb:bg-transparent ndb:p-4"
-                        >
-                            <x-newdebugbar::inspector-facts :columns="4">
-                                <x-newdebugbar::inspector-fact label="Origin">
-                                    <x-slot:value
-                                        class="ndb:text-xs ndb:font-semibold ndb:capitalize"
-                                        x-text="selectedViewGroup.origin"
-                                    ></x-slot:value>
-                                </x-newdebugbar::inspector-fact>
-                                <x-newdebugbar::inspector-fact label="Render">
-                                    <x-slot:value
-                                        class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                        x-text="`#${selectedViewRender.render_order}`"
-                                    ></x-slot:value>
-                                </x-newdebugbar::inspector-fact>
-                                <x-newdebugbar::inspector-fact label="Passed values">
-                                    <x-slot:value
-                                        class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                        x-text="selectedViewRender.data_key_count"
-                                    ></x-slot:value>
-                                </x-newdebugbar::inspector-fact>
-                                <x-newdebugbar::inspector-fact label="Composers">
-                                    <x-slot:value
-                                        class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                        x-text="selectedViewRender.composer_count"
-                                    ></x-slot:value>
-                                </x-newdebugbar::inspector-fact>
-                            </x-newdebugbar::inspector-facts>
-
-                            <x-newdebugbar::inspector-source-fact label="Rendered from" class="ndb:mt-4">
-                                <x-slot:value x-text="selectedViewRender.source_label ?? 'Template source was not captured.'"></x-slot:value>
-                            </x-newdebugbar::inspector-source-fact>
-                        </section>
-
-                        <section
-                            x-show.important="viewDetailTab === 'data'"
-                            data-ndb-view-detail-panel="data"
-                            role="tabpanel"
-                            class="ndb:min-h-0 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
-                        >
-                            <div
-                                x-show.important="viewDataLoading"
-                                data-ndb-view-data-loading
-                                class="ndb:flex ndb:items-center ndb:gap-2 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                        <template x-if="viewDetailTab === 'overview'">
+                            <section
+                                data-ndb-view-detail-panel="overview"
+                                role="tabpanel"
+                                class="ndb:border-l-0 ndb:bg-transparent ndb:p-4"
                             >
-                                <span class="ndb:size-1.5 ndb:animate-pulse ndb:rounded-full ndb:bg-indigo-500 ndb:motion-reduce:animate-none"></span>
-                                Loading render data…
-                            </div>
+                                <x-newdebugbar::inspector-facts :columns="4">
+                                    <x-newdebugbar::inspector-fact label="Origin">
+                                        <x-slot:value
+                                            class="ndb:text-xs ndb:font-semibold ndb:capitalize"
+                                            x-text="selectedViewGroup.origin"
+                                        ></x-slot:value>
+                                    </x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Render">
+                                        <x-slot:value
+                                            class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
+                                            x-text="`#${selectedViewRender.render_order}`"
+                                        ></x-slot:value>
+                                    </x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Passed values">
+                                        <x-slot:value
+                                            class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
+                                            x-text="selectedViewRender.data_key_count"
+                                        ></x-slot:value>
+                                    </x-newdebugbar::inspector-fact>
+                                    <x-newdebugbar::inspector-fact label="Composers">
+                                        <x-slot:value
+                                            class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
+                                            x-text="selectedViewRender.composer_count"
+                                        ></x-slot:value>
+                                    </x-newdebugbar::inspector-fact>
+                                </x-newdebugbar::inspector-facts>
 
-                            <template x-if="viewDataLoaded && ! viewDataIsEmpty">
-                                <x-newdebugbar::code-block
-                                    language="json"
-                                    tabindex="0"
-                                    data-ndb-view-data
-                                    class="ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
-                                >
-                                    <x-slot:value x-text="formattedViewData"></x-slot:value>
-                                </x-newdebugbar::code-block>
-                            </template>
-
-                            <template x-if="viewDataLoaded && viewDataIsEmpty">
-                                <x-newdebugbar::empty-state label="No data was passed directly to this render." />
-                            </template>
-
-                            <template x-if="viewDataError">
-                                <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
-                                    <p class="ndb:text-xs ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">
-                                        Render data could not be loaded.
-                                    </p>
-                                    <x-newdebugbar::inspector-action
-                                        icon="activity"
-                                        data-ndb-view-data-retry
-                                        @click="loadSelectedViewData($wire, true)"
-                                    >
-                                        Retry
-                                    </x-newdebugbar::inspector-action>
-                                </div>
-                            </template>
-                        </section>
-
-                        <section
-                            x-show.important="viewDetailTab === 'source'"
-                            data-ndb-view-detail-panel="source"
-                            role="tabpanel"
-                            class="ndb:space-y-4 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
-                        >
-                            <dl class="ndb:grid ndb:grid-cols-1 ndb:gap-2 ndb:sm:grid-cols-2">
-                                <x-newdebugbar::inspector-source-fact label="View identifier">
-                                    <x-slot:value x-text="selectedViewGroup.name"></x-slot:value>
-                                </x-newdebugbar::inspector-source-fact>
-                                <x-newdebugbar::inspector-source-fact label="Source type">
-                                    <x-slot:value x-text="selectedViewSourceKindLabel"></x-slot:value>
-                                </x-newdebugbar::inspector-source-fact>
-                                <x-newdebugbar::inspector-source-fact label="Render source" class="ndb:sm:col-span-2">
+                                <x-newdebugbar::inspector-source-fact label="Rendered from" class="ndb:mt-4">
                                     <x-slot:value x-text="selectedViewRender.source_label ?? 'Template source was not captured.'"></x-slot:value>
                                 </x-newdebugbar::inspector-source-fact>
-                            </dl>
+                            </section>
+                        </template>
 
-                            <div x-show.important="selectedViewRender.composers.length > 0" data-ndb-view-composers>
-                                <h4 class="ndb:text-xs ndb:font-bold">View composers</h4>
-                                <ul class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-                                    <template
-                                        x-for="composer in selectedViewRender.composers"
-                                        :key="`${composer.name}:${composer.source_label ?? ''}`"
+                        <template x-if="viewDetailTab === 'data'">
+                            <section
+                                data-ndb-view-detail-panel="data"
+                                role="tabpanel"
+                                class="ndb:min-h-0 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
+                            >
+                                <div
+                                    x-show.important="viewDataLoading"
+                                    data-ndb-view-data-loading
+                                    class="ndb:flex ndb:items-center ndb:gap-2 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >
+                                    <span class="ndb:size-1.5 ndb:animate-pulse ndb:rounded-full ndb:bg-indigo-500 ndb:motion-reduce:animate-none"></span>
+                                    Loading render data…
+                                </div>
+
+                                <template x-if="viewDataLoaded && ! viewDataIsEmpty">
+                                    <x-newdebugbar::code-block
+                                        language="json"
+                                        tabindex="0"
+                                        data-ndb-view-data
+                                        class="ndb:focus-visible:outline-2 ndb:focus-visible:outline-offset-2 ndb:focus-visible:outline-indigo-500"
                                     >
-                                        <li class="ndb:min-w-0 ndb:py-2.5">
-                                            <p
-                                                class="ndb:break-words ndb:text-xs ndb:font-semibold"
-                                                x-text="composer.name"
-                                            ></p>
-                                            <p
-                                                x-show.important="composer.source_label"
-                                                class="ndb:mt-0.5 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                                x-text="composer.source_label"
-                                            ></p>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </div>
+                                        <x-slot:value x-text="formattedViewData"></x-slot:value>
+                                    </x-newdebugbar::code-block>
+                                </template>
 
-                            <x-newdebugbar::empty-state
-                                x-show.important="selectedViewRender.composers.length === 0"
-                                label="No view composers were captured for this render."
-                            />
-                        </section>
+                                <template x-if="viewDataLoaded && viewDataIsEmpty">
+                                    <x-newdebugbar::empty-state label="No data was passed directly to this render." />
+                                </template>
+
+                                <template x-if="viewDataError">
+                                    <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
+                                        <p class="ndb:text-xs ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">
+                                            Render data could not be loaded.
+                                        </p>
+                                        <x-newdebugbar::inspector-action
+                                            icon="activity"
+                                            data-ndb-view-data-retry
+                                            @click="loadSelectedViewData($wire, true)"
+                                        >
+                                            Retry
+                                        </x-newdebugbar::inspector-action>
+                                    </div>
+                                </template>
+                            </section>
+                        </template>
+
+                        <template x-if="viewDetailTab === 'source'">
+                            <section
+                                data-ndb-view-detail-panel="source"
+                                role="tabpanel"
+                                class="ndb:space-y-4 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
+                            >
+                                <dl class="ndb:grid ndb:grid-cols-1 ndb:gap-2 ndb:sm:grid-cols-2">
+                                    <x-newdebugbar::inspector-source-fact label="View identifier">
+                                        <x-slot:value x-text="selectedViewGroup.name"></x-slot:value>
+                                    </x-newdebugbar::inspector-source-fact>
+                                    <x-newdebugbar::inspector-source-fact label="Source type">
+                                        <x-slot:value x-text="selectedViewSourceKindLabel"></x-slot:value>
+                                    </x-newdebugbar::inspector-source-fact>
+                                    <x-newdebugbar::inspector-source-fact
+                                        label="Render source"
+                                        class="ndb:sm:col-span-2"
+                                    >
+                                        <x-slot:value
+                                            x-text="
+                                                selectedViewRender.source_label ?? 'Template source was not captured.'
+                                            "
+                                        ></x-slot:value>
+                                    </x-newdebugbar::inspector-source-fact>
+                                </dl>
+
+                                <div x-show.important="selectedViewRender.composers.length > 0" data-ndb-view-composers>
+                                    <h4 class="ndb:text-xs ndb:font-bold">View composers</h4>
+                                    <ul class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/80 ndb:border-y ndb:border-zinc-200/80 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+                                        <template
+                                            x-for="composer in selectedViewRender.composers"
+                                            :key="`${composer.name}:${composer.source_label ?? ''}`"
+                                        >
+                                            <li class="ndb:min-w-0 ndb:py-2.5">
+                                                <p
+                                                    class="ndb:break-words ndb:text-xs ndb:font-semibold"
+                                                    x-text="composer.name"
+                                                ></p>
+                                                <p
+                                                    x-show.important="composer.source_label"
+                                                    class="ndb:mt-0.5 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                    x-text="composer.source_label"
+                                                ></p>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+
+                                <x-newdebugbar::empty-state
+                                    x-show.important="selectedViewRender.composers.length === 0"
+                                    label="No view composers were captured for this render."
+                                />
+                            </section>
+                        </template>
                     </div>
                 </template>
 

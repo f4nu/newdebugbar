@@ -115,7 +115,7 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertSee('2 registrations')
         ->assertSee('1 extra registration')
         ->assertSee('Listener handling')
-        ->assertSee('What to inspect next')
+        ->assertSee('What should I inspect if this event looks wrong?')
         ->assertMissing('private fixture value')
         ->assertScript(<<<'JS'
             (() => {
@@ -148,7 +148,7 @@ it('groups noisy Laravel events around application evidence', function () {
                 const buttons = [...document.querySelectorAll('[data-ndb-event-copy-dispatch-source]')];
 
                 window.newdebugbarEventClipboardWrites = [];
-                window.newdebugbarExpectedEventClipboard = buttons[0].querySelector('code').textContent.trim();
+                window.newdebugbarExpectedEventClipboard = buttons[0].textContent.trim();
                 Object.defineProperty(window.navigator, 'clipboard', {
                     configurable: true,
                     value: {
@@ -159,7 +159,7 @@ it('groups noisy Laravel events around application evidence', function () {
                 return buttons.every((button) => button.getClientRects().length > 0);
             })()
             JS)
-        ->click('[data-ndb-event-copy-dispatch-source]:first-of-type')
+        ->click('[data-ndb-event-copy-dispatch-source-index="0"]')
         ->wait(0.05)
         ->assertScript(<<<'JS'
             window.newdebugbarEventClipboardWrites.length === 1

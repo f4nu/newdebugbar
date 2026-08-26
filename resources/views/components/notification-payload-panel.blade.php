@@ -1,8 +1,4 @@
-<div
-    data-ndb-notification-detail-panel="payload"
-    x-show.important="notificationDetailTab === 'payload'"
-    class="ndb:space-y-5 ndb:p-4"
->
+<div data-ndb-notification-detail-panel="payload" class="ndb:space-y-5 ndb:p-4">
     <x-newdebugbar::inspector-evidence label="Application payload" language="json">
         <x-slot:aside>
             <span

@@ -204,7 +204,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                 const triggerPath = facts[2].querySelector('dd > span');
                 const notificationId = facts[3].querySelector('dd > span');
                 const functionCall = stack.querySelector('li code');
-                const stackPath = stack.querySelector('li > span:last-child > span');
+                const stackPath = stack.querySelector('li [data-ndb-inspector-source-link]');
 
                 return facts.length === 4
                     && stack !== null

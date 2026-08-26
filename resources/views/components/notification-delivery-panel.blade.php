@@ -1,27 +1,10 @@
-<div
-    data-ndb-notification-detail-panel="delivery"
-    x-show.important="notificationDetailTab === 'delivery'"
-    class="ndb:p-4"
->
-    <div class="ndb:space-y-2.5">
+<div data-ndb-notification-detail-panel="delivery" class="ndb:p-4">
+    <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
         <template x-for="delivery in selectedNotification.deliveries" :key="delivery.channel">
             <article
                 data-ndb-notification-delivery
-                :class="{
-                    'ndb:cursor-pointer': delivery.mail_available,
-                    'ndb:border-red-200 ndb:bg-red-50/45 ndb:dark:border-red-950 ndb:dark:bg-red-950/20':
-                        delivery.status === 'failed',
-                    'ndb:border-zinc-200 ndb:bg-white/55 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35': [
-                        'sent',
-                        'processing',
-                    ].includes(delivery.status),
-                    'ndb:border-amber-200 ndb:bg-amber-50/35 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/15': [
-                        'queued',
-                        'delayed',
-                        'waiting',
-                    ].includes(delivery.status),
-                }"
-                class="ndb:relative ndb:overflow-hidden ndb:rounded-lg ndb:border"
+                :class="{ 'ndb:cursor-pointer': delivery.mail_available }"
+                class="ndb:relative"
             >
                 <template x-if="delivery.mail_available">
                     <button
@@ -29,7 +12,7 @@
                         data-ndb-notification-view-mail
                         :aria-label="'Open email for ' + delivery.channel_label + ' delivery'"
                         @click="openNotificationMail(delivery.mail_message_id)"
-                        class="ndb:absolute ndb:inset-0 ndb:z-10 ndb:cursor-pointer ndb:rounded-lg ndb:bg-transparent ndb:transition-colors ndb:hover:bg-zinc-950/[0.025] ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/[0.035]"
+                        class="ndb:absolute ndb:inset-0 ndb:z-10 ndb:cursor-pointer ndb:bg-transparent ndb:transition-colors ndb:hover:bg-zinc-950/[0.025] ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:dark:hover:bg-white/[0.035]"
                     ></button>
                 </template>
                 <div class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3 ndb:px-3 ndb:py-2.5">

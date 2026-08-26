@@ -9,7 +9,12 @@
 @endphp
 
 <header {{ $attributes->class('ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800') }}>
-    <div data-ndb-inspector-detail-header-primary class="{{ $primaryClasses }}">{{ $title }} {{ $aside }}</div>
+    <div data-ndb-inspector-detail-header-primary class="{{ $primaryClasses }}">
+        {{ $title }}
+        @isset($aside)
+            {{ $aside }}
+        @endisset
+    </div>
 
     @isset($identity)
         <div {{ $identity->attributes->class('ndb:mt-3 ndb:rounded-lg ndb:bg-zinc-50/85 ndb:px-3 ndb:py-2.5 ndb:ring-1 ndb:ring-inset ndb:ring-zinc-200/70 ndb:dark:bg-zinc-900/65 ndb:dark:ring-zinc-800') }}>

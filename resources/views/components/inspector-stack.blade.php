@@ -34,10 +34,13 @@
                         class="ndb:block ndb:truncate ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-zinc-700 ndb:dark:text-zinc-200"
                         x-text="frame.function || 'Application call'"
                     ></code>
-                    <span
-                        class="ndb:mt-0.5 ndb:block ndb:break-all ndb:text-[11px] ndb:font-medium ndb:text-zinc-400 ndb:dark:text-zinc-500"
-                        x-text="frame.file + ':' + frame.line"
-                    ></span>
+                    <x-newdebugbar::inspector-source-link
+                        class="ndb:mt-0.5"
+                        @click="copyText(frame.file + ':' + frame.line)"
+                        ::aria-label="'Copy source ' + frame.file + ':' + frame.line"
+                    >
+                        <x-slot:value x-text="frame.file + ':' + frame.line"></x-slot:value>
+                    </x-newdebugbar::inspector-source-link>
                 </span>
             </li>
         </template>

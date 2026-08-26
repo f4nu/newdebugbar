@@ -89,7 +89,7 @@
         >{{ ($entry['message'] ?? '') === '' ? '—' : $entry['message'] }}</span>
 
         <span class="ndb:col-start-2 ndb:row-start-2 ndb:mt-1.5 ndb:min-w-0 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:sm:col-start-3 ndb:sm:row-start-1 ndb:sm:mt-0 ndb:dark:text-zinc-400">
-            <span class="ndb:block ndb:font-mono ndb:font-semibold ndb:tabular-nums ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $recordLabel }}</span>
+            <span class="ndb:block ndb:font-semibold ndb:tabular-nums ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $recordLabel }}</span>
             <span class="ndb:mt-0.5 ndb:block ndb:tabular-nums">{{ $requestTimeLabel }}</span>
             @if ($repeatCount > 1 && $lastAt !== null && $lastAt !== $firstAt)
                 <span class="ndb:block ndb:tabular-nums">to {{ $lastRequestTimeLabel }}</span>
@@ -214,7 +214,7 @@
                                 <dl class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                                     @foreach ($contextFields as $field)
                                         <div class="ndb:grid ndb:min-w-0 ndb:gap-1.5 ndb:py-2.5 ndb:sm:grid-cols-[minmax(8rem,0.6fr)_minmax(0,1.8fr)] ndb:sm:gap-4">
-                                            <dt class="ndb:break-words ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                            <dt class="ndb:break-words ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                                 {{ $field['key'] }}
                                             </dt>
                                             <dd class="ndb:min-w-0 ndb:text-xs ndb:leading-5">
@@ -276,7 +276,7 @@
                             <h3 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                 Source
                             </h3>
-                            <p class="ndb:mt-2 ndb:break-all ndb:font-mono ndb:text-xs ndb:font-semibold">
+                            <p class="ndb:mt-2 ndb:break-all ndb:text-xs ndb:font-semibold">
                                 {{ $sourceLabel ?? '—' }}
                             </p>
                             @if ($stack !== [])
@@ -287,8 +287,8 @@
                                     @foreach ($stack as $frame)
                                         @php($frameSource = isset($frame['file'], $frame['line']) ? $frame['file'].':'.$frame['line'] : ($frame['file'] ?? '—'))
                                         <li class="ndb:grid ndb:min-w-0 ndb:gap-1 ndb:py-2 ndb:text-[11px] ndb:sm:grid-cols-[minmax(0,1.5fr)_minmax(7rem,0.7fr)] ndb:sm:gap-3">
-                                            <code class="ndb:break-all">{{ $frameSource }}</code>
-                                            <span class="ndb:break-words ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $frame['function'] ?? '—' }}</span>
+                                            <span class="ndb:break-all">{{ $frameSource }}</span>
+                                            <code class="ndb:break-words ndb:font-mono ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $frame['function'] ?? '—' }}</code>
                                         </li>
                                     @endforeach
                                 </ol>
@@ -303,7 +303,7 @@
                                 <ol class="ndb:mt-2 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
                                     @foreach ($occurrences as $occurrence)
                                         <li class="ndb:grid ndb:grid-cols-[5rem_minmax(0,1fr)] ndb:gap-3 ndb:py-2 ndb:text-[11px]">
-                                            <span class="ndb:font-mono ndb:font-semibold">#{{ $occurrence['sequence'] }}</span>
+                                            <span class="ndb:font-semibold ndb:tabular-nums">#{{ $occurrence['sequence'] }}</span>
                                             <span class="ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
                                                 {{ $occurrence['at_ms'] === null ? '—' : '+'.number_format((float) $occurrence['at_ms'], 3).' ms' }}
                                             </span>

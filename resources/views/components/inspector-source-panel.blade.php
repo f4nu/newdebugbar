@@ -13,6 +13,10 @@
 @endphp
 
 <section data-ndb-inspector-source-panel {{ $attributes->class('ndb:p-4') }}>
+    @isset($actions)
+        <div {{ $actions->attributes->class('ndb:mb-3 ndb:flex ndb:justify-end') }}>{{ $actions }}</div>
+    @endisset
+
     <dl class="ndb:grid ndb:gap-2 {{ $columnClasses }}">{{ $slot }}</dl>
 
     <x-newdebugbar::inspector-stack :frames="$frames" :empty-label="$emptyLabel" />
