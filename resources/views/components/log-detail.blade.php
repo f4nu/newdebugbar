@@ -13,9 +13,7 @@
     $stack = array_values(is_array($entry['stack'] ?? null) ? $entry['stack'] : []);
     $occurrences = array_values(is_array($entry['occurrences'] ?? null) ? $entry['occurrences'] : []);
     $sourceLabel = isset($callsite['file'], $callsite['line']) ? $callsite['file'].':'.$callsite['line'] : null;
-    $channelLabel = is_string($entry['channel_label'] ?? null) && $entry['channel_label'] !== ''
-        ? $entry['channel_label']
-        : '—';
+    $channelLabel = (string) ($entry['channel_label'] ?? 'No channel');
     $recordLabel = $repeatCount === 1 ? '#'.$firstSequence : '#'.$firstSequence.'–#'.$lastSequence;
     $requestTimeLabel = $firstAt === null
         ? '—'
@@ -52,9 +50,7 @@
                 <h3
                     data-ndb-log-details-title
                     class="ndb:bg-transparent ndb:whitespace-pre-wrap ndb:break-words ndb:text-sm ndb:font-bold ndb:leading-5 ndb:text-zinc-900 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-100"
-                >
-                    {{ ($entry['message'] ?? '') === '' ? '—' : $entry['message'] }}
-                </h3>
+                >{{ ($entry['message'] ?? '') === '' ? '—' : $entry['message'] }}</h3>
                 <p class="ndb:mt-1 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400">
                     Log {{ $recordLabel }}
                 </p>
@@ -62,71 +58,70 @@
         </x-slot:title>
     </x-newdebugbar::inspector-detail-header>
 
-    <div class="ndb:space-y-5 ndb:p-4">
-        <x-newdebugbar::inspector-facts columns="4">
-            <x-newdebugbar::inspector-fact label="Severity">
-                <x-slot:value class="ndb:text-xs ndb:font-bold {{ $severityClasses }}">
-                    {{ $entry['level_label'] ?? ucfirst($level) }}
-                </x-slot:value>
-            </x-newdebugbar::inspector-fact>
-            <x-newdebugbar::inspector-fact label="Channel">
-                <x-slot:value class="ndb:truncate ndb:text-xs ndb:font-semibold" title="{{ $channelLabel }}">
-                    {{ $channelLabel }}
-                </x-slot:value>
-            </x-newdebugbar::inspector-fact>
-            <x-newdebugbar::inspector-fact label="From request start">
-                <x-slot:value class="ndb:text-xs ndb:font-semibold ndb:tabular-nums">
-                    {{ $requestTimeRange }}
-                </x-slot:value>
-            </x-newdebugbar::inspector-fact>
-            <x-newdebugbar::inspector-fact label="Captured at">
-                <x-slot:value
-                    class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                    title="{{ $wallTime?->format(DateTimeInterface::ATOM) ?? '' }}"
-                >
-                    {{ $wallTime?->format('H:i:s.v') ?? '—' }}
-                </x-slot:value>
-            </x-newdebugbar::inspector-fact>
-        </x-newdebugbar::inspector-facts>
+    <div data-ndb-log-detail-groups class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+        <section data-ndb-log-detail-group="summary" class="ndb:p-4">
+            <x-newdebugbar::inspector-facts columns="4" :bordered="false">
+                <x-newdebugbar::inspector-fact label="Severity">
+                    <x-slot:value class="ndb:text-xs ndb:font-bold {{ $severityClasses }}">
+                        {{ $entry['level_label'] ?? ucfirst($level) }}
+                    </x-slot:value>
+                </x-newdebugbar::inspector-fact>
+                <x-newdebugbar::inspector-fact label="Channel">
+                    <x-slot:value class="ndb:truncate ndb:text-xs ndb:font-semibold" title="{{ $channelLabel }}">
+                        {{ $channelLabel }}
+                    </x-slot:value>
+                </x-newdebugbar::inspector-fact>
+                <x-newdebugbar::inspector-fact label="From request start">
+                    <x-slot:value class="ndb:text-xs ndb:font-semibold ndb:tabular-nums">
+                        {{ $requestTimeRange }}
+                    </x-slot:value>
+                </x-newdebugbar::inspector-fact>
+                <x-newdebugbar::inspector-fact label="Captured at">
+                    <x-slot:value
+                        class="ndb:text-xs ndb:font-semibold ndb:tabular-nums"
+                        title="{{ $wallTime?->format(DateTimeInterface::ATOM) ?? '' }}"
+                    >
+                        {{ $wallTime?->format('H:i:s.v') ?? '—' }}
+                    </x-slot:value>
+                </x-newdebugbar::inspector-fact>
+            </x-newdebugbar::inspector-facts>
+        </section>
 
         @if ($relatedException !== null)
             @php($exceptionSource = isset($relatedException['file'], $relatedException['line']) ? $relatedException['file'].':'.$relatedException['line'] : null)
             <section
+                data-ndb-log-detail-group="related-exception"
                 data-ndb-log-related-exception
-                class="ndb:border-y ndb:border-red-200/80 ndb:bg-transparent ndb:px-0 ndb:py-3 ndb:dark:border-red-950"
+                class="ndb:p-4"
                 aria-label="Related exception"
             >
-                <div class="ndb:grid ndb:min-w-0 ndb:items-start ndb:gap-2.5 ndb:sm:grid-cols-[8.5rem_minmax(0,1fr)_auto] ndb:sm:gap-4">
-                    <h4 class="ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wider ndb:text-red-700 ndb:dark:text-red-300">
-                        Related exception
-                    </h4>
-                    <div class="ndb:min-w-0">
-                        <code class="ndb:block ndb:break-words ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-900 ndb:dark:text-zinc-100">
-                            {{ $relatedException['class'] ?? '—' }}
-                        </code>
-                        <p class="ndb:mt-1 ndb:whitespace-pre-wrap ndb:break-words ndb:bg-transparent ndb:text-xs ndb:font-medium ndb:leading-5 ndb:text-zinc-700 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-200">
-                            {{ ($relatedException['message'] ?? '') === '' ? '—' : trim((string) $relatedException['message']) }}
-                        </p>
-                        @if ($exceptionSource !== null)
-                            <p class="ndb:mt-1 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                {{ $exceptionSource }}
-                            </p>
-                        @endif
-                    </div>
+                <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
+                    <h4 class="ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">Related exception</h4>
                     <x-newdebugbar::inspector-action
                         icon="external-link"
                         data-ndb-log-review-exception
                         @click="navigateToSection('exceptions')"
-                        class="ndb:bg-transparent ndb:justify-self-start ndb:sm:justify-self-end"
+                        class="ndb:bg-transparent"
                     >
                         Review in Exceptions
                     </x-newdebugbar::inspector-action>
+                </div>
+                <div class="ndb:mt-3 ndb:min-w-0">
+                    <code class="ndb:block ndb:break-words ndb:bg-transparent ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-900 ndb:dark:text-zinc-100">
+                        {{ $relatedException['class'] ?? '—' }}
+                    </code>
+                    <p class="ndb:mt-1 ndb:whitespace-pre-wrap ndb:break-words ndb:bg-transparent ndb:text-xs ndb:font-medium ndb:leading-5 ndb:text-zinc-700 ndb:[overflow-wrap:anywhere] ndb:dark:text-zinc-200">{{ ($relatedException['message'] ?? '') === '' ? '—' : trim((string) $relatedException['message']) }}</p>
+                    @if ($exceptionSource !== null)
+                        <p class="ndb:mt-1 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                            {{ $exceptionSource }}
+                        </p>
+                    @endif
                 </div>
             </section>
         @endif
 
         @if ($contextFields !== [])
-            <section data-ndb-log-context aria-label="Log context" class="ndb:bg-transparent ndb:p-0">
+            <section data-ndb-log-detail-group="context" data-ndb-log-context aria-label="Log context" class="ndb:p-4">
                 <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Context</h4>
                 <x-newdebugbar::inspector-definition-list class="ndb:mt-2">
                     @foreach ($contextFields as $field)
@@ -138,7 +133,7 @@
                                         class="ndb:max-w-full"
                                     >{{ json_encode($field['value'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) }}</x-newdebugbar::code-block>
                                 @else
-                                    <span class="ndb:whitespace-pre-wrap ndb:break-words ndb:[overflow-wrap:anywhere]">{{ $field['preview'] }}</span>
+                                    <span class="ndb:break-words ndb:[overflow-wrap:anywhere]">{{ $field['preview'] }}</span>
                                 @endif
                             </x-slot:value>
                         </x-newdebugbar::inspector-definition-row>
@@ -148,7 +143,7 @@
         @endif
 
         @if ($repeatCount > 1)
-            <section data-ndb-log-occurrences aria-label="Repeated log occurrences">
+            <section data-ndb-log-detail-group="occurrences" data-ndb-log-occurrences aria-label="Repeated log occurrences" class="ndb:p-4">
                 <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
                     <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Occurrences</h4>
                     <span class="ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400">
@@ -167,25 +162,27 @@
                 </ol>
             </section>
         @endif
-    </div>
 
-    <x-newdebugbar::inspector-source-panel
-        :frames="\Illuminate\Support\Js::from($stack)"
-        columns="1"
-        empty-label="No application stack was captured for this log entry."
-        data-ndb-log-source
-        class="ndb:border-t ndb:border-zinc-200/90 ndb:bg-transparent ndb:dark:border-zinc-800"
-    >
-        <x-newdebugbar::inspector-source-fact label="Application call site">
-            <x-slot:value>
-                @if ($sourceLabel !== null)
-                    <x-newdebugbar::inspector-source-link :copy="$sourceLabel">
-                        <x-slot:value>{{ $sourceLabel }}</x-slot:value>
-                    </x-newdebugbar::inspector-source-link>
-                @else
-                    <span>—</span>
-                @endif
-            </x-slot:value>
-        </x-newdebugbar::inspector-source-fact>
-    </x-newdebugbar::inspector-source-panel>
+        <section data-ndb-log-detail-group="source" data-ndb-log-source>
+            <h4 class="ndb:px-4 ndb:pt-4 ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Source</h4>
+            <x-newdebugbar::inspector-source-panel
+                :frames="\Illuminate\Support\Js::from($stack)"
+                columns="1"
+                empty-label="No application stack was captured for this log entry."
+                class="ndb:bg-transparent ndb:pt-2"
+            >
+                <x-newdebugbar::inspector-source-fact label="Application call site">
+                    <x-slot:value>
+                        @if ($sourceLabel !== null)
+                            <x-newdebugbar::inspector-source-link :copy="$sourceLabel">
+                                <x-slot:value>{{ $sourceLabel }}</x-slot:value>
+                            </x-newdebugbar::inspector-source-link>
+                        @else
+                            <span>—</span>
+                        @endif
+                    </x-slot:value>
+                </x-newdebugbar::inspector-source-fact>
+            </x-newdebugbar::inspector-source-panel>
+        </section>
+    </div>
 </div>

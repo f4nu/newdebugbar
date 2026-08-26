@@ -96,9 +96,34 @@ it('keeps malformed or unavailable optional log facts explicit', function () {
     expect($entry)
         ->level->toBe('log')
         ->channel->toBeNull()
-        ->channel_label->toBe('—')
+        ->channel_label->toBe('No channel')
+        ->channel_filter->toBe('__unknown__')
         ->callsite->toBeNull()
         ->callsite_label->toBe('—')
         ->context->toBe([])
-        ->at_ms->toBeNull();
+        ->at_ms->toBeNull()
+        ->and((new LogAnalyzer)->analyze([['message' => 'No metadata']])['summary']['channels'])
+        ->toBe(['__unknown__' => 1]);
+});
+
+it('normalizes missing channel sentinels without changing named channels', function () {
+    $analysis = (new LogAnalyzer)->analyze([
+        ['message' => 'Named channel', 'channel' => 'operations'],
+        ['message' => 'Blank channel', 'channel' => '   '],
+        ['message' => 'Null channel', 'channel' => 'NULL'],
+        ['message' => 'Unknown channel', 'channel' => '__unknown__'],
+    ]);
+
+    expect($analysis['items'][0])
+        ->channel->toBe('operations')
+        ->channel_label->toBe('operations')
+        ->channel_filter->toBe('operations')
+        ->and($analysis['items'][1])
+        ->channel->toBeNull()
+        ->channel_label->toBe('No channel')
+        ->channel_filter->toBe('__unknown__')
+        ->and($analysis['items'][2]['channel'])->toBeNull()
+        ->and($analysis['items'][3]['channel'])->toBeNull()
+        ->and($analysis['summary']['channels'])
+        ->toBe(['operations' => 1, '__unknown__' => 3]);
 });

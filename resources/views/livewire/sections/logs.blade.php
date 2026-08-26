@@ -12,7 +12,7 @@
     $channelLabels = [];
 
     foreach ($groups as $entry) {
-        $channelLabels[$entry['channel_filter'] ?? '__unknown__'] = $entry['channel_label'] ?? '—';
+        $channelLabels[$entry['channel_filter']] = $entry['channel_label'];
     }
 
     uksort($channelCounts, static fn (string $left, string $right): int => strnatcasecmp(
@@ -79,12 +79,7 @@
                             >
                                 <option value="all">All channels ({{ $summary['count'] ?? count($groups) }})</option>
                                 @foreach ($channelCounts as $channel => $count)
-                                    @php
-                                        $channelLabel = (string) ($channelLabels[$channel] ?? $channel);
-                                        $channelLabel = in_array(strtolower($channelLabel), ['', 'null', '__unknown__'], true)
-                                            ? 'No channel'
-                                            : $channelLabel;
-                                    @endphp
+                                    @php($channelLabel = (string) ($channelLabels[$channel] ?? $channel))
                                     <option value="{{ $channel }}">{{ $channelLabel }} ({{ $count }})</option>
                                 @endforeach
                             </x-newdebugbar::select-field>

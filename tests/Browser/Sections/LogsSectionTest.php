@@ -86,12 +86,23 @@ it('presents logs as a persistent two column evidence inspector', function () {
                 const repeated = document.querySelector('[data-ndb-log-entry][data-ndb-log-record-count="3"]');
                 const notice = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="notice"]');
                 const message = notice.querySelector('[data-ndb-log-message]');
+                const severity = notice.querySelector('[data-ndb-log-severity]');
+                const metadata = notice.querySelector('[data-ndb-log-metadata]');
+                const single = document.querySelector('[data-ndb-log-entry][data-ndb-log-record-count="1"]');
+                const entries = [...document.querySelectorAll('[data-ndb-log-entry]')];
 
                 return repeated?.dataset.ndbLogLevel === 'warning'
                     && repeated.querySelector('[data-ndb-log-repeat-label]').textContent.includes('3 records')
+                    && single.querySelector('[data-ndb-log-repeat-label]') === null
                     && repeated.querySelector('[data-ndb-log-message]').textContent.includes('needs attention')
                     && message.textContent.includes('\n')
-                    && getComputedStyle(message).whiteSpace === 'pre-wrap';
+                    && getComputedStyle(message).whiteSpace === 'pre-wrap'
+                    && getComputedStyle(notice).gridTemplateColumns.split(' ').length === 2
+                    && getComputedStyle(notice).alignItems === 'baseline'
+                    && getComputedStyle(severity).lineHeight === getComputedStyle(message).lineHeight
+                    && metadata.querySelector('[data-ndb-log-channel-label]')
+                    && metadata.querySelector('[data-ndb-log-request-time]')
+                    && entries.every((entry) => ! entry.textContent.includes('#'));
             })()
             JS)
         ->click('[data-ndb-log-entry][data-ndb-log-record-count="3"]')
@@ -129,10 +140,14 @@ it('presents logs as a persistent two column evidence inspector', function () {
                 const stackRows = detail.querySelectorAll('[data-ndb-inspector-stack] li');
                 const facts = [...detail.querySelectorAll('[data-ndb-inspector-fact] dt')]
                     .map((label) => label.textContent.trim());
+                const groups = [...detail.querySelectorAll('[data-ndb-log-detail-group]')]
+                    .map((group) => group.dataset.ndbLogDetailGroup);
 
                 return message.textContent.trim() === 'The rail partner rejected reservation KYO-441.'
+                    && document.querySelector('[data-ndb-log-details-title]').textContent.startsWith('Rail reservation refresh failed.')
                     && stackRows.length > 0
                     && facts.join('|') === 'Severity|Channel|From request start|Captured at'
+                    && groups.join('|') === 'summary|related-exception|context|source'
                     && detail.scrollWidth <= detail.clientWidth + 1;
             })()
             JS)

@@ -26,7 +26,7 @@ final class LogAnalyzer
             $entry = $this->normalize($item, $index + 1);
             $normalized[] = $entry;
             $levels[$entry['level']] = ($levels[$entry['level']] ?? 0) + 1;
-            $channelKey = $entry['channel'] ?? '__unknown__';
+            $channelKey = $entry['channel_filter'];
             $channels[$channelKey] = ($channels[$channelKey] ?? 0) + 1;
 
             if ($entry['attention']) {
@@ -76,9 +76,12 @@ final class LogAnalyzer
     {
         $level = strtolower(trim((string) ($item['level'] ?? 'log')));
         $level = $level === '' ? 'log' : $level;
-        $channel = is_string($item['channel'] ?? null) && trim($item['channel']) !== ''
-            ? trim($item['channel'])
-            : null;
+        $rawChannel = is_string($item['channel'] ?? null) ? trim($item['channel']) : '';
+        $channel = in_array(strtolower($rawChannel), ['', 'null', '__unknown__'], true)
+            ? null
+            : $rawChannel;
+        $channelLabel = $channel ?? 'No channel';
+        $channelFilter = $channel ?? '__unknown__';
         $context = is_array($item['context'] ?? null) ? $item['context'] : [];
         $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
         $callsiteLabel = isset($callsite['file'], $callsite['line'])
@@ -105,8 +108,8 @@ final class LogAnalyzer
             'attention' => in_array($level, self::ATTENTION_LEVELS, true),
             'message' => $message,
             'channel' => $channel,
-            'channel_label' => $channel ?? '—',
-            'channel_filter' => $channel ?? '__unknown__',
+            'channel_label' => $channelLabel,
+            'channel_filter' => $channelFilter,
             'context' => $context,
             'context_fields' => $this->contextFields($context),
             'context_json' => $this->json($context),

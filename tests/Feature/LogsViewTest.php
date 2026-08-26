@@ -34,8 +34,15 @@ it('renders structured log details without repeating the raw record', function (
             'data-ndb-log-entry',
             'data-ndb-log-level="error"',
             'data-ndb-log-channel="morrow-audit"',
+            'data-ndb-log-metadata',
+            'data-ndb-log-channel-label',
+            'data-ndb-log-request-time',
             'data-ndb-log-level-select',
             'data-ndb-log-detail',
+            'data-ndb-log-detail-groups',
+            'data-ndb-log-detail-group="related-exception"',
+            'data-ndb-log-detail-group="context"',
+            'data-ndb-log-detail-group="source"',
             'Choose a log entry to inspect its evidence.',
             'selectLogEntry(1)',
             'data-ndb-log-related-exception',
@@ -57,6 +64,14 @@ it('renders structured log details without repeating the raw record', function (
             'data-ndb-log-details-popover',
             'data-ndb-popover-surface',
             'View details',
+            'data-ndb-log-repeat-label',
+            'ndb:grid-cols-[4.75rem_minmax(0,1fr)_5.5rem]',
+        );
+
+    expect($html)
+        ->toContain(
+            ">Reservation refresh failed.\nThe cached itinerary remains available.</h3>",
+            '>Partner rejected reservation KYO-441.</p>',
         );
 });
 
