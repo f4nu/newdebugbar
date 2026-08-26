@@ -408,9 +408,21 @@ export function createNewDebugBar(
     notificationDetailTab: 'delivery',
     notificationChannel: null,
     visibleNotificationCount: summary.section_counts?.notifications ?? 0,
+    queryRecords: [],
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
+    querySelected: null,
+    querySelectedExecution: null,
+    queryDetailOpen: false,
+    queryDetailTab: 'query',
+    queryDetailReturnFocus: null,
+    queryExplain: null,
+    queryExplainError: null,
+    queryExplainLoading: false,
+    queryExplainExecution: null,
+    queryExplainScrollTop: null,
+    queryFocusFilter: null,
     viewSort: 'name',
     viewSortDirection: 'asc',
     visibleQueryCount: summary.query_count ?? 0,
@@ -717,6 +729,16 @@ export function createNewDebugBar(
       const deliveries = this.selectedNotification?.deliveries ?? [];
 
       return deliveries.find((delivery) => delivery.channel === this.notificationChannel) ?? deliveries[0] ?? null;
+    },
+
+    get selectedQueryRecord() {
+      return this.queryRecords.find((record) => record.key === this.querySelected) ?? null;
+    },
+
+    get selectedQuery() {
+      const executions = this.selectedQueryRecord?.executions ?? [];
+
+      return executions.find((query) => query.execution === this.querySelectedExecution) ?? executions[0] ?? null;
     },
 
     get selectedAuthorizationDecision() {
@@ -1081,7 +1103,10 @@ export function createNewDebugBar(
       const nextSection = this.sectionKeys.includes(section) ? section : 'overview';
       const needsSection = this.inspectorOpen && (this.loadedSection !== nextSection || this.sectionError);
       this.selected = nextSection;
-      if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) this.queryFilter = 'attention';
+      if (this.selected === 'queries' && ['repeated', 'slow'].includes(filter)) {
+        this.queryFilter = 'attention';
+        this.queryFocusFilter = filter;
+      }
       if (this.selected === 'authorization' && ['all', 'allowed', 'denied'].includes(filter))
         this.authorizationFilter = filter;
       this.mobileSectionsOpen = false;
@@ -1091,13 +1116,7 @@ export function createNewDebugBar(
         if (this.$refs?.content) this.$refs.content.scrollTop = 0;
         if (this.selected === 'queries') {
           this.applyQueryView();
-          if (['repeated', 'slow'].includes(filter)) {
-            const selector =
-              filter === 'repeated'
-                ? '[data-ndb-query-group]:not([hidden])'
-                : '[data-ndb-query-item][data-ndb-slow="true"]:not([hidden]), [data-ndb-query-group][data-ndb-slow="true"]:not([hidden])';
-            this.$refs?.queryResults?.querySelector?.(selector)?.scrollIntoView?.({ block: 'start' });
-          }
+          if (['repeated', 'slow'].includes(filter)) this.focusQueryFinding(filter);
         }
         if (this.selected === 'http_client') this.applyHttpClientView();
         if (this.selected === 'notifications') this.applyNotificationView();
@@ -1898,9 +1917,22 @@ export function createNewDebugBar(
       this.notificationDetailTab = 'delivery';
       this.notificationChannel = null;
       this.visibleNotificationCount = 0;
+      this.queryRecords = [];
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
+      this.querySelected = null;
+      this.querySelectedExecution = null;
+      this.queryDetailOpen = false;
+      this.queryDetailTab = 'query';
+      this.queryDetailReturnFocus = null;
+      this.queryExplain = null;
+      this.queryExplainError = null;
+      this.queryExplainLoading = false;
+      this.queryExplainExecution = null;
+      this.queryExplainScrollTop = null;
+      this.queryFocusFilter = null;
+      this.visibleQueryCount = 0;
       this.viewSort = 'name';
       this.viewSortDirection = 'asc';
       this.modelGroupCount = 0;
@@ -3098,10 +3130,28 @@ export function createNewDebugBar(
       }
     },
 
+    initializeQueries(records) {
+      this.queryRecords = Array.isArray(records) ? records : [];
+      this.queryFilter = this.queryFocusFilter ? 'attention' : 'all';
+      this.querySearch = '';
+      this.querySort = 'execution';
+      this.querySelected = this.queryRecords[0]?.key ?? null;
+      this.querySelectedExecution = this.queryRecords[0]?.executions?.[0]?.execution ?? null;
+      this.queryDetailOpen = false;
+      this.queryDetailTab = 'query';
+      this.queryDetailReturnFocus = null;
+      this.syncQueryExplain();
+      this.$nextTick?.(() => {
+        this.applyQueryView();
+        if (this.queryFocusFilter) this.focusQueryFinding(this.queryFocusFilter);
+      });
+    },
+
     setQueryFilter(filter) {
       if (!['all', 'attention', 'read', 'write'].includes(filter)) return;
 
       this.queryFilter = filter;
+      this.queryFocusFilter = null;
       this.applyQueryView();
     },
 
@@ -3112,40 +3162,164 @@ export function createNewDebugBar(
       this.applyQueryView();
     },
 
+    selectQueryRecord(key) {
+      const record = this.queryRecords.find((candidate) => candidate.key === key);
+      if (!record) return;
+
+      this.querySelected = record.key;
+      this.querySelectedExecution = record.executions?.[0]?.execution ?? null;
+      this.queryDetailOpen = true;
+      this.queryDetailTab = 'query';
+      this.queryDetailReturnFocus = browser.activeElement?.() ?? null;
+      this.syncQueryExplain();
+      this.$nextTick?.(() => {
+        this.$refs?.queryDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        if ((browser.viewportWidth?.() ?? 1024) < 1024) this.$refs?.queryDetail?.focus?.({ preventScroll: true });
+        browser.highlight?.();
+      });
+    },
+
+    closeQueryDetail() {
+      const returnFocus = this.queryDetailReturnFocus;
+      const selectedRow = [...(this.$refs?.queryList?.querySelectorAll?.('[data-ndb-query-item]') ?? [])].find(
+        (item) => item.dataset.ndbQueryKey === this.querySelected,
+      );
+      this.queryDetailOpen = false;
+      this.queryDetailReturnFocus = null;
+      this.$nextTick?.(() => {
+        const focus = () => (returnFocus?.isConnected === false ? selectedRow : returnFocus ?? selectedRow)?.focus?.();
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    selectQueryExecution(execution) {
+      if (!this.selectedQueryRecord?.executions?.some((query) => query.execution === execution)) return;
+
+      this.querySelectedExecution = execution;
+      this.syncQueryExplain();
+      this.$nextTick?.(() => browser.highlight?.());
+    },
+
+    setQueryDetailTab(tab) {
+      if (!['query', 'bindings', 'source', 'explain'].includes(tab)) return;
+
+      this.queryDetailTab = tab;
+      this.$nextTick?.(() => {
+        this.$refs?.queryDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        browser.highlight?.();
+      });
+    },
+
+    syncQueryExplain() {
+      this.queryExplain = this.selectedQuery?.explain ?? null;
+      this.queryExplainError = this.selectedQuery?.explain_error ?? null;
+      this.queryExplainLoading = false;
+      this.queryExplainExecution = this.selectedQuery?.execution ?? null;
+      this.queryExplainScrollTop = null;
+    },
+
+    beginQueryExplain() {
+      if (!this.selectedQuery?.explain_available) return null;
+
+      this.queryDetailTab = 'explain';
+      this.queryExplain = null;
+      this.queryExplainError = null;
+      this.queryExplainLoading = true;
+      this.queryExplainExecution = this.selectedQuery.execution;
+      this.queryExplainScrollTop = this.$refs?.queryDetail?.scrollTop ?? null;
+
+      return this.selectedQuery.execution;
+    },
+
+    receiveQueryExplain(detail = {}) {
+      const execution = Number(detail.execution);
+      if (!Number.isFinite(execution)) return;
+
+      this.queryRecords.forEach((record) =>
+        (record.executions ?? []).forEach((query) => {
+          if (query.execution !== execution) return;
+
+          query.explain = detail.explain ?? null;
+          query.explain_error = detail.error ?? null;
+        }),
+      );
+
+      if (execution !== this.querySelectedExecution) return;
+
+      this.queryExplain = detail.explain ?? null;
+      this.queryExplainError = detail.error ?? null;
+      this.queryExplainLoading = false;
+      this.$nextTick?.(() => {
+        if (this.queryExplainScrollTop !== null) {
+          this.$refs?.queryDetail?.scrollTo?.({ top: this.queryExplainScrollTop, behavior: 'instant' });
+        }
+        browser.highlight?.();
+      });
+    },
+
+    failQueryExplain() {
+      this.queryExplainLoading = false;
+      this.queryExplainError = 'EXPLAIN could not be completed.';
+    },
+
+    focusQueryFinding(filter) {
+      if (!['repeated', 'slow'].includes(filter)) return;
+
+      const selector =
+        filter === 'repeated'
+          ? '[data-ndb-query-item][data-ndb-repeated="true"]:not([hidden])'
+          : '[data-ndb-query-item][data-ndb-slow="true"]:not([hidden])';
+      const item = this.$refs?.queryList?.querySelector?.(selector);
+      if (!item) return;
+
+      this.queryFocusFilter = null;
+      this.selectQueryRecord(item.dataset.ndbQueryKey);
+      item.scrollIntoView?.({ block: 'nearest' });
+    },
+
     applyQueryView() {
-      const results = this.$refs?.queryResults;
+      const list = this.$refs?.queryList;
       const search = this.querySearch.toLowerCase().trim();
+      const items = [...(list?.querySelectorAll?.('[data-ndb-query-item]') ?? [])];
       let visible = 0;
+      let firstVisible = null;
+      let selectedVisible = false;
 
-      if (results?.children) {
-        [...results.children]
-          .sort((left, right) => this.compareQueries(left, right))
-          .forEach((result) => {
-            const isGroup = result.dataset.ndbQueryKind === 'group';
-            const isRepeatedItem = result.dataset.ndbQueryKind === 'item' && result.dataset.ndbRepeated === 'true';
-            const matchesFilter =
-              this.queryFilter === 'all' ||
-              (this.queryFilter === 'attention' && (isGroup || result.dataset.ndbSlow === 'true')) ||
-              (this.queryFilter === 'read' && result.dataset.ndbType === 'read') ||
-              (this.queryFilter === 'write' && result.dataset.ndbType === 'write');
-            const matchesSearch = search === '' || result.dataset.ndbSearch?.includes(search);
-            result.hidden = isRepeatedItem || !matchesFilter || !matchesSearch;
-            if (!result.hidden) visible += Number(result.dataset.ndbResultCount ?? 1);
-            results.appendChild?.(result);
+      items
+        .sort((left, right) => this.compareQueries(left, right))
+        .forEach((item) => {
+          const matchesFilter =
+            this.queryFilter === 'all' ||
+            (this.queryFilter === 'attention' && item.dataset.ndbAttention === 'true') ||
+            (this.queryFilter === 'read' && item.dataset.ndbQueryType === 'read') ||
+            (this.queryFilter === 'write' && item.dataset.ndbQueryType === 'write');
+          const matchesSearch = search === '' || item.dataset.ndbSearch?.includes(search);
+          const matches = matchesFilter && matchesSearch;
+          item.hidden = !matches;
 
-            if (isGroup) {
-              const executions = result.querySelector?.('[data-ndb-query-group-executions]');
+          if (matches) {
+            item.style?.removeProperty?.('display');
+            firstVisible ??= item.dataset.ndbQueryKey;
+            selectedVisible ||= item.dataset.ndbQueryKey === this.querySelected;
+            visible += Number(item.dataset.ndbQueryExecutionCount ?? 1);
+          } else {
+            item.style?.setProperty?.('display', 'none', 'important');
+          }
 
-              if (executions?.children) {
-                [...executions.children]
-                  .sort((left, right) => this.compareQueries(left, right))
-                  .forEach((execution) => executions.appendChild?.(execution));
-              }
-            }
-          });
-      }
+          list?.appendChild?.(item);
+        });
 
       this.visibleQueryCount = visible;
+
+      if (!selectedVisible) {
+        const record = this.queryRecords.find((candidate) => candidate.key === firstVisible) ?? null;
+        this.querySelected = record?.key ?? null;
+        this.querySelectedExecution = record?.executions?.[0]?.execution ?? null;
+        if (record === null) this.queryDetailOpen = false;
+        this.queryDetailTab = 'query';
+        this.queryDetailReturnFocus = null;
+        this.syncQueryExplain();
+      }
     },
 
     compareQueries(left, right) {
@@ -3157,6 +3331,25 @@ export function createNewDebugBar(
       }
 
       return Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
+    },
+
+    formatQueryEvidence(value) {
+      if (value === null || value === undefined || value === '') return 'No evidence was captured.';
+      if (typeof value === 'string') return value;
+
+      return JSON.stringify(value, null, 2);
+    },
+
+    formatQueryType(type) {
+      const value = typeof type === 'string' && type !== '' ? type : 'query';
+
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    },
+
+    highlightQueryCode(code) {
+      if (typeof code?.textContent === 'string') code.textContent = code.textContent;
+      code?.removeAttribute?.('data-highlighted');
+      browser.highlight?.();
     },
 
     toggleViewSort(sort) {

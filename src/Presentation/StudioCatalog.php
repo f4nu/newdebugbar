@@ -110,8 +110,7 @@ final class StudioCatalog
             'overview-runtime-details',
         ],
         'queries' => [
-            'query-actions',
-            'query-execution',
+            'query-detail',
             'query-section',
         ],
         'shell' => [
