@@ -32,10 +32,6 @@
                         <dt class="ndb:font-semibold">Executions</dt>
                         <dd class="ndb:font-semibold ndb:tabular-nums" x-text="selectedQueryRecord.count"></dd>
                     </div>
-                    <div class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1">
-                        <dt class="ndb:font-semibold">Connection</dt>
-                        <dd class="ndb:max-w-40 ndb:truncate ndb:font-semibold" x-text="selectedQuery.connection"></dd>
-                    </div>
                     <div
                         x-show.important="selectedQuery.source_available"
                         class="ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-1"

@@ -570,7 +570,10 @@ it('composes Queries as a bounded shared list detail workspace', function () {
         ->toContain('<x-newdebugbar::query-detail')
         ->not->toContain('<details')
         ->not->toContain('<x-newdebugbar::query-execution')
-        ->not->toContain('<x-newdebugbar::query-actions');
+        ->not->toContain('<x-newdebugbar::query-actions')
+        ->not->toContain("'runnable_available' => \$runnableAvailable")
+        ->not->toContain("'extra_executions' =>")
+        ->not->toContain("'bindings_vary' =>");
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')
@@ -591,6 +594,7 @@ it('composes Queries as a bounded shared list detail workspace', function () {
         ->toContain('selectedQuery.display_sql')
         ->toContain('<template x-if="queryDetailTab === \'source\'">')
         ->toContain('<template x-if="queryDetailTab === \'explain\'">')
+        ->not->toContain('<dt class="ndb:font-semibold">Connection</dt>')
         ->not->toContain('<details')
         ->not->toContain('<pre');
 });
