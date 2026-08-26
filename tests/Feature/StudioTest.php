@@ -58,21 +58,21 @@ it('renders exactly one focused demo for every catalog component', function () {
 
 it('gives every component a canonical detail page and preserves bounded preview widths', function () {
     $response = $this->get(route('newdebugbar.studio.component', [
-        'component' => 'cache-header',
+        'component' => 'inspector-detail-header',
         'theme' => 'dark',
         'width' => 712,
     ]));
 
     $response
         ->assertOk()
-        ->assertSeeText('Cache Header')
-        ->assertSeeText('Section parts')
+        ->assertSeeText('Detail Header')
+        ->assertSeeText('Inspector layout')
         ->assertDontSeeText('Why it exists')
-        ->assertSee('data-ndb-studio-component-link="cache-header"', false)
+        ->assertSee('data-ndb-studio-component-link="inspector-detail-header"', false)
         ->assertSee('aria-current="page"', false)
         ->assertSee('width: 712px', false)
         ->assertSee(route('newdebugbar.studio.preview', [
-            'component' => 'cache-header',
+            'component' => 'inspector-detail-header',
             'theme' => 'dark',
         ]), false);
 
@@ -88,6 +88,8 @@ it('gives every component a canonical detail page and preserves bounded preview 
 });
 
 it('rejects unknown Studio components and previews', function () {
-    $this->get(route('newdebugbar.studio.component', ['component' => 'unknown']))->assertNotFound();
-    $this->get(route('newdebugbar.studio.preview', ['component' => 'unknown']))->assertNotFound();
+    foreach (['unknown', 'cache-header', 'notification-header', 'corner-toolbar'] as $component) {
+        $this->get(route('newdebugbar.studio.component', ['component' => $component]))->assertNotFound();
+        $this->get(route('newdebugbar.studio.preview', ['component' => $component]))->assertNotFound();
+    }
 });

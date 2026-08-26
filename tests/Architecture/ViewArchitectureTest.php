@@ -18,14 +18,18 @@ it('keeps every Blade view focused', function () {
     expect($oversizedViews)->toBe([]);
 });
 
-it('documents and demonstrates every reusable Blade component in Studio', function () {
+it('catalogs only canonical shared component families in Studio', function () {
     $root = dirname(__DIR__, 2);
     $componentDirectory = $root.'/resources/views/components';
+    $demoDirectory = $root.'/resources/views/studio/demos';
     $groups = StudioCatalog::groups();
     $kinds = StudioCatalog::kinds();
     $navigationGroups = StudioCatalog::navigationGroups();
     $components = StudioCatalog::components();
-    $catalogComponents = array_keys($components);
+    $catalogPages = array_keys($components);
+    $publicComponents = StudioCatalog::publicComponents();
+    $privateComponentsByOwner = StudioCatalog::privateComponents();
+    $privateComponents = collect($privateComponentsByOwner)->flatten()->all();
     $kindComponents = collect($kinds)->flatMap(fn (array $kind): array => $kind['components'])->all();
     $navigationComponents = collect($navigationGroups)
         ->flatMap(fn (array $group): array => $group['components'])
@@ -35,27 +39,84 @@ it('documents and demonstrates every reusable Blade component in Studio', functi
         ->sort()
         ->values()
         ->all();
+    $demoGroups = collect(ProjectFiles::bladeFilesIn($demoDirectory))
+        ->map(fn (SplFileInfo $file): string => str_replace('.blade.php', '', $file->getFilename()))
+        ->sort()
+        ->values()
+        ->all();
     $documentedComponents = file_get_contents($root.'/.agents/skills/craft-newdebugbar-ui/references/components.md');
 
-    expect($catalogComponents)->toHaveCount(count(array_unique($catalogComponents)))
+    expect($catalogPages)->toHaveCount(count(array_unique($catalogPages)))
+        ->and($publicComponents)->toHaveCount(count(array_unique($publicComponents)))
+        ->and($privateComponents)->toHaveCount(count(array_unique($privateComponents)))
         ->and($kindComponents)->toHaveCount(count(array_unique($kindComponents)))
-        ->and($kindComponents)->toHaveCount(count($catalogComponents))
         ->and($navigationComponents)->toHaveCount(count(array_unique($navigationComponents)))
-        ->and($navigationComponents)->toHaveCount(count($catalogComponents));
+        ->and($kindComponents)->toHaveCount(count($catalogPages))
+        ->and($navigationComponents)->toHaveCount(count($catalogPages));
 
-    sort($catalogComponents);
+    $registeredComponents = [...$publicComponents, ...$privateComponents];
+    sort($registeredComponents);
+
+    expect($registeredComponents)->toBe($viewComponents);
+
+    sort($catalogPages);
     sort($kindComponents);
     sort($navigationComponents);
 
-    expect($catalogComponents)->toBe($viewComponents)
-        ->and($kindComponents)->toBe($viewComponents)
-        ->and($navigationComponents)->toBe($viewComponents);
+    expect($kindComponents)->toBe($catalogPages)
+        ->and($navigationComponents)->toBe($catalogPages);
+
+    foreach ($publicComponents as $publicComponent) {
+        expect($viewComponents)->toContain($publicComponent)
+            ->and($documentedComponents)->toContain('`'.$publicComponent.'`');
+
+        $contents = file_get_contents($componentDirectory.'/'.$publicComponent.'.blade.php');
+        preg_match_all('/<x-newdebugbar::(?<component>[a-z0-9-]+)/', $contents, $dependencies);
+
+        foreach (array_unique($dependencies['component']) as $dependency) {
+            expect(
+                $publicComponents,
+                sprintf('Public component [%s] depends on private component [%s].', $publicComponent, $dependency),
+            )->toContain($dependency);
+        }
+    }
+
+    $privateDependencyViolations = [];
+
+    foreach ($privateComponentsByOwner as $owner => $ownedComponents) {
+        expect($owner)->not->toBeEmpty()
+            ->and($ownedComponents)->not->toBeEmpty();
+
+        foreach ($ownedComponents as $ownedComponent) {
+            $contents = file_get_contents($componentDirectory.'/'.$ownedComponent.'.blade.php');
+            preg_match_all('/<x-newdebugbar::(?<component>[a-z0-9-]+)/', $contents, $dependencies);
+
+            foreach (array_unique($dependencies['component']) as $dependency) {
+                if (! in_array($dependency, $publicComponents, true) && ! in_array($dependency, $ownedComponents, true)) {
+                    $privateDependencyViolations[] = sprintf(
+                        'Private %s component [%s] depends on component [%s] owned by another product area.',
+                        $owner,
+                        $ownedComponent,
+                        $dependency,
+                    );
+                }
+            }
+        }
+    }
+
+    expect($privateDependencyViolations)->toBe([]);
 
     foreach ($groups as $slug => $group) {
         expect($group['title'])->not->toBeEmpty()
             ->and($group['description'])->not->toBeEmpty()
             ->and($root.'/resources/views/studio/demos/'.$slug.'.blade.php')->toBeFile();
+
+        expect($group['components'])->not->toBeEmpty();
     }
+
+    $expectedDemoGroups = array_keys($groups);
+    sort($expectedDemoGroups);
+    expect($demoGroups)->toBe($expectedDemoGroups);
 
     foreach ($kinds as $kind) {
         expect($kind['title'])->not->toBeEmpty()
@@ -74,7 +135,7 @@ it('documents and demonstrates every reusable Blade component in Studio', functi
             ->and($metadata['kindTitle'])->not->toBeEmpty()
             ->and($metadata['kindDescription'])->not->toBeEmpty()
             ->and($groups)->toHaveKey($metadata['group'])
-            ->and($documentedComponents)->toContain('`'.$component.'`');
+            ->and($metadata['members'])->toContain($component);
     }
 });
 
@@ -181,6 +242,7 @@ it('composes the HTTP Client workspace from focused view components', function (
         ->toContain('<x-newdebugbar::http-client-source-panel');
 
     expect($controls)
+        ->toContain('<x-newdebugbar::inspector-list-controls')
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
         ->not->toContain('<x-newdebugbar::filter-tabs')
@@ -242,6 +304,7 @@ it('composes the Cache workspace from the shared inspector components', function
         ->toContain('<x-newdebugbar::cache-source-panel');
 
     expect($controls)
+        ->toContain('<x-newdebugbar::inspector-list-controls')
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
         ->not->toContain('<x-newdebugbar::filter-tabs')

@@ -34,8 +34,8 @@
     </span>
 </p>
 
-<div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_8.75rem] ndb:gap-2">
-    @if ($itemCount >= 5)
+<x-newdebugbar::inspector-list-controls :show-search="$itemCount >= 5">
+    <x-slot:search>
         <x-newdebugbar::search-field
             label="Search outbound HTTP requests"
             placeholder="Search requests"
@@ -43,17 +43,18 @@
             x-model="httpClientSearch"
             @input.debounce.100ms="applyHttpClientView()"
         />
-    @endif
+    </x-slot:search>
 
-    <x-newdebugbar::select-field
-        label="Filter outbound HTTP requests"
-        :span="$itemCount < 5"
-        data-ndb-http-client-filter
-        x-model="httpClientFilter"
-        @change="setHttpClientFilter($event.target.value)"
-    >
-        @foreach ($filters as $filter => [$label, $count])
-            <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
-        @endforeach
-    </x-newdebugbar::select-field>
-</div>
+    <x-slot:filter>
+        <x-newdebugbar::select-field
+            label="Filter outbound HTTP requests"
+            data-ndb-http-client-filter
+            x-model="httpClientFilter"
+            @change="setHttpClientFilter($event.target.value)"
+        >
+            @foreach ($filters as $filter => [$label, $count])
+                <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
+            @endforeach
+        </x-newdebugbar::select-field>
+    </x-slot:filter>
+</x-newdebugbar::inspector-list-controls>

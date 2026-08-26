@@ -1,147 +1,123 @@
-# Component catalog
+# Component system
 
-The living visual catalog is `/__newdebugbar/studio`. The source registry is `src/Presentation/StudioCatalog.php`. Every file in `resources/views/components` must appear exactly once in the registry and in a bounded Studio demo.
+The living visual catalog is `/__newdebugbar/studio`. Its source registry is `src/Presentation/StudioCatalog.php`.
 
-Each component has one canonical page at `/__newdebugbar/studio/{component}` and one preview at `/__newdebugbar/studio/{component}/preview`. The normal page navigation groups components by practical role, and the iframe renders exactly one centered component demo. Do not add a separate Studio header, component explainer, breadcrumb, source panel, or framed card around the preview. Inspector families such as HTTP Client or Cache are demo-harness provenance, not gallery pages.
+Studio is an explicit allowlist of canonical reusable component families. It is not a directory browser. A Blade file does not become public merely because it lives in `resources/views/components`, and private section modules must not be added to Studio to satisfy a completeness count.
 
-Prefer composition over adding props that only serve the Studio. State-bound components should be demonstrated inside the smallest realistic parent harness.
+Each catalog family has one canonical page at `/__newdebugbar/studio/{component}` and one preview at `/__newdebugbar/studio/{component}/preview`. The iframe renders exactly one centered demo. Do not add a Studio header, explainer, breadcrumb, source panel, or framed card around the preview.
 
-## Foundations
+## Ownership boundary
 
-| Component                   | Use                                                                                                                                                |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `icon`                      | Render a package-owned SVG by name and explicit supported size. Do not use an icon when text is clearer.                                           |
-| `icon-button`               | Accessible icon-only action. Always provide an accessible name; use `darkSurface` only on dark chrome and `colorOnly` for quiet text-like actions. |
-| `inspector-action`          | Compact labeled action inside a detail pane. Keep it contextual to nearby evidence.                                                                |
-| `inspector-operation-badge` | Neutral equal-width HTTP method or cache-operation badge. Use `wide` for longer operations and `outlined` in detail headers.                       |
-| `search-field`              | Shared labeled search input. The normal icon position is left.                                                                                     |
-| `select-field`              | Shared native select with stable field geometry. Use for a single list filter rather than a segmented strip.                                       |
-| `filter-tab`                | One tabs or segmented option. Place only inside `filter-tabs`; express selection with `aria-selected` or `aria-pressed`.                           |
-| `filter-tabs`               | Accessible tabs or segmented-control group. Give it a concrete label.                                                                              |
-| `empty-state`               | Calm no-results or section-empty message. `success` is only for genuinely positive empty states.                                                   |
-| `popover-surface`           | Shared elevated menu surface. Use `anchored` only with Alpine Anchor and choose direction and alignment deliberately.                              |
-| `theme-menu-item`           | Contextual action that offers the opposite of the resolved light or dark theme. Relies on root theme state and closes the active mobile menu.      |
-| `theme-toggle`              | Compact light/dark theme control for the toolbar.                                                                                                  |
-| `section-heading`           | Restrained title and close description for a section. Do not repeat the tab name in the description.                                               |
-| `code-block`                | Syntax-highlighted code or data. Pass the real language; never use it for an ordinary path or label.                                               |
+Use these ownership levels:
 
-## Inspector structure
+1. **Shared primitives** own one visual or interaction rule, such as a field, badge, source link, or code block.
+2. **Shared inspector patterns** own recurring composition and behavior across independent sections, such as a detail header, fact grid, or list-detail workspace.
+3. **Private section modules** own section-specific labels, filters, rows, tabs, data normalization, and evidence. They belong beside their owning section and do not appear in Studio.
 
-| Component                   | Use                                                                                                                            |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `inspector-definition-list` | Stack definition rows with one divider system.                                                                                 |
-| `inspector-definition-row`  | One label/value pair. Use `danger` only for an actual failed or harmful state.                                                 |
-| `inspector-detail-back`     | Mobile drill-in Back action; `persistent` also exposes it on desktop when the flow truly needs it.                             |
-| `inspector-detail-empty`    | Center a short selection instruction in an unselected detail pane.                                                             |
-| `inspector-detail-header`   | Stable selected-item identity and optional actions. Use `grid` for fixed action placement and `wrap` for long identities.      |
-| `inspector-detail-pane`     | Detail scroll owner with mobile drill-in behavior. Supply the real open state, reference, label, Back label, and close action. |
-| `inspector-detail-tabs`     | Detail segmented tabs. Center by default; use `left` only when adjacent controls require it.                                   |
-| `inspector-evidence`        | Optional label plus syntax-highlighted evidence. Choose the actual language.                                                   |
-| `inspector-explanation`     | Friendly help for ambiguous evidence and a conditional next check. Do not use for obvious labels.                              |
-| `inspector-fact`            | One compact labeled fact. Place inside `inspector-facts`.                                                                      |
-| `inspector-facts`           | Responsive fact tracks. Use two to four columns and disable its border only when the parent already supplies the divider.      |
-| `inspector-list-panel`      | List controls, list scroll owner, and filtered empty state.                                                                    |
-| `inspector-source-fact`     | Source-like fact card. Set `code` only when the value itself is code, not merely a file location.                              |
-| `inspector-source-link`     | Underlined application source action with no icon, padding, or hover fill.                                                     |
-| `inspector-stack`           | Bounded application call stack. Pass retained application frames and an accurate empty label.                                  |
-| `inspector-workspace`       | Shared split or focus workspace. Use `top` framing for edge-to-edge sections and a namespaced `detailId` in focus mode.        |
+A shared component may depend only on another shared component. A private module may compose shared components. One section's private module must not become another section's dependency; extract the shared visual rule instead.
 
-## Toolbar and navigation
+During the current migration, a private file may still live in `resources/views/components`. Register it under exactly one owner in `StudioCatalog::privateComponents()` until it is moved beside that section. Do not add it to Studio unless it independently satisfies the shared-component test below.
 
-| Component                | Use                                                                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| `corner-toolbar`         | Complete quiet request toolbar. Demonstrate or test inside the root debug-bar Alpine state.        |
-| `mobile-request-metrics` | Most useful query, duration, and memory metrics on narrow screens. Supply the correct state scope. |
-| `mobile-toolbar-popover` | Accessible mobile menu shell. Use a namespaced ID and explicit label.                              |
-| `request-option`         | One saved request choice with stable identity and outcome facts.                                   |
-| `request-switcher`       | Current-request trigger and picker; depends on root request history state.                         |
-| `toolbar-anchor-preview` | Drop-target preview while moving the toolbar. Supply one valid placement.                          |
-| `toolbar-button`         | Toolbar metric or section summary that opens an inspector section.                                 |
-| `window-controls`        | Expand, shrink, and close group. Use `darkSurface` only on dark chrome.                            |
+## When a component is shared
 
-## HTTP Client
+Make a component public only when at least one of these is true:
 
-| Component                    | Use                                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| `http-client-controls`       | Count, search, and compact status filter in the list header.                         |
-| `http-client-detail`         | Selected-request coordinator. It owns active Response, Request, and Source states.   |
-| `http-client-detail-tabs`    | Response-first detail tabs using the shared segmented treatment.                     |
-| `http-client-empty`          | No-selection instruction for outbound requests.                                      |
-| `http-client-header`         | Method badge and URL identity only.                                                  |
-| `http-client-list-item`      | One stable row for method, URL, status or failure, and duration.                     |
-| `http-client-no-response`    | Accurate no-response state for connection failures; do not fabricate response facts. |
-| `http-client-request-panel`  | Host, request headers, and request body.                                             |
-| `http-client-response-panel` | Status, duration, response headers, and body.                                        |
-| `http-client-source-panel`   | Application initiation source and bounded stack.                                     |
-| `http-client-workspace`      | Full outbound-request list/detail composition. Pass retained items and summary.      |
+- Two independent product owners reuse the same visual or interaction rule.
+- It is a foundational control or layout pattern that the product deliberately standardizes.
 
-## Cache
+It must also satisfy all of these:
 
-| Component              | Use                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------ |
-| `cache-controls`       | Count, search, and one operation-filter dropdown.                                    |
-| `cache-detail`         | Selected cache-operation coordinator.                                                |
-| `cache-detail-tabs`    | Overview, Raw, and Source segmented views; omit Raw when it adds no unique evidence. |
-| `cache-empty`          | No-selection instruction for cache activity.                                         |
-| `cache-header`         | Equal-width operation badge and key on one line.                                     |
-| `cache-list-item`      | Compact operation badge and key row; do not show an artificial row ID.               |
-| `cache-overview-facts` | Result, store, duration, TTL, and other retained operation facts.                    |
-| `cache-overview-panel` | Structured cache-operation overview without duplicate prose.                         |
-| `cache-raw-panel`      | Retained raw value or payload only when useful.                                      |
-| `cache-source-panel`   | Application source and bounded stack.                                                |
-| `cache-workspace`      | Full cache list/detail composition. Pass retained items and summary.                 |
+- Its API describes product semantics rather than one section's incidental markup.
+- It does not expose section-specific state names.
+- It has a useful, bounded Studio demo.
+- It is the single canonical treatment for its role.
 
-## Mail and notifications
+Similar section layouts do not justify a large component with many conditional props. Share stable geometry through slots and keep domain-specific content private.
 
-| Component                     | Use                                                                                                                                   |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `mail-actions`                | Contextual mail actions near the selected message. Do not restore a redundant View email button.                                      |
-| `mail-header`                 | Subject and delivery identity for the selected message.                                                                               |
-| `mail-message-details`        | Recipients, headers, attachments, and delivery facts.                                                                                 |
-| `mail-source-panel`           | Creation source and bounded application stack.                                                                                        |
-| `notification-delivery-panel` | Actual outcome for every captured channel and destination.                                                                            |
-| `notification-detail`         | Selected notification coordinator for delivery, data, and source views.                                                               |
-| `notification-header`         | Notification identity, recipient context, and lifecycle actions. The overall attention state does not become a separate detail badge. |
-| `notification-payload-panel`  | Application notification data without queue-internal noise.                                                                           |
-| `notification-source-panel`   | Initiation source and bounded stack.                                                                                                  |
+## Shared primitives
 
-Notification components read the parent inspector state. The parent must provide `selectedNotification`, `notificationDetailOpen`, `notificationDetailTab`, `notificationChannel`, and `selectedNotificationDelivery`, plus `setNotificationDetailTab`, `setNotificationChannel`, `openNotificationMail`, `openRelatedProfile`, and the retained-evidence formatter. Keep Delivery first. On a narrow viewport, the current detail tabs use icon-only controls with full `aria-label` values.
+| Component | Use |
+| --- | --- |
+| `code-block` | Syntax-highlighted code or retained code-like data. Pass the real language; never use it for an ordinary path or label. |
+| `empty-state` | Calm no-results or section-empty message. `success` is only for a genuinely positive empty state. |
+| `filter-tab` | One option inside `filter-tabs`. Express selection with `aria-selected` or `aria-pressed`; do not use it alone. |
+| `icon` | Package-owned SVG at an explicit supported size. Prefer text when an icon would be ambiguous. |
+| `icon-button` | Accessible icon-only action. Always provide an accessible name. |
+| `inspector-action` | Compact labeled action beside the evidence it affects. |
+| `inspector-operation-badge` | Neutral equal-width HTTP method or cache-operation badge. Use `wide` for longer operations and `outlined` in detail headers. |
+| `inspector-source-link` | Underlined application-source action with no ornamental icon, padding, or hover fill. |
+| `search-field` | Shared labeled search input with the icon fixed on the left and balanced inset spacing. Do not add a right-icon variant. |
+| `select-field` | Native select with stable field geometry. Use for one list-filter dimension rather than a segmented strip. |
 
-## Framework evidence
+## Shared inspector patterns
 
-| Component                  | Use                                                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `authorization-detail`     | One authorization result with ability, actor, subject, callback, and source evidence.                                          |
-| `event-detail`             | One event separated into overview, payload, and source evidence.                                                               |
-| `livewire-property-editor` | Supported scalar property editor with draft, validation, mutation, and shortcut states.                                        |
-| `livewire-split-view`      | Stable Livewire list/detail geometry across desktop and mobile.                                                                |
-| `log-entry`                | Structured log item with severity, message, context, source, and occurrences. It teleports into `#newdebugbar`.                |
-| `model-group`              | One model class row with retrieved, write, and extra-retrieval counts. Drivers and table names stay in the interface typeface. |
-| `model-group-detail`       | Records-first selected-model detail, with writes and application sources as separate useful views.                             |
-| `query-actions`            | Contextual SQL copy and explain actions with visible feedback.                                                                 |
-| `query-execution`          | One logical execution with SQL, bindings, timing, source, and optional EXPLAIN evidence.                                       |
-| `query-section`            | Query filters, grouped SQL rows, and selected execution coordinator.                                                           |
+| Component | Use |
+| --- | --- |
+| `filter-tabs` | Accessible tabs or segmented-control group. Give it a concrete label and place only `filter-tab` children inside it. |
+| `inspector-definition-list` | Stack `inspector-definition-row` children with one divider system. |
+| `inspector-definition-row` | One label/value pair. Use a danger tone only for an actual failed or harmful state. |
+| `inspector-detail-back` | Mobile drill-in Back action. Use `persistent` only when the desktop flow truly needs it. |
+| `inspector-detail-empty` | Center a short selection instruction in an unselected detail pane. |
+| `inspector-detail-header` | Stable selected-item identity and optional actions. Use `grid` for fixed action placement and `wrap` for long identities. |
+| `inspector-detail-pane` | Detail scroll owner with mobile drill-in behavior. Supply real open state, references, labels, and close behavior. |
+| `inspector-detail-tabs` | Detail segmented tabs. Center by default; align left only when adjacent controls make centering misleading. |
+| `inspector-evidence` | Optional label and compact aside plus syntax-highlighted evidence. Choose the actual language. |
+| `inspector-explanation` | Friendly help for ambiguous evidence and a conditional next check. Do not explain obvious labels. |
+| `inspector-fact` | One compact labeled fact inside `inspector-facts`. |
+| `inspector-facts` | Responsive fact tracks. Use two to four columns and omit its border when the parent already supplies the divider. |
+| `inspector-list-controls` | Optional list summary plus search and trailing filter. Pass section-owned labels and state through its slots; do not rebuild its two-column grid. |
+| `inspector-list-panel` | List controls, the list scroll owner, and the filtered empty state. |
+| `inspector-source-fact` | Source-like fact card. Set `code` only when the value itself is code, not merely a file location. This treatment is a merge candidate; do not create another source-fact variant. |
+| `inspector-stack` | Bounded application call stack. Pass retained application frames and an accurate empty label. |
+| `inspector-workspace` | Shared split or focused workspace. Use `top` framing for edge-to-edge sections and a namespaced `detailId` in focus mode. |
+| `popover-surface` | Shared elevated menu surface. Use `anchored` only with Alpine Anchor and choose direction and alignment deliberately. |
+| `section-heading` | Restrained title and close description. Do not repeat the tab name or explain an obvious label. |
 
-## State-bound component contracts
+## Compound families
 
-- Toolbar components run inside the root `newDebugBar(summary, profileLimit)` Alpine state. It owns the current request, request history, selected section, theme, menus, placement, and window actions. Do not create a second root store.
-- HTTP Client components run after `initializeHttpClient(items)`. The parent owns `selectedHttpClientRequest`, `httpClientDetailOpen`, `httpClientDetailTab`, search and filter state, selection, and the request formatting and copy helpers.
-- Cache components need the retained operation list, `selectedCacheOperation`, `cacheDetailOpen`, `cacheDetailTab`, search and filter state, operation selection, and payload formatting. Use the real section state when possible.
-- Mail components need `selectedMailMessage`, `mailDetailTab`, address formatting, preview URL generation, detail-tab selection, and related-profile navigation.
-- Authorization and Event detail components read their selected record and active detail-tab state from their section root. Demonstrate them with captured-shape records, not display-only invented props.
-- Models components receive a normalized `group`; the section root owns the selected group, Records-first tab, mobile detail state, search, and selection actions.
-- Query components receive analyzed query arrays and identities. Copy actions use the shared clipboard helper; EXPLAIN remains a Livewire action and must expose loading, success, and error states.
-- `livewire-property-editor` reads a normalized property row plus draft, validation, mutation, focus, and keyboard-shortcut helpers from the Livewire section state. A Studio demo must remain non-mutating.
-- `log-entry` receives one normalized `entry`, teleports supporting detail to `#newdebugbar`, and uses the root detail-sequence and copy helpers.
+Some public files have no useful standalone state. They share one Studio page with the parent that gives them meaning:
+
+- `filter-tabs` demonstrates `filter-tab`.
+- `inspector-definition-list` demonstrates `inspector-definition-row`.
+- `inspector-facts` demonstrates `inspector-fact`.
+
+Keep both files in the catalog family's `members` list so architecture checks still enforce their public dependency boundary. Do not create a second gallery page merely to increase the component count.
+
+## Private section modules
+
+HTTP Client, Cache, Mail, Notifications, Models, Events, Authorization, Queries, Logs, Livewire, and toolbar chrome own product-specific modules. Their complete workspaces, row renderers, data panels, state coordinators, and tab definitions are integration surfaces, not design-system components.
+
+Keep those modules out of normal Studio navigation. Verify them in realistic populated product sections. A private module may use a small demo fixture in a focused test, but it must not gain a public Studio page solely because it is a Blade component.
+
+Private modules should contain only domain decisions:
+
+- labels and filters;
+- list-column tracks and row content;
+- tab order and deliberate defaults;
+- captured evidence and empty-state wording;
+- section state and actions.
+
+They should reuse the shared field, badge, fact, source, code, explanation, and workspace grammar rather than reproduce its markup.
+
+## State and composition
+
+- Stateful shared patterns receive explicit expressions, references, labels, and actions from their parent. They do not create a second root store.
+- `inspector-workspace` owns split/focus geometry; `inspector-list-panel` owns list scrolling; `inspector-detail-pane` owns detail scrolling.
+- `inspector-detail-tabs` supplies the shared segmented container while the private section supplies tab labels, order, availability, and active state.
+- `inspector-explanation` is appropriate only when captured evidence needs interpretation or a conditional next check.
+- Code and evidence components receive retained values. They do not infer a source, result, or problem from adjacent data.
 
 ## Adding or changing a component
 
 In one change:
 
-1. Reuse or edit an existing component when its semantics match.
-2. If a new component is warranted, keep its API about product semantics, not one page's layout accident.
-3. Add it to `StudioCatalog` with a useful description.
-4. Add a bounded real demo to its canonical Studio component page.
-5. Document its purpose, important variants, and state dependencies here.
-6. Extend completeness and focused behavior tests.
-7. Inspect it at desktop and mobile widths in both themes.
+1. Decide whether the work belongs to a shared component or a private section module.
+2. Reuse or edit the canonical shared component when its semantics match.
+3. If a new shared component is warranted, add it to the explicit `StudioCatalog` allowlist, one focused demo, and this reference.
+4. If it is an inseparable child, add it to the parent's compound `members` rather than creating a weak standalone page.
+5. Keep private modules beside their owning section and out of Studio.
+6. Migrate every intended consumer and delete the superseded implementation in the same vertical slice. Do not leave old and new treatments in parallel.
+7. Extend architecture and focused behavior tests.
+8. Inspect the shared component in Studio and the real section at desktop and mobile widths in both themes.
+
+The architecture test must prove that every Blade component is either public or owned by exactly one private product area, every catalog family has exactly one demo, public components never depend on private modules, and private components never depend on another area's modules. It must not assert that every Blade file is public.

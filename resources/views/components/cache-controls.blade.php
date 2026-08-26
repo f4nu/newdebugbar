@@ -88,8 +88,8 @@
     </p>
 @endif
 
-<div class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_8.75rem] ndb:gap-2">
-    @if ($itemCount >= 5)
+<x-newdebugbar::inspector-list-controls :show-search="$itemCount >= 5">
+    <x-slot:search>
         <x-newdebugbar::search-field
             label="Search cache operations"
             placeholder="Search keys or stores"
@@ -97,17 +97,18 @@
             x-model="cacheSearch"
             @input.debounce.100ms="applyCacheView()"
         />
-    @endif
+    </x-slot:search>
 
-    <x-newdebugbar::select-field
-        label="Filter cache operations"
-        :span="$itemCount < 5"
-        data-ndb-cache-filter
-        x-model="cacheFilter"
-        @change="setCacheFilter($event.target.value)"
-    >
-        @foreach ($filters as $filter => [$label, $count])
-            <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
-        @endforeach
-    </x-newdebugbar::select-field>
-</div>
+    <x-slot:filter>
+        <x-newdebugbar::select-field
+            label="Filter cache operations"
+            data-ndb-cache-filter
+            x-model="cacheFilter"
+            @change="setCacheFilter($event.target.value)"
+        >
+            @foreach ($filters as $filter => [$label, $count])
+                <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
+            @endforeach
+        </x-newdebugbar::select-field>
+    </x-slot:filter>
+</x-newdebugbar::inspector-list-controls>

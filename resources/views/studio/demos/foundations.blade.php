@@ -72,23 +72,6 @@
     </div>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'filter-tab', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
-    <div x-data="{ newdebugbarStudioFilter: 'all' }" class="ndb:max-w-sm">
-        <x-newdebugbar::filter-tabs label="Request result" variant="segmented">
-            @foreach (['all' => 6, 'failed' => 2, 'slow' => 1] as $filter => $count)
-                <x-newdebugbar::filter-tab
-                    variant="segmented"
-                    @click="newdebugbarStudioFilter = '{{ $filter }}'"
-                    ::aria-pressed="newdebugbarStudioFilter === '{{ $filter }}'"
-                >
-                    {{ ucfirst($filter) }}
-                    <span class="ndb:tabular-nums ndb:text-[11px]">{{ $count }}</span>
-                </x-newdebugbar::filter-tab>
-            @endforeach
-        </x-newdebugbar::filter-tabs>
-    </div>
-@endcomponent
-
 @component('newdebugbar::studio.component', ['component' => 'filter-tabs', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <div x-data="{ newdebugbarStudioView: 'response' }" class="ndb:max-w-md">
         <x-newdebugbar::filter-tabs label="Request detail" variant="segmented">
@@ -134,19 +117,6 @@
             </button>
         </x-newdebugbar::popover-surface>
     </div>
-@endcomponent
-
-@component('newdebugbar::studio.component', ['component' => 'theme-menu-item', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
-    <div
-        role="menu"
-        class="ndb:max-w-64 ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white ndb:p-1.5 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900"
-    >
-        <x-newdebugbar::theme-menu-item data-ndb-studio-theme-menu-item />
-    </div>
-@endcomponent
-
-@component('newdebugbar::studio.component', ['component' => 'theme-toggle', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
-    <x-newdebugbar::theme-toggle data-ndb-studio-theme-toggle />
 @endcomponent
 
 @component('newdebugbar::studio.component', ['component' => 'section-heading', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])

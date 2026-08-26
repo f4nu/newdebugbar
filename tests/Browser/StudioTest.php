@@ -50,6 +50,25 @@ it('browses one focused component at a time with persistent preview controls', f
         ->assertScript('document.querySelector("[data-ndb-studio-frame]").contentDocument.querySelectorAll("[data-ndb-studio-demo]").length', 1)
         ->assertScript(<<<'JS'
             (() => {
+                const document = window.document.querySelector('[data-ndb-studio-frame]').contentDocument;
+                const search = document.querySelector('[data-ndb-studio-search]');
+                const icon = search?.parentElement.querySelector('svg');
+
+                if (!search || !icon) return false;
+
+                const searchBox = search.getBoundingClientRect();
+                const iconBox = icon.getBoundingClientRect();
+                const style = getComputedStyle(search);
+
+                return search.type === 'search'
+                    && iconBox.left < searchBox.left + Number.parseFloat(style.paddingLeft)
+                    && Number.parseFloat(style.paddingLeft) > Number.parseFloat(style.paddingRight)
+                    && Math.abs(iconBox.width - 16) <= 1
+                    && Math.abs(searchBox.height - 36) <= 1;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const frame = document.querySelector('[data-ndb-studio-frame]');
                 const surface = frame?.contentDocument?.querySelector('[data-ndb-studio-demo-surface]');
                 const content = surface?.firstElementChild;
@@ -108,12 +127,12 @@ it('browses one focused component at a time with persistent preview controls', f
         ->assertAttribute('[data-ndb-studio-theme="dark"]', 'aria-pressed', 'true')
         ->assertAttribute('[data-ndb-studio]', 'data-ndb-theme', 'dark')
         ->assertScript('document.querySelector("[data-ndb-studio-frame]").contentWindow.innerWidth', 390)
-        ->fill('[data-ndb-studio-search]', 'cache-workspace')
-        ->assertVisible('[data-ndb-studio-component-link="cache-workspace"]')
-        ->click('[data-ndb-studio-component-link="cache-workspace"]')
-        ->assertPathIs('/__newdebugbar/studio/cache-workspace');
+        ->fill('[data-ndb-studio-search]', 'inspector-workspace')
+        ->assertVisible('[data-ndb-studio-component-link="inspector-workspace"]')
+        ->click('[data-ndb-studio-component-link="inspector-workspace"]')
+        ->assertPathIs('/__newdebugbar/studio/inspector-workspace');
 
-    $waitForStudioPreview($page, 'cache-workspace', 'dark');
+    $waitForStudioPreview($page, 'inspector-workspace', 'dark');
 
     $page
         ->assertScript('new URL(window.location.href).searchParams.get("width")', '390')
@@ -132,12 +151,12 @@ it('browses one focused component at a time with persistent preview controls', f
 
     $page
         ->assertScript('Math.round(document.querySelector("[data-ndb-studio-frame]").getBoundingClientRect().width)', 714)
-        ->fill('[data-ndb-studio-search]', 'notification-header')
-        ->assertVisible('[data-ndb-studio-component-link="notification-header"]')
-        ->click('[data-ndb-studio-component-link="notification-header"]')
-        ->assertPathIs('/__newdebugbar/studio/notification-header');
+        ->fill('[data-ndb-studio-search]', 'inspector-detail-header')
+        ->assertVisible('[data-ndb-studio-component-link="inspector-detail-header"]')
+        ->click('[data-ndb-studio-component-link="inspector-detail-header"]')
+        ->assertPathIs('/__newdebugbar/studio/inspector-detail-header');
 
-    $waitForStudioPreview($page, 'notification-header', 'dark');
+    $waitForStudioPreview($page, 'inspector-detail-header', 'dark');
 
     $page
         ->assertScript('new URL(window.location.href).searchParams.get("width")', '714')
@@ -156,11 +175,11 @@ it('browses one focused component at a time with persistent preview controls', f
         ->assertNoJavaScriptErrors();
 });
 
-it('keeps representative elements, patterns, and compositions bounded in both themes', function () use ($waitForStudioPreview) {
+it('keeps representative elements and patterns bounded in both themes', function () use ($waitForStudioPreview) {
     $page = visit('/__newdebugbar/studio/icon-button?width=390&theme=dark')
         ->resize(1400, 760);
 
-    foreach (['icon-button', 'inspector-facts', 'corner-toolbar', 'http-client-response-panel', 'mail-message-details', 'model-group-detail', 'query-section'] as $component) {
+    foreach (['icon-button', 'inspector-facts', 'inspector-detail-header', 'inspector-evidence', 'inspector-list-controls', 'inspector-list-panel', 'inspector-workspace'] as $component) {
         if ($component !== 'icon-button') {
             $page
                 ->fill('[data-ndb-studio-search]', $component)
@@ -200,7 +219,7 @@ it('keeps representative elements, patterns, and compositions bounded in both th
         ->click('[data-ndb-studio-theme="light"]')
         ->click('[data-ndb-studio-width="1024"]');
 
-    $waitForStudioPreview($page, 'query-section', 'light');
+    $waitForStudioPreview($page, 'inspector-workspace', 'light');
 
     $page
         ->assertScript('document.querySelector("[data-ndb-studio-frame]").contentWindow.innerWidth', 1024)

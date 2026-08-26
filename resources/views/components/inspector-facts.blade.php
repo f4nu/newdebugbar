@@ -15,4 +15,6 @@
         : '';
 @endphp
 
-<dl {{ $attributes->class("ndb:grid ndb:gap-x-5 ndb:gap-y-3 {$columnClasses} {$borderClasses}") }}>{{ $slot }}</dl>
+<dl {{ $attributes->class("ndb:grid ndb:border-t-0 ndb:bg-transparent ndb:pt-0 ndb:text-zinc-700 ndb:gap-x-5 ndb:gap-y-3 ndb:dark:text-zinc-200 {$columnClasses} {$borderClasses}") }}>
+    {{ $slot }}
+</dl>

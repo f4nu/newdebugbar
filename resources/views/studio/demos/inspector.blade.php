@@ -7,12 +7,6 @@
     </x-newdebugbar::inspector-definition-list>
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-definition-row', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
-    <x-newdebugbar::inspector-definition-list class="ndb:max-w-xl">
-        <x-newdebugbar::inspector-definition-row label="Cache store"> redis </x-newdebugbar::inspector-definition-row>
-    </x-newdebugbar::inspector-definition-list>
-@endcomponent
-
 @component('newdebugbar::studio.component', ['component' => 'inspector-detail-back', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-detail-back persistent label="Requests" data-ndb-studio-detail-back />
 @endcomponent
@@ -107,17 +101,6 @@
     />
 @endcomponent
 
-@component('newdebugbar::studio.component', ['component' => 'inspector-fact', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
-    <x-newdebugbar::inspector-facts columns="2" :bordered="false" class="ndb:max-w-md">
-        <x-newdebugbar::inspector-fact label="Runtime">
-            <span class="ndb:text-xs ndb:font-bold ndb:tabular-nums ndb:text-amber-600 ndb:dark:text-amber-400">363.1 ms</span>
-        </x-newdebugbar::inspector-fact>
-        <x-newdebugbar::inspector-fact label="Status">
-            <span class="ndb:text-xs ndb:font-bold">200 OK</span>
-        </x-newdebugbar::inspector-fact>
-    </x-newdebugbar::inspector-facts>
-@endcomponent
-
 @component('newdebugbar::studio.component', ['component' => 'inspector-facts', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
     <x-newdebugbar::inspector-facts columns="4">
         <x-newdebugbar::inspector-fact label="Status"><span class="ndb:text-xs ndb:font-bold">200 OK</span></x-newdebugbar::inspector-fact>
@@ -125,6 +108,29 @@
         <x-newdebugbar::inspector-fact label="Host"><span class="ndb:text-xs ndb:font-semibold">weather.morrow.test</span></x-newdebugbar::inspector-fact>
         <x-newdebugbar::inspector-fact label="Response body"><span class="ndb:text-xs ndb:font-semibold ndb:tabular-nums">1.8 KB</span></x-newdebugbar::inspector-fact>
     </x-newdebugbar::inspector-facts>
+@endcomponent
+
+@component('newdebugbar::studio.component', ['component' => 'inspector-list-controls', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
+    <div class="ndb:w-full ndb:max-w-xl">
+        <x-newdebugbar::inspector-list-controls :show-search="true">
+            <x-slot:leading>
+                <p class="ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200">
+                    8 requests
+                    <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400">384.20 ms total</span>
+                </p>
+            </x-slot:leading>
+            <x-slot:search>
+                <x-newdebugbar::search-field label="Search requests" placeholder="Search requests" />
+            </x-slot:search>
+            <x-slot:filter>
+                <x-newdebugbar::select-field label="Filter requests">
+                    <option>All (8)</option>
+                    <option>Failed (2)</option>
+                    <option>Slow (1)</option>
+                </x-newdebugbar::select-field>
+            </x-slot:filter>
+        </x-newdebugbar::inspector-list-controls>
+    </div>
 @endcomponent
 
 @component('newdebugbar::studio.component', ['component' => 'inspector-list-panel', 'components' => $components, 'selected' => $selected, 'kind' => $selectedComponent['kind']])
