@@ -9,6 +9,8 @@
             {{ $value }}
         </dd>
     @else
-        <dd class="ndb:mt-0.5 ndb:min-w-0 ndb:bg-transparent ndb:text-xs ndb:text-zinc-700 ndb:dark:text-zinc-200">{{ $slot }}</dd>
+        <dd class="ndb:mt-0.5 ndb:min-w-0 ndb:bg-transparent ndb:text-xs ndb:text-zinc-700 ndb:dark:text-zinc-200">
+            {{ $slot }}
+        </dd>
     @endisset
 </div>
