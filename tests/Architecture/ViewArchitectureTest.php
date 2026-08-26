@@ -78,6 +78,7 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
 
 it('catalogs only canonical shared component families in Studio', function () {
     $root = dirname(__DIR__, 2);
+    $views = $root.'/resources/views';
     $componentDirectory = $root.'/resources/views/components';
     $demoDirectory = $root.'/resources/views/studio/demos';
     $groups = StudioCatalog::groups();
@@ -116,6 +117,40 @@ it('catalogs only canonical shared component families in Studio', function () {
     sort($registeredComponents);
 
     expect($registeredComponents)->toBe($viewComponents);
+
+    $extractComponentReferences = static function (string $contents): array {
+        preg_match_all('/<x-newdebugbar::(?<component>[a-z0-9-]+)/', $contents, $matches);
+
+        return array_values(array_unique($matches['component']));
+    };
+    $runtimeReferences = collect(ProjectFiles::bladeFilesIn($views))
+        ->reject(function (SplFileInfo $file) use ($views): bool {
+            $relativePath = ProjectFiles::relativePath($file, $views);
+
+            return str_starts_with($relativePath, 'components/')
+                || str_starts_with($relativePath, 'studio/');
+        })
+        ->flatMap(fn (SplFileInfo $file): array => $extractComponentReferences(file_get_contents($file->getPathname())))
+        ->unique()
+        ->values()
+        ->all();
+    $reachableComponents = [];
+    $pendingComponents = $runtimeReferences;
+
+    while ($pendingComponents !== []) {
+        $component = array_shift($pendingComponents);
+
+        if (! in_array($component, $registeredComponents, true) || in_array($component, $reachableComponents, true)) {
+            continue;
+        }
+
+        $reachableComponents[] = $component;
+        $dependencies = $extractComponentReferences(file_get_contents($componentDirectory.'/'.$component.'.blade.php'));
+        array_push($pendingComponents, ...$dependencies);
+    }
+
+    sort($reachableComponents);
+    expect($reachableComponents)->toBe($registeredComponents);
 
     sort($catalogPages);
     sort($kindComponents);
