@@ -35,7 +35,7 @@ final class DebugBar extends Component
         'queries' => 'Find repeated work, slow SQL, and the application code that triggered it.',
         'queue' => 'Review queued work, its connection and queue, and what happened during dispatch.',
         'redis' => 'Inspect direct Redis commands, their keys, connections, and timing.',
-        'request' => 'Review where the request went and the input, context, and response Laravel captured.',
+        'request' => 'Inspect the selected request and switch between later requests captured on this page.',
         'timeline' => 'Follow important work in the order it happened across the request.',
         'validation' => 'Review failed fields, messages, rules, and where validation came from.',
         'views' => 'See which Blade templates rendered and the data each received. Use this to spot missing variables, unexpected partials, and repeated renders.',

@@ -674,7 +674,6 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'livewire/sections/overview.blade.php',
         'livewire/sections/queue.blade.php',
         'livewire/sections/redis.blade.php',
-        'livewire/sections/request.blade.php',
         'livewire/sections/validation.blade.php',
         'livewire/sections/views.blade.php',
     ] as $view) {
@@ -682,6 +681,19 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
             ->toContain('<x-newdebugbar::inspector-workspace')
             ->toContain('frame="top"');
     }
+});
+
+it('keeps Requests as the lifecycle trace exception', function () {
+    $view = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/sections/request.blade.php');
+
+    expect($view)
+        ->toContain('data-ndb-request-trace')
+        ->toContain('data-ndb-request-step="received"')
+        ->toContain('data-ndb-request-step="matched"')
+        ->toContain('data-ndb-request-step="responded"')
+        ->toContain('data-ndb-request-details')
+        ->not->toContain('<x-newdebugbar::inspector-workspace')
+        ->not->toContain('requestDetailTab');
 });
 
 it('gives every inspector section the same full-height workspace chain', function () {
