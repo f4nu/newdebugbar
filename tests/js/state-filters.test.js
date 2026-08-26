@@ -1098,21 +1098,18 @@ test('timeline controls filter sections and search labels', () => {
   assert.equal(state.visibleTimelineCount, 0);
 });
 
-test('event controls group, filter, sort, and select useful event evidence', () => {
+test('event controls group, filter, and select useful event evidence', () => {
   const browser = runtime();
   const state = createNewDebugBar(summary, browser);
-  const appended = [];
   let detailFocuses = 0;
   let detailScrolls = 0;
   let returnFocuses = 0;
-  const item = (id, source, search, occurrences, firstSequence, lastSequence) => ({
+  const item = (id, source, search, occurrences) => ({
     dataset: {
       ndbEventId: String(id),
       ndbEventSourceValue: source,
       ndbEventSearchValue: search,
       ndbEventOccurrenceCount: String(occurrences),
-      ndbEventFirstSequence: String(firstSequence),
-      ndbEventLastSequence: String(lastSequence),
     },
     hidden: false,
     style: {
@@ -1125,15 +1122,14 @@ test('event controls group, filter, sort, and select useful event evidence', () 
       },
     },
   });
-  const framework = item(1, 'framework', 'illuminate auth login', 14, 1, 18);
-  const application = item(2, 'application', 'clinic ready listener payload source', 2, 4, 9);
-  const laterApplication = item(3, 'application', 'trip refreshed listener', 1, 20, 20);
+  const framework = item(1, 'framework', 'illuminate auth login', 14);
+  const application = item(2, 'application', 'clinic ready listener payload source', 2);
+  const laterApplication = item(3, 'application', 'trip refreshed listener', 1);
   laterApplication.isConnected = true;
   laterApplication.focus = () => returnFocuses++;
   state.$refs = {
     eventList: {
       children: [framework, application, laterApplication],
-      appendChild: (child) => appended.push(child),
     },
     eventDetail: {
       focus: () => detailFocuses++,
@@ -1147,20 +1143,20 @@ test('event controls group, filter, sort, and select useful event evidence', () 
     { id: 2, source: 'application', name: 'App\\Events\\ClinicReady' },
     { id: 3, source: 'application', name: 'App\\Events\\TripRefreshed' },
   ]);
-  assert.equal(state.eventSource, 'application');
+  assert.equal(state.eventSource, 'all');
   assert.equal(state.eventSelected, 2);
   assert.equal(state.selectedEvent?.id, 2);
   state.eventSelected = 99;
   assert.equal(state.selectedEvent, null);
   state.eventSelected = 2;
   assert.equal(state.eventDetailTab, 'overview');
-  assert.equal(framework.hidden, true);
-  assert.equal(framework.style.display, 'none');
+  assert.equal(framework.hidden, false);
+  assert.equal(framework.style.display, '');
   assert.equal(application.hidden, false);
   assert.equal(laterApplication.hidden, false);
-  assert.equal(state.visibleEventCount, 3);
-  assert.equal(state.visibleEventGroupCount, 2);
-  assert.equal(state.visibleEventSummary, '2 events, 3 dispatches');
+  assert.equal(state.visibleEventCount, 17);
+  assert.equal(state.visibleEventGroupCount, 3);
+  assert.equal(state.visibleEventSummary, '3 events, 17 dispatches');
 
   state.visibleEventCount = 2;
   state.visibleEventGroupCount = 2;
@@ -1185,19 +1181,9 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   assert.equal(state.eventSelected, 1);
   assert.equal(state.visibleEventCount, 14);
 
-  appended.length = 0;
   state.setEventSource('all');
   assert.equal(state.eventSelected, 1);
   assert.equal(state.eventDetailTab, 'overview');
-  laterApplication.dataset.ndbEventOccurrenceCount = '2';
-  state.setEventSort('frequency');
-  assert.deepEqual(appended.slice(-3), [framework, application, laterApplication]);
-  laterApplication.dataset.ndbEventOccurrenceCount = '1';
-
-  appended.length = 0;
-  laterApplication.dataset.ndbEventLastSequence = '18';
-  state.setEventSort('latest');
-  assert.deepEqual(appended, [framework, laterApplication, application]);
 
   state.selectEvent(3, laterApplication);
   assert.equal(state.eventSelected, 3);
@@ -1218,11 +1204,9 @@ test('event controls group, filter, sort, and select useful event evidence', () 
   state.closeEventDetail();
 
   state.setEventSource('invalid');
-  state.setEventSort('invalid');
   state.setEventDetailTab('invalid');
   state.selectEvent(99);
   assert.equal(state.eventSource, 'all');
-  assert.equal(state.eventSort, 'latest');
   assert.equal(state.eventSelected, 3);
   assert.equal(state.eventDetailTab, 'overview');
   assert.equal(state.formatEventTime(null), '—');

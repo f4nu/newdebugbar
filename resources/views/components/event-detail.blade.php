@@ -1,19 +1,18 @@
 {{-- Explains the selected Laravel event through listener, payload, and source evidence. --}}
-<section
-    x-ref="eventDetail"
+<x-newdebugbar::inspector-detail-pane
+    detail-open="eventDetailOpen"
+    detail-ref="eventDetail"
+    detail-label="Selected Laravel event details"
+    back-label="Events"
+    close-action="closeEventDetail()"
     data-ndb-event-detail
-    aria-live="polite"
-    aria-label="Selected Laravel event details"
-    tabindex="0"
-    :class="eventDetailOpen ? 'ndb:flex' : 'ndb:hidden ndb:lg:flex'"
-    class="ndb-scrollbar ndb:min-h-[32rem] ndb:min-w-0 ndb:flex-col ndb:scroll-mt-20 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:min-h-0 ndb:lg:overflow-y-auto"
 >
-    <x-newdebugbar::inspector-detail-back data-ndb-event-detail-back @click="closeEventDetail()" label="Events" />
+    <x-slot:back>
+        <x-newdebugbar::inspector-detail-back data-ndb-event-detail-back @click="closeEventDetail()" label="Events" />
+    </x-slot:back>
 
     <template x-if="! selectedEvent">
-        <div class="ndb:p-4">
-            <x-newdebugbar::empty-state label="No event is selected. Adjust the source filter or search." />
-        </div>
+        <x-newdebugbar::inspector-detail-empty label="No event is selected. Adjust the source filter or search." />
     </template>
 
     <template x-if="selectedEvent">
@@ -407,4 +406,4 @@
             </div>
         </div>
     </template>
-</section>
+</x-newdebugbar::inspector-detail-pane>

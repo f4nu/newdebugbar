@@ -502,10 +502,8 @@ it('keeps host styles and package styles isolated', function () {
                 const row = document.querySelector('[data-ndb-event-item]:not([hidden])');
                 const rowName = row.querySelector('[data-ndb-event-list-name]');
                 const listSummary = document.querySelector('[data-ndb-event-visible-summary]');
-                const sort = document.querySelector('[data-ndb-event-sort]');
                 const search = document.querySelector('[data-ndb-event-search]');
-                const inactiveFilter = document.querySelector('[data-ndb-event-source="all"]');
-                const activeFilter = document.querySelector('[data-ndb-event-source="application"]');
+                const source = document.querySelector('[data-ndb-event-source-control]');
                 const overview = document.querySelector('[data-ndb-event-detail-panel="overview"]');
                 const metadataGrid = overview.querySelector('[data-ndb-event-facts]');
                 const metadataFacts = [...overview.querySelectorAll('[data-ndb-event-fact]')];
@@ -532,21 +530,21 @@ it('keeps host styles and package styles isolated', function () {
 
                     return (red * 0.2126) + (green * 0.7152) + (blue * 0.0722);
                 };
-                const summaryBox = listSummary.getBoundingClientRect();
-                const sortBox = sort.getBoundingClientRect();
+                const searchBox = search.getBoundingClientRect();
+                const sourceBox = source.getBoundingClientRect();
 
                 const checks = {
                     rootAttribute: root.getAttribute('data-events') === null,
                     rowBorder: getComputedStyle(row).borderLeftWidth === '0px',
                     rowHeight: row.getBoundingClientRect().height <= 64,
                     rowNameColor: getComputedStyle(rowName).color === getComputedStyle(root).color,
-                    listHeaderAlignment: Math.abs(
-                        (summaryBox.top + (summaryBox.height / 2)) - (sortBox.top + (sortBox.height / 2)),
+                    listControlAlignment: Math.abs(
+                        (searchBox.top + (searchBox.height / 2)) - (sourceBox.top + (sourceBox.height / 2)),
                     ) <= 1,
-                    darkControlSurfaces: [sort, search, inactiveFilter, activeFilter].every(
+                    darkControlSurfaces: [search, source].every(
                         (element) => lightness(element, 'backgroundColor') < 90,
                     ),
-                    darkControlText: [sort, search, inactiveFilter, activeFilter].every(
+                    darkControlText: [search, source].every(
                         (element) => lightness(element, 'color') > 130,
                     ),
                     metadataDisplay: getComputedStyle(metadataGrid).display === 'grid',

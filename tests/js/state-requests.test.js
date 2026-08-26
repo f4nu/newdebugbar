@@ -47,7 +47,7 @@ test('a new application profile keeps a matching section and resets stale sectio
   assert.equal(state.loadedSection, 'logs');
   assert.equal(state.viewSort, 'name');
   assert.equal(state.viewSortDirection, 'asc');
-  assert.equal(state.eventSource, 'application');
+  assert.equal(state.eventSource, 'all');
   assert.equal(state.eventSearch, '');
   assert.equal(sectionsLoaded, 1);
 

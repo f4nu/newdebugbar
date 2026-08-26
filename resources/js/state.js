@@ -432,9 +432,8 @@ export function createNewDebugBar(
     timelineSearch: '',
     visibleTimelineCount: summary.section_counts?.timeline ?? 0,
     eventGroups: [],
-    eventSource: 'application',
+    eventSource: 'all',
     eventSearch: '',
-    eventSort: 'sequence',
     eventSelected: null,
     eventDetailOpen: false,
     eventDetailTab: 'overview',
@@ -1923,7 +1922,7 @@ export function createNewDebugBar(
       this.authorizationDetailTab = 'decision';
       this.visibleAuthorizationCount = 0;
       this.eventGroups = [];
-      this.eventSource = 'application';
+      this.eventSource = 'all';
       this.eventSearch = '';
       this.logLevel = 'all';
       this.logChannel = 'all';
@@ -1931,7 +1930,6 @@ export function createNewDebugBar(
       this.logDetailSequence = null;
       this.visibleLogCount = 0;
       this.visibleLogGroupCount = 0;
-      this.eventSort = 'sequence';
       this.eventSelected = null;
       this.eventDetailOpen = false;
       this.eventDetailTab = 'overview';
@@ -3336,13 +3334,12 @@ export function createNewDebugBar(
 
     initializeEvents(groups) {
       this.eventGroups = Array.isArray(groups) ? groups : [];
-      this.eventSource = 'application';
+      this.eventSource = 'all';
       this.eventSearch = '';
-      this.eventSort = 'sequence';
       this.eventDetailOpen = false;
       this.eventDetailTab = 'overview';
       this.eventDetailReturnFocus = null;
-      this.eventSelected = this.eventGroups.find((event) => event.source === 'application')?.id ?? null;
+      this.eventSelected = this.eventGroups.find((event) => event.source === 'application')?.id ?? this.eventGroups[0]?.id ?? null;
       this.$nextTick?.(() => this.applyEventFilters());
     },
 
@@ -3354,13 +3351,6 @@ export function createNewDebugBar(
       this.eventDetailTab = 'overview';
       this.eventDetailReturnFocus = null;
       this.eventSelected = null;
-      this.applyEventFilters();
-    },
-
-    setEventSort(sort) {
-      if (!['sequence', 'frequency', 'latest'].includes(sort)) return;
-
-      this.eventSort = sort;
       this.applyEventFilters();
     },
 
@@ -3398,29 +3388,7 @@ export function createNewDebugBar(
       let firstVisible = null;
       let selectedVisible = false;
 
-      [...(list?.children ?? [])]
-        .sort((left, right) => {
-          const firstSequence = Number(left.dataset.ndbEventFirstSequence ?? 0);
-          const rightFirstSequence = Number(right.dataset.ndbEventFirstSequence ?? 0);
-
-          if (this.eventSort === 'frequency') {
-            return (
-              Number(right.dataset.ndbEventOccurrenceCount ?? 0) -
-                Number(left.dataset.ndbEventOccurrenceCount ?? 0) ||
-              firstSequence - rightFirstSequence
-            );
-          }
-
-          if (this.eventSort === 'latest') {
-            return (
-              Number(right.dataset.ndbEventLastSequence ?? 0) - Number(left.dataset.ndbEventLastSequence ?? 0) ||
-              firstSequence - rightFirstSequence
-            );
-          }
-
-          return firstSequence - rightFirstSequence;
-        })
-        .forEach((item) => {
+      [...(list?.children ?? [])].forEach((item) => {
           const matches =
             (this.eventSource === 'all' || item.dataset.ndbEventSourceValue === this.eventSource) &&
             (search === '' || item.dataset.ndbEventSearchValue?.includes(search));
@@ -3437,8 +3405,7 @@ export function createNewDebugBar(
             item.style.setProperty('display', 'none', 'important');
           }
 
-          list?.appendChild?.(item);
-        });
+      });
 
       this.visibleEventCount = visibleEvents;
       this.visibleEventGroupCount = visibleGroups;

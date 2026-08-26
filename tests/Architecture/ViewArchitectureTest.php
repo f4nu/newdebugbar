@@ -228,10 +228,7 @@ it('uses one popover surface for toolbar and inspector menus', function () {
 it('uses one filter tab treatment across inspector sections', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
 
-    foreach ([
-        'components/query-section.blade.php',
-        'livewire/sections/events.blade.php',
-    ] as $view) {
+    foreach (['components/query-section.blade.php'] as $view) {
         $contents = file_get_contents($views.'/'.$view);
 
         expect($contents)
@@ -485,6 +482,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'components/cache-workspace.blade.php',
         'components/http-client-workspace.blade.php',
         'livewire/sections/authorization.blade.php',
+        'livewire/sections/events.blade.php',
         'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
         'livewire/sections/notifications.blade.php',
@@ -508,6 +506,26 @@ it('composes Authorization from the shared inspector workspace anatomy', functio
         ->toContain('<x-newdebugbar::select-field')
         ->not->toContain('<input')
         ->not->toContain('<select');
+
+    expect($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::inspector-detail-empty');
+});
+
+it('composes Events from the shared inspector workspace anatomy', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/events.blade.php');
+    $detail = file_get_contents($views.'/components/event-detail.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::select-field')
+        ->not->toContain('<input')
+        ->not->toContain('<select')
+        ->not->toContain('data-ndb-event-sort');
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')

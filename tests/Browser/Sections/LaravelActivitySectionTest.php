@@ -26,7 +26,7 @@ it('switches from Cache diagnostics to current Events evidence', function () {
     DebugBarBrowser::waitForDetails($page);
 
     $page
-        ->assertAttribute('[data-ndb-event-source="application"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-event-source-control]', 'all')
         ->assertNoJavaScriptErrors();
 
     DebugBarBrowser::assertSectionSelected($page, 'events');
@@ -42,11 +42,12 @@ it('groups noisy Laravel events around application evidence', function () {
     $page
         ->assertScript(<<<'JS'
             (() => {
-                const buttons = Array.from(document.querySelectorAll('[data-ndb-event-source]'));
+                const source = document.querySelector('[data-ndb-event-source-control]');
+                const options = Array.from(source.options);
 
-                return buttons.map((button) => button.dataset.ndbEventSource).join('|') === 'all|application|framework'
-                    && document.querySelector('[data-ndb-event-source="application"]').getAttribute('aria-pressed') === 'true'
-                    && document.querySelector('[data-ndb-event-sort]').labels[0].firstElementChild.textContent.trim() === 'Sort events'
+                return options.map((option) => option.value).join('|') === 'all|application|framework'
+                    && source.value === 'all'
+                    && document.querySelector('[data-ndb-event-sort]') === null
                     && document.querySelector('[data-ndb-event-list]').getAttribute('aria-label') === 'Laravel events';
             })()
             JS)
@@ -60,21 +61,13 @@ it('groups noisy Laravel events around application evidence', function () {
                         .reduce((count, item) => count + Number(item.dataset.ndbEventOccurrenceCount), 0);
                     const count = document.querySelector(`[data-ndb-event-source-count="${source}"]`);
 
-                    return count && Number(count.textContent.trim()) === expected;
+                    return count && count.textContent.trim().endsWith(`(${expected})`);
                 });
             })()
             JS)
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-event-source]')).every((button) => {
-                const style = getComputedStyle(button);
-
-                return parseFloat(style.borderBottomLeftRadius) > 0
-                    && style.borderTopColor === style.borderBottomColor
-                    && ! style.transitionProperty.includes('border');
-            })
-            JS)
-        ->click('[data-ndb-event-source="all"]')
-        ->assertAttribute('[data-ndb-event-source="all"]', 'aria-pressed', 'true')
+        ->assertScript('document.querySelector("[data-ndb-event-source-control]").getBoundingClientRect().height === 36')
+        ->select('[data-ndb-event-source-control]', 'all')
+        ->assertValue('[data-ndb-event-source-control]', 'all')
         ->assertScript(<<<'JS'
             (() => {
                 const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
@@ -84,8 +77,8 @@ it('groups noisy Laravel events around application evidence', function () {
                     && new Set(visible.map((item) => item.dataset.ndbEventSourceValue)).size === 2;
             })()
             JS)
-        ->click('[data-ndb-event-source="application"]')
-        ->assertAttribute('[data-ndb-event-source="application"]', 'aria-pressed', 'true')
+        ->select('[data-ndb-event-source-control]', 'application')
+        ->assertValue('[data-ndb-event-source-control]', 'application')
         ->assertScript(<<<'JS'
             (() => {
                 const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
@@ -199,17 +192,13 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertSee('No event is selected. Adjust the source filter or search.')
         ->assertScript('document.querySelectorAll("[data-ndb-event-item]:not([hidden])").length === 0')
         ->type('[data-ndb-event-search]', '')
-        ->click('[data-ndb-event-source="framework"]')
-        ->select('[data-ndb-event-sort]', 'frequency')
-        ->assertAttribute('[data-ndb-event-source="framework"]', 'aria-pressed', 'true')
+        ->select('[data-ndb-event-source-control]', 'framework')
+        ->assertValue('[data-ndb-event-source-control]', 'framework')
         ->assertScript(<<<'JS'
             (() => {
                 const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
-                const counts = visible.map((item) => Number(item.dataset.ndbEventOccurrenceCount));
-
                 return visible.length > 0
                     && visible.every((item) => item.dataset.ndbEventSourceValue === 'framework')
-                    && counts.every((count, index) => index === 0 || counts[index - 1] >= count)
                     && document.querySelector('[data-ndb-event-detail-title]').textContent.trim().length > 0;
             })()
             JS)
@@ -333,20 +322,20 @@ it('presents Laravel decisions messages and source context without editor links'
         ->assertAttribute('[data-ndb-select-section="authorization"]', 'aria-current', 'page')
         ->assertScript(<<<'JS'
             (() => {
-                const authorization = document.querySelector('[data-ndb-authorization-filter]');
+                const authorization = document.querySelector('[data-ndb-authorization-filter-control]');
 
-                return authorization.matches('[data-ndb-filter-tab]')
-                    && authorization.closest('[data-ndb-filter-tabs]') !== null
-                    && ! getComputedStyle(authorization).transitionProperty.includes('border');
+                return authorization.tagName === 'SELECT'
+                    && authorization.closest('[data-ndb-inspector-list-controls]') !== null
+                    && authorization.closest('label') !== null;
             })()
             JS)
-        ->click('[data-ndb-authorization-filter="denied"]')
-        ->assertAttribute('[data-ndb-authorization-filter="denied"]', 'aria-pressed', 'true')
+        ->select('[data-ndb-authorization-filter-control]', 'denied')
+        ->assertValue('[data-ndb-authorization-filter-control]', 'denied')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
         ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.ndbAuthorizationResult === "denied"')
         ->assertSee('delete-profile')
-        ->click('[data-ndb-authorization-filter="allowed"]')
-        ->assertAttribute('[data-ndb-authorization-filter="allowed"]', 'aria-pressed', 'true')
+        ->select('[data-ndb-authorization-filter-control]', 'allowed')
+        ->assertValue('[data-ndb-authorization-filter-control]', 'allowed')
         ->assertScript('document.querySelector("[data-ndb-authorization-item]:not([hidden])").dataset.ndbAuthorizationResult === "allowed"')
         ->assertSee('inspect-profile');
 
@@ -358,7 +347,7 @@ it('presents Laravel decisions messages and source context without editor links'
     DebugBarBrowser::waitForDetails($page);
 
     $page
-        ->click('[data-ndb-event-item]:not([hidden])')
+        ->click('[data-ndb-event-item][aria-pressed="true"]')
         ->assertSee(ProfiledApplicationListener::class.'@handle')
         ->assertSee(ProfiledQueuedApplicationListener::class.'@handle')
         ->assertSee('Completed and queued')

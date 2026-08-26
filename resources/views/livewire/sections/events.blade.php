@@ -19,78 +19,51 @@
     </script>
 
     @if ($eventGroups !== [])
-        <x-newdebugbar::inspector-workspace data-ndb-event-workspace>
-            <div
-                :class="eventDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
-                class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
-            >
-                <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
-                    <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
-                        <p
-                            data-ndb-event-visible-summary
-                            aria-live="polite"
-                            class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                            x-text="visibleEventSummary"
-                        ></p>
-                        <label class="ndb:relative ndb:shrink-0">
-                            <span class="ndb:sr-only">Sort events</span>
-                            <select
-                                data-ndb-event-sort
-                                x-model="eventSort"
-                                @change="setEventSort($event.target.value)"
-                                class="ndb:h-8 ndb:appearance-none ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/75 ndb:pr-8 ndb:pl-2.5 ndb:text-[11px] ndb:font-semibold ndb:outline-none ndb:transition ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900"
-                            >
-                                <option value="sequence">First fired</option>
-                                <option value="frequency">Most fired</option>
-                                <option value="latest">Latest fired</option>
-                            </select>
-                            <x-newdebugbar::icon
-                                name="chevron-down"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-2.5 ndb:size-3 ndb:-translate-y-1/2 ndb:text-zinc-400"
+        <x-newdebugbar::inspector-workspace frame="top" data-ndb-event-workspace>
+            <x-newdebugbar::inspector-list-panel detail-open="eventDetailOpen" list-ref="eventList">
+                <x-slot:controls>
+                    <x-newdebugbar::inspector-list-controls :show-search="true">
+                        <x-slot:leading>
+                            <p
+                                data-ndb-event-visible-summary
+                                aria-live="polite"
+                                class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                x-text="visibleEventSummary"
+                            ></p>
+                        </x-slot:leading>
+
+                        <x-slot:search>
+                            <x-newdebugbar::search-field
+                                label="Search events"
+                                placeholder="Search events, listeners, or payloads"
+                                data-ndb-event-search
+                                x-model="eventSearch"
+                                @input.debounce.100ms="applyEventFilters()"
                             />
-                        </label>
-                    </div>
+                        </x-slot:search>
 
-                    <x-newdebugbar::filter-tabs label="Filter events by source" class="ndb:w-full">
-                        @foreach (['all' => 'All', 'application' => 'Application', 'framework' => 'Framework'] as $source => $label)
-                            <x-newdebugbar::filter-tab
-                                data-ndb-event-source="{{ $source }}"
-                                @click="setEventSource({{ \Illuminate\Support\Js::from($source) }})"
-                                ::aria-pressed="eventSource === {{ \Illuminate\Support\Js::from($source) }}"
-                                class="ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
+                        <x-slot:filter>
+                            <x-newdebugbar::select-field
+                                label="Filter events by source"
+                                data-ndb-event-source-control
+                                x-model="eventSource"
+                                @change="setEventSource($event.target.value)"
                             >
-                                <span>{{ $label }}</span>
-                                <span
-                                    data-ndb-event-source-count="{{ $source }}"
-                                    class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:opacity-65"
-                                >{{ $eventSourceCounts[$source] }}</span>
-                            </x-newdebugbar::filter-tab>
-                        @endforeach
-                    </x-newdebugbar::filter-tabs>
+                                @foreach (['all' => 'All', 'application' => 'Application', 'framework' => 'Framework'] as $source => $label)
+                                    <option
+                                        value="{{ $source }}"
+                                        data-ndb-event-source="{{ $source }}"
+                                        data-ndb-event-source-count="{{ $source }}"
+                                    >
+                                        {{ $label }} ({{ $eventSourceCounts[$source] }})
+                                    </option>
+                                @endforeach
+                            </x-newdebugbar::select-field>
+                        </x-slot:filter>
+                    </x-newdebugbar::inspector-list-controls>
+                </x-slot:controls>
 
-                    <label class="ndb:relative ndb:block ndb:min-w-0">
-                        <span class="ndb:sr-only">Search events</span>
-                        <input
-                            data-ndb-event-search
-                            x-model="eventSearch"
-                            @input.debounce.100ms="applyEventFilters()"
-                            type="search"
-                            placeholder="Search events, listeners, or payloads"
-                            class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
-                        />
-                        <x-newdebugbar::icon
-                            name="search"
-                            class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                        />
-                    </label>
-                </div>
-
-                <div
-                    x-ref="eventList"
-                    data-ndb-event-list
-                    aria-label="Laravel events"
-                    class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:overflow-y-auto ndb:dark:divide-zinc-800"
-                >
+                <x-slot:list data-ndb-event-list aria-label="Laravel events">
                     @foreach ($eventGroups as $event)
                         @php
                             $eventListenerActivity = match (true) {
@@ -107,8 +80,6 @@
                             data-ndb-event-source-value="{{ $event['source'] }}"
                             data-ndb-event-search-value="{{ $event['search'] }}"
                             data-ndb-event-occurrence-count="{{ $event['occurrence_count'] }}"
-                            data-ndb-event-first-sequence="{{ $event['first_sequence'] }}"
-                            data-ndb-event-last-sequence="{{ $event['last_sequence'] }}"
                             @click="selectEvent({{ $event['id'] }}, $el)"
                             :aria-pressed="eventSelected === {{ $event['id'] }}"
                             :class="eventSelected === {{ $event['id'] }}
@@ -149,12 +120,12 @@
                             </span>
                         </button>
                     @endforeach
-                </div>
+                </x-slot:list>
 
-                <div data-ndb-event-empty x-show.important="visibleEventGroupCount === 0" class="ndb:p-3">
+                <x-slot:empty data-ndb-event-empty x-show.important="visibleEventGroupCount === 0">
                     <x-newdebugbar::empty-state label="No events match this source and search." />
-                </div>
-            </div>
+                </x-slot:empty>
+            </x-newdebugbar::inspector-list-panel>
 
             <x-newdebugbar::event-detail />
         </x-newdebugbar::inspector-workspace>
