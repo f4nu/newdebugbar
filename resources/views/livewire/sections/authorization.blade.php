@@ -232,65 +232,55 @@
     </script>
 
     @if ($authorizationItems !== [])
-        <x-newdebugbar::inspector-workspace data-ndb-authorization-workspace>
-            <div
-                :class="authorizationDetailOpen ? 'ndb:hidden ndb:lg:flex' : 'ndb:flex'"
-                class="ndb:min-h-0 ndb:flex-col ndb:border-b ndb:border-zinc-200/90 ndb:lg:border-r ndb:lg:border-b-0 ndb:dark:border-zinc-800"
-            >
-                <div class="ndb:space-y-3 ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800">
-                    <p
-                        data-ndb-authorization-summary
-                        class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                    >
-                        <span data-ndb-authorization-summary-count class="ndb:block">
-                            {{ number_format(count($authorizationItems)) }} {{ \Illuminate\Support\Str::plural('decision', count($authorizationItems)) }}
-                        </span>
-                        <span
-                            x-show.important="visibleAuthorizationCount !== authorizationDecisions.length"
-                            class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
-                        >
-                            <span x-text="visibleAuthorizationCount"></span> shown
-                        </span>
-                    </p>
-
-                    <x-newdebugbar::filter-tabs label="Filter authorization decisions" class="ndb:w-full">
-                        @foreach ($authorizationFilters as $filter => [$label, $count])
-                            <x-newdebugbar::filter-tab
-                                data-ndb-authorization-filter="{{ $filter }}"
-                                @click="setAuthorizationFilter({{ \Illuminate\Support\Js::from($filter) }})"
-                                ::aria-pressed="authorizationFilter === {{ \Illuminate\Support\Js::from($filter) }}"
-                                class="ndb:flex-1 ndb:justify-center ndb:px-2 ndb:py-1.5"
+        <x-newdebugbar::inspector-workspace frame="top" data-ndb-authorization-workspace>
+            <x-newdebugbar::inspector-list-panel detail-open="authorizationDetailOpen" list-ref="authorizationList">
+                <x-slot:controls>
+                    <x-newdebugbar::inspector-list-controls :show-search="count($authorizationItems) > 5">
+                        <x-slot:leading>
+                            <p
+                                data-ndb-authorization-summary
+                                class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300"
                             >
-                                <span>{{ $label }}</span>
-                                <span class="ndb:tabular-nums ndb:text-[11px] ndb:opacity-70">{{ $count }}</span>
-                            </x-newdebugbar::filter-tab>
-                        @endforeach
-                    </x-newdebugbar::filter-tabs>
+                                <span data-ndb-authorization-summary-count class="ndb:block">
+                                    {{ number_format(count($authorizationItems)) }} {{ \Illuminate\Support\Str::plural('decision', count($authorizationItems)) }}
+                                </span>
+                                <span
+                                    x-show.important="visibleAuthorizationCount !== authorizationDecisions.length"
+                                    class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:text-zinc-400"
+                                >
+                                    <span x-text="visibleAuthorizationCount"></span> shown
+                                </span>
+                            </p>
+                        </x-slot:leading>
 
-                    @if (count($authorizationItems) > 5)
-                        <label class="ndb:relative ndb:block ndb:min-w-0">
-                            <span class="ndb:sr-only">Search authorization decisions</span>
-                            <input
+                        <x-slot:search>
+                            <x-newdebugbar::search-field
+                                label="Search authorization decisions"
+                                placeholder="Search ability, actor, or target"
                                 data-ndb-authorization-search
                                 x-model="authorizationSearch"
                                 @input.debounce.100ms="applyAuthorizationView()"
-                                type="search"
-                                placeholder="Search ability, actor, or target"
-                                class="ndb:h-9 ndb:w-full ndb:rounded-lg ndb:border ndb:border-zinc-200 ndb:bg-white/70 ndb:pr-9 ndb:pl-3 ndb:text-xs ndb:outline-none ndb:transition ndb:placeholder:text-zinc-400 ndb:focus:border-indigo-400 ndb:focus:ring-2 ndb:focus:ring-indigo-500/15 ndb:dark:border-zinc-700 ndb:dark:bg-zinc-900/70"
                             />
-                            <x-newdebugbar::icon
-                                name="search"
-                                class="ndb:pointer-events-none ndb:absolute ndb:top-1/2 ndb:right-3 ndb:size-3.5 ndb:-translate-y-1/2 ndb:text-zinc-400"
-                            />
-                        </label>
-                    @endif
-                </div>
+                        </x-slot:search>
 
-                <div
-                    x-ref="authorizationList"
-                    data-ndb-authorization-list
-                    class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:divide-y ndb:divide-zinc-200/80 ndb:dark:divide-zinc-800 ndb:lg:overflow-y-auto"
-                >
+                        <x-slot:filter>
+                            <x-newdebugbar::select-field
+                                label="Filter authorization decisions"
+                                data-ndb-authorization-filter-control
+                                x-model="authorizationFilter"
+                                @change="setAuthorizationFilter($event.target.value)"
+                            >
+                                @foreach ($authorizationFilters as $filter => [$label, $count])
+                                    <option value="{{ $filter }}" data-ndb-authorization-filter="{{ $filter }}">
+                                        {{ $label }} ({{ $count }})
+                                    </option>
+                                @endforeach
+                            </x-newdebugbar::select-field>
+                        </x-slot:filter>
+                    </x-newdebugbar::inspector-list-controls>
+                </x-slot:controls>
+
+                <x-slot:list data-ndb-authorization-list>
                     @foreach ($authorizationItems as $decision)
                         <button
                             type="button"
@@ -330,12 +320,12 @@
                             </span>
                         </button>
                     @endforeach
-                </div>
+                </x-slot:list>
 
-                <div x-show.important="visibleAuthorizationCount === 0" class="ndb:p-3">
+                <x-slot:empty x-show.important="visibleAuthorizationCount === 0">
                     <x-newdebugbar::empty-state label="No authorization decisions match these filters." />
-                </div>
-            </div>
+                </x-slot:empty>
+            </x-newdebugbar::inspector-list-panel>
 
             <x-newdebugbar::authorization-detail />
         </x-newdebugbar::inspector-workspace>

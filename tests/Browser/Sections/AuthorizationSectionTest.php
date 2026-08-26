@@ -11,7 +11,7 @@ it('scans filters searches and inspects authorization evidence on desktop', func
     DebugBarBrowser::waitForDetails($page);
 
     $page
-        ->assertAttribute('[data-ndb-authorization-filter="all"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-authorization-filter-control]', 'all')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 6)
         ->assertScript(<<<'JS'
             (() => {
@@ -96,21 +96,21 @@ it('scans filters searches and inspects authorization evidence on desktop', func
             JS)
         ->assertScript(<<<'JS'
             (() => {
-                const button = document.querySelector('[data-ndb-authorization-filter="denied"]');
-                button.focus();
+                const filter = document.querySelector('[data-ndb-authorization-filter-control]');
+                filter.focus();
 
-                return document.activeElement === button;
+                return document.activeElement === filter;
             })()
             JS)
-        ->keys('[data-ndb-authorization-filter="denied"]', 'Enter')
-        ->assertAttribute('[data-ndb-authorization-filter="denied"]', 'aria-pressed', 'true')
+        ->select('[data-ndb-authorization-filter-control]', 'denied')
+        ->assertValue('[data-ndb-authorization-filter-control]', 'denied')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 2)
         ->assertScript(<<<'JS'
             [...document.querySelectorAll('[data-ndb-authorization-item]:not([hidden])')]
                 .every((item) => item.dataset.ndbAuthorizationResult === 'denied')
             JS)
         ->assertScript("document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim() === 'refund'")
-        ->click('[data-ndb-authorization-filter="all"]')
+        ->select('[data-ndb-authorization-filter-control]', 'all')
         ->type('[data-ndb-authorization-search]', 'private planning notes')
         ->assertScript('document.querySelectorAll("[data-ndb-authorization-item]:not([hidden])").length', 1)
         ->click('[data-ndb-authorization-item]:not([hidden])')
@@ -174,7 +174,7 @@ it('scans filters searches and inspects authorization evidence on desktop', func
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="authorization"]')
         ->waitForText('6 decisions')
-        ->assertAttribute('[data-ndb-authorization-filter="all"]', 'aria-pressed', 'true')
+        ->assertValue('[data-ndb-authorization-filter-control]', 'all')
         ->assertValue('[data-ndb-authorization-search]', '')
         ->assertNoJavaScriptErrors();
 });

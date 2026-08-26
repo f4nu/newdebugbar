@@ -1,17 +1,18 @@
-<section
-    x-ref="authorizationDetail"
+<x-newdebugbar::inspector-detail-pane
+    detail-open="authorizationDetailOpen"
+    detail-ref="authorizationDetail"
+    detail-label="Selected authorization decision details"
+    back-label="Decisions"
+    close-action="closeAuthorizationDetail()"
     data-ndb-authorization-detail
-    aria-live="polite"
-    aria-label="Selected authorization decision details"
-    tabindex="0"
-    :class="authorizationDetailOpen ? 'ndb:flex' : 'ndb:hidden ndb:lg:flex'"
-    class="ndb-scrollbar ndb:min-h-[32rem] ndb:min-w-0 ndb:flex-col ndb:border-0 ndb:scroll-mt-20 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:lg:min-h-0 ndb:lg:overflow-y-auto"
 >
-    <x-newdebugbar::inspector-detail-back
-        data-ndb-authorization-detail-back
-        @click="closeAuthorizationDetail()"
-        label="Decisions"
-    />
+    <x-slot:back>
+        <x-newdebugbar::inspector-detail-back
+            data-ndb-authorization-detail-back
+            @click="closeAuthorizationDetail()"
+            label="Decisions"
+        />
+    </x-slot:back>
 
     <template x-if="selectedAuthorizationDecision">
         <div class="ndb:flex ndb:flex-col">
@@ -272,10 +273,8 @@
         </div>
     </template>
 
-    <div
+    <x-newdebugbar::inspector-detail-empty
         x-show.important="! selectedAuthorizationDecision"
-        class="ndb:grid ndb:min-h-[32rem] ndb:place-items-center ndb:p-6 ndb:lg:min-h-0"
-    >
-        <p class="ndb:text-xs ndb:font-semibold ndb:text-zinc-400">Choose a decision to inspect its evidence.</p>
-    </div>
-</section>
+        label="Choose a decision to inspect its evidence."
+    />
+</x-newdebugbar::inspector-detail-pane>
