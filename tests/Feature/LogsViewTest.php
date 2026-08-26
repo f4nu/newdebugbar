@@ -35,12 +35,13 @@ it('renders structured log details without repeating the raw record', function (
             'data-ndb-log-level="error"',
             'data-ndb-log-channel="morrow-audit"',
             'data-ndb-log-level-select',
-            'data-ndb-log-details-trigger',
-            'data-ndb-log-details-popover',
-            'data-ndb-popover-surface',
+            'data-ndb-log-detail',
+            'Choose a log entry to inspect its evidence.',
+            'selectLogEntry(1)',
             'data-ndb-log-related-exception',
             'data-ndb-log-source',
-            'View details',
+            'data-ndb-inspector-stack',
+            'x-for="(frame, index) in JSON.parse(',
             'Review in Exceptions',
         )
         ->not->toContain(
@@ -53,6 +54,9 @@ it('renders structured log details without repeating the raw record', function (
             'data-ndb-log-raw',
             'Raw evidence',
             '<details data-ndb-log-entry',
+            'data-ndb-log-details-popover',
+            'data-ndb-popover-surface',
+            'View details',
         );
 });
 

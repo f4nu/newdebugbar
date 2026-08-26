@@ -665,23 +665,39 @@ it('composes Exceptions as a shared list-detail workspace', function () {
         ->toContain('<template x-if="exceptionDetailTab === \'stack\'">');
 });
 
-it('composes Logs as a shared full-height inspector stream', function () {
+it('composes Logs as a shared list-detail workspace', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
     $section = file_get_contents($views.'/livewire/sections/logs.blade.php');
-    $workspace = file_get_contents($views.'/components/inspector-workspace.blade.php');
+    $entry = file_get_contents($views.'/components/log-entry.blade.php');
+    $detail = file_get_contents($views.'/components/log-detail.blade.php');
 
     expect($section)
-        ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"')
-        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::inspector-workspace frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-panel')
+        ->toContain('<x-newdebugbar::inspector-list-controls :show-search="true" layout="compact">')
+        ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::inspector-detail-empty')
+        ->toContain('<x-newdebugbar::log-entry')
+        ->toContain('<x-newdebugbar::log-detail')
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
         ->not->toContain('<input')
         ->not->toContain('<select')
+        ->not->toContain('mode="stream"')
         ->not->toContain('data-ndb-log-order');
 
-    expect($workspace)
-        ->toContain("'stream' =>")
-        ->toContain('data-ndb-inspector-stream-body');
+    expect($entry)
+        ->toContain('@click="selectLogEntry(')
+        ->not->toContain('View details')
+        ->not->toContain('<x-newdebugbar::popover-surface')
+        ->and($detail)
+        ->toContain('<x-newdebugbar::inspector-detail-header')
+        ->toContain('<x-newdebugbar::inspector-facts')
+        ->toContain('<x-newdebugbar::inspector-definition-list')
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain(':frames="\Illuminate\Support\Js::from($stack)"')
+        ->toContain('<x-newdebugbar::inspector-action')
+        ->not->toContain('<x-newdebugbar::popover-surface');
 });
 
 it('composes Messages and Validation as shared diagnostic streams', function () {

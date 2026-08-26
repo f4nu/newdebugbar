@@ -2,13 +2,13 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('presents a chronological diagnostic stream with useful filters and details', function () {
+it('presents logs as a persistent two column evidence inspector', function () {
     $page = visit('/profiled-logs')
         ->resize(1280, 720)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="logs"]');
 
-    DebugBarBrowser::waitForDetails($page);
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-log-workspace]');
 
     $page
         ->assertCount('[data-ndb-log-entry]', 24)
@@ -25,120 +25,130 @@ it('presents a chronological diagnostic stream with useful filters and details',
             JS)
         ->assertScript(<<<'JS'
             (() => {
+                const workspace = document.querySelector('[data-ndb-log-workspace]');
+                const [listPanel, detail] = workspace.children;
+                const list = document.querySelector('[data-ndb-log-list]');
+                const content = document.querySelector('[data-ndb-inspector-content]');
+                const stage = document.querySelector('[data-ndb-section-stage]');
+                const loadedSection = document.querySelector('[data-ndb-loaded-section="logs"]');
                 const entries = Array.from(document.querySelectorAll('[data-ndb-log-entry]'));
                 const sequences = entries.map((entry) => Number(entry.dataset.ndbLogFirstSequence));
                 const controls = document.querySelector('[data-ndb-log-controls]');
-                const content = document.querySelector('[data-ndb-inspector-content]');
-                const list = document.querySelector('[data-ndb-log-list]');
-                const workspace = document.querySelector('[data-ndb-log-workspace]');
+                const summary = document.querySelector('[data-ndb-log-visible-summary]').getBoundingClientRect();
+                const search = document.querySelector('[data-ndb-log-search]').getBoundingClientRect();
+                const level = document.querySelector('[data-ndb-log-level-select]').getBoundingClientRect();
+                const channel = document.querySelector('[data-ndb-log-channel-select]').getBoundingClientRect();
+                const controlsBox = document.querySelector('[data-ndb-inspector-list-controls]').getBoundingClientRect();
+                const checks = {
+                    chronological: sequences.every((sequence, index) => index === 0 || sequence > sequences[index - 1]),
+                    split: getComputedStyle(workspace).display === 'grid'
+                        && getComputedStyle(listPanel).display === 'flex'
+                        && getComputedStyle(detail).display === 'flex',
+                    edgeToEdge: Math.abs(workspace.getBoundingClientRect().left - stage.getBoundingClientRect().left) <= 1
+                        && Math.abs(workspace.getBoundingClientRect().right - stage.getBoundingClientRect().right) <= 1,
+                    frame: getComputedStyle(workspace).borderTopWidth === '1px'
+                        && getComputedStyle(workspace).borderRightWidth === '0px'
+                        && getComputedStyle(workspace).borderBottomWidth === '0px'
+                        && getComputedStyle(workspace).borderLeftWidth === '0px'
+                        && getComputedStyle(workspace).borderRadius === '0px',
+                    height: Math.abs(
+                        workspace.getBoundingClientRect().bottom
+                        - loadedSection.getBoundingClientRect().bottom
+                        + Number.parseFloat(getComputedStyle(loadedSection).paddingBottom)
+                    ) <= 1,
+                    scrollOwners: getComputedStyle(list).overflowY === 'auto'
+                        && getComputedStyle(detail).overflowY === 'auto'
+                        && content.scrollHeight <= content.clientHeight + 2,
+                    wholeRows: entries.every((entry) => entry.matches('button') && entry.querySelector('button') === null),
+                    compactControls: Math.abs(search.left - controlsBox.left) <= 1
+                        && Math.abs(search.right - controlsBox.right) <= 1
+                        && summary.bottom <= search.top
+                        && search.bottom <= level.top
+                        && Math.abs(level.top - channel.top) <= 1
+                        && level.right <= channel.left,
+                    noSelection: entries.every((entry) => entry.getAttribute('aria-pressed') === 'false'),
+                    noLegacyControls: document.querySelector('[data-ndb-log-order], [data-ndb-log-details-trigger], [data-ndb-log-details-popover]') === null,
+                    fit: workspace.scrollWidth <= workspace.clientWidth + 1
+                        && entries.every((entry) => entry.scrollWidth <= entry.clientWidth + 1),
+                    noDecorativeSeparators: ! ['•', '·'].some((separator) => controls.textContent.includes(separator)),
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
 
-                return sequences.every((sequence, index) => index === 0 || sequence > sequences[index - 1])
-                    && document.querySelector('[data-ndb-log-order]') === null
-                    && getComputedStyle(content).overflowY === 'auto'
-                    && content.scrollHeight <= content.clientHeight + 1
-                    && list === workspace.querySelector('[data-ndb-inspector-stream-body]')
-                    && getComputedStyle(list).overflowY === 'auto'
-                    && ! ['•', '·'].some((separator) => controls.textContent.includes(separator));
+                if (failures.length > 0) throw new Error('Logs layout failed: ' + failures.join(', '));
+
+                return true;
             })()
             JS)
+        ->assertMissing('[data-ndb-log-details-title]')
+        ->assertSeeIn('[data-ndb-log-detail]', 'Choose a log entry to inspect its evidence.')
         ->assertScript(<<<'JS'
             (() => {
                 const repeated = document.querySelector('[data-ndb-log-entry][data-ndb-log-record-count="3"]');
+                const notice = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="notice"]');
+                const message = notice.querySelector('[data-ndb-log-message]');
 
                 return repeated?.dataset.ndbLogLevel === 'warning'
                     && repeated.querySelector('[data-ndb-log-repeat-label]').textContent.includes('3 records')
-                    && getComputedStyle(repeated.querySelector('[data-ndb-log-repeat-label]')).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && repeated.querySelector('[data-ndb-log-message]').textContent.includes('needs attention');
+                    && repeated.querySelector('[data-ndb-log-message]').textContent.includes('needs attention')
+                    && message.textContent.includes('\n')
+                    && getComputedStyle(message).whiteSpace === 'pre-wrap';
             })()
             JS)
+        ->click('[data-ndb-log-entry][data-ndb-log-record-count="3"]')
+        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-record-count="3"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-log-details-title]')
+        ->assertCount('[data-ndb-log-detail] [data-ndb-log-occurrences] li', 3)
+        ->assertPresent('[data-ndb-log-detail] [data-ndb-log-context]')
+        ->assertPresent('[data-ndb-log-detail] [data-ndb-log-source]')
+        ->assertPresent('[data-ndb-log-detail] [data-ndb-inspector-stack]')
+        ->assertMissing('[data-ndb-log-detail] [data-ndb-log-actions]')
+        ->assertMissing('[data-ndb-log-detail] [data-ndb-log-raw]')
         ->assertScript(<<<'JS'
             (() => {
-                const notice = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="notice"]');
-                const message = notice.querySelector('[data-ndb-log-message]');
-                const critical = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="critical"]');
+                const selected = document.querySelector('[data-ndb-log-entry][aria-pressed="true"]');
+                const unselected = document.querySelector('[data-ndb-log-entry][aria-pressed="false"]');
+                const selectedStyle = getComputedStyle(selected);
 
-                return message.textContent.includes('\n')
-                    && getComputedStyle(message).whiteSpace === 'pre-wrap'
-                    && critical.scrollWidth <= critical.clientWidth;
+                return selectedStyle.backgroundColor !== getComputedStyle(unselected).backgroundColor
+                    && selectedStyle.boxShadow === 'none'
+                    && selectedStyle.borderLeftWidth === '0px'
+                    && document.querySelectorAll('[data-ndb-log-entry][aria-pressed="true"]').length === 1;
             })()
             JS)
-        ->keys('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-log-details-trigger]', 'Enter')
-        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-log-details-trigger]', 'aria-expanded', 'true')
-        ->assertVisible('[data-ndb-log-details-popover]')
-        ->assertCount('[data-ndb-log-details-popover] [data-ndb-log-occurrences] li', 3)
-        ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-context]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-log-actions]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-copy-log-message]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-copy-log-context]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-copy-log-source]')
-        ->click('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]')
-        ->assertCount('[data-ndb-log-details-popover]', 1)
-        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]', 'aria-expanded', 'true')
-        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-record-count="3"] [data-ndb-log-details-trigger]', 'aria-expanded', 'false')
-        ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-related-exception]')
-        ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-review-exception]')
+        ->click('[data-ndb-log-entry][data-ndb-log-level="error"]')
+        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="error"]', 'aria-pressed', 'true')
+        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-record-count="3"]', 'aria-pressed', 'false')
+        ->assertVisible('[data-ndb-log-detail] [data-ndb-log-related-exception]')
+        ->assertVisible('[data-ndb-log-detail] [data-ndb-log-review-exception]')
+        ->assertPresent('[data-ndb-log-detail] [data-ndb-inspector-source-link]')
         ->assertScript(<<<'JS'
             (() => {
-                const popover = document.querySelector('[data-ndb-log-details-popover]');
-                const exception = popover?.querySelector('[data-ndb-log-related-exception]');
-                const label = exception?.querySelector('h3');
-                const review = exception?.querySelector('[data-ndb-log-review-exception]');
+                const detail = document.querySelector('[data-ndb-log-detail]');
+                const exception = detail.querySelector('[data-ndb-log-related-exception]');
+                const message = exception.querySelector('p');
+                const stackRows = detail.querySelectorAll('[data-ndb-inspector-stack] li');
+                const facts = [...detail.querySelectorAll('[data-ndb-inspector-fact] dt')]
+                    .map((label) => label.textContent.trim());
 
-                return ! popover?.querySelector('header')?.textContent.includes('Needs attention')
-                    && Math.abs(review.getBoundingClientRect().top - label.getBoundingClientRect().top) <= 1;
+                return message.textContent.trim() === 'The rail partner rejected reservation KYO-441.'
+                    && stackRows.length > 0
+                    && facts.join('|') === 'Severity|Channel|From request start|Captured at'
+                    && detail.scrollWidth <= detail.clientWidth + 1;
             })()
             JS)
-        ->assertScript(<<<'JS'
-            (() => {
-                const paragraphs = document.querySelectorAll(
-                    '[data-ndb-log-details-popover] [data-ndb-log-related-exception] p'
-                );
-
-                const message = paragraphs[1]?.querySelector('span');
-
-                return message && message.textContent === message.textContent.trim();
-            })()
-            JS)
-        ->assertPresent('[data-ndb-log-details-popover] [data-ndb-log-source]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-log-raw]')
-        ->assertScript(<<<'JS'
-            (() => {
-                const trigger = document.querySelector(
-                    '[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]'
-                );
-                const popover = document.querySelector('[data-ndb-log-details-popover]');
-                const detail = popover?.querySelector('[data-ndb-log-detail]');
-                const box = popover?.getBoundingClientRect();
-
-                return popover?.parentElement?.id === 'newdebugbar'
-                    && box.left >= 8
-                    && box.right <= window.innerWidth - 8
-                    && box.top >= 8
-                    && box.bottom <= window.innerHeight - 8
-                    && Math.abs(box.right - trigger.getBoundingClientRect().right) <= 2
-                    && getComputedStyle(detail).overflowY === 'auto';
-            })()
-            JS)
-        ->keys('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]', 'Escape')
-        ->assertMissing('[data-ndb-log-details-popover]')
-        ->assertScript(<<<'JS'
-            document.activeElement === document.querySelector(
-                '[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]'
-            )
-            JS)
-        ->assertVisible('[data-ndb-inspector-content]')
-        ->click('[data-ndb-log-entry][data-ndb-log-level="error"] [data-ndb-log-details-trigger]')
-        ->assertVisible('[data-ndb-log-details-popover]')
         ->select('[data-ndb-log-level-select]', 'attention')
-        ->assertMissing('[data-ndb-log-details-popover]')
-        ->assertScript('document.querySelector("[data-ndb-log-level-select]").value === "attention"')
+        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="error"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-log-details-title]')
         ->assertCount('[data-ndb-log-entry]:not([hidden])', 3)
         ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-log-entry]:not([hidden])'))
                 .reduce((count, entry) => count + Number(entry.dataset.ndbLogRecordCount), 0)
             JS, 5)
-        ->select('[data-ndb-log-level-select]', 'all')
         ->select('[data-ndb-log-channel-select]', 'newdebugbar-audit')
+        ->assertCount('[data-ndb-log-entry]:not([hidden])', 0)
+        ->assertMissing('[data-ndb-log-details-title]')
+        ->assertSeeIn('[data-ndb-log-detail]', 'Choose a log entry to inspect its evidence.')
+        ->select('[data-ndb-log-level-select]', 'all')
         ->assertCount('[data-ndb-log-entry]:not([hidden])', 1)
         ->assertScript('document.querySelector("[data-ndb-log-entry]:not([hidden])").dataset.ndbLogLevel === "info"')
         ->select('[data-ndb-log-channel-select]', 'all')
@@ -150,7 +160,7 @@ it('presents a chronological diagnostic stream with useful filters and details',
     DebugBarBrowser::assertSectionSelected($page, 'logs');
 });
 
-it('keeps log reading usable on mobile dark mode empty results and reopen', function () {
+it('adapts the log list and details into a mobile drill in flow', function () {
     $page = visit('/profiled-logs')
         ->resize(390, 844)
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
@@ -159,67 +169,62 @@ it('keeps log reading usable on mobile dark mode empty results and reopen', func
         ->click('[data-ndb-header-mobile-action="sections"]')
         ->click('[data-ndb-select-section="logs"]');
 
-    DebugBarBrowser::waitForDetails($page);
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-log-list]');
 
     $page
         ->assertScript(<<<'JS'
             (() => {
                 const content = document.querySelector('[data-ndb-inspector-content]');
+                const workspace = document.querySelector('[data-ndb-log-workspace]');
+                const [listPanel, detail] = workspace.children;
                 const controls = document.querySelector('[data-ndb-log-controls]');
-                const entries = Array.from(document.querySelectorAll('[data-ndb-log-entry]'));
-                const input = document.querySelector('[data-ndb-log-search]');
-                const selects = [...document.querySelectorAll('[data-ndb-log-level-select], [data-ndb-log-channel-select]')];
+                const entries = [...document.querySelectorAll('[data-ndb-log-entry]')];
 
-                return content.scrollWidth <= content.clientWidth
-                    && controls.scrollWidth <= controls.clientWidth
-                    && input.getBoundingClientRect().width <= controls.getBoundingClientRect().width
-                    && selects.every((select) => select.getBoundingClientRect().width <= controls.getBoundingClientRect().width)
-                    && entries.every((entry) => entry.scrollWidth <= entry.clientWidth);
+                return content.scrollWidth <= content.clientWidth + 1
+                    && controls.scrollWidth <= controls.clientWidth + 1
+                    && getComputedStyle(listPanel).display === 'flex'
+                    && getComputedStyle(detail).display === 'none'
+                    && entries.every((entry) => entry.scrollWidth <= entry.clientWidth + 1);
             })()
             JS)
-        ->keys('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-details-trigger]', 'Enter')
-        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-details-trigger]', 'aria-expanded', 'true')
-        ->assertVisible('[data-ndb-log-details-popover]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-log-context]')
-        ->assertMissing('[data-ndb-log-details-popover] [data-ndb-log-context-empty]')
+        ->keys('[data-ndb-log-entry][data-ndb-log-level="notice"]', 'Enter');
+
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-log-details-title]');
+
+    $page
+        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="notice"]', 'aria-pressed', 'true')
+        ->assertVisible('[data-ndb-log-detail-back]')
+        ->assertMissing('[data-ndb-log-detail] [data-ndb-log-context]')
+        ->assertPresent('[data-ndb-log-detail] [data-ndb-log-source]')
         ->assertScript(<<<'JS'
             (() => {
                 const content = document.querySelector('[data-ndb-inspector-content]');
-                const entry = document.querySelector('[data-ndb-log-entry][data-ndb-log-level="notice"]');
-                const trigger = entry.querySelector('[data-ndb-log-details-trigger]');
-                const popover = document.querySelector('[data-ndb-log-details-popover]');
-                const detail = popover.querySelector('[data-ndb-log-detail]');
-                const box = popover.getBoundingClientRect();
+                const workspace = document.querySelector('[data-ndb-log-workspace]');
+                const [listPanel, detail] = workspace.children;
 
-                return content.scrollWidth <= content.clientWidth
-                    && entry.scrollWidth <= entry.clientWidth
-                    && box.left >= 8
-                    && box.right <= window.innerWidth - 8
-                    && box.top >= 8
-                    && box.bottom <= window.innerHeight - 8
-                    && detail.scrollWidth <= detail.clientWidth
-                    && getComputedStyle(detail).overflowY === 'auto'
-                    && document.activeElement === trigger;
+                return getComputedStyle(listPanel).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && getComputedStyle(detail).overflowY === 'visible'
+                    && detail.scrollWidth <= detail.clientWidth + 1
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && ['auto', 'scroll'].includes(getComputedStyle(content).overflowY)
+                    && document.activeElement === detail;
             })()
             JS)
-        ->keys('[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-details-trigger]', 'Escape')
-        ->assertMissing('[data-ndb-log-details-popover]')
-        ->assertScript(<<<'JS'
-            document.activeElement === document.querySelector(
-                '[data-ndb-log-entry][data-ndb-log-level="notice"] [data-ndb-log-details-trigger]'
-            )
-            JS)
+        ->click('[data-ndb-log-detail-back]')
+        ->assertVisible('[data-ndb-log-list]');
+
+    DebugBarBrowser::waitForFocus($page, '[data-ndb-log-entry][data-ndb-log-level="notice"]');
+
+    $page
+        ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="notice"]', 'aria-pressed', 'true')
         ->click('[data-ndb-header-mobile-trigger="actions"]')
         ->click('[data-ndb-header-mobile-action="theme"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->fill('[data-ndb-log-search]', 'no-record-can-match-this-search')
         ->assertCount('[data-ndb-log-entry]:not([hidden])', 0)
         ->assertVisible('[data-ndb-log-filter-empty]')
-        ->assertScript(<<<'JS'
-            Array.from(document.querySelectorAll('[data-ndb-log-entry][hidden]')).every((entry) =>
-                getComputedStyle(entry).display === 'none'
-            )
-            JS)
+        ->assertMissing('[data-ndb-log-details-title]')
         ->fill('[data-ndb-log-search]', '')
         ->click('[data-ndb-header-mobile-trigger="actions"]')
         ->click('[data-ndb-header-mobile-action="shrink"]')
@@ -233,12 +238,13 @@ it('keeps log reading usable on mobile dark mode empty results and reopen', func
         ->click('[data-ndb-header-mobile-action="sections"]')
         ->click('[data-ndb-select-section="logs"]');
 
-    DebugBarBrowser::waitForDetails($page);
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-log-list]');
     DebugBarBrowser::assertSectionSelected($page, 'logs');
 
     $page
         ->assertCount('[data-ndb-log-entry]', 24)
         ->assertScript('document.querySelector("[data-ndb-log-level-select]").value === "all"')
         ->assertScript('document.querySelector("[data-ndb-log-channel-select]").value === "all"')
+        ->assertScript('document.querySelectorAll("[data-ndb-log-entry][aria-pressed=true]").length', 0)
         ->assertNoJavaScriptErrors();
 });

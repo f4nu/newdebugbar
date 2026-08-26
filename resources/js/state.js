@@ -492,6 +492,7 @@ export function createNewDebugBar(
     logChannel: 'all',
     logSearch: '',
     logDetailSequence: null,
+    logDetailOpen: false,
     visibleLogCount: summary.section_counts?.logs ?? 0,
     visibleLogGroupCount: summary.section_counts?.logs ?? 0,
     livewireTab: 'activity',
@@ -2059,6 +2060,7 @@ export function createNewDebugBar(
       this.logChannel = 'all';
       this.logSearch = '';
       this.logDetailSequence = null;
+      this.logDetailOpen = false;
       this.visibleLogCount = 0;
       this.visibleLogGroupCount = 0;
       this.eventSelected = null;
@@ -4203,7 +4205,34 @@ export function createNewDebugBar(
       this.logChannel = 'all';
       this.logSearch = '';
       this.logDetailSequence = null;
+      this.logDetailOpen = false;
       this.$nextTick?.(() => this.applyLogFilters());
+    },
+
+    selectLogEntry(sequence) {
+      const list = this.$refs?.logList ?? this.$root?.querySelector?.('[x-ref="logList"]');
+      const entry = [...(list?.children ?? [])].find(
+        (item) => Number(item.dataset.ndbLogFirstSequence) === Number(sequence),
+      );
+      if (!entry || entry.hidden) return;
+
+      this.logDetailSequence = Number(sequence);
+      this.logDetailOpen = true;
+      this.$nextTick?.(() => {
+        this.$refs?.logDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        if ((browser.viewportWidth?.() ?? 1024) < 1024) this.$refs?.logDetail?.focus?.({ preventScroll: true });
+        browser.highlight?.();
+      });
+    },
+
+    closeLogDetail() {
+      const sequence = this.logDetailSequence;
+      this.logDetailOpen = false;
+      this.$nextTick?.(() => {
+        this.$root
+          ?.querySelector?.(`[data-ndb-log-entry][data-ndb-log-first-sequence="${sequence}"]`)
+          ?.focus?.();
+      });
     },
 
     setLogLevel(level) {
@@ -4229,8 +4258,7 @@ export function createNewDebugBar(
       const search = this.logSearch.toLowerCase().trim();
       let visibleRecords = 0;
       let visibleGroups = 0;
-
-      this.logDetailSequence = null;
+      let selectedVisible = false;
 
       [...(list?.children ?? [])].forEach((item) => {
         const matchesLevel =
@@ -4246,6 +4274,7 @@ export function createNewDebugBar(
           item.style?.removeProperty?.('display');
           visibleRecords += Math.max(1, Number(item.dataset.ndbLogRecordCount) || 1);
           visibleGroups++;
+          selectedVisible ||= Number(item.dataset.ndbLogFirstSequence) === this.logDetailSequence;
         } else {
           item.style?.setProperty?.('display', 'none', 'important');
         }
@@ -4253,6 +4282,11 @@ export function createNewDebugBar(
 
       this.visibleLogCount = visibleRecords;
       this.visibleLogGroupCount = visibleGroups;
+
+      if (this.logDetailSequence !== null && !selectedVisible) {
+        this.logDetailSequence = null;
+        this.logDetailOpen = false;
+      }
     },
 
     keepFocusWithin(event, container) {

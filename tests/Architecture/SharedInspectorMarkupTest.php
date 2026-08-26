@@ -76,3 +76,16 @@ it('keeps authorization ability labels in the interface typeface', function () {
         ->not->toMatch('/<code[^>]*data-ndb-authorization-detail-ability/s')
         ->not->toMatch('/data-ndb-authorization-detail-ability[^>]*ndb:font-mono/s');
 });
+
+it('offers a compact two column layout for controls inside split panes', function () {
+    $component = file_get_contents(dirname(__DIR__, 2).'/resources/views/components/inspector-list-controls.blade.php');
+    $logs = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/sections/logs.blade.php');
+
+    expect($component)
+        ->toContain("'layout' => 'responsive'")
+        ->toContain('$isCompact = $layout === \'compact\'')
+        ->toContain('\'ndb:grid-cols-2\' => $hasSecondaryFilter && $isCompact')
+        ->toContain('\'ndb:col-span-2\' => $showSearch && $hasFilter && ($isCompact || ! $hasSecondaryFilter)')
+        ->and($logs)
+        ->toContain('<x-newdebugbar::inspector-list-controls :show-search="true" layout="compact">');
+});
