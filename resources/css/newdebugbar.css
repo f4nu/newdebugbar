@@ -16,7 +16,6 @@
 @source "../js/**/*.js";
 
 @theme {
-    --animate-pulse: initial;
     --container-8xl: 96rem;
     --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-mono--font-feature-settings: "calt" 1, "liga" 1;
@@ -32,7 +31,6 @@
 }
 
 #newdebugbar {
-    --ndb-accent: #4f46e5;
     background: transparent;
     color: #18181b;
     font-family: "Outfit Variable", Outfit, ui-sans-serif, system-ui, sans-serif;
@@ -58,7 +56,6 @@
 }
 
 #newdebugbar[data-ndb-theme="dark"] {
-    --ndb-accent: #818cf8;
     color: #f4f4f5;
 }
 

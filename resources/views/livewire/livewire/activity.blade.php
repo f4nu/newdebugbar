@@ -16,7 +16,7 @@
                     :class="item.status === 'failed' || item.status === 'failed_validation'
                         ? 'ndb:bg-red-500'
                         : item.status === 'updating'
-                          ? 'ndb:animate-pulse ndb:bg-indigo-500 ndb:motion-reduce:animate-none'
+                          ? 'ndb:bg-indigo-500'
                           : 'ndb:bg-zinc-300 ndb:dark:bg-zinc-700'"
                 ></span>
             </span>

@@ -275,7 +275,7 @@
                                     data-ndb-view-data-loading
                                     class="ndb:flex ndb:items-center ndb:gap-2 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                 >
-                                    <span class="ndb:size-1.5 ndb:animate-pulse ndb:rounded-full ndb:bg-indigo-500 ndb:motion-reduce:animate-none"></span>
+                                    <span class="ndb:size-1.5 ndb:rounded-full ndb:bg-indigo-500"></span>
                                     Loading render data…
                                 </div>
 

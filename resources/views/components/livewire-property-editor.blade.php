@@ -9,7 +9,6 @@
     "
 >
     <button
-        x-ref="livewireEditButton"
         x-show.important="row.editable"
         type="button"
         :id="$id('newdebugbar-livewire-edit-trigger')"
