@@ -20,11 +20,11 @@
             <x-newdebugbar::inspector-detail-header data-ndb-authorization-header>
                 <x-slot:title>
                     <div class="ndb:min-w-0">
-                        <code
+                        <h3
                             data-ndb-authorization-detail-ability
-                            class="ndb:block ndb:break-words ndb:font-mono ndb:text-base ndb:font-bold ndb:leading-6"
+                            class="ndb:block ndb:break-words ndb:text-base ndb:font-bold ndb:leading-6"
                             x-text="selectedAuthorizationDecision.ability"
-                        ></code>
+                        ></h3>
                         <p
                             class="ndb:mt-1 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
                             x-text="'Decision #' + selectedAuthorizationDecision.execution"

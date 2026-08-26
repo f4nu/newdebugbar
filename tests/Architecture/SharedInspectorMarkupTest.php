@@ -60,3 +60,18 @@ it('uses code type only for Queue class references', function () {
         ->not->toMatch('/ndb:font-mono[^\"]*\"\s+x-text="selectedQueueActivity\.job_id/')
         ->not->toMatch('/ndb:font-mono[^\"]*\"\s+x-text="selectedQueueActivity\.(connection|queue)/');
 });
+
+it('keeps authorization ability labels in the interface typeface', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/authorization.blade.php');
+    $detail = file_get_contents($views.'/components/authorization-detail.blade.php');
+
+    expect($section)
+        ->toContain('<span', 'data-ndb-authorization-ability')
+        ->not->toMatch('/<code[^>]*data-ndb-authorization-ability/s')
+        ->not->toMatch('/data-ndb-authorization-ability[^>]*ndb:font-mono/s')
+        ->and($detail)
+        ->toContain('<h3', 'data-ndb-authorization-detail-ability')
+        ->not->toMatch('/<code[^>]*data-ndb-authorization-detail-ability/s')
+        ->not->toMatch('/data-ndb-authorization-detail-ability[^>]*ndb:font-mono/s');
+});

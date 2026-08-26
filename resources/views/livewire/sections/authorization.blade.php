@@ -296,10 +296,10 @@
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
                             class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_4.75rem] ndb:items-start ndb:gap-x-3 ndb:gap-y-1.5 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <code
+                            <span
                                 data-ndb-authorization-ability
-                                class="ndb:min-w-0 ndb:break-words ndb:font-mono ndb:text-xs ndb:font-bold ndb:leading-5"
-                            >{{ $decision['ability'] }}</code>
+                                class="ndb:min-w-0 ndb:break-words ndb:text-xs ndb:font-bold ndb:leading-5"
+                            >{{ $decision['ability'] }}</span>
                             <span
                                 data-ndb-authorization-result-label
                                 @class([

@@ -458,11 +458,17 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->assertScript(<<<'JS'
             (() => {
+                const root = document.querySelector('[data-ndb-authorization]');
                 const row = document.querySelector('[data-ndb-authorization-item]');
+                const ability = row.querySelector('[data-ndb-authorization-ability]');
+                const detailAbility = document.querySelector('[data-ndb-authorization-detail-ability]');
                 const style = getComputedStyle(row);
+                const interfaceFont = getComputedStyle(root).fontFamily;
 
                 return style.borderLeftWidth === '0px'
-                    && style.backgroundColor !== 'rgb(255, 0, 0)';
+                    && style.backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(ability).fontFamily === interfaceFont
+                    && getComputedStyle(detailAbility).fontFamily === interfaceFont;
             })()
             JS)
         ->assertScript(<<<'JS'

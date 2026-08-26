@@ -22,10 +22,12 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 const abilities = [...document.querySelectorAll('[data-ndb-authorization-ability]')];
                 const results = [...document.querySelectorAll('[data-ndb-authorization-result-label]')];
                 const header = document.querySelector('[data-ndb-authorization-header]');
+                const detailAbility = document.querySelector('[data-ndb-authorization-detail-ability]');
                 const detailResult = document.querySelector('[data-ndb-authorization-detail-result]');
                 const firstTab = document.querySelector('[data-ndb-authorization-detail-tab]');
                 const detailTabGroup = firstTab.closest('[data-ndb-filter-tabs]');
                 const resultRightEdges = results.map((result) => Math.round(result.getBoundingClientRect().right));
+                const interfaceFont = getComputedStyle(workspace).fontFamily;
 
                 return getComputedStyle(workspace).display === 'grid'
                     && getComputedStyle(listPane).display === 'flex'
@@ -35,6 +37,8 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                     && content.scrollHeight <= content.clientHeight + 1
                     && workspace.scrollWidth <= workspace.clientWidth + 1
                     && abilities.every((ability) => Number.parseFloat(getComputedStyle(ability).fontSize) === 12)
+                    && abilities.every((ability) => getComputedStyle(ability).fontFamily === interfaceFont)
+                    && getComputedStyle(detailAbility).fontFamily === interfaceFont
                     && results.every((result) => Number.parseFloat(getComputedStyle(result).fontSize) === 11)
                     && results.every((result) => getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)')
                     && resultRightEdges.every((right) => right === resultRightEdges[0])
