@@ -161,7 +161,28 @@ it('filters selects and inspects rich cache diagnostics', function () {
                     && !document.querySelector('[data-ndb-cache]').textContent.includes('·');
             })()
             JS)
+        ->click('[data-ndb-cache-item="3"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const metadata = document.querySelector('[data-ndb-cache-metadata]');
+                const followingDetails = metadata.nextElementSibling;
+
+                return getComputedStyle(metadata).borderBottomWidth === '0px'
+                    && getComputedStyle(metadata).paddingBottom === '0px'
+                    && followingDetails.getClientRects().length === 0;
+            })()
+            JS)
         ->click('[data-ndb-cache-item="5"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const metadata = document.querySelector('[data-ndb-cache-metadata]');
+                const followingDetails = metadata.nextElementSibling;
+
+                return getComputedStyle(metadata).borderBottomWidth === '0px'
+                    && getComputedStyle(followingDetails).borderTopWidth === '1px'
+                    && followingDetails.getClientRects().length === 1;
+            })()
+            JS)
         ->assertAttribute('[data-ndb-cache-item="5"]', 'aria-pressed', 'true')
         ->assertDontSee('Related uses')
         ->assertScript('document.querySelectorAll(\'[aria-label^="Open cache execution "]\').length', 0)

@@ -1,4 +1,4 @@
-<x-newdebugbar::inspector-facts columns="4" data-ndb-cache-metadata>
+<x-newdebugbar::inspector-facts columns="4" :bordered="false" data-ndb-cache-metadata>
     <x-newdebugbar::inspector-fact label="Result">
         <x-slot:value
             ::class="selectedCacheOperation.failed

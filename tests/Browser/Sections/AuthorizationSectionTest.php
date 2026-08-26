@@ -26,7 +26,6 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 const detailResult = document.querySelector('[data-ndb-authorization-detail-result]');
                 const firstTab = document.querySelector('[data-ndb-authorization-detail-tab]');
                 const detailTabGroup = firstTab.closest('[data-ndb-filter-tabs]');
-                const resultRightEdges = results.map((result) => Math.round(result.getBoundingClientRect().right));
                 const interfaceFont = getComputedStyle(workspace).fontFamily;
 
                 return getComputedStyle(workspace).display === 'grid'
@@ -41,7 +40,11 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                     && getComputedStyle(detailAbility).fontFamily === interfaceFont
                     && results.every((result) => Number.parseFloat(getComputedStyle(result).fontSize) === 11)
                     && results.every((result) => getComputedStyle(result).backgroundColor === 'rgba(0, 0, 0, 0)')
-                    && resultRightEdges.every((right) => right === resultRightEdges[0])
+                    && results.every((result, index) => {
+                        const gap = result.getBoundingClientRect().left - abilities[index].getBoundingClientRect().right;
+
+                        return gap >= 7 && gap <= 9;
+                    })
                     && header.querySelector('[data-ndb-authorization-detail-result]') === null
                     && detailResult.getBoundingClientRect().top > firstTab.getBoundingClientRect().bottom
                     && detailTabGroup.dataset.ndbFilterTabsVariant === 'segmented'
@@ -131,12 +134,13 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 const facts = [...document.querySelector('[data-ndb-authorization-metadata]').children];
                 const valueFor = (label) => facts.find((fact) => fact.querySelector('dt')?.textContent.trim() === label)
                     ?.querySelector('dd')?.textContent.trim();
+                const httpStatus = facts.find((fact) => fact.querySelector('dt')?.textContent.trim() === 'HTTP status');
 
                 return panel.querySelectorAll('button').length === 0
-                    && arguments.includes('Arguments')
-                    && arguments.includes('—')
+                    && !arguments.includes('Arguments')
+                    && !arguments.includes('—')
                     && valueFor('Response code') === 'guest_private_notes'
-                    && valueFor('HTTP status') === '—';
+                    && httpStatus.getClientRects().length === 0;
             })()
             JS)
         ->assertScript(<<<'JS'

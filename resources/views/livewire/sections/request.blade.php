@@ -68,12 +68,15 @@
 
 @if ($isHttpRequest)
     <div data-ndb-request-trace class="ndb:-mt-2">
-        <div class="ndb:flex ndb:flex-col ndb:gap-3 ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/55 ndb:px-4 ndb:py-3 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35">
+        <div
+            data-ndb-request-summary
+            class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-y ndb:border-zinc-200/90 ndb:bg-white/55 ndb:px-4 ndb:py-3 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
+        >
             <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
                 <span class="ndb:shrink-0 ndb:rounded-md ndb:bg-emerald-50 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-emerald-700 ndb:ring-1 ndb:ring-inset ndb:ring-emerald-200 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300 ndb:dark:ring-emerald-900">
                     {{ $requestPayload['method'] ?? 'HTTP' }}
                 </span>
-                <code class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold">{{ $requestPath }}</code>
+                <span class="ndb:min-w-0 ndb:truncate ndb:text-xs ndb:font-bold">{{ $requestPath }}</span>
             </div>
             <span class="ndb:hidden ndb:h-5 ndb:w-px ndb:shrink-0 ndb:bg-zinc-200 ndb:sm:block ndb:dark:bg-zinc-800"></span>
             <span
@@ -89,7 +92,7 @@
             </p>
         </div>
 
-        <ol class="ndb:mt-5 ndb:list-none" aria-label="Request trace">
+        <ol data-ndb-request-timeline class="ndb:mt-5 ndb:list-none ndb:px-4 ndb:sm:px-6" aria-label="Request trace">
             <li data-ndb-request-step="received" class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-4">
                 <div aria-hidden="true" class="ndb:relative ndb:flex ndb:justify-center ndb:pt-0.5">
                     <span
@@ -305,11 +308,11 @@
                                             <tr class="ndb:border-b ndb:border-zinc-200/70 ndb:last:border-b-0 ndb:dark:border-zinc-800/80">
                                                 <th
                                                     scope="row"
-                                                    class="ndb:py-2 ndb:pr-4 ndb:align-top ndb:font-mono ndb:text-[11px] ndb:font-medium ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                                    class="ndb:py-2 ndb:pr-4 ndb:align-top ndb:text-[11px] ndb:font-medium ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                                 >
                                                     {{ $requestDetailName }}
                                                 </th>
-                                                <td class="ndb:break-words ndb:py-2 ndb:align-top ndb:font-mono ndb:text-[11px] ndb:text-zinc-800 ndb:dark:text-zinc-200">
+                                                <td class="ndb:break-words ndb:py-2 ndb:align-top ndb:text-[11px] ndb:text-zinc-800 ndb:dark:text-zinc-200">
                                                     {{ $formatRequestValue($requestDetailValue) }}
                                                 </td>
                                             </tr>

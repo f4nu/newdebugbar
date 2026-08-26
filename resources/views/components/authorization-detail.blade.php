@@ -48,7 +48,7 @@
 
             <template x-if="authorizationDetailTab === 'decision'">
                 <div data-ndb-authorization-detail-panel="decision" class="ndb:space-y-5 ndb:p-4">
-                    <x-newdebugbar::inspector-facts columns="4" data-ndb-authorization-metadata>
+                    <x-newdebugbar::inspector-facts columns="2" data-ndb-authorization-metadata>
                         <x-newdebugbar::inspector-fact label="Result">
                             <x-slot:value
                                 data-ndb-authorization-detail-result
@@ -84,28 +84,34 @@
                             </x-slot:value>
                         </x-newdebugbar::inspector-fact>
 
-                        <x-newdebugbar::inspector-fact label="Response code">
+                        <x-newdebugbar::inspector-fact
+                            label="Response code"
+                            x-show.important="selectedAuthorizationDecision.result_code !== null"
+                        >
                             <x-slot:value
                                 class="ndb:truncate ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                x-text="selectedAuthorizationDecision.result_code ?? '—'"
+                                x-text="selectedAuthorizationDecision.result_code"
                             ></x-slot:value>
                         </x-newdebugbar::inspector-fact>
 
-                        <x-newdebugbar::inspector-fact label="HTTP status">
+                        <x-newdebugbar::inspector-fact
+                            label="HTTP status"
+                            x-show.important="selectedAuthorizationDecision.result_status !== null"
+                        >
                             <x-slot:value
                                 class="ndb:truncate ndb:text-xs ndb:font-semibold ndb:tabular-nums"
-                                x-text="selectedAuthorizationDecision.result_status ?? '—'"
+                                x-text="selectedAuthorizationDecision.result_status"
                             ></x-slot:value>
                         </x-newdebugbar::inspector-fact>
                     </x-newdebugbar::inspector-facts>
 
-                    <x-newdebugbar::inspector-definition-list data-ndb-authorization-arguments-detail>
-                        <template x-if="selectedAuthorizationDecision.arguments.length === 0">
-                            <x-newdebugbar::inspector-definition-row label="Arguments">
-                                —
-                            </x-newdebugbar::inspector-definition-row>
-                        </template>
-
+                    <x-newdebugbar::inspector-definition-list
+                        data-ndb-authorization-arguments-detail
+                        x-show.important="
+                            selectedAuthorizationDecision.arguments.length > 0 ||
+                            selectedAuthorizationDecision.result_message !== null
+                        "
+                    >
                         <template x-for="argument in selectedAuthorizationDecision.arguments" :key="argument.position">
                             <x-newdebugbar::inspector-definition-row>
                                 <x-slot:term x-text="argument.role_label"></x-slot:term>
@@ -127,8 +133,11 @@
                             </x-newdebugbar::inspector-definition-row>
                         </template>
 
-                        <x-newdebugbar::inspector-definition-row label="Explanation">
-                            <x-slot:value x-text="selectedAuthorizationDecision.result_message ?? '—'"></x-slot:value>
+                        <x-newdebugbar::inspector-definition-row
+                            label="Explanation"
+                            x-show.important="selectedAuthorizationDecision.result_message !== null"
+                        >
+                            <x-slot:value x-text="selectedAuthorizationDecision.result_message"></x-slot:value>
                         </x-newdebugbar::inspector-definition-row>
                     </x-newdebugbar::inspector-definition-list>
 

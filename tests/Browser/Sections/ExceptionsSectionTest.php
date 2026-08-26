@@ -48,6 +48,14 @@ it('shows relative exception frames and highlighted source context', function ()
             })()
             JS)
         ->assertScript('document.querySelectorAll("#newdebugbar code[data-ndb-language=php][data-highlighted]").length > 0')
+        ->assertScript(<<<'JS'
+            (() => {
+                const lines = document.querySelector('[data-ndb-exception-detail-panel="source"] code')
+                    .textContent.split('\n').filter((line) => line.trim().length > 0);
+
+                return lines.every((line) => !line.startsWith(' '));
+            })()
+            JS)
         ->click('[data-ndb-exception-detail-tab="stack"]')
         ->assertAttribute('[data-ndb-exception-detail-tab="stack"]', 'aria-pressed', 'true')
         ->assertVisible('[data-ndb-exception-detail-panel="stack"]')

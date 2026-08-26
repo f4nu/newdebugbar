@@ -23,6 +23,20 @@ it('shows an aligned request trace and switches request detail groups', function
         ->assertScript('document.querySelectorAll("[data-ndb-request-step]").length', 3)
         ->assertScript('document.querySelectorAll("[data-ndb-request-line]").length', 2)
         ->assertScript(<<<'JS'
+            (() => {
+                const summary = getComputedStyle(document.querySelector('[data-ndb-request-summary]'));
+                const timeline = getComputedStyle(document.querySelector('[data-ndb-request-timeline]'));
+
+                return summary.borderTopWidth === '1px'
+                    && summary.borderRightWidth === '0px'
+                    && summary.borderBottomWidth === '1px'
+                    && summary.borderLeftWidth === '0px'
+                    && summary.borderRadius === '0px'
+                    && timeline.paddingLeft === (innerWidth >= 640 ? '24px' : '16px')
+                    && timeline.paddingRight === (innerWidth >= 640 ? '24px' : '16px');
+            })()
+            JS)
+        ->assertScript(<<<'JS'
             Array.from(document.querySelectorAll('[data-ndb-request-step]')).every((step) => {
                 const dot = step.querySelector('[data-ndb-request-dot]').getBoundingClientRect();
                 const heading = step.querySelector('h3').getBoundingClientRect();

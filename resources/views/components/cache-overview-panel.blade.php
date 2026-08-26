@@ -8,7 +8,7 @@
             selectedCacheOperation.duration_scope === 'batch' ||
             (selectedCacheOperation.failed && selectedCacheOperation.exception_message)
         "
-        class="ndb:mt-4"
+        class="ndb:mt-4 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
     >
         <x-newdebugbar::inspector-definition-row label="Value" x-show.important="selectedCacheOperation.has_value">
             <x-slot:value class="ndb:min-w-0">

@@ -113,14 +113,20 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
                 const primary = [...document.querySelectorAll('[data-ndb-redis-key-label]')].map((item) => item.textContent.trim());
                 const hashes = payload.flatMap((command) => command.key_hashes ?? []);
                 const header = document.querySelector('[data-ndb-redis-detail-header]');
+                const workspace = document.querySelector('[data-ndb-redis-workspace]');
+                const listOperations = [...document.querySelectorAll('[data-ndb-redis-list] [data-ndb-redis-command]')];
                 const operation = header.querySelector('[data-ndb-redis-command]').getBoundingClientRect();
                 const key = header.querySelector('[data-ndb-redis-key-label]').getBoundingClientRect();
+                const interfaceFont = getComputedStyle(workspace).fontFamily;
 
                 return document.querySelector('[data-ndb-redis-detail-body]') !== null
                     && document.querySelector('[data-ndb-redis-key-evidence]') !== null
                     && document.querySelector('[data-ndb-redis-detail-tab]') === null
                     && primary.every((label) => !hashes.includes(label))
                     && document.querySelector('[data-ndb-redis-sort]') === null
+                    && listOperations.every((badge) => Math.round(badge.getBoundingClientRect().width) === 64)
+                    && listOperations.every((badge) => getComputedStyle(badge).fontFamily === interfaceFont)
+                    && listOperations.every((badge) => Number.parseFloat(getComputedStyle(badge).fontSize) === 11)
                     && Math.abs((operation.top + operation.height / 2) - (key.top + key.height / 2)) <= 1
                     && header.scrollWidth <= header.clientWidth;
             })()

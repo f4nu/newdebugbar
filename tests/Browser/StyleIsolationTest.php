@@ -85,7 +85,7 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const code = Array.from(document.querySelectorAll('[data-ndb-section-panel="request"] code'));
 
-                return code.length >= 2 && code.every((element) => {
+                return code.length >= 1 && code.every((element) => {
                     const style = getComputedStyle(element);
 
                     return style.backgroundColor === 'rgba(0, 0, 0, 0)'
@@ -358,14 +358,16 @@ it('keeps host styles and package styles isolated', function () {
                 const status = document.querySelector('[data-ndb-redis-detail-status]');
                 const body = document.querySelector('[data-ndb-redis-detail-body]');
                 const keyEvidence = document.querySelector('[data-ndb-redis-key-evidence]');
+                const interfaceFont = getComputedStyle(root).fontFamily;
 
                 return getComputedStyle(root).borderLeftWidth === '0px'
                     && getComputedStyle(root).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(item).borderLeftWidth === '0px'
                     && getComputedStyle(item).backgroundColor !== 'rgb(255, 0, 0)'
                     && item.getBoundingClientRect().height < 91
-                    && Number.parseFloat(getComputedStyle(command).fontSize) === 12
-                    && getComputedStyle(command).fontFamily.includes('JetBrains Mono')
+                    && Number.parseFloat(getComputedStyle(command).fontSize) === 11
+                    && getComputedStyle(command).fontFamily === interfaceFont
+                    && Math.round(command.getBoundingClientRect().width) === 64
                     && getComputedStyle(command).backgroundColor !== 'rgb(255, 0, 0)'
                     && Number.parseFloat(getComputedStyle(key).fontSize) === 12
                     && !getComputedStyle(key).fontFamily.includes('JetBrains Mono')

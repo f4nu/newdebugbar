@@ -296,18 +296,20 @@
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
                             class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[minmax(0,1fr)_4.75rem] ndb:items-start ndb:gap-x-3 ndb:gap-y-1.5 ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <span
-                                data-ndb-authorization-ability
-                                class="ndb:min-w-0 ndb:break-words ndb:text-xs ndb:font-bold ndb:leading-5"
-                            >{{ $decision['ability'] }}</span>
-                            <span
-                                data-ndb-authorization-result-label
-                                @class([
-                                    'ndb:w-full ndb:bg-transparent ndb:pt-0.5 ndb:text-right ndb:text-[11px] ndb:font-bold',
-                                    'ndb:text-emerald-700 ndb:dark:text-emerald-300' => $decision['result'] === 'allowed',
-                                    'ndb:text-red-700 ndb:dark:text-red-300' => $decision['result'] === 'denied',
-                                ])
-                            >{{ $decision['result_label'] }}</span>
+                            <span class="ndb:col-span-2 ndb:flex ndb:min-w-0 ndb:items-baseline ndb:gap-2">
+                                <span
+                                    data-ndb-authorization-ability
+                                    class="ndb:min-w-0 ndb:break-words ndb:text-xs ndb:font-bold ndb:leading-5"
+                                >{{ $decision['ability'] }}</span>
+                                <span
+                                    data-ndb-authorization-result-label
+                                    @class([
+                                        'ndb:shrink-0 ndb:bg-transparent ndb:text-[11px] ndb:font-bold',
+                                        'ndb:text-emerald-700 ndb:dark:text-emerald-300' => $decision['result'] === 'allowed',
+                                        'ndb:text-red-700 ndb:dark:text-red-300' => $decision['result'] === 'denied',
+                                    ])
+                                >{{ $decision['result_label'] }}</span>
+                            </span>
                             <span class="ndb:col-span-2 ndb:grid ndb:min-w-0 ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:gap-x-2 ndb:gap-y-1 ndb:text-[11px] ndb:leading-4">
                                 <span class="ndb:font-semibold ndb:text-zinc-400">Actor</span>
                                 <span data-ndb-authorization-actor class="ndb:min-w-0">

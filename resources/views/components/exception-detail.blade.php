@@ -3,12 +3,21 @@
 @php
     $applicationFrames = array_values($exception['frames']['application'] ?? []);
     $vendorFrames = array_values($exception['frames']['vendor'] ?? []);
-    $sourceText = isset($exception['source']['lines'])
-        ? implode("\n", array_map(
-            fn (array $line): string => sprintf('%4d%s %s', $line['number'], $line['focus'] ? '>' : ' ', $line['code']),
-            $exception['source']['lines'],
-        ))
-        : null;
+    $sourceLines = array_values($exception['source']['lines'] ?? []);
+    $lineNumberWidth = $sourceLines === []
+        ? 0
+        : max(array_map(fn (array $line): int => strlen((string) $line['number']), $sourceLines));
+    $sourceText = $sourceLines === []
+        ? null
+        : implode("\n", array_map(
+            fn (array $line): string => sprintf(
+                '%s%s %s',
+                str_repeat("\u{2007}", max(0, $lineNumberWidth - strlen((string) $line['number']))).$line['number'],
+                $line['focus'] ? '>' : ' ',
+                $line['code'],
+            ),
+            $sourceLines,
+        ));
 @endphp
 
 <article data-ndb-exception-detail="{{ $index }}" x-data="{ exceptionDetailTab: 'source' }">

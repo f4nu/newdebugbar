@@ -139,10 +139,11 @@
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
                             class="ndb:grid ndb:h-auto ndb:min-h-0 ndb:w-full ndb:min-w-0 ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-x-2 ndb:border-l-0 ndb:bg-transparent ndb:px-3 ndb:py-2.5 ndb:text-left ndb:text-xs ndb:text-zinc-950 ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-white"
                         >
-                            <code
+                            <x-newdebugbar::inspector-operation-badge
+                                wide
                                 data-ndb-redis-command
-                                class="ndb:row-span-2 ndb:min-w-0 ndb:truncate ndb:bg-transparent ndb:font-mono ndb:text-xs ndb:font-bold"
-                            >{{ $item['command'] }}</code>
+                                class="ndb:row-span-2 ndb:self-center"
+                            >{{ $item['command'] }}</x-newdebugbar::inspector-operation-badge>
                             <span
                                 data-ndb-redis-key-label
                                 class="ndb:min-w-0 ndb:truncate ndb:bg-transparent ndb:text-xs ndb:font-semibold ndb:text-zinc-800 ndb:dark:text-zinc-200"
