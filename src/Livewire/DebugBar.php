@@ -24,6 +24,7 @@ final class DebugBar extends Component
         'cache',
         'events',
         'http_client',
+        'logs',
         'mail',
         'models',
         'notifications',

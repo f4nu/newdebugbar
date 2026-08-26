@@ -483,6 +483,7 @@ it('uses the top-only frame across edge-to-edge inspector workspaces', function 
         'components/http-client-workspace.blade.php',
         'livewire/sections/authorization.blade.php',
         'livewire/sections/events.blade.php',
+        'livewire/sections/logs.blade.php',
         'livewire/sections/models.blade.php',
         'livewire/sections/mail.blade.php',
         'livewire/sections/notifications.blade.php',
@@ -530,6 +531,25 @@ it('composes Events from the shared inspector workspace anatomy', function () {
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')
         ->toContain('<x-newdebugbar::inspector-detail-empty');
+});
+
+it('composes Logs as a shared full-height inspector stream', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $section = file_get_contents($views.'/livewire/sections/logs.blade.php');
+    $workspace = file_get_contents($views.'/components/inspector-workspace.blade.php');
+
+    expect($section)
+        ->toContain('<x-newdebugbar::inspector-workspace mode="stream" frame="top"')
+        ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::search-field')
+        ->toContain('<x-newdebugbar::select-field')
+        ->not->toContain('<input')
+        ->not->toContain('<select')
+        ->not->toContain('data-ndb-log-order');
+
+    expect($workspace)
+        ->toContain("'stream' =>")
+        ->toContain('data-ndb-inspector-stream-body');
 });
 
 it('uses centered segmented controls across inspector detail panels', function () {

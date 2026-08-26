@@ -19,6 +19,7 @@
     $workspaceClass = match ($mode) {
         'split' => "ndb:overflow-hidden ndb:bg-white/45 ndb:lg:grid ndb:lg:min-h-0 ndb:lg:flex-1 ndb:lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.68fr)] ndb:dark:bg-zinc-950/35 {$frameClass}",
         'focus' => 'ndb:min-h-0 ndb:min-w-0 ndb:flex-1',
+        'stream' => "ndb:flex ndb:min-h-0 ndb:min-w-0 ndb:flex-1 ndb:flex-col ndb:overflow-hidden ndb:bg-white/45 ndb:dark:bg-zinc-950/35 {$frameClass}",
         default => throw new \InvalidArgumentException("Unknown inspector workspace mode [{$mode}]."),
     };
 
@@ -58,6 +59,35 @@
 
             {{ $detail }}
         </section>
+    @elseif ($mode === 'stream')
+        @isset($controls)
+            <div {{ $controls->attributes->class('ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:dark:border-zinc-800') }}>
+                {{ $controls }}
+            </div>
+        @endisset
+
+        @isset($header)
+            <div {{ $header->attributes->class('ndb:border-b ndb:border-zinc-200/90 ndb:dark:border-zinc-800') }}>
+                {{ $header }}
+            </div>
+        @endisset
+
+        @isset($body)
+            <div
+                data-ndb-inspector-stream-body
+                {{ $body->attributes->class('ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:overflow-y-auto') }}
+            >
+                {{ $body }}
+            </div>
+        @else
+            <div data-ndb-inspector-stream-body class="ndb-scrollbar ndb:min-h-0 ndb:flex-1 ndb:overflow-y-auto">
+                {{ $slot }}
+            </div>
+        @endisset
+
+        @isset($empty)
+            <div {{ $empty->attributes->class('ndb:p-3') }}>{{ $empty }}</div>
+        @endisset
     @else
         {{ $slot }}
     @endif

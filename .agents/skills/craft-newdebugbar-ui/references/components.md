@@ -65,12 +65,12 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-explanation` | Friendly help for ambiguous evidence and a conditional next check. Do not explain obvious labels. |
 | `inspector-fact` | One compact labeled fact inside `inspector-facts`. |
 | `inspector-facts` | Responsive fact tracks. Use two to four columns and omit its border when the parent already supplies the divider. |
-| `inspector-list-controls` | Optional list summary plus search and an optional trailing filter. Pass section-owned labels and state through its slots; do not rebuild its responsive grid. |
+| `inspector-list-controls` | Optional list summary plus search and one or two trailing filters. Use the secondary filter only when two independent filters are necessary; do not rebuild its responsive grid. |
 | `inspector-list-panel` | List controls, the list scroll owner, and the filtered empty state. |
 | `inspector-source-fact` | Source-like fact card. Set `code` only when the value itself is code, not merely a file location. This treatment is a merge candidate; do not create another source-fact variant. |
 | `inspector-source-panel` | Source facts followed by the bounded application stack. Use it as the complete Source tab body instead of rebuilding panel padding or stack placement. |
 | `inspector-stack` | Bounded application call stack. Pass retained application frames and an accurate empty label. |
-| `inspector-workspace` | Shared split or focused workspace. Use `top` framing for edge-to-edge sections and a namespaced `detailId` in focus mode. |
+| `inspector-workspace` | Shared split, focused, or stream workspace. Use `stream` for a single full-width scrollable list, `top` framing for edge-to-edge sections, and a namespaced `detailId` in focus mode. |
 | `popover-surface` | Shared elevated menu surface. Use `anchored` only with Alpine Anchor and choose direction and alignment deliberately. |
 | `section-heading` | Restrained title and close description. Do not repeat the tab name or explain an obvious label. |
 
@@ -103,7 +103,7 @@ They should reuse the shared field, badge, fact, source, code, explanation, and 
 ## State and composition
 
 - Stateful shared patterns receive explicit expressions, references, labels, and actions from their parent. They do not create a second root store.
-- `inspector-workspace` owns split/focus geometry; `inspector-list-panel` owns list scrolling; `inspector-detail-pane` owns detail scrolling.
+- `inspector-workspace` owns split/focus/stream geometry; `inspector-list-panel` owns split-list scrolling; `inspector-detail-pane` owns detail scrolling. In stream mode, the workspace body is the only desktop scroll owner.
 - `inspector-detail-tabs` supplies the shared segmented container while the private section supplies tab labels, order, availability, and active state.
 - `inspector-explanation` is appropriate only when captured evidence needs interpretation or a conditional next check.
 - Code and evidence components receive retained values. They do not infer a source, result, or problem from adjacent data.

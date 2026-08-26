@@ -30,11 +30,14 @@ it('presents a chronological diagnostic stream with useful filters and details',
                 const controls = document.querySelector('[data-ndb-log-controls]');
                 const content = document.querySelector('[data-ndb-inspector-content]');
                 const list = document.querySelector('[data-ndb-log-list]');
+                const workspace = document.querySelector('[data-ndb-log-workspace]');
 
                 return sequences.every((sequence, index) => index === 0 || sequence > sequences[index - 1])
-                    && document.querySelector('[data-ndb-log-order]').textContent.trim() === 'Oldest first'
+                    && document.querySelector('[data-ndb-log-order]') === null
                     && getComputedStyle(content).overflowY === 'auto'
-                    && getComputedStyle(list).overflowY === 'visible'
+                    && content.scrollHeight <= content.clientHeight + 1
+                    && list === workspace.querySelector('[data-ndb-inspector-stream-body]')
+                    && getComputedStyle(list).overflowY === 'auto'
                     && ! ['•', '·'].some((separator) => controls.textContent.includes(separator));
             })()
             JS)
