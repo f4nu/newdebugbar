@@ -1,6 +1,6 @@
 ---
 name: craft-newdebugbar-ui
-description: Design, build, refactor, or review the New Debug Bar interface in this repository. Use for inspector sections, debug-bar chrome, shared Blade components, responsive behavior, visual hierarchy, diagnostic copy, component extraction, or Studio catalog work. This skill encodes the project's established UI decisions and required browser QA.
+description: Design, build, refactor, or review the New Debug Bar interface in this repository. Use for inspector sections, debug-bar chrome, shared Blade components, responsive behavior, visual hierarchy, diagnostic copy, or component extraction. This skill encodes the project's established UI decisions and required browser QA.
 ---
 
 # Craft New Debug Bar UI
@@ -16,7 +16,7 @@ Before changing UI:
 3. Read [references/components.md](references/components.md) when choosing, changing, or adding a component.
 4. Read [references/verification.md](references/verification.md) before verification.
 
-Use `/__newdebugbar/studio` as the living component catalog. Browse one canonical component page at a time; the navigation groups components by practical purpose rather than presenting inspector sections as gallery pages. It is a fast way to inspect the shared language, but it does not replace checking the real section with realistic profile data.
+Treat populated inspector sections as the visual source of truth. The component reference and test ownership inventory document shared rules, but they do not replace checking every affected real consumer with realistic profile data.
 
 ## Workflow
 
@@ -56,7 +56,7 @@ Preserve unique diagnostic evidence. Move raw, internal, or supporting evidence 
 - Extract a component when the same visual or interaction rule appears in more than one section.
 - Let each section's data decide its labels, filters, tabs, and evidence. Shared structure does not mean identical content.
 
-Check [references/components.md](references/components.md) before creating a new primitive. Add every new reusable Blade component to `StudioCatalog`, its focused Studio page and demo, and this reference in the same change.
+Check [references/components.md](references/components.md) before creating a new primitive. Add every new reusable Blade component to `tests/Support/ViewComponentInventory.php`, document it in the component reference, and extend focused and architecture tests in the same change.
 
 ### 5. Make state deliberate
 

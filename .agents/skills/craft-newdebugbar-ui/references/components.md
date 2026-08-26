@@ -1,10 +1,8 @@
 # Component system
 
-The living visual catalog is `/__newdebugbar/studio`. Its source registry is `src/Presentation/StudioCatalog.php`.
+This file is the human reference for canonical reusable components. `tests/Support/ViewComponentInventory.php` is the test-only ownership inventory that classifies every root Blade component as shared or private to one product area.
 
-Studio is an explicit allowlist of canonical reusable component families. It is not a directory browser. A Blade file does not become public merely because it lives in `resources/views/components`, and private section modules must not be added to Studio to satisfy a completeness count.
-
-Each catalog family has one canonical page at `/__newdebugbar/studio/{component}` and one preview at `/__newdebugbar/studio/{component}/preview`. The iframe renders exactly one centered demo. Do not add a Studio header, explainer, breadcrumb, source panel, or framed card around the preview.
+The inventory is explicit and contains filenames only. A Blade file does not become shared merely because it lives in `resources/views/components`, and private section modules must not be reclassified just to satisfy a completeness count.
 
 ## Ownership boundary
 
@@ -12,11 +10,11 @@ Use these ownership levels:
 
 1. **Shared primitives** own one visual or interaction rule, such as a field, badge, source link, or code block.
 2. **Shared inspector patterns** own recurring composition and behavior across independent sections, such as a detail header, fact grid, or list-detail workspace.
-3. **Private section modules** own section-specific labels, filters, rows, tabs, data normalization, and evidence. They belong beside their owning section and do not appear in Studio.
+3. **Private section modules** own section-specific labels, filters, rows, tabs, data normalization, and evidence. They belong to one named product area.
 
 A shared component may depend only on another shared component. A private module may compose shared components. One section's private module must not become another section's dependency; extract the shared visual rule instead.
 
-During the current migration, a private file may still live in `resources/views/components`. Register it under exactly one owner in `StudioCatalog::privateComponents()` until it is moved beside that section. Do not add it to Studio unless it independently satisfies the shared-component test below.
+During the current migration, a private file may still live in `resources/views/components`. Register it under exactly one owner in `ViewComponentInventory::PRIVATE_BY_OWNER` until it is moved beside that section. Reclassify it as shared only when it independently satisfies the shared-component test below.
 
 ## When a component is shared
 
@@ -29,7 +27,7 @@ It must also satisfy all of these:
 
 - Its API describes product semantics rather than one section's incidental markup.
 - It does not expose section-specific state names.
-- It has a useful, bounded Studio demo.
+- Its important behavior or markup has focused test coverage through a real consumer or a bounded fixture.
 - It is the single canonical treatment for its role.
 
 Similar section layouts do not justify a large component with many conditional props. Share stable geometry through slots and keep domain-specific content private.
@@ -76,19 +74,19 @@ Similar section layouts do not justify a large component with many conditional p
 
 ## Compound families
 
-Some public files have no useful standalone state. They share one Studio page with the parent that gives them meaning:
+Some shared files have no useful standalone state. Treat them as compound families with the parent that gives them meaning:
 
-- `filter-tabs` demonstrates `filter-tab`.
-- `inspector-definition-list` demonstrates `inspector-definition-row`.
-- `inspector-facts` demonstrates `inspector-fact`.
+- `filter-tabs` owns `filter-tab`.
+- `inspector-definition-list` owns `inspector-definition-row`.
+- `inspector-facts` owns `inspector-fact`.
 
-Keep both files in the catalog family's `members` list so architecture checks still enforce their public dependency boundary. Do not create a second gallery page merely to increase the component count.
+Keep both files in the shared inventory and document the family together. Architecture checks must enforce the same dependency boundary for each file.
 
 ## Private section modules
 
 HTTP Client, Cache, Mail, Notifications, Models, Events, Authorization, Queries, Logs, Livewire, and toolbar chrome own product-specific modules. Their complete workspaces, row renderers, data panels, state coordinators, and tab definitions are integration surfaces, not design-system components.
 
-Keep those modules out of normal Studio navigation. Verify them in realistic populated product sections. A private module may use a small demo fixture in a focused test, but it must not gain a public Studio page solely because it is a Blade component.
+Verify those modules in realistic populated product sections. A private module may use a small fixture in a focused test, but that does not make it a shared component.
 
 Private modules should contain only domain decisions:
 
@@ -114,11 +112,11 @@ In one change:
 
 1. Decide whether the work belongs to a shared component or a private section module.
 2. Reuse or edit the canonical shared component when its semantics match.
-3. If a new shared component is warranted, add it to the explicit `StudioCatalog` allowlist, one focused demo, and this reference.
-4. If it is an inseparable child, add it to the parent's compound `members` rather than creating a weak standalone page.
-5. Keep private modules beside their owning section and out of Studio.
+3. If a new shared component is warranted, add it to `ViewComponentInventory::SHARED`, this reference, and focused coverage.
+4. If it is an inseparable child, document it with its compound family while keeping its filename in the shared inventory.
+5. Keep private modules assigned to exactly one owning product area.
 6. Migrate every intended consumer and delete the superseded implementation in the same vertical slice. Do not leave old and new treatments in parallel.
 7. Extend architecture and focused behavior tests.
-8. Inspect the shared component in Studio and the real section at desktop and mobile widths in both themes.
+8. Inspect every affected real consumer at desktop and mobile widths in both themes.
 
-The architecture test must prove that every Blade component is either public or owned by exactly one private product area, every catalog family has exactly one demo, public components never depend on private modules, and private components never depend on another area's modules. It must not assert that every Blade file is public.
+The architecture test must prove that every Blade component is either shared or owned by exactly one private product area, every component remains reachable from a runtime view, shared components never depend on private modules, and private components never depend on another area's modules. It must not assert that every Blade file is shared.
