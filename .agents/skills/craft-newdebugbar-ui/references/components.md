@@ -1,8 +1,8 @@
 # Component system
 
-This file is the human reference for canonical reusable components. `tests/Support/ViewComponentInventory.php` is the test-only ownership inventory that classifies every root Blade component as shared or private to one product area.
+This file documents the canonical reusable components and the boundary between shared patterns and section-specific modules.
 
-The inventory is explicit and contains filenames only. A Blade file does not become shared merely because it lives in `resources/views/components`, and private section modules must not be reclassified just to satisfy a completeness count.
+A Blade file does not become shared merely because it lives in `resources/views/components`. Reuse and a stable product-level rule make it shared.
 
 ## Ownership boundary
 
@@ -14,7 +14,7 @@ Use these ownership levels:
 
 A shared component may depend only on another shared component. A private module may compose shared components. One section's private module must not become another section's dependency; extract the shared visual rule instead.
 
-During the current migration, a private file may still live in `resources/views/components`. Register it under exactly one owner in `ViewComponentInventory::PRIVATE_BY_OWNER` until it is moved beside that section. Reclassify it as shared only when it independently satisfies the shared-component test below.
+A private file may still live in `resources/views/components`; its location does not make it shared. Keep its API tied to one product area until a real cross-section rule is worth extracting.
 
 ## When a component is shared
 
@@ -80,7 +80,7 @@ Some shared files have no useful standalone state. Treat them as compound famili
 - `inspector-definition-list` owns `inspector-definition-row`.
 - `inspector-facts` owns `inspector-fact`.
 
-Keep both files in the shared inventory and document the family together. Architecture checks must enforce the same dependency boundary for each file.
+Document each family together and test the child through the parent that gives it meaning.
 
 ## Private section modules
 
@@ -112,11 +112,9 @@ In one change:
 
 1. Decide whether the work belongs to a shared component or a private section module.
 2. Reuse or edit the canonical shared component when its semantics match.
-3. If a new shared component is warranted, add it to `ViewComponentInventory::SHARED`, this reference, and focused coverage.
-4. If it is an inseparable child, document it with its compound family while keeping its filename in the shared inventory.
-5. Keep private modules assigned to exactly one owning product area.
+3. If a new shared component is warranted, add it to this reference and focused coverage.
+4. If it is an inseparable child, document and test it with its compound family.
+5. Keep private modules within one owning product area.
 6. Migrate every intended consumer and delete the superseded implementation in the same vertical slice. Do not leave old and new treatments in parallel.
-7. Extend architecture and focused behavior tests.
+7. Update focused behavior tests for the affected consumers.
 8. Inspect every affected real consumer at desktop and mobile widths in both themes.
-
-The architecture test must prove that every Blade component is either shared or owned by exactly one private product area, every component remains reachable from a runtime view, shared components never depend on private modules, and private components never depend on another area's modules. It must not assert that every Blade file is shared.

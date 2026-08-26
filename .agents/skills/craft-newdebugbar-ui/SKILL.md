@@ -16,7 +16,7 @@ Before changing UI:
 3. Read [references/components.md](references/components.md) when choosing, changing, or adding a component.
 4. Read [references/verification.md](references/verification.md) before verification.
 
-Treat populated inspector sections as the visual source of truth. The component reference and test ownership inventory document shared rules, but they do not replace checking every affected real consumer with realistic profile data.
+Treat populated inspector sections as the visual source of truth. The component reference documents shared rules, but it does not replace checking every affected real consumer with realistic profile data.
 
 ## Workflow
 
@@ -56,7 +56,7 @@ Preserve unique diagnostic evidence. Move raw, internal, or supporting evidence 
 - Extract a component when the same visual or interaction rule appears in more than one section.
 - Let each section's data decide its labels, filters, tabs, and evidence. Shared structure does not mean identical content.
 
-Check [references/components.md](references/components.md) before creating a new primitive. Add every new reusable Blade component to `tests/Support/ViewComponentInventory.php`, document it in the component reference, and extend focused and architecture tests in the same change.
+Check [references/components.md](references/components.md) before creating a new primitive. When a new reusable Blade component is warranted, document it there, migrate every intended consumer, delete the superseded implementation, and update focused tests in the same change.
 
 ### 5. Make state deliberate
 

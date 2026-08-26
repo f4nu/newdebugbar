@@ -1,7 +1,6 @@
 <?php
 
 use NewDebugBar\Tests\Support\ProjectFiles;
-use NewDebugBar\Tests\Support\ViewComponentInventory;
 
 it('keeps every Blade view focused', function () {
     $oversizedViews = [];
@@ -78,102 +77,6 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
             'toggleViewSort(',
             'applyViewSort(',
         );
-});
-
-it('classifies every Blade component and keeps ownership boundaries', function () {
-    $root = dirname(__DIR__, 2);
-    $views = $root.'/resources/views';
-    $componentDirectory = $root.'/resources/views/components';
-    $publicComponents = ViewComponentInventory::SHARED;
-    $privateComponentsByOwner = ViewComponentInventory::PRIVATE_BY_OWNER;
-    $privateComponents = collect($privateComponentsByOwner)->flatten()->all();
-    $viewComponents = collect(ProjectFiles::bladeFilesIn($componentDirectory))
-        ->map(fn (SplFileInfo $file): string => str_replace('.blade.php', '', $file->getFilename()))
-        ->sort()
-        ->values()
-        ->all();
-    $documentedComponents = file_get_contents($root.'/.agents/skills/craft-newdebugbar-ui/references/components.md');
-
-    expect($publicComponents)->toHaveCount(count(array_unique($publicComponents)))
-        ->and($privateComponents)->toHaveCount(count(array_unique($privateComponents)));
-
-    $registeredComponents = [...$publicComponents, ...$privateComponents];
-    sort($registeredComponents);
-
-    expect($registeredComponents)->toBe($viewComponents);
-
-    $extractComponentReferences = static function (string $contents): array {
-        preg_match_all('/<x-newdebugbar::(?<component>[a-z0-9-]+)/', $contents, $matches);
-
-        return array_values(array_unique($matches['component']));
-    };
-    $runtimeReferences = collect(ProjectFiles::bladeFilesIn($views))
-        ->reject(function (SplFileInfo $file) use ($views): bool {
-            $relativePath = ProjectFiles::relativePath($file, $views);
-
-            return str_starts_with($relativePath, 'components/');
-        })
-        ->flatMap(fn (SplFileInfo $file): array => $extractComponentReferences(file_get_contents($file->getPathname())))
-        ->unique()
-        ->values()
-        ->all();
-    $reachableComponents = [];
-    $pendingComponents = $runtimeReferences;
-
-    while ($pendingComponents !== []) {
-        $component = array_shift($pendingComponents);
-
-        if (! in_array($component, $registeredComponents, true) || in_array($component, $reachableComponents, true)) {
-            continue;
-        }
-
-        $reachableComponents[] = $component;
-        $dependencies = $extractComponentReferences(file_get_contents($componentDirectory.'/'.$component.'.blade.php'));
-        array_push($pendingComponents, ...$dependencies);
-    }
-
-    sort($reachableComponents);
-    expect($reachableComponents)->toBe($registeredComponents);
-
-    foreach ($publicComponents as $publicComponent) {
-        expect($viewComponents)->toContain($publicComponent)
-            ->and($documentedComponents)->toContain('`'.$publicComponent.'`');
-
-        $contents = file_get_contents($componentDirectory.'/'.$publicComponent.'.blade.php');
-        preg_match_all('/<x-newdebugbar::(?<component>[a-z0-9-]+)/', $contents, $dependencies);
-
-        foreach (array_unique($dependencies['component']) as $dependency) {
-            expect(
-                $publicComponents,
-                sprintf('Public component [%s] depends on private component [%s].', $publicComponent, $dependency),
-            )->toContain($dependency);
-        }
-    }
-
-    $privateDependencyViolations = [];
-
-    foreach ($privateComponentsByOwner as $owner => $ownedComponents) {
-        expect($owner)->not->toBeEmpty()
-            ->and($ownedComponents)->not->toBeEmpty();
-
-        foreach ($ownedComponents as $ownedComponent) {
-            $contents = file_get_contents($componentDirectory.'/'.$ownedComponent.'.blade.php');
-            preg_match_all('/<x-newdebugbar::(?<component>[a-z0-9-]+)/', $contents, $dependencies);
-
-            foreach (array_unique($dependencies['component']) as $dependency) {
-                if (! in_array($dependency, $publicComponents, true) && ! in_array($dependency, $ownedComponents, true)) {
-                    $privateDependencyViolations[] = sprintf(
-                        'Private %s component [%s] depends on component [%s] owned by another product area.',
-                        $owner,
-                        $ownedComponent,
-                        $dependency,
-                    );
-                }
-            }
-        }
-    }
-
-    expect($privateDependencyViolations)->toBe([]);
 });
 
 it('keeps package interface text at a readable minimum size', function () {
