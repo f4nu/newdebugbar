@@ -46,43 +46,81 @@
         </div>
     @endif
 
-    <ol class="ndb:m-0 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:border-t ndb:border-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
-        @foreach ($item['fields'] as $field)
-            @php
-                $rules = (array) ($item['rules'][$field] ?? []);
-                $messages = (array) ($item['messages'][$field] ?? []);
-            @endphp
-            <li class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:px-4 ndb:py-3 ndb:sm:grid-cols-[minmax(8rem,0.7fr)_minmax(0,2fr)] ndb:sm:gap-4">
-                <div class="ndb:min-w-0">
-                    <code class="ndb:block ndb:break-words ndb:text-xs ndb:font-bold">{{ $field }}</code>
-                    @if ($rules !== [])
-                        <div
-                            data-ndb-validation-rules="{{ $field }}"
-                            class="ndb:mt-1.5 ndb:flex ndb:flex-wrap ndb:gap-1"
-                        >
-                            @foreach ($rules as $rule)
-                                <code class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300">{{ $rule }}</code>
-                            @endforeach
-                        </div>
-                    @endif
+    <div
+        role="table"
+        aria-label="{{ $failureLabel }}"
+        data-ndb-validation-table
+        class="ndb:border-t ndb:border-zinc-200/90 ndb:dark:border-zinc-800"
+    >
+        <div
+            role="row"
+            data-ndb-validation-table-header
+            class="ndb:hidden ndb:grid-cols-[minmax(8rem,0.8fr)_minmax(14rem,2fr)_minmax(9rem,1fr)] ndb:gap-4 ndb:border-b ndb:border-zinc-200/90 ndb:bg-zinc-50/75 ndb:px-4 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/55 ndb:sm:grid"
+        >
+            <span role="columnheader" data-ndb-validation-column="field">Field</span>
+            <span role="columnheader" data-ndb-validation-column="message">Message</span>
+            <span role="columnheader" data-ndb-validation-column="rules">Failed rules</span>
+        </div>
+
+        <div role="rowgroup" class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
+            @foreach ($item['fields'] as $field)
+                @php
+                    $rules = (array) ($item['rules'][$field] ?? []);
+                    $messages = (array) ($item['messages'][$field] ?? []);
+                @endphp
+                <div
+                    role="row"
+                    data-ndb-validation-field-row="{{ $field }}"
+                    class="ndb:grid ndb:min-w-0 ndb:gap-3 ndb:px-4 ndb:py-3 ndb:sm:grid-cols-[minmax(8rem,0.8fr)_minmax(14rem,2fr)_minmax(9rem,1fr)] ndb:sm:gap-4"
+                >
+                    <div role="cell" data-ndb-validation-field="{{ $field }}" class="ndb:min-w-0">
+                        <span
+                            data-ndb-validation-mobile-label
+                            class="ndb:mb-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:hidden"
+                        >Field</span>
+                        <code class="ndb:block ndb:break-words ndb:text-xs ndb:font-bold">{{ $field }}</code>
+                    </div>
+
+                    <div role="cell" data-ndb-validation-messages="{{ $field }}" class="ndb:min-w-0">
+                        <span
+                            data-ndb-validation-mobile-label
+                            class="ndb:mb-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:hidden"
+                        >Message</span>
+                        <ul class="ndb:m-0 ndb:list-none ndb:space-y-1 ndb:p-0">
+                            @forelse ($messages as $message)
+                                <li
+                                    data-ndb-validation-message="{{ $field }}"
+                                    class="ndb:text-xs ndb:font-medium ndb:leading-5"
+                                >
+                                    {{ $message }}
+                                </li>
+                            @empty
+                                <li class="ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    No validation message was returned.
+                                </li>
+                            @endforelse
+                        </ul>
+                    </div>
+
+                    <div role="cell" data-ndb-validation-rules="{{ $field }}" class="ndb:min-w-0">
+                        <span
+                            data-ndb-validation-mobile-label
+                            class="ndb:mb-1 ndb:block ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:sm:hidden"
+                        >Failed rules</span>
+                        @if ($rules !== [])
+                            <div class="ndb:flex ndb:flex-wrap ndb:gap-1">
+                                @foreach ($rules as $rule)
+                                    <code class="ndb:rounded-md ndb:bg-zinc-100 ndb:px-1.5 ndb:py-0.5 ndb:font-mono ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:bg-zinc-900 ndb:dark:text-zinc-300">{{ $rule }}</code>
+                                @endforeach
+                            </div>
+                        @else
+                            <span class="ndb:text-[11px] ndb:text-zinc-400">Not captured</span>
+                        @endif
+                    </div>
                 </div>
-                <ul class="ndb:m-0 ndb:list-none ndb:space-y-1 ndb:p-0">
-                    @forelse ($messages as $message)
-                        <li
-                            data-ndb-validation-message="{{ $field }}"
-                            class="ndb:text-xs ndb:font-medium ndb:leading-5"
-                        >
-                            {{ $message }}
-                        </li>
-                    @empty
-                        <li class="ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                            No validation message was returned.
-                        </li>
-                    @endforelse
-                </ul>
-            </li>
-        @endforeach
-    </ol>
+            @endforeach
+        </div>
+    </div>
 
     @if ($fromPreviousRequest)
         <x-newdebugbar::inspector-explanation

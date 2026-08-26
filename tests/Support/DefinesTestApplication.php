@@ -219,7 +219,11 @@ trait DefinesTestApplication
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-livewire-validation', function () {
-            $component = app('livewire')->mount('host-validation-form', key: 'host-validation-form-browser');
+            $component = app('livewire')->mount(
+                'host-validation-form',
+                ['dense' => true],
+                key: 'host-validation-form-browser',
+            );
 
             return response(<<<HTML
                 <!doctype html>

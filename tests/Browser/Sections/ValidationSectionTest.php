@@ -41,20 +41,48 @@ it('shows Livewire validation messages rules and source on desktop and mobile', 
             JS)
         ->click('[data-ndb-select-section="validation"]')
         ->assertVisible('[data-ndb-validation-item="0"]')
-        ->assertVisible('[data-ndb-validation-message="email"]')
+        ->assertVisible('[data-ndb-validation-messages="email"]')
         ->assertVisible('[data-ndb-validation-message="name"]')
         ->assertVisible('[data-ndb-validation-rules="email"]')
+        ->assertVisible('[data-ndb-validation-field-row="traveler.itinerary.days.0.accommodation.confirmation_code"]')
         ->assertVisible('[data-ndb-validation-callsite="0"]')
-        ->assertSee('2 fields failed validation')
+        ->assertSee('13 fields failed validation')
         ->assertSee('Validation 422')
         ->assertSee('Response 200')
         ->assertScript(<<<'JS'
             (() => {
+                const panel = document.querySelector('[data-ndb-section-panel="validation"]');
+                const table = document.querySelector('[data-ndb-validation-table]');
+                const header = table?.querySelector('[data-ndb-validation-table-header]');
+                const headerCells = [...(header?.children ?? [])];
+                const row = table?.querySelector('[data-ndb-validation-field-row="email"]');
+                const rowCells = [...(row?.children ?? [])];
                 const message = document.querySelector('[data-ndb-validation-message="email"]');
                 const source = document.querySelector('[data-ndb-validation-callsite="0"]');
 
-                return message.closest('details') === null
-                    && source.textContent.includes('tests/Fixtures/HostValidationForm.php');
+                if (!panel || !table || !header || !row || !message || !source) return false;
+
+                const headerBoxes = headerCells.map((cell) => cell.getBoundingClientRect());
+                const rowBoxes = rowCells.map((cell) => cell.getBoundingClientRect());
+
+                return table.getAttribute('role') === 'table'
+                    && getComputedStyle(header).display === 'grid'
+                    && headerCells.map((cell) => cell.textContent.trim()).join('|') === 'Field|Message|Failed rules'
+                    && rowCells.length === 3
+                    && rowCells[0].dataset.ndbValidationField === 'email'
+                    && rowCells[1].dataset.ndbValidationMessages === 'email'
+                    && rowCells[2].dataset.ndbValidationRules === 'email'
+                    && headerBoxes.every((box, index) => Math.abs(box.left - rowBoxes[index].left) <= 1)
+                    && rowBoxes[1].width > rowBoxes[0].width
+                    && rowBoxes[1].width > rowBoxes[2].width
+                    && document.querySelectorAll('[data-ndb-validation-field-row]').length === 13
+                    && document.querySelectorAll('[data-ndb-validation-message="email"]').length >= 2
+                    && [...row.querySelectorAll('[data-ndb-validation-mobile-label]')]
+                        .every((label) => getComputedStyle(label).display === 'none')
+                    && message.closest('details') === null
+                    && source.textContent.includes('tests/Fixtures/HostValidationForm.php')
+                    && table.scrollWidth <= table.clientWidth + 1
+                    && panel.scrollWidth <= panel.clientWidth + 1;
             })()
             JS);
 
@@ -73,14 +101,26 @@ it('shows Livewire validation messages rules and source on desktop and mobile', 
             JS)
         ->resize(390, 844)
         ->assertVisible('[data-ndb-validation-item="0"]')
-        ->assertVisible('[data-ndb-validation-message="email"]')
+        ->assertVisible('[data-ndb-validation-messages="email"]')
         ->assertScript(<<<'JS'
             (() => {
                 const panel = document.querySelector('[data-ndb-section-panel="validation"]');
                 const item = document.querySelector('[data-ndb-validation-item="0"]');
+                const table = item.querySelector('[data-ndb-validation-table]');
+                const header = table.querySelector('[data-ndb-validation-table-header]');
+                const row = table.querySelector('[data-ndb-validation-field-row="email"]');
+                const cells = [...row.children];
+                const labels = [...row.querySelectorAll('[data-ndb-validation-mobile-label]')];
 
                 return item.scrollWidth <= item.clientWidth
-                    && panel.scrollWidth <= panel.clientWidth;
+                    && table.scrollWidth <= table.clientWidth + 1
+                    && panel.scrollWidth <= panel.clientWidth
+                    && getComputedStyle(header).display === 'none'
+                    && cells.length === 3
+                    && cells[0].getBoundingClientRect().top < cells[1].getBoundingClientRect().top
+                    && cells[1].getBoundingClientRect().top < cells[2].getBoundingClientRect().top
+                    && labels.map((label) => label.textContent.trim()).join('|') === 'Field|Message|Failed rules'
+                    && labels.every((label) => getComputedStyle(label).display !== 'none');
             })()
             JS)
         ->assertNoJavaScriptErrors();
