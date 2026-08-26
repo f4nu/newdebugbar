@@ -1462,20 +1462,20 @@ test('event controls group, filter, and select useful event evidence', () => {
     { id: 2, source: 'application', name: 'App\\Events\\ClinicReady' },
     { id: 3, source: 'application', name: 'App\\Events\\TripRefreshed' },
   ]);
-  assert.equal(state.eventSource, 'all');
+  assert.equal(state.eventSource, 'application');
   assert.equal(state.eventSelected, 2);
   assert.equal(state.selectedEvent?.id, 2);
   state.eventSelected = 99;
   assert.equal(state.selectedEvent, null);
   state.eventSelected = 2;
   assert.equal(state.eventDetailTab, 'overview');
-  assert.equal(framework.hidden, false);
-  assert.equal(framework.style.display, '');
+  assert.equal(framework.hidden, true);
+  assert.equal(framework.style.display, 'none');
   assert.equal(application.hidden, false);
   assert.equal(laterApplication.hidden, false);
-  assert.equal(state.visibleEventCount, 17);
-  assert.equal(state.visibleEventGroupCount, 3);
-  assert.equal(state.visibleEventSummary, '3 events, 17 dispatches');
+  assert.equal(state.visibleEventCount, 3);
+  assert.equal(state.visibleEventGroupCount, 2);
+  assert.equal(state.visibleEventSummary, '2 events, 3 dispatches');
 
   state.visibleEventCount = 2;
   state.visibleEventGroupCount = 2;
@@ -1542,12 +1542,18 @@ test('event controls group, filter, and select useful event evidence', () => {
   const emptyState = createNewDebugBar(summary, runtime());
   emptyState.initializeEvents(null);
   assert.deepEqual(emptyState.eventGroups, []);
+  assert.equal(emptyState.eventSource, 'all');
   assert.equal(emptyState.eventSelected, null);
 
   emptyState.$nextTick = (callback) => callback();
+  const frameworkOnly = item(4, 'framework', 'illuminate events dispatcher', 1);
+  emptyState.$refs = { eventList: { children: [frameworkOnly] } };
   emptyState.initializeEvents([{ id: 4, source: 'framework', name: 'Illuminate\\Events\\Dispatcher' }]);
-  assert.equal(emptyState.eventSelected, null);
-  assert.equal(emptyState.visibleEventCount, 0);
+  assert.equal(emptyState.eventSource, 'all');
+  assert.equal(emptyState.eventSelected, 4);
+  assert.equal(frameworkOnly.hidden, false);
+  assert.equal(emptyState.visibleEventCount, 1);
+  assert.equal(emptyState.visibleEventGroupCount, 1);
 });
 
 test('log controls combine severity channel and search without losing record counts', () => {

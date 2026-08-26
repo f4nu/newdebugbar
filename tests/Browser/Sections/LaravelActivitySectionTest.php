@@ -26,7 +26,7 @@ it('switches from Cache diagnostics to current Events evidence', function () {
     DebugBarBrowser::waitForDetails($page);
 
     $page
-        ->assertValue('[data-ndb-event-source-control]', 'all')
+        ->assertValue('[data-ndb-event-source-control]', 'application')
         ->assertNoJavaScriptErrors();
 
     DebugBarBrowser::assertSectionSelected($page, 'events');
@@ -44,9 +44,12 @@ it('groups noisy Laravel events around application evidence', function () {
             (() => {
                 const source = document.querySelector('[data-ndb-event-source-control]');
                 const options = Array.from(source.options);
+                const visible = [...document.querySelectorAll('[data-ndb-event-item]:not([hidden])')];
 
                 return options.map((option) => option.value).join('|') === 'all|application|framework'
-                    && source.value === 'all'
+                    && source.value === 'application'
+                    && visible.length > 0
+                    && visible.every((item) => item.dataset.ndbEventSourceValue === 'application')
                     && document.querySelector('[data-ndb-event-sort]') === null
                     && document.querySelector('[data-ndb-event-list]').getAttribute('aria-label') === 'Laravel events';
             })()

@@ -4301,12 +4301,13 @@ export function createNewDebugBar(
 
     initializeEvents(groups) {
       this.eventGroups = Array.isArray(groups) ? groups : [];
-      this.eventSource = 'all';
+      const firstApplicationEvent = this.eventGroups.find((event) => event.source === 'application');
+      this.eventSource = firstApplicationEvent ? 'application' : 'all';
       this.eventSearch = '';
       this.eventDetailOpen = false;
       this.eventDetailTab = 'overview';
       this.eventDetailReturnFocus = null;
-      this.eventSelected = this.eventGroups.find((event) => event.source === 'application')?.id ?? this.eventGroups[0]?.id ?? null;
+      this.eventSelected = firstApplicationEvent?.id ?? this.eventGroups[0]?.id ?? null;
       this.$nextTick?.(() => this.applyEventFilters());
     },
 
