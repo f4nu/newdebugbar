@@ -8,15 +8,9 @@
     $timelineTotal = (int) ($section['payload']['total_item_count'] ?? count($timelineItems));
     $timelineLoaded = count($timelineItems);
     $timelineTicks = [0, 25, 50, 75, 100];
-    $formatMilliseconds = static function (?float $value): ?string {
-        if ($value === null) {
-            return null;
-        }
-
-        $precision = $value > 0 && $value < 1 ? 3 : ($value < 10 ? 1 : 0);
-
-        return number_format($value, $precision).' ms';
-    };
+    $formatMilliseconds = static fn (?float $value): ?string => $value === null
+        ? null
+        : \NewDebugBar\Support\DurationFormatter::format($value);
 @endphp
 
 <div

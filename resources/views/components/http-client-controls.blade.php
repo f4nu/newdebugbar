@@ -30,7 +30,7 @@
         data-ndb-http-client-summary-runtime
         class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
     >
-        {{ number_format((float) ($summary['duration_ms'] ?? 0), 2) }} ms total
+        {{ \NewDebugBar\Support\DurationFormatter::format($summary['duration_ms'] ?? 0) }} total
     </span>
 </p>
 

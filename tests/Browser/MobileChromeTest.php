@@ -32,7 +32,7 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
                     && values.every((value) => value.getBoundingClientRect().width > 0 && value.scrollWidth <= value.clientWidth)
                     && values[0].textContent.trim() !== ''
                     && labels[0].textContent.includes('QRY')
-                    && labels[1].textContent.includes('ms')
+                    && labels[1].textContent.includes('Time')
                     && labels[2].textContent.includes('MB');
             })()
             JS)
@@ -332,7 +332,7 @@ it('keeps the main interactions usable on a phone viewport', function () {
                     && metrics.textContent.includes('Queries')
                     && metrics.textContent.includes('Time')
                     && metrics.textContent.includes('Peak')
-                    && metrics.textContent.includes('ms')
+                    && /(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)/.test(metrics.textContent)
                     && actionsBox.width >= 44
                     && actionsBox.height >= 44
                     && actions.querySelectorAll('svg').length === 1

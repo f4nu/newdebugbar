@@ -19,10 +19,10 @@
     $recordLabel = $repeatCount === 1 ? '#'.$firstSequence : '#'.$firstSequence.'–#'.$lastSequence;
     $requestTimeLabel = $firstAt === null
         ? '—'
-        : '+'.number_format((float) $firstAt, 3).' ms';
+        : '+'.\NewDebugBar\Support\DurationFormatter::format($firstAt);
     $lastRequestTimeLabel = $lastAt === null
         ? '—'
-        : '+'.number_format((float) $lastAt, 3).' ms';
+        : '+'.\NewDebugBar\Support\DurationFormatter::format($lastAt);
     $requestTimeRange = $repeatCount > 1 && $lastAt !== null && $lastAt !== $firstAt
         ? $requestTimeLabel.' to '.$lastRequestTimeLabel
         : $requestTimeLabel;
@@ -172,7 +172,7 @@
                         <li class="ndb:grid ndb:grid-cols-[5rem_minmax(0,1fr)] ndb:gap-3 ndb:py-2 ndb:text-[11px]">
                             <span class="ndb:font-semibold ndb:tabular-nums">#{{ $occurrence['sequence'] }}</span>
                             <span class="ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                {{ $occurrence['at_ms'] === null ? '—' : '+'.number_format((float) $occurrence['at_ms'], 3).' ms' }}
+                                {{ $occurrence['at_ms'] === null ? '—' : '+'.\NewDebugBar\Support\DurationFormatter::format($occurrence['at_ms']) }}
                             </span>
                         </li>
                     @endforeach

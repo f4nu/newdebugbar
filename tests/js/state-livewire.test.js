@@ -357,7 +357,7 @@ test('filters activity and moves between activity and component details', () => 
   assert.equal(state.livewireActivityShowsComponent(activity[0]), false);
   assert.equal(state.livewireActivityShowsComponent(activity[1]), true);
   assert.equal(state.livewireActivityShowsComponent({ ...activity[2], kind: 'poll', title: 'Polled component' }), true);
-  assert.equal(state.livewireDuration(state.selectedLivewireActivity), '8.3 ms');
+  assert.equal(state.livewireDuration(state.selectedLivewireActivity), '8.25 ms');
   assert.equal(state.livewireDuration(activity[2]), 'In progress');
   assert.equal(state.livewireDuration({ status: 'complete', durationMs: null }), '—');
   assert.equal(state.livewireActivityAge(activity[0]), 'Current request');
@@ -1135,10 +1135,10 @@ test('pairs retained initial render evidence with a trace-ready browser mount', 
   assert.equal(state.livewireActivity[0].serverRenderId, 'root-1-server-2');
   assert.equal(state.livewireActivity[0].requestAtMs, 12.345);
   assert.equal(state.livewireActivity[0].initialRenderDurationMs, 2.75);
-  assert.equal(state.livewireActivityTime(state.livewireActivity[0]), '+12.345 ms');
-  assert.equal(state.livewireActivityDuration(state.livewireActivity[0]), 'Render 2.8 ms');
-  assert.equal(state.livewireMountTime(state.livewireActivity[0]), '+12.345 ms');
-  assert.equal(state.livewireInitialRenderDuration(state.livewireActivity[0]), '2.8 ms');
+  assert.equal(state.livewireActivityTime(state.livewireActivity[0]), '+12.35 ms');
+  assert.equal(state.livewireActivityDuration(state.livewireActivity[0]), 'Render 2.75 ms');
+  assert.equal(state.livewireMountTime(state.livewireActivity[0]), '+12.35 ms');
+  assert.equal(state.livewireInitialRenderDuration(state.livewireActivity[0]), '2.75 ms');
   assert.deepEqual(state.livewireActivity[1].serverActivityIds, ['server-only-server-3']);
   assert.deepEqual(state.livewireActivity[1].serverRenderIds, ['server-only-server-4']);
   assert.equal(state.livewireActivity[1].serverRenderDurationMs, 0.75);

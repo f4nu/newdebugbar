@@ -126,7 +126,7 @@ it('suppresses expected infrastructure and tiny repeated queries while keeping u
     expect($findings)->toHaveCount(1)
         ->and($findings[0])->toMatchArray([
             'rule_id' => 'query.repeated',
-            'summary' => '3 identical query executions added 6.0 ms.',
+            'summary' => '3 identical query executions added 6 ms.',
             'action' => ['label' => 'Review grouped queries', 'section' => 'queries', 'filter' => 'repeated'],
         ]);
 });

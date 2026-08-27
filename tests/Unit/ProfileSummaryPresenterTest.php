@@ -52,3 +52,17 @@ it('summarizes redirect destinations', function () use ($summaryProfile) {
 
     expect($summary['activity'])->toBe('Redirected to /work-orders');
 });
+
+it('formats request and query durations for every toolbar placement', function () use ($summaryProfile) {
+    $profile = $summaryProfile('full_page');
+    $profile['metrics']['duration_ms'] = 1_453.51;
+    $profile['sections']['queries']['summary']['total_time_ms'] = 0.19;
+
+    $summary = (new ProfileSummaryPresenter(new Redactor))->present($profile);
+
+    expect($summary)
+        ->duration_ms->toBe(1_453.51)
+        ->duration_label->toBe('1.45 s')
+        ->query_time_ms->toBe(0.19)
+        ->query_time_label->toBe('190 µs');
+});

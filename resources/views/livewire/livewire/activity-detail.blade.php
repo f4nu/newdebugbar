@@ -276,7 +276,7 @@
                                     <span
                                         class="ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                         x-text="
-                                            `${Math.max(0, phase.at - selectedLivewireActivity.startedAt).toFixed(1)} ms`
+                                            formatDuration(Math.max(0, phase.at - selectedLivewireActivity.startedAt))
                                         "
                                     ></span>
                                 </li>

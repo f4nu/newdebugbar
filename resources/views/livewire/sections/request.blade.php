@@ -3,7 +3,7 @@
 @php($isHttpRequest = ($profile['profile_type'] ?? 'http') === 'http')
 @php($requestStatus = (int) ($requestPayload['status'] ?? 0))
 @php($requestSucceeded = $requestStatus > 0 && $requestStatus < 400)
-@php($requestDuration = number_format((float) ($profile['metrics']['duration_ms'] ?? 0), 2, '.', ''))
+@php($requestDuration = \NewDebugBar\Support\DurationFormatter::format($profile['metrics']['duration_ms'] ?? 0))
 @php($requestQueryCount = (int) ($profile['sections']['queries']['summary']['total_count'] ?? $profile['sections']['queries']['summary']['count'] ?? 0))
 @php($requestHeaders = is_array($requestPayload['headers'] ?? null) ? $requestPayload['headers'] : [])
 @php($requestInput = is_array($requestPayload['input'] ?? null) ? $requestPayload['input'] : [])
@@ -88,7 +88,7 @@
             <span class="ndb:hidden ndb:h-5 ndb:w-px ndb:shrink-0 ndb:bg-zinc-200 ndb:sm:block ndb:dark:bg-zinc-800"></span>
             <p data-ndb-request-completion class="ndb:min-w-0 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
                 Completed in
-                <span class="ndb:whitespace-nowrap ndb:tabular-nums">{{ $requestDuration }} ms</span>
+                <span class="ndb:whitespace-nowrap ndb:tabular-nums">{{ $requestDuration }}</span>
             </p>
         </div>
 
@@ -197,7 +197,7 @@
                         @foreach ([
                             ['Status', $requestStatus ?: '—'],
                             ['Response size', $formatRequestBytes((int) ($requestPayload['response_size_bytes'] ?? 0))],
-                            ['Duration', $requestDuration.' ms'],
+                            ['Duration', $requestDuration],
                             ['Queries', $requestQueryCount],
                         ] as [$label, $value])
                             <div class="ndb:min-w-0">
@@ -329,7 +329,7 @@
                 ['Type', str($profile['profile_type'] ?? 'runtime')->replace('_', ' ')->title()],
                 ['Name', ($requestPayload['name'] ?? null) ?: $requestPath],
                 ['Status', $requestPayload['exit_code'] ?? $requestPayload['status'] ?? '—'],
-                ['Duration', $requestDuration.' ms'],
+                ['Duration', $requestDuration],
             ] as [$label, $value])
                 <div class="ndb:min-w-0">
                     <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">

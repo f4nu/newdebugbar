@@ -2,6 +2,8 @@
 
 namespace NewDebugBar\Analysis;
 
+use NewDebugBar\Support\DurationFormatter;
+
 /** Turns captured outbound HTTP requests into actionable, copyable evidence. */
 final class HttpClientAnalyzer
 {
@@ -29,7 +31,7 @@ final class HttpClientAnalyzer
             $reason = trim((string) ($request['reason'] ?? ''));
             $method = strtoupper(trim((string) ($request['method'] ?? '')));
             $method = $method === '' ? '—' : $method;
-            $durationLabel = $this->durationLabel($duration);
+            $durationLabel = DurationFormatter::format($duration);
             $redirect = $status !== null && $status >= 300 && $status < 400;
             $redirectLocation = $this->headerValue($request['response']['headers'] ?? null, 'location');
 
@@ -99,19 +101,6 @@ final class HttpClientAnalyzer
         return $failed ? 'Connection failed' : 'No response';
     }
 
-    private function durationLabel(?float $duration): string
-    {
-        if ($duration === null) {
-            return '—';
-        }
-
-        if ($duration === 0.0) {
-            return '<0.01 ms';
-        }
-
-        return $this->number($duration).' ms';
-    }
-
     private function timingSummary(string $durationLabel, bool $slow): string
     {
         if (! $slow) {
@@ -119,9 +108,9 @@ final class HttpClientAnalyzer
         }
 
         return sprintf(
-            '%s, above the %s ms threshold',
+            '%s, above the %s threshold',
             $durationLabel,
-            $this->number($this->slowRequestMs),
+            DurationFormatter::format($this->slowRequestMs),
         );
     }
 
@@ -170,7 +159,7 @@ final class HttpClientAnalyzer
             $statusLabel = trim($status.' '.$reason);
 
             if ($slow && $duration !== null) {
-                return sprintf('%s returned HTTP %s in %s ms.', $host, $statusLabel, $this->number($duration));
+                return sprintf('%s returned HTTP %s in %s.', $host, $statusLabel, DurationFormatter::format($duration));
             }
 
             return sprintf('%s returned HTTP %s.', $host, $statusLabel);
@@ -181,7 +170,7 @@ final class HttpClientAnalyzer
         }
 
         if ($slow) {
-            return sprintf('%s responded in %s ms.', $host, $this->number($duration));
+            return sprintf('%s responded in %s.', $host, DurationFormatter::format($duration));
         }
 
         return sprintf('The request to %s completed.', $host);
@@ -227,7 +216,7 @@ final class HttpClientAnalyzer
         }
 
         if ($slow) {
-            return sprintf('It exceeded the %s ms threshold and added avoidable time to this request.', $this->number($this->slowRequestMs));
+            return sprintf('It exceeded the %s threshold and added avoidable time to this request.', DurationFormatter::format($this->slowRequestMs));
         }
 
         if ($redirect) {

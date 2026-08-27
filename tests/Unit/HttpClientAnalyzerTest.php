@@ -125,8 +125,8 @@ it('keeps successful fast requests quiet', function () {
         ->failed->toBeFalse()
         ->slow->toBeFalse()
         ->attention->toBeFalse()
-        ->duration_label->toBe('<0.01 ms')
-        ->timing_summary->toBe('<0.01 ms')
+        ->duration_label->toBe('0 µs')
+        ->timing_summary->toBe('0 µs')
         ->response_summary->toBe('No response body was returned.')
         ->meaning->toBe('The upstream service completed this request.')
         ->check_next->toBe('No follow-up is needed.');

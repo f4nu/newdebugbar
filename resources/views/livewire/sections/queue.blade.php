@@ -27,13 +27,7 @@
         'failed' => 'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300',
         'waiting' => 'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300',
     ];
-    $formatDuration = static function (float $duration): string {
-        if ($duration === 0.0) {
-            return '0 ms';
-        }
-
-        return number_format($duration, $duration < 1 ? 3 : 2).' ms';
-    };
+    $formatDuration = \NewDebugBar\Support\DurationFormatter::format(...);
     $queueItems = collect($section['payload']['items'] ?? [])->values()->map(function (array $item, int $index) use ($profileId, $statusDescriptions, $statusLabels, $formatDuration): array {
         $fallbackStatus = match ($item['kind'] ?? null) {
             'failed' => 'failed',

@@ -92,7 +92,7 @@
                     x-text="
                         ['sent', 'failed', 'partial'].includes(selectedNotification.status) ||
                         selectedNotification.duration_ms > 0
-                            ? selectedNotification.duration_ms.toFixed(2) + ' ms'
+                            ? selectedNotification.duration_label
                             : selectedNotification.delay_seconds > 0
                               ? selectedNotification.delay_seconds + ' s delay'
                               : selectedNotification.status_label

@@ -4,6 +4,7 @@ namespace NewDebugBar\Testing;
 
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Support\DurationFormatter;
 use PHPUnit\Framework\Assert;
 
 /** Fluent test assertions backed by the production profile analyzers. */
@@ -64,7 +65,7 @@ final class ProfileAssertions
         Assert::assertLessThanOrEqual(
             $maximumMs,
             (float) ($this->profile['sections']['queries']['summary']['total_time_ms'] ?? 0),
-            "The total query time exceeded {$maximumMs} ms.",
+            'The total query time exceeded '.DurationFormatter::format($maximumMs).'.',
         );
 
         return $this;
@@ -75,7 +76,7 @@ final class ProfileAssertions
         Assert::assertLessThanOrEqual(
             $maximumMs,
             (float) ($this->profile['metrics']['duration_ms'] ?? 0),
-            "The request duration exceeded {$maximumMs} ms.",
+            'The request duration exceeded '.DurationFormatter::format($maximumMs).'.',
         );
 
         return $this;

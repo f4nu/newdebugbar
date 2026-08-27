@@ -129,6 +129,7 @@
                 'status_label' => $statusLabel,
                 'status_text_class' => $statusTextClass,
                 'duration_ms' => (float) ($item['duration_ms'] ?? 0),
+                'duration_label' => \NewDebugBar\Support\DurationFormatter::format($item['duration_ms'] ?? 0),
                 'mailer' => $mailer,
                 'transport' => $transport,
                 'delivery_label' => $deliveryLabel,
@@ -209,7 +210,7 @@
                                     data-ndb-mail-summary-runtime
                                     class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400"
                                 >
-                                    {{ number_format((float) ($mailSummary['duration_ms'] ?? 0), 2) }} ms total
+                                    {{ \NewDebugBar\Support\DurationFormatter::format($mailSummary['duration_ms'] ?? 0) }} total
                                 </span>
                                 @if (($mailSummary['dropped_count'] ?? 0) > 0)
                                     <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-amber-600 ndb:dark:text-amber-300">
@@ -278,7 +279,7 @@
                                     data-ndb-mail-list-activity
                                     class="ndb:col-start-2 ndb:justify-self-end ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                 >
-                                    {{ number_format($message['duration_ms'], 2) }} ms
+                                    {{ $message['duration_label'] }}
                                 </span>
                             @elseif (($message['delay_seconds'] ?? null) > 0)
                                 <span

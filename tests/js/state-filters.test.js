@@ -1538,7 +1538,7 @@ test('event controls group, filter, and select useful event evidence', () => {
   assert.equal(state.formatEventTime(null), '—');
   assert.equal(state.formatEventTime(''), '—');
   assert.equal(state.formatEventTime('missing'), '—');
-  assert.equal(state.formatEventTime(12.3), '12.30 ms');
+  assert.equal(state.formatEventTime(12.3), '12.3 ms');
 
   state.$refs = {};
   state.applyEventFilters();

@@ -10,29 +10,7 @@
     $queryGroups = collect(is_array($section['payload']['repeated_groups'] ?? null) ? $section['payload']['repeated_groups'] : [])
         ->keyBy('fingerprint');
 
-    $formatDuration = static function (float $duration): string {
-        $duration = max(0, $duration);
-
-        if ($duration >= 1000) {
-            $seconds = rtrim(rtrim(number_format($duration / 1000, 2, '.', ''), '0'), '.');
-
-            return $seconds.' s';
-        }
-
-        if ($duration >= 1) {
-            $milliseconds = rtrim(rtrim(number_format($duration, 2, '.', ''), '0'), '.');
-
-            return $milliseconds.' ms';
-        }
-
-        if ($duration <= 0) {
-            return '0 µs';
-        }
-
-        $microseconds = $duration * 1000;
-
-        return $microseconds < 1 ? '<1 µs' : number_format($microseconds, 0, '.', '').' µs';
-    };
+    $formatDuration = \NewDebugBar\Support\DurationFormatter::format(...);
 
     $enrichQuery = static function (array $query) use ($formatDuration, $queryExplains, $queryExplainErrors): array {
         $execution = max(1, (int) ($query['execution'] ?? 1));
@@ -53,7 +31,7 @@
         $displaySql = $runnableAvailable
             ? (string) $query['runnable_sql']
             : (string) ($query['sql'] ?? '');
-        $duration = round(max(0, (float) ($query['duration_ms'] ?? 0)), 2);
+        $duration = max(0, (float) ($query['duration_ms'] ?? 0));
         unset($query['bindings'], $query['runnable_sql'], $query['bindings_complete']);
 
         return [
@@ -111,7 +89,7 @@
             $slow = collect($executions)->contains(fn (array $execution): bool => (bool) ($execution['slow'] ?? false));
             $count = count($executions);
             $sql = (string) ($group['sql'] ?? $first['normalized_sql'] ?? $first['sql']);
-            $duration = round(max(0, (float) ($group['duration_ms'] ?? 0)), 2);
+            $duration = max(0, (float) ($group['duration_ms'] ?? 0));
 
             $queryRecords[] = [
                 'key' => 'group-'.$fingerprint,
@@ -146,7 +124,7 @@
             'driver' => (string) ($execution['driver'] ?? 'unknown'),
             'query_type' => (string) ($execution['query_type'] ?? 'write'),
             'duration_ms' => (float) ($execution['duration_ms'] ?? 0),
-            'duration_label' => (string) ($execution['duration_label'] ?? '0 µs'),
+            'duration_label' => (string) ($execution['duration_label'] ?? $formatDuration($execution['duration_ms'] ?? 0)),
             'query_time_percent' => (float) ($execution['query_time_percent'] ?? 0),
             'count' => 1,
             'repeated' => false,

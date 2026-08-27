@@ -51,7 +51,7 @@
             </span>
         </p>
         <p class="ndb:mt-0.5 ndb:text-[11px] ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
-            {{ number_format($duration, $duration < 1 ? 3 : 2) }} ms total
+            {{ \NewDebugBar\Support\DurationFormatter::format($duration) }} total
         </p>
     </div>
     @if ($reads > 0)

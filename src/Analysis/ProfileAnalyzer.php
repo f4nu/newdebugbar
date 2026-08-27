@@ -2,6 +2,8 @@
 
 namespace NewDebugBar\Analysis;
 
+use NewDebugBar\Support\DurationFormatter;
+
 /** Produces bounded, deterministic findings from one captured profile. */
 final class ProfileAnalyzer
 {
@@ -153,11 +155,11 @@ final class ProfileAnalyzer
                 'warning',
                 'timeline',
                 is_string($runtimeType)
-                    ? sprintf('The runtime operation took %s ms.', $this->number($requestDuration))
-                    : sprintf('The request took %s ms.', $this->number($requestDuration)),
+                    ? sprintf('The runtime operation took %s.', DurationFormatter::format($requestDuration))
+                    : sprintf('The request took %s.', DurationFormatter::format($requestDuration)),
                 ['duration_ms' => $requestDuration, 'threshold_ms' => $this->slowRequestMs],
                 [
-                    'why' => sprintf('This is above the configured %s ms threshold.', $this->number($this->slowRequestMs)),
+                    'why' => sprintf('This is above the configured %s threshold.', DurationFormatter::format($this->slowRequestMs)),
                     'next' => 'Inspect Timeline to find where the request spent time.',
                     'action' => ['label' => 'Review request timing', 'section' => 'timeline'],
                 ],
@@ -176,7 +178,7 @@ final class ProfileAnalyzer
                 'query.slow',
                 'warning',
                 'queries',
-                sprintf('%d %s exceeded the %s ms query threshold.', count($slowQueries), str('query')->plural(count($slowQueries)), $this->number($this->queries->slowThreshold())),
+                sprintf('%d %s exceeded the %s query threshold.', count($slowQueries), str('query')->plural(count($slowQueries)), DurationFormatter::format($this->queries->slowThreshold())),
                 [
                     'count' => count($slowQueries),
                     'threshold_ms' => $this->queries->slowThreshold(),
@@ -186,7 +188,7 @@ final class ProfileAnalyzer
                     )),
                 ],
                 [
-                    'why' => sprintf('The slowest query took %s ms.', $this->number((float) ($slowest['duration_ms'] ?? 0))),
+                    'why' => sprintf('The slowest query took %s.', DurationFormatter::format($slowest['duration_ms'] ?? 0)),
                     'location' => $slowest['callsite'] ?? null,
                     'next' => 'Review the SQL, bindings, call site, and database plan.',
                     'action' => ['label' => 'Review slow queries', 'section' => 'queries', 'filter' => 'slow'],
@@ -231,7 +233,7 @@ final class ProfileAnalyzer
                 'query.repeated',
                 'warning',
                 'queries',
-                sprintf('%d identical query executions added %s ms.', $group['count'], $this->number((float) $group['duration_ms'])),
+                sprintf('%d identical query executions added %s.', $group['count'], DurationFormatter::format($group['duration_ms'])),
                 [
                     'fingerprint' => $group['fingerprint'],
                     'count' => $group['count'],
@@ -348,10 +350,5 @@ final class ProfileAnalyzer
         $short = class_basename($class);
 
         return is_string($method) && $method !== '' ? $short.'@'.$method : $short;
-    }
-
-    private function number(float $value): string
-    {
-        return number_format($value, $value < 10 ? 1 : 0, '.', '');
     }
 }

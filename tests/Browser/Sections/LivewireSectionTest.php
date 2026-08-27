@@ -38,7 +38,7 @@ it('uses the shared edge-to-edge workspace and renders only the active Livewire 
                     && items.every((item) => item.hasAttribute('data-ndb-livewire-activity-timeline-item'))
                     && mountButtons.length > 0
                     && ! buttons.some((button) => button.dataset.ndbLivewireActivityKind === 'render')
-                    && mountButtons.every((button) => /^\+\d+\.\d{3} ms$/.test(
+                    && mountButtons.every((button) => /^\+(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)$/.test(
                         button.querySelector('[data-ndb-livewire-activity-time]').textContent.trim(),
                     ))
                     && mountButtons.every((button) => /^Render \d/.test(
@@ -64,9 +64,8 @@ it('uses the shared edge-to-edge workspace and renders only the active Livewire 
                 const mountedAt = document.querySelector('[data-ndb-livewire-mount-time]').textContent.trim();
                 const initialRender = document.querySelector('[data-ndb-livewire-initial-render-duration]').textContent.trim();
 
-                return /^\+\d+\.\d{3} ms$/.test(mountedAt)
-                    && /^\d/.test(initialRender)
-                    && initialRender.endsWith(' ms');
+                return /^\+(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)$/.test(mountedAt)
+                    && /^(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)$/.test(initialRender);
             })()
             JS)
         ->assertNoJavaScriptErrors();

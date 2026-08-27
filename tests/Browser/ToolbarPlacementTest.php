@@ -42,6 +42,15 @@ it('opens the inspector from the active toolbar anchor', function () {
         ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-ndb-placement', 'bottom')
         ->assertScript(<<<'JS'
             (() => {
+                const fact = document.querySelector('[data-ndb-header-fact="duration"]');
+                const value = Array.from(fact.querySelectorAll('[x-text]')).at(-1)?.textContent.trim();
+                window.__ndbBottomDuration = value;
+
+                return /^(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)$/.test(value ?? '');
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
                 const box = panel.getBoundingClientRect();
                 const styles = getComputedStyle(panel);
@@ -91,6 +100,15 @@ it('opens the inspector from the active toolbar anchor', function () {
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertVisible('[role="dialog"][aria-label="Request inspector"]')
         ->assertAttribute('[role="dialog"][aria-label="Request inspector"]', 'data-ndb-placement', 'top')
+        ->assertScript(<<<'JS'
+            (() => {
+                const fact = document.querySelector('[data-ndb-header-fact="duration"]');
+                const value = Array.from(fact.querySelectorAll('[x-text]')).at(-1)?.textContent.trim();
+
+                return value === window.__ndbBottomDuration
+                    && /^(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)$/.test(value ?? '');
+            })()
+            JS)
         ->assertScript(<<<'JS'
             (() => {
                 const panel = document.querySelector('[role="dialog"][aria-label="Request inspector"]');

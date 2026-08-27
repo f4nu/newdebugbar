@@ -1,12 +1,6 @@
 {{-- Presents direct Redis commands in the shared inspector workspace. --}}
 @php
-    $formatDuration = static function (float $duration): string {
-        if ($duration === 0.0) {
-            return '0 ms';
-        }
-
-        return number_format($duration, $duration < 1 ? 3 : 2).' ms';
-    };
+    $formatDuration = \NewDebugBar\Support\DurationFormatter::format(...);
     $redisItems = collect($section['payload']['items'] ?? [])->values()->map(function (array $item, int $index) use ($formatDuration): array {
         $failed = (bool) ($item['failed'] ?? false);
         $command = strtoupper((string) ($item['command'] ?? 'COMMAND'));

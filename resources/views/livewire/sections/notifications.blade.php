@@ -139,6 +139,7 @@
                         'status' => $status,
                         'status_label' => $statusLabel,
                         'duration_ms' => (float) ($attempt['duration_ms'] ?? 0),
+                        'duration_label' => \NewDebugBar\Support\DurationFormatter::format($attempt['duration_ms'] ?? 0),
                         'connection' => is_string($attempt['connection'] ?? null) ? $attempt['connection'] : null,
                         'queue' => is_string($attempt['queue'] ?? null) ? $attempt['queue'] : null,
                         'job_id' => is_scalar($attempt['job_id'] ?? null) ? (string) $attempt['job_id'] : null,
@@ -238,6 +239,7 @@
                 ? $first['queue_name']
                 : (is_string($first['queue'] ?? null) ? $first['queue'] : null);
             $queueable = (bool) ($first['queueable'] ?? false) || $queueConnection !== null;
+            $duration = (float) collect($deliveries)->sum('duration_ms');
 
             return [
                 'execution' => $groupIndex + 1,
@@ -249,7 +251,8 @@
                 'status_label' => $statusLabel,
                 'sent_count' => $sentCount,
                 'failed_count' => $failedCount,
-                'duration_ms' => (float) collect($deliveries)->sum('duration_ms'),
+                'duration_ms' => $duration,
+                'duration_label' => \NewDebugBar\Support\DurationFormatter::format($duration),
                 'delivery_count' => count($deliveries),
                 'deliveries' => $deliveries,
                 'channels' => $channels,
@@ -340,7 +343,7 @@
                                     data-ndb-notification-summary-runtime
                                     class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400"
                                 >
-                                    {{ number_format((float) ($notificationSummary['duration_ms'] ?? 0), 2) }} ms total
+                                    {{ \NewDebugBar\Support\DurationFormatter::format($notificationSummary['duration_ms'] ?? 0) }} total
                                 </span>
                             </p>
                         </x-slot:leading>
@@ -411,7 +414,7 @@
                                 class="ndb:col-start-2 ndb:justify-self-end ndb:text-right ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
                             >
                                 @if ($notification['duration_ms'] > 0 || in_array($notification['status'], ['sent', 'failed', 'partial'], true))
-                                    {{ number_format($notification['duration_ms'], 2) }} ms
+                                    {{ $notification['duration_label'] }}
                                 @elseif (($notification['delay_seconds'] ?? null) > 0)
                                     {{ $notification['delay_seconds'] }} s delay
                                 @else

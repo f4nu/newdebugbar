@@ -2,6 +2,8 @@
 
 namespace NewDebugBar\Analysis;
 
+use NewDebugBar\Support\DurationFormatter;
+
 /** Turns captured cache events into a compact diagnostic model. */
 final class CacheAnalyzer
 {
@@ -106,7 +108,7 @@ final class CacheAnalyzer
                 'key_label' => $keyLabel,
                 'store_label' => $storeLabel,
                 'driver_label' => $driverLabel,
-                'duration_label' => $this->durationLabel($item['duration_ms'] ?? null),
+                'duration_label' => DurationFormatter::format($item['duration_ms'] ?? null),
                 'source_label' => $sourceLabel,
                 'source_short_label' => $this->shortSourceLabel($item['callsite'] ?? null),
                 'has_value' => array_key_exists('value', $item),
@@ -219,19 +221,6 @@ final class CacheAnalyzer
         $hash = $this->stringOrNull($item['key_hash'] ?? null);
 
         return $hash === null ? 'No key' : 'Protected key '.$hash;
-    }
-
-    private function durationLabel(mixed $duration): string
-    {
-        if (! is_numeric($duration)) {
-            return '—';
-        }
-
-        $duration = max(0.0, (float) $duration);
-
-        return $duration < 1
-            ? number_format($duration, 3, '.', '').' ms'
-            : number_format($duration, 2, '.', '').' ms';
     }
 
     private function sourceLabel(mixed $callsite): string

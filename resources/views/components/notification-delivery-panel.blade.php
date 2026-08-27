@@ -86,7 +86,7 @@
                         class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-400"
                         x-text="
                             ['sent', 'failed'].includes(delivery.status) || delivery.duration_ms > 0
-                                ? delivery.duration_ms.toFixed(2) + ' ms'
+                                ? delivery.duration_label
                                 : delivery.delay_seconds > 0
                                   ? delivery.delay_seconds + ' s delay'
                                   : delivery.status_label

@@ -76,7 +76,7 @@
                     class="ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:tabular-nums"
                     x-text="
                         selectedMailMessage.status === 'sent'
-                            ? selectedMailMessage.duration_ms.toFixed(2) + ' ms'
+                            ? selectedMailMessage.duration_label
                             : selectedMailMessage.delay_seconds > 0
                               ? selectedMailMessage.delay_seconds + ' s delay'
                               : selectedMailMessage.status_label

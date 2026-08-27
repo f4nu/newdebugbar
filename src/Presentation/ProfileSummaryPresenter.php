@@ -3,6 +3,7 @@
 namespace NewDebugBar\Presentation;
 
 use Carbon\CarbonImmutable;
+use NewDebugBar\Support\DurationFormatter;
 use NewDebugBar\Support\Redactor;
 
 /** Produces one stable request summary for the UI and MCP. */
@@ -21,6 +22,8 @@ final class ProfileSummaryPresenter
         $exitCode = $request['summary']['exit_code'] ?? null;
         $cacheReads = (int) ($cache['hits'] ?? 0) + (int) ($cache['misses'] ?? 0);
         $requestType = $this->requestType($request);
+        $duration = $profile['metrics']['duration_ms'] ?? 0;
+        $queryTime = $queries['total_time_ms'] ?? $queries['duration_ms'] ?? 0;
 
         /** @var array<string, mixed> $summary */
         $summary = $this->redactor->clean([
@@ -42,10 +45,12 @@ final class ProfileSummaryPresenter
             'status' => $status,
             'status_meaning' => $this->statusMeaning($status),
             'response_size' => $this->formatBytes($request['payload']['response_size_bytes'] ?? null),
-            'duration_ms' => $profile['metrics']['duration_ms'] ?? 0,
+            'duration_ms' => $duration,
+            'duration_label' => DurationFormatter::format($duration),
             'peak_memory_mb' => $profile['metrics']['peak_memory_mb'] ?? 0,
             'query_count' => $queries['total_count'] ?? $queries['count'] ?? 0,
-            'query_time_ms' => $queries['total_time_ms'] ?? $queries['duration_ms'] ?? 0,
+            'query_time_ms' => $queryTime,
+            'query_time_label' => DurationFormatter::format($queryTime),
             'repeated_pattern_count' => $queries['repeated_pattern_count'] ?? 0,
             'slow_query_count' => $queries['slow_count'] ?? 0,
             'cache_hits' => $cache['hits'] ?? 0,

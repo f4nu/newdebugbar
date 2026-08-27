@@ -17,7 +17,7 @@ final class ListDebugProfiles extends DebugTool
 {
     private const DEFAULT_LIMIT = 10;
 
-    protected const DESCRIPTION = 'List recent debug profile summaries. Prefer an exact X-NewDebugBar-Profile ID; otherwise match the request method, path, status, kind, and recorded time.';
+    protected const DESCRIPTION = 'List recent debug profile summaries with raw millisecond values and adaptive duration labels. Prefer an exact X-NewDebugBar-Profile ID; otherwise match the request method, path, status, kind, and recorded time.';
 
     public function __construct(
         private readonly McpProfilePresenter $profiles,

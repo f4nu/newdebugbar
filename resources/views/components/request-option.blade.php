@@ -27,7 +27,7 @@
         ></span>
         <span class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-x-2 ndb:gap-y-0.5 ndb:text-[11px] ndb:font-medium ndb:text-zinc-400">
             <span x-text="requestTypeLabel(request.request_type)"></span>
-            <span class="ndb:tabular-nums" x-text="request.duration_ms + ' ms'"></span>
+            <span class="ndb:tabular-nums" x-text="request.duration_label"></span>
             <span
                 class="ndb:tabular-nums"
                 x-text="request.query_count + (request.query_count === 1 ? ' query' : ' queries')"

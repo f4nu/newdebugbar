@@ -149,7 +149,7 @@
                             >Duration</span
                         ><span
                             class="ndb:block ndb:whitespace-nowrap ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                            x-text="summary.duration_ms + ' ms'"
+                            x-text="summary.duration_label"
                         ></span
                     ></span>
                 </x-newdebugbar::toolbar-button>
@@ -193,7 +193,7 @@
                             ><span
                                 data-ndb-header-query-duration
                                 class="ndb:hidden ndb:font-medium ndb:text-zinc-400 ndb:lg:inline"
-                                x-text="summary.query_time_ms + ' ms'"
+                                x-text="summary.query_time_label"
                             ></span></span
                     ></span>
                 </x-newdebugbar::toolbar-button>

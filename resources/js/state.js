@@ -1,3 +1,5 @@
+import { formatDuration } from './duration.js';
+
 const STORAGE_KEY = 'newdebugbar.preferences.v1';
 const DEFAULT_SECTION = 'request';
 const PROFILE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -319,6 +321,7 @@ export function createNewDebugBar(
   });
 
   return {
+    formatDuration,
     barVisible: true,
     inspectorOpen: false,
     inspectorReturnFocus: null,
@@ -2530,7 +2533,7 @@ export function createNewDebugBar(
     livewireDuration(item) {
       if (item?.durationMs === null || item?.durationMs === undefined)
         return item?.status === 'updating' ? 'In progress' : '—';
-      return `${Number(item.durationMs).toFixed(item.durationMs < 10 ? 1 : 0)} ms`;
+      return formatDuration(item.durationMs);
     },
 
     livewireInitialRenderDuration(item) {
@@ -2549,7 +2552,7 @@ export function createNewDebugBar(
       const at = Number(item?.requestAtMs);
       if (!Number.isFinite(at)) return 'Not captured';
 
-      return `+${at.toFixed(3)} ms`;
+      return `+${formatDuration(at)}`;
     },
 
     livewireActivityTime(item) {
@@ -4398,9 +4401,7 @@ export function createNewDebugBar(
     },
 
     formatEventTime(value) {
-      if (value === null || value === '' || !Number.isFinite(Number(value))) return '—';
-
-      return `${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ms`;
+      return formatDuration(value);
     },
 
     initializeLogs() {

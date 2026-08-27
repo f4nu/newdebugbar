@@ -8,7 +8,7 @@
     $firstAt = $entry['first_at_ms'] ?? $entry['at_ms'] ?? null;
     $requestTimeLabel = $firstAt === null
         ? '—'
-        : '+'.number_format((float) $firstAt, 3).' ms';
+        : '+'.\NewDebugBar\Support\DurationFormatter::format($firstAt);
     $channelLabel = (string) ($entry['channel_label'] ?? 'No channel');
     $severityClasses = match ($level) {
         'info' => 'ndb:text-blue-700 ndb:dark:text-blue-300',

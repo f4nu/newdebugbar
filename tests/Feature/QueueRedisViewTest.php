@@ -77,7 +77,7 @@ it('normalizes queue lifecycle and related worker evidence for one active detail
         ->status_group->toBe('completed')
         ->related_profile_id->toBe($workerId)
         ->related_section->toBe('mail')
-        ->at_label->toBe('12.50 ms')
+        ->at_label->toBe('12.5 ms')
         ->display_channels->toBe([])
         ->attempts->toHaveCount(1)
         ->and($items[1])

@@ -13,6 +13,7 @@ use NewDebugBar\Presentation\McpProfilePresenter;
 use NewDebugBar\Presentation\ProfilePresenter;
 use NewDebugBar\Storage\BackgroundActivityStore;
 use NewDebugBar\Storage\ProfileStore;
+use NewDebugBar\Support\DurationFormatter;
 use NewDebugBar\Tests\Fixtures\Models\Client;
 use NewDebugBar\Tests\Fixtures\Models\JobActivity;
 use NewDebugBar\Tests\Support\McpResponse;
@@ -77,7 +78,9 @@ it('registers one local read only server with five schema backed tools', functio
         ->and($serverDefaults['instructions'])
         ->toContain('/sections/models/payload/model_groups', 'identifiers', 'changed attributes', 'related queries')
         ->and(app(InspectDebugQueries::class)->description())
-        ->toContain('database driver');
+        ->toContain('database driver')
+        ->and(app(ListDebugProfiles::class)->description())
+        ->toContain('adaptive duration labels');
 });
 
 it('correlates the exact response profile while unrelated profiles exist', function () {
@@ -140,6 +143,8 @@ it('lists and filters bounded profile summaries', function () {
         ->path->toBe('/failed-html')
         ->status->toBe(422)
         ->warning->toBeTrue()
+        ->duration_label->toBe(DurationFormatter::format($failed['data']['profiles'][0]['duration_ms']))
+        ->query_time_label->toBe(DurationFormatter::format($failed['data']['profiles'][0]['query_time_ms']))
         ->and($failed['data']['profiles'][0]['available_sections'])
         ->toContain('overview', 'request', 'timeline', 'livewire')
         ->and($failed['data']['profiles'][0]['data_path'])->toBe('');

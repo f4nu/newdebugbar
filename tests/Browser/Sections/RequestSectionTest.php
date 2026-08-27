@@ -14,7 +14,7 @@ it('shows an aligned request trace and switches request detail groups', function
             })()
             JS)
         ->assertScript('document.querySelector("[data-ndb-request-status]").textContent.trim() === "200"')
-        ->assertScript('/^Completed in \\d+(?:\\.\\d+)? ms$/.test(document.querySelector("[data-ndb-request-completion]").textContent.replace(/\\s+/g, " ").trim())')
+        ->assertScript('/^Completed in (?:<1|\\d+(?:\\.\\d+)?) (?:µs|ms|s)$/.test(document.querySelector("[data-ndb-request-completion]").textContent.replace(/\\s+/g, " ").trim())')
         ->assertScript('!["Success", "Failed", "Completed successfully", "Completed with an error"].some((meaning) => document.querySelector("[data-ndb-request-trace]").textContent.includes(meaning))')
         ->assertScript('!["Laravel received the request.", "Laravel matched the route and middleware.", "Laravel sent the response to the client."].some((copy) => document.querySelector("[data-ndb-request-trace]").textContent.includes(copy))')
         ->assertVisible('[data-ndb-request-details]')
