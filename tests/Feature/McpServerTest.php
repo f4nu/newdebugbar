@@ -74,9 +74,11 @@ it('registers one local read only server with five schema backed tools', functio
         ->and($dataSchema['outputSchema']['properties']['data']['properties'])
         ->toHaveKeys(['profile_id', 'path', 'type', 'entries', 'value', 'pagination'])
         ->and(app(GetDebugProfileData::class)->description())
-        ->toContain('/sections/models/payload/model_groups', 'folded model operations', 'query correlation', 'guidance')
+        ->toContain('/sections/models/payload/model_groups', 'folded model operations', 'query correlation', 'guidance', '/sections/redis/payload/items/{index}/callsite', '/sections/exceptions/payload/items/{index}/causes')
+        ->and(app(GetDebugProfileSection::class)->description())
+        ->toContain('Redis items', 'application call sites', 'bounded cause locations', 'retained exception causes')
         ->and($serverDefaults['instructions'])
-        ->toContain('/sections/models/payload/model_groups', 'identifiers', 'changed attributes', 'related queries')
+        ->toContain('/sections/models/payload/model_groups', 'identifiers', 'changed attributes', 'related queries', '/sections/redis/payload/items/{index}/callsite', '/sections/exceptions/payload/items/{index}/causes')
         ->and(app(InspectDebugQueries::class)->description())
         ->toContain('database driver')
         ->and(app(ListDebugProfiles::class)->description())
@@ -265,6 +267,47 @@ it('keeps complete Models evidence reachable through bounded generic MCP paths',
         ->not->toHaveKeys(['groups', 'model_groups', 'model_group_previews'])
         ->and(collect($focused['data']['payload']['items'])->firstWhere('key', '[identifier]'))
         ->not->toBeNull();
+});
+
+it('keeps Redis client call sites reachable through focused and generic MCP responses', function () {
+    $response = $this->get('/profiled-redis-client', ['Accept' => 'text/html'])->assertOk();
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
+    $profile = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($profileId));
+    $items = $profile['sections']['redis']['payload']['items'];
+
+    expect($items)->not->toBeEmpty();
+
+    foreach ($items as $index => $item) {
+        expect($item['callsite'])
+            ->file->toBe('tests/Fixtures/Redis/ProfiledRedisCaller.php')
+            ->line->toBeGreaterThan(0);
+
+        foreach (['file', 'line'] as $field) {
+            $path = "/sections/redis/payload/items/{$index}/callsite/{$field}";
+            $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+                'profile_id' => $profileId,
+                'path' => $path,
+            ])->assertOk());
+
+            expect($content)
+                ->status->toBe('ok')
+                ->data->path->toBe($path)
+                ->data->value->toBe($item['callsite'][$field]);
+        }
+    }
+
+    $focused = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
+        'profile_id' => $profileId,
+        'section' => 'redis',
+        'limit' => 10,
+    ])->assertOk());
+
+    expect(array_column($focused['data']['payload']['items'], 'callsite'))->toBe(array_column($items, 'callsite'))
+        ->and(json_encode($focused))->not->toContain('private Redis result', 'private-client-field');
+
+    foreach ($focused['data']['payload']['items'] as $item) {
+        expect($item)->not->toHaveKeys(['parameters', 'result', 'value']);
+    }
 });
 
 it('discovers and pages nested profile data with JSON Pointer paths', function () {
@@ -591,12 +634,15 @@ it('paginates one section and hides private request values', function () {
         ]);
 });
 
-it('exposes relative exception evidence without messages or source code', function () {
-    $response = $this->get('/profiled-exception', ['Accept' => 'text/html'])
-        ->assertInternalServerError();
+it('summarizes exception causes while keeping full retained evidence reachable', function () {
+    $response = $this->get('/profiled-reported-exception', ['Accept' => 'text/html'])
+        ->assertOk();
+    $profileId = $response->headers->get('X-NewDebugBar-Profile');
+    $profile = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($profileId));
+    $cause = $profile['sections']['exceptions']['payload']['items'][0]['causes'][0];
 
     $content = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileSection::class, [
-        'profile_id' => $response->headers->get('X-NewDebugBar-Profile'),
+        'profile_id' => $profileId,
         'section' => 'exceptions',
     ])->assertOk());
     $item = $content['data']['payload']['items'][0];
@@ -606,7 +652,47 @@ it('exposes relative exception evidence without messages or source code', functi
         ->file->toBe('tests/Support/DefinesTestApplication.php')
         ->not->toHaveKeys(['source', 'frames'])
         ->and($item['application_frames'])->not->toBeEmpty()
-        ->and(json_encode($content))->not->toContain(base_path().'/');
+        ->and($item['cause_count'])->toBe(1)
+        ->and($item['causes'][0])
+        ->toMatchArray([
+            'class' => LogicException::class,
+            'file' => 'tests/Support/DefinesTestApplication.php',
+            'line' => $cause['line'],
+        ])
+        ->not->toHaveKeys(['message', 'source', 'frames'])
+        ->and($item['chain_truncated'])->toBeFalse()
+        ->and(json_encode($content))
+        ->not->toContain(base_path().'/', 'Earlier itinerary failure.');
+
+    $causeObjectPath = '/sections/exceptions/payload/items/0/causes/0';
+    $causeObject = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+        'profile_id' => $profileId,
+        'path' => $causeObjectPath,
+        'limit' => 10,
+    ])->assertOk());
+
+    expect($causeObject['data'])
+        ->type->toBe('object')
+        ->and(array_column($causeObject['data']['entries'], 'key'))
+        ->toContain('class', 'message', 'file', 'line', 'frames', 'source');
+
+    foreach ([
+        "{$causeObjectPath}/message" => $cause['message'],
+        "{$causeObjectPath}/frames/application/0/file" => $cause['frames']['application'][0]['file'],
+        "{$causeObjectPath}/source/focus_line" => $cause['source']['focus_line'],
+        "{$causeObjectPath}/source/lines/0/code" => $cause['source']['lines'][0]['code'],
+        '/sections/exceptions/payload/items/0/chain_truncated' => false,
+    ] as $path => $expected) {
+        $evidence = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugProfileData::class, [
+            'profile_id' => $profileId,
+            'path' => $path,
+        ])->assertOk());
+
+        expect($evidence)
+            ->status->toBe('ok')
+            ->data->path->toBe($path)
+            ->data->value->toBe($expected);
+    }
 });
 
 it('returns stable not found results and validation errors', function () {

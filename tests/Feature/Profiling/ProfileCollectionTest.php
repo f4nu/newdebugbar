@@ -28,6 +28,7 @@ use NewDebugBar\Tests\Fixtures\Models\JobActivity;
 use NewDebugBar\Tests\Fixtures\Models\ProfiledModel;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
+use NewDebugBar\Tests\Fixtures\Redis\ProfiledRedisCaller;
 
 it('captures a local web request and its Laravel activity', function () {
     $route = app('router')->getRoutes()->match(request()->create('/profiled'));
@@ -599,6 +600,44 @@ it('captures direct Redis commands and removes cache command duplicates', functi
             ->exception_class->toBe(RuntimeException::class);
     } else {
         expect($failedRedis)->toBeNull();
+    }
+});
+
+it('captures application call sites from real Redis client success and failure events', function () {
+    $response = $this->get('/profiled-redis-client', ['Accept' => 'text/html'])->assertOk();
+    $profile = app(ProfileStore::class)->get($response->headers->get('X-NewDebugBar-Profile'));
+    $items = $profile['sections']['redis']['payload']['items'];
+    $read = new ReflectionMethod(ProfiledRedisCaller::class, 'read');
+
+    expect($items[0])
+        ->command->toBe('GET')
+        ->connection->toBe('default')
+        ->keys->toBe(['private-client-key'])
+        ->not->toHaveKeys(['parameters', 'result', 'value'])
+        ->and($items[0]['callsite'])
+        ->file->toBe('tests/Fixtures/Redis/ProfiledRedisCaller.php')
+        ->and($items[0]['callsite']['line'])
+        ->toBeGreaterThanOrEqual($read->getStartLine())
+        ->toBeLessThanOrEqual($read->getEndLine())
+        ->and(json_encode($items))->not->toContain('private Redis result', 'private-client-field');
+
+    if (class_exists(CommandFailed::class)) {
+        $readHash = new ReflectionMethod(ProfiledRedisCaller::class, 'readHash');
+
+        expect($items)->toHaveCount(2)
+            ->and($items[1])
+            ->command->toBe('HGET')
+            ->failed->toBeTrue()
+            ->exception_class->toBe(RuntimeException::class)
+            ->keys->toBe(['private-client-hash'])
+            ->not->toHaveKeys(['parameters', 'result', 'value'])
+            ->and($items[1]['callsite'])
+            ->file->toBe('tests/Fixtures/Redis/ProfiledRedisCaller.php')
+            ->and($items[1]['callsite']['line'])
+            ->toBeGreaterThanOrEqual($readHash->getStartLine())
+            ->toBeLessThanOrEqual($readHash->getEndLine());
+    } else {
+        expect($items)->toHaveCount(1);
     }
 });
 

@@ -58,6 +58,7 @@ use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotifiable;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotification;
 use NewDebugBar\Tests\Fixtures\Notifications\ProfiledNotificationChannel;
 use NewDebugBar\Tests\Fixtures\Policies\ProfiledAuthorizationPolicy;
+use NewDebugBar\Tests\Fixtures\Redis\ProfiledRedisCaller;
 use NewDebugBar\Tests\Fixtures\Redis\ProfiledRedisConnection;
 
 trait DefinesTestApplication
@@ -638,8 +639,14 @@ trait DefinesTestApplication
             ]);
             Log::error('Hostile style log failed.', [
                 'trip_id' => 41,
-                'exception' => new \RuntimeException('Hostile partner rejected the request.'),
+                'exception' => new \RuntimeException(
+                    'Hostile partner rejected the request.',
+                    previous: new \LogicException('Hostile upstream cause.'),
+                ),
             ]);
+            if (request()->query('exceptions') === 'split') {
+                app(ProfileManager::class)->recordException(new \DomainException('Hostile secondary failure.'));
+            }
             view('context', [
                 'label' => 'Hostile context view',
                 'private_value' => 'hostile-view-data',
@@ -679,7 +686,7 @@ trait DefinesTestApplication
                             [data-mail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-item], [data-ndb-notification-item], [data-ndb-event-item] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-queue-status], [data-ndb-notification-status], [data-ndb-event-listener-outcome] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
-                            [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-background-refresh], [data-ndb-queue-profile-link], [data-ndb-notification-profile-link], [data-ndb-mail-related-profile], [data-ndb-mail-open-related], [data-ndb-authorization-copy-handler-source], [data-ndb-authorization-copy-callsite] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-redis], [data-ndb-redis-item], [data-ndb-redis-detail], [data-ndb-redis-key-label] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); }
                             [data-ndb-redis-command], [data-ndb-redis-detail-status], [data-ndb-redis-key] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-redis-copy-keys] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
@@ -702,11 +709,16 @@ trait DefinesTestApplication
                             [data-ndb-log-details-title] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-log-review-exception] { background: rgb(255, 0, 255); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-log-context], [data-ndb-log-timing], [data-ndb-log-source], [data-ndb-log-related-exception] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 24px; }
+                            [data-ndb-exception-cause] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 50px; }
+                            [data-ndb-exception-context-action] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; }
+                            [data-ndb-exception-layout], [data-ndb-exception-workspace], [data-ndb-exception-focused-workspace], [data-ndb-exception-focused-detail], [data-ndb-exception-list-panel], [data-ndb-exception-split-detail] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); display: block; overflow: visible; padding: 50px; }
+                            [data-ndb-exception-detail-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; padding: 50px; width: 91px; }
                             [data-ndb-event-next-step] { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); }
                             [data-ndb-event-detail-tab] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-event-listener-row] { background: rgb(255, 0, 0); padding: 50px; }
                             [data-ndb-event-timeline] { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
-                            [data-ndb-model-workspace], [data-ndb-model-summary], [data-ndb-model-list], [data-ndb-model-list-heading], [data-ndb-model-group], [data-ndb-model-detail-pane], [data-ndb-model-detail-empty], [data-ndb-model-detail], [data-ndb-model-header], [data-ndb-model-detail-panel], [data-ndb-model-records], [data-ndb-model-record], [data-ndb-model-write-table], [data-ndb-model-write-operation], [data-ndb-model-sources], [data-ndb-model-source], [data-ndb-model-source-gap], [data-ndb-model-compiled-source], [data-ndb-model-source-path], [data-ndb-model-retrieved-column], [data-ndb-model-write-column], [data-ndb-model-extra-column] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
+                            [data-ndb-model-workspace], [data-ndb-model-summary], [data-ndb-model-list], [data-ndb-model-list-heading], [data-ndb-model-group], [data-ndb-model-index], [data-ndb-model-sort-name], [data-ndb-model-sort-retrieved], [data-ndb-model-sort-writes], [data-ndb-model-sort-reloads], [data-ndb-model-detail-pane], [data-ndb-model-detail-empty], [data-ndb-model-detail], [data-ndb-model-header], [data-ndb-model-detail-panel], [data-ndb-model-records], [data-ndb-model-record], [data-ndb-model-write-table], [data-ndb-model-write-operation], [data-ndb-model-sources], [data-ndb-model-source], [data-ndb-model-source-gap], [data-ndb-model-compiled-source], [data-ndb-model-source-path], [data-ndb-model-retrieved-column], [data-ndb-model-write-column], [data-ndb-model-extra-column] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
+                            [data-ndb-model-sort-heading] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-model-search] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
                             [data-ndb-model-search-value] { display: none; }
                             [data-ndb-model-detail-tab], [data-ndb-model-detail-back], [data-ndb-inspector-focus-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; }
@@ -799,9 +811,19 @@ trait DefinesTestApplication
             Http::fake(['api.example.test/*' => Http::response(['ready' => true])]);
             Http::get('https://api.example.test/v1/status');
             $component = app('livewire')->mount('host-functional-status', key: 'host-functional-exception');
-            app(ProfileManager::class)->recordException(new \RuntimeException('Reported failure.'));
+            app(ProfileManager::class)->recordException(new \RuntimeException(
+                'Reported failure.',
+                previous: new \LogicException('Earlier itinerary failure.'),
+            ));
 
             return response('<!doctype html><html><body>Reported failure'.$component.'</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-reported-exceptions', function () {
+            app(ProfileManager::class)->recordException(new \RuntimeException('First reported failure.'));
+            app(ProfileManager::class)->recordException(new \LogicException('Second reported failure.'));
+
+            return response('<!doctype html><html><body>Reported failures</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-http-client', function () {
@@ -920,6 +942,31 @@ trait DefinesTestApplication
             }
 
             return response('<!doctype html><html><body>Queue</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-queue-attempts', function () {
+            Event::dispatch($this->queuedEvent(
+                'job-with-attempts',
+                new ProfiledJob('private linked attempt value'),
+                queue: 'attempts',
+                delay: 0,
+            ));
+
+            $background = app(BackgroundActivityStore::class);
+            $background->recordOutcome(
+                $background->key('redis', 'attempts', 'job-with-attempts'),
+                'completed',
+                (string) Str::uuid(),
+                1,
+            );
+
+            try {
+                Bus::dispatchSync(new ProfiledFailingJob('private zero attempt value'));
+            } catch (\RuntimeException) {
+                // The application handled the failed synchronous job.
+            }
+
+            return response('<!doctype html><html><body>Queue attempts</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-queued-communications', function () {
@@ -1145,6 +1192,20 @@ trait DefinesTestApplication
             }
 
             return response('<!doctype html><html><body>Redis</body></html>');
+        });
+
+        $router->middleware(ProfileRequest::class)->get('/profiled-redis-client', function () {
+            $connection = new ProfiledRedisConnection(app('events'));
+            $caller = new ProfiledRedisCaller;
+            $caller->read($connection);
+
+            try {
+                $caller->readHash($connection);
+            } catch (\RuntimeException) {
+                // The failed command is expected and recorded by Laravel's Redis connection.
+            }
+
+            return response('<!doctype html><html><body>Redis client calls</body></html>');
         });
 
         $router->middleware(ProfileRequest::class)->get('/profiled-redis-independent-cache', function () {

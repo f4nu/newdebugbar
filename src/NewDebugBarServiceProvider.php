@@ -23,6 +23,7 @@ use NewDebugBar\Analysis\QueryAnalyzer;
 use NewDebugBar\Analysis\SectionAnalyzer;
 use NewDebugBar\Analysis\TimelineBuilder;
 use NewDebugBar\Collectors\CacheCollector;
+use NewDebugBar\Collectors\ExceptionCollector;
 use NewDebugBar\Collectors\ItemCollector;
 use NewDebugBar\Collectors\LivewireCollector;
 use NewDebugBar\Collectors\LogCollector;
@@ -146,7 +147,7 @@ final class NewDebugBarServiceProvider extends ServiceProvider
                 new ItemCollector($redactor, $maxItems, 'authorization', 'Authorization'),
                 new ValidationCollector($redactor, $maxItems),
                 new LogCollector($redactor, $maxItems),
-                new ItemCollector($redactor, $maxItems, 'exceptions', 'Exceptions'),
+                new ExceptionCollector($redactor, $maxItems),
                 new LivewireCollector($redactor),
             ],
                 $redactor,

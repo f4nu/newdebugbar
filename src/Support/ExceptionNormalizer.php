@@ -7,6 +7,8 @@ use Throwable;
 /** Builds bounded project-relative exception evidence for the inspector. */
 final class ExceptionNormalizer
 {
+    private const MAX_CAUSES = 5;
+
     public function __construct(
         private readonly string $projectPath,
         private readonly string $packagePath,
@@ -17,6 +19,40 @@ final class ExceptionNormalizer
 
     /** @return array<string, mixed> */
     public function normalize(Throwable $exception): array
+    {
+        $causes = [];
+        $seen = [spl_object_id($exception) => true];
+        $previous = $exception->getPrevious();
+
+        $chainTruncated = false;
+
+        while ($previous instanceof Throwable) {
+            $objectId = spl_object_id($previous);
+
+            if (isset($seen[$objectId])) {
+                break;
+            }
+
+            if (count($causes) >= self::MAX_CAUSES) {
+                $chainTruncated = true;
+
+                break;
+            }
+
+            $seen[$objectId] = true;
+            $causes[] = $this->normalizeException($previous);
+            $previous = $previous->getPrevious();
+        }
+
+        return [
+            ...$this->normalizeException($exception),
+            'causes' => $causes,
+            'chain_truncated' => $chainTruncated,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeException(Throwable $exception): array
     {
         $origin = $this->frame($exception->getFile(), $exception->getLine(), 'throw');
         $application = [];

@@ -219,6 +219,8 @@ final class ProfileManager
             'line' => $exception->getLine(),
             'frames' => ['application' => [], 'vendor' => []],
             'source' => null,
+            'causes' => [],
+            'chain_truncated' => false,
         ];
         $this->record('exceptions', $normalized);
 

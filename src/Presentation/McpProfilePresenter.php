@@ -384,6 +384,10 @@ final class McpProfilePresenter
                 ] : null,
             ];
         } elseif ($section === 'exceptions') {
+            $causes = array_slice(array_values(array_filter(
+                is_array($item['causes'] ?? null) ? $item['causes'] : [],
+                'is_array',
+            )), 0, 5);
             $item = [
                 'at_ms' => $item['at_ms'] ?? null,
                 'class' => $item['class'] ?? null,
@@ -391,6 +395,13 @@ final class McpProfilePresenter
                 'file' => $item['file'] ?? null,
                 'line' => $item['line'] ?? null,
                 'application_frames' => $item['frames']['application'] ?? [],
+                'cause_count' => count($causes),
+                'causes' => array_map(fn (array $cause): array => [
+                    'class' => $cause['class'] ?? null,
+                    'file' => $cause['file'] ?? null,
+                    'line' => $cause['line'] ?? null,
+                ], $causes),
+                'chain_truncated' => (bool) ($item['chain_truncated'] ?? false),
             ];
         } elseif ($section === 'models' && array_key_exists('key', $item)) {
             $item['key'] = $item['key'] === null ? null : '[identifier]';

@@ -17,7 +17,7 @@ final class GetDebugProfileSection extends DebugTool
 {
     private const DEFAULT_LIMIT = 5;
 
-    protected const DESCRIPTION = 'Read one focused section from an exact debug profile. Use get-debug-profile-data when the section response omits a deeper collection or value, including complete Models evidence.';
+    protected const DESCRIPTION = 'Read one focused section from an exact debug profile. Redis items include bounded key evidence and application call sites. Exception items include bounded cause locations without private messages or full cause stacks. Use get-debug-profile-data when the section response omits deeper evidence, including complete Models evidence and retained exception causes.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
 

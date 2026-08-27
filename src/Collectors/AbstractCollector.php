@@ -31,7 +31,7 @@ abstract class AbstractCollector implements Collector
     public function record(array $item): void
     {
         /** @var array<string, mixed> $safeItem */
-        $safeItem = $this->redactor->clean($item);
+        $safeItem = $this->cleanItem($item);
         $this->track($safeItem);
 
         if ($this->retainedCount() >= $this->maxItems) {
@@ -64,6 +64,15 @@ abstract class AbstractCollector implements Collector
 
     /** @param array<string, mixed> $item */
     protected function track(array $item): void {}
+
+    /** @param array<string, mixed> $item @return array<string, mixed> */
+    protected function cleanItem(array $item): array
+    {
+        /** @var array<string, mixed> $clean */
+        $clean = $this->redactor->clean($item);
+
+        return $clean;
+    }
 
     protected function retainedCount(): int
     {

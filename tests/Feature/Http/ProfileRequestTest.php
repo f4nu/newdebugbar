@@ -107,6 +107,8 @@ it('preserves a profile when the application throws', function () {
         ->and($profile['sections']['exceptions']['payload']['items'][0])->not->toHaveKey('trace')
         ->and($profile['sections']['exceptions']['payload']['items'][0]['frames']['application'])->not->toBeEmpty()
         ->and($profile['sections']['exceptions']['payload']['items'][0]['source']['lines'])->not->toBeEmpty()
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['causes'])->toBe([])
+        ->and($profile['sections']['exceptions']['payload']['items'][0]['chain_truncated'])->toBeFalse()
         ->and(app(ProfileManager::class)->isCollecting())->toBeFalse();
 });
 

@@ -1,11 +1,51 @@
 <?php
 
 use NewDebugBar\Collectors\CacheCollector;
+use NewDebugBar\Collectors\ExceptionCollector;
 use NewDebugBar\Collectors\LogCollector;
 use NewDebugBar\Collectors\QueryCollector;
 use NewDebugBar\Collectors\RedisCollector;
 use NewDebugBar\Collectors\ValidationCollector;
 use NewDebugBar\Support\Redactor;
+
+it('keeps normalized exception cause evidence structured and redacted', function () {
+    $collector = new ExceptionCollector(new Redactor(maxDepth: 5), maxItems: 1);
+
+    $collector->record([
+        'class' => RuntimeException::class,
+        'causes' => [[
+            'class' => LogicException::class,
+            'message' => 'Earlier failure.',
+            'frames' => [
+                'application' => [[
+                    'file' => 'app/Actions/Run.php',
+                    'line' => 42,
+                    'function' => 'run',
+                ]],
+                'vendor' => [],
+            ],
+            'source' => [
+                'file' => 'app/Actions/Run.php',
+                'lines' => [[
+                    'number' => 42,
+                    'code' => 'throw new LogicException;',
+                    'token' => 'private-token',
+                ]],
+            ],
+        ]],
+    ]);
+
+    $cause = $collector->payload()['items'][0]['causes'][0];
+
+    expect($cause['frames']['application'][0])
+        ->toBe([
+            'file' => 'app/Actions/Run.php',
+            'line' => 42,
+            'function' => 'run',
+        ])
+        ->and($cause['source']['lines'][0]['code'])->toBe('throw new LogicException;')
+        ->and($cause['source']['lines'][0]['token'])->toBe('[redacted]');
+});
 
 it('counts dropped collector items without retaining their payload', function () {
     $collector = new QueryCollector(new Redactor, maxItems: 1);

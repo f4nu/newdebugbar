@@ -80,10 +80,15 @@ it('normalizes queue lifecycle and related worker evidence for one active detail
         ->at_label->toBe('12.5 ms')
         ->display_channels->toBe([])
         ->attempts->toHaveCount(1)
+        ->and($items[0]['attempts'][0]['sequence'])->toBe(1)
+        ->and($items[0]['attempts'][0]['attempt'])->toBe(1)
+        ->and($items[0]['attempts'][0]['status'])->toBe('sent')
+        ->and($items[0]['attempts'][0]['profile_id'])->toBe($workerId)
         ->and($items[1])
         ->status_group->toBe('failed')
         ->duration_label->toBe('4.25 ms')
-        ->exception_class->toBe(RuntimeException::class);
+        ->exception_class->toBe(RuntimeException::class)
+        ->attempts->toBe([]);
 });
 
 it('keeps protected Redis identifiers out of rows and failure timing truthful', function () {
@@ -103,6 +108,10 @@ it('keeps protected Redis identifiers out of rows and failure timing truthful', 
                 'key_policy' => 'full',
                 'keys' => ['trip:kyoto'],
                 'key_hashes' => [$protected],
+                'callsite' => [
+                    'file' => 'app/Services/TripCache.php',
+                    'line' => 42,
+                ],
             ],
             [
                 'command' => 'HGET',
@@ -117,6 +126,7 @@ it('keeps protected Redis identifiers out of rows and failure timing truthful', 
                 'key_policy' => 'hash',
                 'keys' => [],
                 'key_hashes' => [$protected],
+                'callsite' => ['file' => 'app/Services/SessionStore.php'],
             ],
         ]],
     ];
@@ -134,16 +144,25 @@ it('keeps protected Redis identifiers out of rows and failure timing truthful', 
 
     expect($html)
         ->toContain('data-ndb-redis-workspace')
-        ->toContain('data-ndb-redis-detail-body', 'data-ndb-redis-key-evidence')
+        ->toContain(
+            'data-ndb-redis-detail-body',
+            'data-ndb-redis-key-evidence',
+            'data-ndb-inspector-source-link',
+        )
         ->not->toContain('data-ndb-redis-detail-tab', 'data-ndb-redis-sort', 'Succeeded')
         ->and($rows->length)->toBe(2)
         ->and(trim((string) $rows->item(0)?->textContent))->toContain('trip:kyoto')
         ->and(trim((string) $rows->item(0)?->textContent))->not->toContain($protected)
         ->and($failedRow)->toContain('1 protected key', '—')
+        ->and($items[0])
+        ->callsite->toBe(['file' => 'app/Services/TripCache.php', 'line' => 42])
+        ->source_label->toBe('app/Services/TripCache.php:42')
         ->and($items[1])
         ->duration_label->toBe('—')
         ->key_count->toBe(1)
-        ->key_hashes->toBe([$protected]);
+        ->key_hashes->toBe([$protected])
+        ->callsite->toBe(['file' => 'app/Services/SessionStore.php', 'line' => null])
+        ->source_label->toBe('app/Services/SessionStore.php');
 });
 
 it('renders truthful Queue and Redis empty states', function () {

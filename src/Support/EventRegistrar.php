@@ -590,6 +590,7 @@ final class EventRegistrar
         });
 
         $this->listen(CommandExecuted::class, function (CommandExecuted $event): void {
+            $callsite = $this->callSites->capture()['callsite'];
             $command = strtoupper((string) $event->command);
             $keys = $this->redisKeys($command, (array) $event->parameters);
 
@@ -599,10 +600,12 @@ final class EventRegistrar
                 'duration_ms' => round((float) ($event->time ?? 0), 2),
                 ...$keys,
                 'failed' => false,
+                'callsite' => $callsite,
             ]);
         });
 
         $this->listen(CommandFailed::class, function (CommandFailed $event): void {
+            $callsite = $this->callSites->capture()['callsite'];
             $command = strtoupper((string) $event->command);
             $keys = $this->redisKeys($command, (array) $event->parameters);
 
@@ -613,6 +616,7 @@ final class EventRegistrar
                 ...$keys,
                 'failed' => true,
                 'exception_class' => $event->exception::class,
+                'callsite' => $callsite,
             ]);
         });
 
