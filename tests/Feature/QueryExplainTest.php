@@ -122,3 +122,61 @@ it('keeps repeated execution evidence in one bounded workspace record', function
         ->not->toContain('<details')
         ->not->toContain('data-ndb-query-group-executions');
 });
+
+it('formats query durations with an adaptive unit', function () {
+    $items = collect([
+        0.0,
+        0.19,
+        0.99,
+        1.0,
+        12.34,
+        999.99,
+        1000.0,
+        1453.51,
+    ])->map(fn (float $duration, int $index): array => [
+        'execution' => $index + 1,
+        'sql' => 'select '.$index,
+        'normalized_sql' => 'select '.$index,
+        'duration_ms' => $duration,
+        'connection' => 'testing',
+        'driver' => 'sqlite',
+        'query_type' => 'read',
+        'bindings' => [],
+    ])->all();
+    $section = [
+        'summary' => ['count' => count($items), 'total_time_ms' => 1466.04],
+        'payload' => ['items' => $items, 'repeated_groups' => []],
+    ];
+    $html = Blade::render('<x-newdebugbar::query-section :section="$section" />', ['section' => $section]);
+
+    expect(preg_match('/<script type="application\/json" data-ndb-query-payload>\s*(?<payload>[^<]+)\s*<\/script>/', $html, $matches))
+        ->toBe(1);
+
+    $records = json_decode(base64_decode(trim($matches['payload']), true), true, 512, JSON_THROW_ON_ERROR);
+
+    expect(array_column($records, 'duration_label'))
+        ->toBe(['0 µs', '190 µs', '990 µs', '1 ms', '12.34 ms', '999.99 ms', '1 s', '1.45 s'])
+        ->and($html)
+        ->toContain('1.47 s total');
+});
+
+it('gives a slow repeated query the stronger row treatment', function () {
+    $queries = array_map(fn (int $duration): array => [
+        'sql' => 'select ? as number',
+        'bindings' => [$duration],
+        'duration_ms' => $duration,
+        'connection' => 'testing',
+        'driver' => 'sqlite',
+    ], [120, 20, 10]);
+    $analysis = (new QueryAnalyzer)->analyze($queries, 200);
+    $section = [
+        'summary' => [...$analysis['summary'], 'count' => 3],
+        'payload' => $analysis,
+    ];
+    $html = Blade::render('<x-newdebugbar::query-section :section="$section" />', ['section' => $section]);
+
+    expect($html)
+        ->toContain('Slow repeated query.')
+        ->toContain('ndb:bg-red-50\/70', 'ndb:bg-red-50\/90')
+        ->not->toContain('ndb:bg-amber-50\/70', 'ndb:bg-amber-50\/90');
+});

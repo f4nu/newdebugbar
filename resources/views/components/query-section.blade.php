@@ -10,7 +10,31 @@
     $queryGroups = collect(is_array($section['payload']['repeated_groups'] ?? null) ? $section['payload']['repeated_groups'] : [])
         ->keyBy('fingerprint');
 
-    $enrichQuery = static function (array $query) use ($queryExplains, $queryExplainErrors): array {
+    $formatDuration = static function (float $duration): string {
+        $duration = max(0, $duration);
+
+        if ($duration >= 1000) {
+            $seconds = rtrim(rtrim(number_format($duration / 1000, 2, '.', ''), '0'), '.');
+
+            return $seconds.' s';
+        }
+
+        if ($duration >= 1) {
+            $milliseconds = rtrim(rtrim(number_format($duration, 2, '.', ''), '0'), '.');
+
+            return $milliseconds.' ms';
+        }
+
+        if ($duration <= 0) {
+            return '0 µs';
+        }
+
+        $microseconds = $duration * 1000;
+
+        return $microseconds < 1 ? '<1 µs' : number_format($microseconds, 0, '.', '').' µs';
+    };
+
+    $enrichQuery = static function (array $query) use ($formatDuration, $queryExplains, $queryExplainErrors): array {
         $execution = max(1, (int) ($query['execution'] ?? 1));
         $bindings = array_values(is_array($query['bindings'] ?? null) ? $query['bindings'] : []);
         $bindingsComplete = ($query['bindings_complete'] ?? false) === true;
@@ -29,6 +53,7 @@
         $displaySql = $runnableAvailable
             ? (string) $query['runnable_sql']
             : (string) ($query['sql'] ?? '');
+        $duration = round(max(0, (float) ($query['duration_ms'] ?? 0)), 2);
         unset($query['bindings'], $query['runnable_sql'], $query['bindings_complete']);
 
         return [
@@ -40,7 +65,8 @@
             'source_label' => $sourceAvailable ? $file.':'.$line : 'Source unavailable',
             'driver' => $driver,
             'query_type' => $queryType,
-            'duration_ms' => round((float) ($query['duration_ms'] ?? 0), 2),
+            'duration_ms' => $duration,
+            'duration_label' => $formatDuration($duration),
             'query_time_percent' => round((float) ($query['query_time_percent'] ?? 0), 1),
             'display_sql' => $displaySql,
             'display_sql_complete' => $runnableAvailable || ($bindingsComplete && $bindings === []),
@@ -85,6 +111,7 @@
             $slow = collect($executions)->contains(fn (array $execution): bool => (bool) ($execution['slow'] ?? false));
             $count = count($executions);
             $sql = (string) ($group['sql'] ?? $first['normalized_sql'] ?? $first['sql']);
+            $duration = round(max(0, (float) ($group['duration_ms'] ?? 0)), 2);
 
             $queryRecords[] = [
                 'key' => 'group-'.$fingerprint,
@@ -93,7 +120,8 @@
                 'connection' => (string) ($group['connection'] ?? $first['connection'] ?? 'default'),
                 'driver' => (string) ($group['driver'] ?? $first['driver'] ?? 'unknown'),
                 'query_type' => (string) ($group['query_type'] ?? $first['query_type'] ?? 'write'),
-                'duration_ms' => round((float) ($group['duration_ms'] ?? 0), 2),
+                'duration_ms' => $duration,
+                'duration_label' => $formatDuration($duration),
                 'query_time_percent' => round((float) ($group['query_time_percent'] ?? 0), 1),
                 'count' => $count,
                 'repeated' => true,
@@ -118,6 +146,7 @@
             'driver' => (string) ($execution['driver'] ?? 'unknown'),
             'query_type' => (string) ($execution['query_type'] ?? 'write'),
             'duration_ms' => (float) ($execution['duration_ms'] ?? 0),
+            'duration_label' => (string) ($execution['duration_label'] ?? '0 µs'),
             'query_time_percent' => (float) ($execution['query_time_percent'] ?? 0),
             'count' => 1,
             'repeated' => false,
@@ -186,7 +215,7 @@
                             data-ndb-query-total-time
                             class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
                         >
-                            {{ number_format((float) ($querySummary['total_time_ms'] ?? 0), 2) }} ms total
+                            {{ $formatDuration((float) ($querySummary['total_time_ms'] ?? 0)) }} total
                         </span>
                     </p>
 
@@ -218,7 +247,7 @@
                 <x-slot:list data-ndb-query-list>
                     <div
                         data-ndb-query-list-heading
-                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:grid ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95"
+                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:grid ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95"
                     >
                         <span>Type</span>
                         <span>Query</span>
@@ -235,6 +264,18 @@
                     </div>
 
                     @foreach ($queryRecords as $record)
+                        @php
+                            $selectedClasses = match (true) {
+                                $record['slow'] => 'ndb:bg-red-50/90 ndb:ring-1 ndb:ring-inset ndb:ring-red-200 ndb:dark:bg-red-950/35 ndb:dark:ring-red-900/80',
+                                $record['repeated'] => 'ndb:bg-amber-50/90 ndb:ring-1 ndb:ring-inset ndb:ring-amber-200 ndb:dark:bg-amber-950/35 ndb:dark:ring-amber-900/80',
+                                default => 'ndb:bg-indigo-50/90 ndb:ring-1 ndb:ring-inset ndb:ring-indigo-200 ndb:dark:bg-indigo-950/35 ndb:dark:ring-indigo-800/80',
+                            };
+                            $idleClasses = match (true) {
+                                $record['slow'] => 'ndb:bg-red-50/70 ndb:hover:bg-red-100/75 ndb:dark:bg-red-950/25 ndb:dark:hover:bg-red-950/40',
+                                $record['repeated'] => 'ndb:bg-amber-50/70 ndb:hover:bg-amber-100/75 ndb:dark:bg-amber-950/25 ndb:dark:hover:bg-amber-950/40',
+                                default => 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60',
+                            };
+                        @endphp
                         <button
                             type="button"
                             wire:key="query-record-{{ $record['key'] }}"
@@ -253,11 +294,11 @@
                             @click="selectQueryRecord({{ \Illuminate\Support\Js::from($record['key']) }})"
                             :aria-pressed="querySelected === {{ \Illuminate\Support\Js::from($record['key']) }}"
                             :class="querySelected === {{ \Illuminate\Support\Js::from($record['key']) }}
-                                ? 'ndb:bg-indigo-50/90 ndb:ring-1 ndb:ring-inset ndb:ring-indigo-200 ndb:dark:bg-indigo-950/35 ndb:dark:ring-indigo-800/80'
-                                : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-2 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                                ? {{ \Illuminate\Support\Js::from($selectedClasses) }}
+                                : {{ \Illuminate\Support\Js::from($idleClasses) }}"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-3 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:gap-1">
+                            <span class="ndb:flex ndb:min-w-0 ndb:items-center">
                                 <x-newdebugbar::inspector-operation-badge
                                     wide
                                     data-ndb-query-type-badge
@@ -265,11 +306,10 @@
                                 >
                                     {{ $record['query_type'] }}
                                 </x-newdebugbar::inspector-operation-badge>
-                                @if ($record['repeated'] || $record['slow'])
-                                    <span
-                                        data-ndb-query-attention-badge="{{ $record['repeated'] ? 'repeated' : 'slow' }}"
-                                        class="ndb:box-border ndb:flex ndb:h-auto ndb:w-19 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-amber-50 ndb:px-2 ndb:py-0.5 ndb:[font-family:inherit] ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-[0.01em] ndb:text-amber-700 ndb:dark:bg-amber-950/45 ndb:dark:text-amber-300"
-                                    >{{ $record['repeated'] ? 'Repeated' : 'Slow' }}</span>
+                                @if ($record['slow'])
+                                    <span class="ndb:sr-only">{{ $record['repeated'] ? 'Slow repeated query.' : 'Slow query.' }}</span>
+                                @elseif ($record['repeated'])
+                                    <span class="ndb:sr-only">Repeated query.</span>
                                 @endif
                             </span>
 
@@ -291,7 +331,7 @@
                                 <strong
                                     data-ndb-query-list-duration
                                     class="ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
-                                >{{ number_format((float) $record['duration_ms'], 2) }} ms</strong>
+                                >{{ $record['duration_label'] }}</strong>
                             </span>
                         </button>
                     @endforeach

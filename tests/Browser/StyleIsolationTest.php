@@ -100,8 +100,7 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const root = document.querySelector('[data-ndb-queries]');
                 const workspace = root.querySelector('[data-ndb-query-workspace]');
-                const attentionBadge = root.querySelector('[data-ndb-query-attention-badge]');
-                const row = attentionBadge?.closest('[data-ndb-query-item]');
+                const row = root.querySelector('[data-ndb-query-item][data-ndb-repeated="true"]');
                 const detail = root.querySelector('[data-ndb-query-detail]');
                 const facts = root.querySelector('[data-ndb-query-detail-panel="overview"] [data-ndb-inspector-fact]')?.closest('dl');
                 const code = root.querySelector('[data-ndb-query-sql][data-highlighted]');
@@ -122,7 +121,7 @@ it('keeps host styles and package styles isolated', function () {
 
                 if (
                     ! workspace || ! row || ! detail || ! facts || ! code || ! surface || ! keyword
-                    || ! typeBadge || ! attentionBadge || ! driver || ! duration || ! sortHeading || ! sortIndicator
+                    || ! typeBadge || ! driver || ! duration || ! sortHeading || ! sortIndicator
                 ) return false;
 
                 const driverRect = driver.getBoundingClientRect();
@@ -131,15 +130,13 @@ it('keeps host styles and package styles isolated', function () {
 
                 return getComputedStyle(workspace).borderLeftWidth === '0px'
                     && getComputedStyle(row).borderLeftWidth === '0px'
+                    && getComputedStyle(row).backgroundColor !== 'rgb(255, 0, 0)'
                     && row.getBoundingClientRect().height < 91
                     && Math.round(typeBadge.getBoundingClientRect().width) === 76
-                    && Math.round(attentionBadge.getBoundingClientRect().width) === 76
                     && typeBadge.getBoundingClientRect().height < 28
-                    && attentionBadge.getBoundingClientRect().height < 28
                     && getComputedStyle(typeBadge).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(attentionBadge).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(typeBadge).fontFamily === interfaceFont
-                    && getComputedStyle(attentionBadge).fontFamily === interfaceFont
+                    && root.querySelector('[data-ndb-query-attention-badge]') === null
                     && getComputedStyle(driver).fontFamily === interfaceFont
                     && Number.parseFloat(getComputedStyle(driver).fontSize) === 11
                     && getComputedStyle(driver).backgroundColor !== 'rgb(255, 0, 0)'

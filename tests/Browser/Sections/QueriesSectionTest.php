@@ -14,7 +14,7 @@ it('presents repeated queries as one shared list detail record', function () {
                 const rows = [...root.querySelectorAll('[data-ndb-query-item]')];
                 const repeated = rows.filter((row) => row.dataset.ndbRepeated === 'true');
                 const typeBadge = repeated[0]?.querySelector('[data-ndb-query-type-badge]');
-                const attentionBadge = repeated[0]?.querySelector('[data-ndb-query-attention-badge]');
+                const query = repeated[0]?.querySelector('[data-ndb-query-list-sql]');
                 const driver = repeated[0]?.querySelector('[data-ndb-query-list-driver]');
                 const duration = repeated[0]?.querySelector('[data-ndb-query-list-duration]');
                 const sql = root.querySelector('[data-ndb-query-sql][data-highlighted]');
@@ -29,10 +29,11 @@ it('presents repeated queries as one shared list detail record', function () {
                     && Number(repeated[0].dataset.ndbQueryExecutionCount) === 3
                     && repeated[0].getAttribute('aria-pressed') === 'true'
                     && typeBadge?.textContent.trim() === 'read'
-                    && attentionBadge?.textContent.trim() === 'Repeated'
-                    && Math.abs(typeBadge.getBoundingClientRect().width - attentionBadge.getBoundingClientRect().width) <= 1
+                    && root.querySelector('[data-ndb-query-attention-badge]') === null
+                    && getComputedStyle(repeated[0]).backgroundColor !== 'rgba(0, 0, 0, 0)'
                     && driver?.textContent.trim() === 'sqlite'
                     && driver.getBoundingClientRect().bottom <= duration.getBoundingClientRect().top + 1
+                    && query.getBoundingClientRect().left - typeBadge.getBoundingClientRect().right >= 11
                     && sql?.querySelector('.hljs-keyword') !== null
                     && root.querySelectorAll('[data-ndb-query-detail-panel]').length === 1
                     && root.querySelector('[data-ndb-query-detail-panel="overview"]') !== null
@@ -46,6 +47,8 @@ it('presents repeated queries as one shared list detail record', function () {
                     && getComputedStyle(list).overflowY === 'auto'
                     && getComputedStyle(detail).overflowY === 'auto'
                     && searchIcon?.getBoundingClientRect().left < search.getBoundingClientRect().left + 32
+                    && root.querySelector('[data-ndb-query-execution-select]')?.previousElementSibling?.textContent.trim() === 'Choose a repeated run'
+                    && root.textContent.includes('Repeated runs')
                     && ! root.textContent.includes('Why these executions are grouped')
                     && ! root.textContent.includes('•')
                     && ! root.textContent.includes('·');
@@ -96,6 +99,9 @@ it('filters searches and sorts a varied query profile', function () {
                 const rows = [...root.querySelectorAll('[data-ndb-query-item]')];
                 const retained = rows.reduce((count, row) => count + Number(row.dataset.ndbQueryExecutionCount), 0);
                 const repeated = state.queryRecords.find((record) => record.repeated && record.count === 8);
+                const repeatedRow = rows.find((row) => row.dataset.ndbRepeated === 'true' && row.dataset.ndbSlow === 'false');
+                const slowRow = rows.find((row) => row.dataset.ndbSlow === 'true' && row.dataset.ndbRepeated === 'false');
+                const microsecondRow = rows.find((row) => Number(row.dataset.ndbDuration) > 0 && Number(row.dataset.ndbDuration) < 1);
                 const connections = new Set(
                     state.queryRecords.flatMap((record) => record.executions.map((query) => query.connection)),
                 );
@@ -109,7 +115,16 @@ it('filters searches and sorts a varied query profile', function () {
                     && connections.has('testing')
                     && connections.has('query_replica')
                     && rows.every((row) => row.querySelector('[data-ndb-query-type-badge]') !== null)
+                    && rows.every((row) => row.querySelector('[data-ndb-query-attention-badge]') === null)
                     && rows.every((row) => row.querySelector('[data-ndb-query-list-driver]')?.textContent.trim() === 'sqlite')
+                    && repeatedRow.classList.contains('ndb:bg-amber-50/70')
+                    && repeatedRow.classList.contains('ndb:dark:bg-amber-950/25')
+                    && slowRow.classList.contains('ndb:bg-red-50/70')
+                    && slowRow.classList.contains('ndb:dark:bg-red-950/25')
+                    && getComputedStyle(repeatedRow).backgroundColor !== 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(slowRow).backgroundColor !== 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(repeatedRow).backgroundColor !== getComputedStyle(slowRow).backgroundColor
+                    && microsecondRow.querySelector('[data-ndb-query-list-duration]').textContent.trim().endsWith('µs')
                     && state.queryRecords.some((record) => record.sql.length > 150);
             })()
             JS)
@@ -199,6 +214,7 @@ it('runs EXPLAIN for the selected repeated execution', function () {
         ->click('[data-ndb-query-detail-tab="explain"]')
         ->waitForText('EXPLAIN QUERY PLAN')
         ->assertVisible('[data-ndb-query-explain-result]')
+        ->assertDontSee('What to check in this plan')
         ->assertMissing('[data-ndb-query-explain-action]')
         ->assertScript(<<<'JS'
             (() => {
@@ -272,10 +288,10 @@ it('moves from the query list to one focused mobile detail', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('renders highlighted query evidence in each product theme', function (string $theme) {
+it('renders highlighted query evidence and attention tints in each product theme', function (string $theme) {
     $preferences = json_encode(['theme' => $theme, 'favorites' => []], JSON_THROW_ON_ERROR);
 
-    visit('/profiled')
+    visit('/profiled-queries-rich')
         ->assertScript(<<<JS
             (() => {
                 localStorage.setItem('newdebugbar.preferences.v1', '{$preferences}');
@@ -286,15 +302,24 @@ it('renders highlighted query evidence in each product theme', function (string 
         ->refresh()
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', $theme)
         ->click('[data-ndb-toolbar="queries"]')
-        ->waitForText('Repeated query pattern')
+        ->waitForText('queries')
         ->assertScript(<<<'JS'
             (() => {
                 const keyword = document.querySelector('[data-ndb-query-sql][data-highlighted] .hljs-keyword');
                 const detail = document.querySelector('[data-ndb-query-detail]');
+                const repeated = document.querySelector('[data-ndb-query-item][data-ndb-repeated="true"][data-ndb-slow="false"]');
+                const slow = document.querySelector('[data-ndb-query-item][data-ndb-slow="true"][data-ndb-repeated="false"]');
 
                 return keyword !== null
                     && detail !== null
-                    && getComputedStyle(keyword).color !== 'rgb(0, 0, 0)';
+                    && getComputedStyle(keyword).color !== 'rgb(0, 0, 0)'
+                    && repeated.classList.contains('ndb:bg-amber-50/70')
+                    && repeated.classList.contains('ndb:dark:bg-amber-950/25')
+                    && slow.classList.contains('ndb:bg-red-50/70')
+                    && slow.classList.contains('ndb:dark:bg-red-950/25')
+                    && getComputedStyle(repeated).backgroundColor !== 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(slow).backgroundColor !== 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(repeated).backgroundColor !== getComputedStyle(slow).backgroundColor;
             })()
             JS)
         ->assertNoJavaScriptErrors();

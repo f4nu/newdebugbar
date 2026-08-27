@@ -63,10 +63,10 @@
                         <template x-if="selectedQueryRecord.repeated">
                             <div class="ndb:max-w-sm">
                                 <p class="ndb:mb-1.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                    Execution
+                                    Repeated runs
                                 </p>
                                 <x-newdebugbar::select-field
-                                    label="Choose repeated query execution"
+                                    label="Choose a repeated run"
                                     data-ndb-query-execution-select
                                     x-model.number="querySelectedExecution"
                                     @change="selectQueryExecution(Number($event.target.value))"
@@ -77,9 +77,7 @@
                                     >
                                         <option
                                             :value="execution.execution"
-                                            x-text="
-                                                `#${execution.execution} — ${Number(execution.duration_ms).toFixed(2)} ms`
-                                            "
+                                            x-text="`#${execution.execution} — ${execution.duration_label}`"
                                         ></option>
                                     </template>
                                 </x-newdebugbar::select-field>
@@ -90,7 +88,7 @@
                             <x-newdebugbar::inspector-fact label="Duration">
                                 <x-slot:value
                                     class="ndb:text-xs ndb:font-bold ndb:tabular-nums"
-                                    x-text="`${Number(selectedQuery.duration_ms).toFixed(2)} ms`"
+                                    x-text="selectedQuery.duration_label"
                                 ></x-slot:value>
                             </x-newdebugbar::inspector-fact>
                             <x-newdebugbar::inspector-fact label="Query time">
@@ -217,10 +215,6 @@
                                     "
                                 ></x-slot:value>
                             </x-newdebugbar::inspector-evidence>
-                            <x-newdebugbar::inspector-explanation
-                                title="What to check in this plan"
-                                description="If the plan scans far more rows than expected, check the query filters, indexes, and join order."
-                            />
                         </div>
                     </template>
 
