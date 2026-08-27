@@ -70,7 +70,7 @@
     <div data-ndb-request-trace class="ndb:-mt-2">
         <div
             data-ndb-request-summary
-            class="ndb:flex ndb:flex-col ndb:gap-3 ndb:border-y ndb:border-zinc-200/90 ndb:bg-white/55 ndb:px-4 ndb:py-3 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
+            class="ndb:mx-4 ndb:flex ndb:flex-col ndb:gap-3 ndb:border-y ndb:border-zinc-200/90 ndb:bg-white/55 ndb:py-3 ndb:sm:mx-6 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
         >
             <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
                 <span class="ndb:shrink-0 ndb:rounded-md ndb:bg-emerald-50 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-emerald-700 ndb:ring-1 ndb:ring-inset ndb:ring-emerald-200 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300 ndb:dark:ring-emerald-900">
@@ -217,7 +217,7 @@
 
     <details
         data-ndb-request-details
-        class="ndb:group ndb:mt-8 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
+        class="ndb:group ndb:mx-4 ndb:mt-8 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:sm:mx-6 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
     >
         <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
             <span class="ndb:min-w-0 ndb:flex-1">

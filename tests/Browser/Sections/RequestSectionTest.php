@@ -25,16 +25,31 @@ it('shows an aligned request trace and switches request detail groups', function
         ->assertScript('document.querySelectorAll("[data-ndb-request-line]").length', 2)
         ->assertScript(<<<'JS'
             (() => {
-                const summary = getComputedStyle(document.querySelector('[data-ndb-request-summary]'));
-                const timeline = getComputedStyle(document.querySelector('[data-ndb-request-timeline]'));
+                const panelBounds = document.querySelector('[data-ndb-section-panel="request"]').getBoundingClientRect();
+                const summaryElement = document.querySelector('[data-ndb-request-summary]');
+                const summaryBounds = summaryElement.getBoundingClientRect();
+                const summary = getComputedStyle(summaryElement);
+                const timelineElement = document.querySelector('[data-ndb-request-timeline]');
+                const timeline = getComputedStyle(timelineElement);
+                const firstStepBounds = timelineElement.querySelector('[data-ndb-request-step]').getBoundingClientRect();
+                const detailsBounds = document.querySelector('[data-ndb-request-details]').getBoundingClientRect();
+                const inset = innerWidth >= 640 ? 24 : 16;
+                const near = (actual, expected) => Math.abs(actual - expected) < 1;
 
                 return summary.borderTopWidth === '1px'
                     && summary.borderRightWidth === '0px'
                     && summary.borderBottomWidth === '1px'
                     && summary.borderLeftWidth === '0px'
                     && summary.borderRadius === '0px'
-                    && timeline.paddingLeft === (innerWidth >= 640 ? '24px' : '16px')
-                    && timeline.paddingRight === (innerWidth >= 640 ? '24px' : '16px');
+                    && summary.paddingLeft === '0px'
+                    && summary.paddingRight === '0px'
+                    && timeline.paddingLeft === `${inset}px`
+                    && timeline.paddingRight === `${inset}px`
+                    && near(summaryBounds.left, panelBounds.left + inset)
+                    && near(summaryBounds.right, panelBounds.right - inset)
+                    && near(firstStepBounds.left, summaryBounds.left)
+                    && near(detailsBounds.left, panelBounds.left + inset)
+                    && near(detailsBounds.right, panelBounds.right - inset);
             })()
             JS)
         ->assertScript(<<<'JS'
