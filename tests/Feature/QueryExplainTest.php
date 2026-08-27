@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
 use NewDebugBar\Analysis\QueryAnalyzer;
@@ -73,6 +74,64 @@ it('rejects unsafe incomplete and mutating explain requests before touching the 
         'connection' => 'testing',
     ]],
 ]);
+
+it('turns database failures into safe actionable guidance', function (string $sql, string $message, string $privateValue) {
+    $query = [
+        'sql' => $sql,
+        'bindings' => [],
+        'source_preserved' => true,
+        'binding_policy' => 'full',
+        'bindings_complete' => true,
+        'connection' => 'testing',
+    ];
+
+    try {
+        app(QueryExplainer::class)->explain($query);
+    } catch (InvalidArgumentException $exception) {
+        $failure = $exception;
+    }
+
+    expect($failure ?? null)
+        ->toBeInstanceOf(InvalidArgumentException::class)
+        ->and($failure->getMessage())
+        ->toBe($message)
+        ->not->toContain($privateValue, 'SQLSTATE', 'Database:')
+        ->and($failure->getPrevious())
+        ->toBeInstanceOf(QueryException::class);
+})->with([
+    'missing SQLite function' => [
+        'select ndb_private_pause() as ready',
+        'The query ran, but SQLite could not prepare its plan because a custom function is missing from the EXPLAIN connection. Register that function whenever the query connection is created or reconnected, then reload the page to capture a new request.',
+        'ndb_private_pause',
+    ],
+    'missing SQLite table' => [
+        'select * from ndb_private_table',
+        'The query ran, but SQLite could not prepare its plan because a table it uses is missing from the EXPLAIN connection. Check that this connection points to the same database and that the table still exists.',
+        'ndb_private_table',
+    ],
+    'unclassified database failure' => [
+        'select from ndb_private_table',
+        'The query ran, but the separate EXPLAIN request failed. Open Overview and copy the full query. If the database is reachable, run EXPLAIN in your database client on the same connection to see its exact error.',
+        'ndb_private_table',
+    ],
+]);
+
+it('explains when the query database connection is no longer available', function () {
+    $query = [
+        'sql' => 'select 1',
+        'bindings' => [],
+        'source_preserved' => true,
+        'binding_policy' => 'full',
+        'bindings_complete' => true,
+        'connection' => 'private_missing_connection',
+    ];
+
+    expect(fn () => app(QueryExplainer::class)->explain($query))
+        ->toThrow(
+            InvalidArgumentException::class,
+            'The query ran, but its database connection is no longer available to EXPLAIN it. Restore that connection, then reload the request.',
+        );
+});
 
 it('keeps repeated execution evidence in one bounded workspace record', function () {
     $queries = array_map(fn (int $binding): array => [

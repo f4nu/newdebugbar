@@ -234,12 +234,20 @@ it('keeps an EXPLAIN failure visible', function () {
     visit('/profiled-queries-rich')
         ->resize(1200, 760)
         ->click('[data-ndb-toolbar="queries"]')
-        ->fill('[data-ndb-query-search]', 'explain_failure_probe')
+        ->fill('[data-ndb-query-search]', 'slow_probe')
         ->waitForText('1 shown')
         ->click('[data-ndb-query-detail-tab="explain"]')
-        ->waitForText('The database could not explain this query.')
+        ->waitForText('SQLite could not prepare its plan because a custom function is missing')
         ->assertVisible('[data-ndb-query-explain-error]')
-        ->assertSee('copy the full query from Overview')
+        ->assertSee('whenever the query connection is created or reconnected')
+        ->assertAttribute('[data-ndb-query-detail-panel="explain"] [role="alert"]', 'role', 'alert')
+        ->assertScript(<<<'JS'
+            (() => {
+                const error = document.querySelector('[data-ndb-query-explain-error]')?.textContent ?? '';
+
+                return ! error.includes('SQLSTATE') && ! error.includes('Database:');
+            })()
+            JS)
         ->assertMissing('[data-ndb-query-explain-action]')
         ->assertNoJavaScriptErrors();
 });

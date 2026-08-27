@@ -220,17 +220,17 @@
 
                     <div
                         x-show.important="queryExplainError !== null"
+                        role="alert"
                         class="ndb:rounded-lg ndb:border ndb:border-red-200 ndb:bg-red-50/60 ndb:p-3 ndb:dark:border-red-950 ndb:dark:bg-red-950/20"
                     >
+                        <p class="ndb:text-xs ndb:font-semibold ndb:leading-5 ndb:text-red-700 ndb:dark:text-red-300">
+                            EXPLAIN could not run
+                        </p>
                         <p
                             data-ndb-query-explain-error
-                            class="ndb:text-xs ndb:font-semibold ndb:leading-5 ndb:text-red-700 ndb:dark:text-red-300"
+                            class="ndb:mt-1 ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                             x-text="queryExplainError"
                         ></p>
-                        <p class="ndb:mt-1 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                            Check the error, then copy the full query from Overview if you need to inspect it in a
-                            database client.
-                        </p>
                     </div>
                 </section>
             </template>

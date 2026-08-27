@@ -184,6 +184,7 @@ trait DefinesTestApplication
 
             DB::select('select id as explain_failure_probe from ndb_query_workspace where id = ?', [1]);
             DB::statement('drop table ndb_query_workspace');
+            DB::purge();
 
             return response('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>Rich query workspace</h1></body></html>');
         });
