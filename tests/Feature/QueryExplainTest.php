@@ -101,17 +101,17 @@ it('turns database failures into safe actionable guidance', function (string $sq
 })->with([
     'missing SQLite function' => [
         'select ndb_private_pause() as ready',
-        'The query ran, but SQLite could not prepare its plan because a custom function is missing from the EXPLAIN connection. Register that function whenever the query connection is created or reconnected, then reload the page to capture a new request.',
+        'SQLite cannot find a function used by this query. Check its name or register it on the query connection, then reload.',
         'ndb_private_pause',
     ],
     'missing SQLite table' => [
         'select * from ndb_private_table',
-        'The query ran, but SQLite could not prepare its plan because a table it uses is missing from the EXPLAIN connection. Check that this connection points to the same database and that the table still exists.',
+        'SQLite cannot find a table used by this query. Check the database and confirm the table still exists.',
         'ndb_private_table',
     ],
     'unclassified database failure' => [
         'select from ndb_private_table',
-        'The query ran, but the separate EXPLAIN request failed. Open Overview and copy the full query. If the database is reachable, run EXPLAIN in your database client on the same connection to see its exact error.',
+        'Copy the query from Overview, then run EXPLAIN in your database client against the same database.',
         'ndb_private_table',
     ],
 ]);
@@ -129,7 +129,7 @@ it('explains when the query database connection is no longer available', functio
     expect(fn () => app(QueryExplainer::class)->explain($query))
         ->toThrow(
             InvalidArgumentException::class,
-            'The query ran, but its database connection is no longer available to EXPLAIN it. Restore that connection, then reload the request.',
+            'This query\'s database connection is unavailable. Restore it, then reload.',
         );
 });
 

@@ -42,7 +42,7 @@ final class QueryExplainer
             $driver = $connection->getDriverName();
         } catch (Throwable $exception) {
             throw new InvalidArgumentException(
-                'The query ran, but its database connection is no longer available to EXPLAIN it. Restore that connection, then reload the request.',
+                'This query\'s database connection is unavailable. Restore it, then reload.',
                 previous: $exception,
             );
         }
@@ -107,13 +107,13 @@ final class QueryExplainer
         $reason = strtolower($exception->getMessage());
 
         if ($driver === 'sqlite' && str_contains($reason, 'no such function:')) {
-            return 'The query ran, but SQLite could not prepare its plan because a custom function is missing from the EXPLAIN connection. Register that function whenever the query connection is created or reconnected, then reload the page to capture a new request.';
+            return 'SQLite cannot find a function used by this query. Check its name or register it on the query connection, then reload.';
         }
 
         if ($driver === 'sqlite' && str_contains($reason, 'no such table:')) {
-            return 'The query ran, but SQLite could not prepare its plan because a table it uses is missing from the EXPLAIN connection. Check that this connection points to the same database and that the table still exists.';
+            return 'SQLite cannot find a table used by this query. Check the database and confirm the table still exists.';
         }
 
-        return 'The query ran, but the separate EXPLAIN request failed. Open Overview and copy the full query. If the database is reachable, run EXPLAIN in your database client on the same connection to see its exact error.';
+        return 'Copy the query from Overview, then run EXPLAIN in your database client against the same database.';
     }
 }

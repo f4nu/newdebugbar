@@ -237,9 +237,9 @@ it('keeps an EXPLAIN failure visible', function () {
         ->fill('[data-ndb-query-search]', 'slow_probe')
         ->waitForText('1 shown')
         ->click('[data-ndb-query-detail-tab="explain"]')
-        ->waitForText('SQLite could not prepare its plan because a custom function is missing')
+        ->waitForText('SQLite cannot find a function used by this query')
         ->assertVisible('[data-ndb-query-explain-error]')
-        ->assertSee('whenever the query connection is created or reconnected')
+        ->assertSee('Check its name or register it on the query connection, then reload.')
         ->assertAttribute('[data-ndb-query-detail-panel="explain"] [role="alert"]', 'role', 'alert')
         ->assertScript(<<<'JS'
             (() => {
