@@ -260,14 +260,17 @@ it('uses only the existing request split button at every corner', function () {
             (() => {
                 const preview = document.querySelector('[data-ndb-toolbar-anchor="bottom-right"]');
                 const box = preview.getBoundingClientRect();
+                const styles = getComputedStyle(preview);
 
                 return preview.dataset.ndbActive === 'true'
-                    && Math.abs(box.width - 196) <= 1
-                    && Math.abs(box.height - 56) <= 1
-                    && Math.abs(window.innerWidth - box.right - 12) <= 1
-                    && Math.abs(window.innerHeight - box.bottom - 12) <= 1
-                    && getComputedStyle(preview).borderRadius === '18px'
-                    && Number.parseFloat(getComputedStyle(preview).opacity) === 1;
+                    && Math.abs(box.width - 224) <= 1
+                    && Math.abs(box.height - 224) <= 1
+                    && Math.abs(box.left - (window.innerWidth - box.width / 2)) <= 1
+                    && Math.abs(box.top - (window.innerHeight - box.height / 2)) <= 1
+                    && Number.parseFloat(styles.borderRadius) >= box.width / 2
+                    && Number.parseFloat(styles.borderTopWidth) === 0
+                    && styles.backgroundImage.includes('radial-gradient')
+                    && Number.parseFloat(styles.opacity) === 1;
             })()
             JS)
         ->assertScript(<<<'JS'
