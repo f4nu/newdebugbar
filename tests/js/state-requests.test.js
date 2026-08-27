@@ -37,6 +37,8 @@ test('a new application profile keeps a matching section and resets stale sectio
   state.viewDetailOpen = true;
   state.eventSource = 'framework';
   state.eventSearch = 'booted';
+  state.httpClientSort = 'duration';
+  state.httpClientSortDirection = 'desc';
 
   state.switchProfile({
     ...summary,
@@ -55,6 +57,8 @@ test('a new application profile keeps a matching section and resets stale sectio
   assert.equal(state.viewDetailOpen, false);
   assert.equal(state.eventSource, 'all');
   assert.equal(state.eventSearch, '');
+  assert.equal(state.httpClientSort, 'execution');
+  assert.equal(state.httpClientSortDirection, 'asc');
   assert.equal(sectionsLoaded, 1);
 
   state.inspectorOpen = false;

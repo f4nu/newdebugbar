@@ -202,6 +202,7 @@ it('composes the HTTP Client workspace from focused view components', function (
     $workspace = file_get_contents($views.'/components/http-client-workspace.blade.php');
     $detail = file_get_contents($views.'/components/http-client-detail.blade.php');
     $controls = file_get_contents($views.'/components/http-client-controls.blade.php');
+    $listHeading = file_get_contents($views.'/components/http-client-list-heading.blade.php');
     $header = file_get_contents($views.'/components/http-client-header.blade.php');
     $request = file_get_contents($views.'/components/http-client-request-panel.blade.php');
     $response = file_get_contents($views.'/components/http-client-response-panel.blade.php');
@@ -217,8 +218,20 @@ it('composes the HTTP Client workspace from focused view components', function (
         ->toContain('frame="top"')
         ->toContain('<x-newdebugbar::inspector-list-panel')
         ->toContain('<x-newdebugbar::http-client-controls')
+        ->toContain('<x-newdebugbar::http-client-list-heading')
         ->toContain('<x-newdebugbar::http-client-list-item')
         ->toContain('<x-newdebugbar::http-client-detail');
+
+    expect($listHeading)
+        ->toContain('Method')
+        ->toContain('Request')
+        ->toContain('Status')
+        ->toContain('Time')
+        ->toContain('<x-newdebugbar::inspector-sort-heading')
+        ->toContain('data-ndb-http-client-sort-heading="duration"')
+        ->not->toContain('data-ndb-http-client-sort-heading="method"')
+        ->not->toContain('data-ndb-http-client-sort-heading="request"')
+        ->not->toContain('data-ndb-http-client-sort-heading="status"');
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')

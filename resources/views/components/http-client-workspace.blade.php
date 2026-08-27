@@ -10,6 +10,8 @@
         </x-slot:controls>
 
         <x-slot:list data-ndb-http-client-list x-show.important="visibleHttpClientCount > 0">
+            <x-newdebugbar::http-client-list-heading />
+
             @foreach ($items as $item)
                 <x-newdebugbar::http-client-list-item :item="$item" />
             @endforeach

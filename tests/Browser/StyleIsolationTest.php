@@ -197,6 +197,7 @@ it('keeps host styles and package styles isolated', function () {
             JS, [null, null, null, null, null, null, true, true, true, true, true, true, true, true, true, true, true, true])
         ->click('[data-ndb-section="http_client"]')
         ->assertVisible('[data-ndb-section-panel="http_client"]')
+        ->click('[data-ndb-http-client-sort-heading="duration"]')
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-http-client]');
@@ -210,6 +211,9 @@ it('keeps host styles and package styles isolated', function () {
                 const copyUrl = document.querySelector('[data-ndb-http-client-copy-url]');
                 const listFilters = [...document.querySelectorAll('[data-ndb-http-client-filter]')];
                 const detailTabs = [...document.querySelectorAll('[data-ndb-http-client-detail-tab]')];
+                const listHeading = document.querySelector('[data-ndb-http-client-list-heading]');
+                const sortHeading = document.querySelector('[data-ndb-http-client-sort-heading="duration"]');
+                const sortIndicator = sortHeading.querySelector('[data-ndb-sort-indicator]');
 
                 return [
                     root.getAttribute('data-http-client'),
@@ -231,9 +235,14 @@ it('keeps host styles and package styles isolated', function () {
                     getComputedStyle(detailStatus).color !== 'rgb(0, 128, 0)',
                     listFilters.every((filter) => filter.getBoundingClientRect().height < 91),
                     detailTabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                    listHeading.getBoundingClientRect().height < 91,
+                    getComputedStyle(listHeading).backgroundColor !== 'rgb(255, 0, 0)',
+                    sortHeading.getBoundingClientRect().height < 32,
+                    sortIndicator.getBoundingClientRect().width <= 16,
+                    sortIndicator.getBoundingClientRect().height <= 16,
                 ];
             })()
-            JS, [null, null, null, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true])
+            JS, [null, null, null, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true])
         ->click('[data-ndb-http-client-detail-tab="request"]')
         ->assertScript(<<<'JS'
             (() => {

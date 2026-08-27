@@ -24,6 +24,8 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
                 const sectionNavigation = document.querySelector('#newdebugbar-section-navigation');
                 const inspectorContent = document.querySelector('[data-ndb-inspector-content]');
                 const rows = [...document.querySelectorAll('[data-ndb-http-client-item]')];
+                const listHeading = document.querySelector('[data-ndb-http-client-list-heading]');
+                const headingCells = [...listHeading.children];
                 const methods = rows.map((row) => row.querySelector('[data-ndb-http-client-method]'));
                 const hosts = rows.map((row) => row.querySelector('[data-ndb-http-client-host]'));
                 const paths = hosts.map((host) => host.nextElementSibling);
@@ -72,6 +74,18 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
                     && detail.getBoundingClientRect().width > list.getBoundingClientRect().width * 1.6
                     && document.querySelector('[data-ndb-http-client-item][aria-pressed="true"]').dataset.ndbHttpClientItem === '1'
                     && rows.every((row) => getComputedStyle(row).borderLeftWidth === '0px')
+                    && getComputedStyle(listHeading).position === 'sticky'
+                    && getComputedStyle(listHeading).gridTemplateColumns === getComputedStyle(rows[0]).gridTemplateColumns
+                    && headingCells.length === 4
+                    && headingCells[0].textContent.trim() === 'Method'
+                    && headingCells[1].textContent.trim() === 'Request'
+                    && headingCells[2].textContent.trim() === 'Status'
+                    && document.querySelectorAll('[data-ndb-http-client-sort-heading]').length === 1
+                    && document.querySelector('[data-ndb-http-client-sort-heading="duration"]') !== null
+                    && rows[0].children.length === headingCells.length
+                    && headingCells.every((cell, index) => Math.abs(
+                        cell.getBoundingClientRect().left - rows[0].children[index].getBoundingClientRect().left
+                    ) <= 1)
                     && methods.length === 7
                     && methods.every((method) => Math.round(method.getBoundingClientRect().width) === 48)
                     && aligned(hosts, 'left')
@@ -139,6 +153,68 @@ it('filters, selects, and inspects outbound HTTP evidence', function () {
                     && document.querySelector('[data-ndb-http-client-guidance]') === null
                     && !document.querySelector('[data-ndb-http-client]').textContent.includes('•')
                     && rows.every((row) => ! /#\d+/.test(row.textContent));
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const heading = document.querySelector('[data-ndb-http-client-sort-heading="duration"]');
+                const label = [...heading.children].find((child) => child.getAttribute('aria-hidden') === 'true' && ! child.matches('[data-ndb-sort-indicator]'));
+                const executions = [...document.querySelectorAll('[data-ndb-http-client-item]:not([hidden])')]
+                    .map((row) => Number(row.dataset.ndbExecution));
+                window.__newdebugbarHttpTimeLabelLeft = label?.getBoundingClientRect().left;
+
+                return heading.getAttribute('aria-pressed') === 'false'
+                    && Number.isFinite(window.__newdebugbarHttpTimeLabelLeft)
+                    && executions.every((execution, index) => index === 0 || executions[index - 1] <= execution);
+            })()
+            JS)
+        ->keys('[data-ndb-http-client-sort-heading="duration"]', 'Enter')
+        ->assertAttribute('[data-ndb-http-client-sort-heading="duration"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const rows = [...document.querySelectorAll('[data-ndb-http-client-item]:not([hidden])')];
+                const durations = rows.map((row) => Number(row.dataset.ndbDuration));
+                const firstMissing = durations.findIndex((duration) => duration < 0);
+                const retained = firstMissing === -1 ? durations : durations.slice(0, firstMissing);
+                const missing = firstMissing === -1 ? [] : durations.slice(firstMissing);
+                const heading = document.querySelector('[data-ndb-http-client-sort-heading="duration"]');
+                const label = [...heading.children].find((child) => child.getAttribute('aria-hidden') === 'true' && ! child.matches('[data-ndb-sort-indicator]'));
+                const indicator = heading.querySelector('[data-ndb-sort-indicator]');
+
+                return retained.every((duration, index) => index === 0 || retained[index - 1] >= duration)
+                    && missing.every((duration) => duration < 0)
+                    && document.querySelector('[data-ndb-http-client-item][aria-pressed="true"]').dataset.ndbHttpClientItem === '1'
+                    && getComputedStyle(heading).color !== getComputedStyle(heading.parentElement).color
+                    && indicator.getBoundingClientRect().width > 0
+                    && Math.abs(label.getBoundingClientRect().left - window.__newdebugbarHttpTimeLabelLeft) <= 1;
+            })()
+            JS)
+        ->click('[data-ndb-http-client-sort-heading="duration"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const durations = [...document.querySelectorAll('[data-ndb-http-client-item]:not([hidden])')]
+                    .map((row) => Number(row.dataset.ndbDuration));
+                const firstMissing = durations.findIndex((duration) => duration < 0);
+                const retained = firstMissing === -1 ? durations : durations.slice(0, firstMissing);
+                const missing = firstMissing === -1 ? [] : durations.slice(firstMissing);
+
+                return retained.every((duration, index) => index === 0 || retained[index - 1] <= duration)
+                    && missing.every((duration) => duration < 0);
+            })()
+            JS)
+        ->click('[data-ndb-http-client-sort-heading="duration"]')
+        ->assertAttribute('[data-ndb-http-client-sort-heading="duration"]', 'aria-pressed', 'false')
+        ->assertScript(<<<'JS'
+            (() => {
+                const heading = document.querySelector('[data-ndb-http-client-sort-heading="duration"]');
+                const label = [...heading.children].find((child) => child.getAttribute('aria-hidden') === 'true' && ! child.matches('[data-ndb-sort-indicator]'));
+                const indicatorIcon = heading.querySelector('[data-ndb-sort-indicator] svg');
+                const executions = [...document.querySelectorAll('[data-ndb-http-client-item]:not([hidden])')]
+                    .map((row) => Number(row.dataset.ndbExecution));
+
+                return Math.abs(label.getBoundingClientRect().left - window.__newdebugbarHttpTimeLabelLeft) <= 1
+                    && getComputedStyle(indicatorIcon).display === 'none'
+                    && executions.every((execution, index) => index === 0 || executions[index - 1] <= execution);
             })()
             JS)
         ->select('[data-ndb-http-client-filter]', 'failed')
@@ -387,8 +463,11 @@ it('uses the available height on a short desktop', function () {
                 const list = document.querySelector('[data-ndb-http-client-list]');
                 const detail = document.querySelector('[data-ndb-http-client-detail]');
                 const controls = document.querySelector('[data-ndb-inspector-list-controls]');
+                const listHeading = document.querySelector('[data-ndb-http-client-list-heading]');
 
                 return controls.getClientRects().length > 0
+                    && listHeading.getClientRects().length > 0
+                    && getComputedStyle(listHeading).position === 'sticky'
                     && getComputedStyle(list).overflowY === 'auto'
                     && getComputedStyle(detail).overflowY === 'auto'
                     && list.scrollHeight > list.clientHeight;
@@ -413,9 +492,13 @@ it('uses the available height on a short desktop', function () {
             (() => {
                 const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
                 const workspace = document.querySelector('[data-ndb-http-client-workspace]');
+                const list = document.querySelector('[data-ndb-http-client-list]');
+                const listHeading = document.querySelector('[data-ndb-http-client-list-heading]');
+                list.scrollTop = 120;
 
                 return dialog.scrollWidth <= dialog.clientWidth + 1
-                    && workspace.scrollWidth <= workspace.clientWidth + 1;
+                    && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && Math.abs(listHeading.getBoundingClientRect().top - list.getBoundingClientRect().top) <= 1;
             })()
             JS)
         ->assertNoJavaScriptErrors();
@@ -452,9 +535,14 @@ it('keeps HTTP request details readable on mobile in dark mode', function () {
                 const rows = [...document.querySelectorAll('[data-ndb-http-client-item]')];
                 const methods = rows.map((row) => row.querySelector('[data-ndb-http-client-method]'));
                 const hosts = rows.map((row) => row.querySelector('[data-ndb-http-client-host]'));
+                const listHeading = document.querySelector('[data-ndb-http-client-list-heading]');
+                const timeHeading = document.querySelector('[data-ndb-http-client-sort-heading="duration"]');
 
                 return dialog.scrollWidth <= dialog.clientWidth + 1
                     && workspace.scrollWidth <= workspace.clientWidth + 1
+                    && listHeading.scrollWidth <= listHeading.clientWidth + 1
+                    && getComputedStyle(listHeading).gridTemplateColumns === getComputedStyle(rows[0]).gridTemplateColumns
+                    && timeHeading.getBoundingClientRect().height < 32
                     && getComputedStyle(workspace).display !== 'grid'
                     && getComputedStyle(list).display === 'flex'
                     && getComputedStyle(detail).display === 'none'
