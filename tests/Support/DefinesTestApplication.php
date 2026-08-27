@@ -826,6 +826,21 @@ trait DefinesTestApplication
             fn () => response('<!doctype html><html><body>HTTP client empty</body></html>'),
         );
 
+        $router->middleware(ProfileRequest::class)->get('/profiled-http-client-sparse', function () {
+            app(ProfileManager::class)->record('http_client', [
+                'method' => 'GET',
+                'url' => 'https://api.healthy.test/v1/status',
+                'status' => 204,
+                'reason' => 'No Content',
+                'duration_ms' => 0.08,
+                'failed' => false,
+                'request' => [],
+                'response' => [],
+            ]);
+
+            return response('<!doctype html><html><body>HTTP client sparse</body></html>');
+        });
+
         $router->middleware(ProfileRequest::class)->get('/profiled-http-client-rich', function () {
             $failedConnection = method_exists(Factory::class, 'failedConnection')
                 ? Http::failedConnection('Connection refused')

@@ -227,12 +227,15 @@ it('composes the HTTP Client workspace from focused view components', function (
         ->toContain('<x-newdebugbar::http-client-request-panel')
         ->toContain('<x-newdebugbar::http-client-response-panel')
         ->toContain('<x-newdebugbar::inspector-source-panel')
-        ->toContain('<x-newdebugbar::inspector-source-fact');
+        ->toContain('<x-newdebugbar::inspector-source-link')
+        ->not->toContain('<x-newdebugbar::inspector-source-fact');
 
     expect($controls)
         ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain(':show-search="true"')
         ->toContain('<x-newdebugbar::search-field')
         ->toContain('<x-newdebugbar::select-field')
+        ->not->toContain('$itemCount >= 5')
         ->not->toContain('<x-newdebugbar::filter-tabs')
         ->not->toContain('Oldest')
         ->not->toContain('Slowest');
@@ -249,8 +252,8 @@ it('composes the HTTP Client workspace from focused view components', function (
 
     expect($response)
         ->toContain('<x-newdebugbar::inspector-facts')
-        ->toContain('<x-newdebugbar::inspector-definition-list')
         ->toContain('<x-newdebugbar::inspector-evidence')
+        ->not->toContain('data-ndb-http-client-failure')
         ->toContain('<x-newdebugbar::http-client-no-response');
 
 });
@@ -485,7 +488,6 @@ it('uses one calm source presentation across inspector sections', function () {
 
     foreach ([
         'components/cache-detail.blade.php',
-        'components/http-client-detail.blade.php',
         'components/mail-message-details.blade.php',
         'components/notification-detail.blade.php',
         'components/query-detail.blade.php',
@@ -494,6 +496,11 @@ it('uses one calm source presentation across inspector sections', function () {
             ->toContain('<x-newdebugbar::inspector-source-panel')
             ->toContain('<x-newdebugbar::inspector-source-fact');
     }
+
+    expect(file_get_contents($views.'/components/http-client-detail.blade.php'))
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-link')
+        ->not->toContain('<x-newdebugbar::inspector-source-fact');
 
     expect(file_get_contents($views.'/components/mail-message-details.blade.php'))
         ->toContain('<x-newdebugbar::inspector-source-panel')

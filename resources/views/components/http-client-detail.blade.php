@@ -35,13 +35,25 @@
                         data-ndb-http-client-detail-panel="source"
                         data-ndb-http-client-source-facts
                     >
-                        <x-newdebugbar::inspector-source-fact label="Request initiated at">
-                            <x-slot:value
-                                data-ndb-http-client-detail-source
-                                ::title="selectedHttpClientRequest.callsite_label"
-                                x-text="selectedHttpClientRequest.callsite_label"
-                            ></x-slot:value>
-                        </x-newdebugbar::inspector-source-fact>
+                        <template x-if="selectedHttpClientRequest.callsite_label">
+                            <div data-ndb-http-client-primary-source class="ndb:min-w-0">
+                                <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                                    Request initiated at
+                                </dt>
+                                <dd class="ndb:mt-1 ndb:min-w-0">
+                                    <x-newdebugbar::inspector-source-link
+                                        ::aria-label="'Copy source ' + selectedHttpClientRequest.callsite_label"
+                                        @click="copyText(selectedHttpClientRequest.callsite_label)"
+                                    >
+                                        <x-slot:value
+                                            data-ndb-http-client-detail-source
+                                            ::title="selectedHttpClientRequest.callsite_label"
+                                            x-text="selectedHttpClientRequest.callsite_label"
+                                        ></x-slot:value>
+                                    </x-newdebugbar::inspector-source-link>
+                                </dd>
+                            </div>
+                        </template>
                     </x-newdebugbar::inspector-source-panel>
                 </template>
             </div>

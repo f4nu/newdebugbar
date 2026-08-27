@@ -1,5 +1,10 @@
 <div data-ndb-http-client-detail-panel="request" class="ndb:p-4">
-    <div class="ndb:flex ndb:flex-col ndb:items-stretch ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:sm:flex-row ndb:sm:items-end ndb:dark:border-zinc-800">
+    <div
+        :class="selectedHttpClientRequest.request_has_headers || selectedHttpClientRequest.request_has_body
+            ? 'ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800'
+            : ''"
+        class="ndb:flex ndb:flex-col ndb:items-stretch ndb:justify-between ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end"
+    >
         <x-newdebugbar::inspector-facts
             :bordered="false"
             columns="2"
@@ -14,7 +19,10 @@
                     x-text="selectedHttpClientRequest.host"
                 ></x-slot:value>
             </x-newdebugbar::inspector-fact>
-            <x-newdebugbar::inspector-fact label="Request body">
+            <x-newdebugbar::inspector-fact
+                label="Request body"
+                x-show.important="selectedHttpClientRequest.request_body_size_label !== '—'"
+            >
                 <x-slot:value
                     class="ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-700 ndb:dark:text-zinc-200"
                     x-text="selectedHttpClientRequest.request_body_size_label"
@@ -32,12 +40,18 @@
         </x-newdebugbar::inspector-action>
     </div>
 
-    <div class="ndb:mt-5 ndb:space-y-5">
-        <x-newdebugbar::inspector-evidence label="Headers">
-            <x-slot:value x-text="formatHttpClientEvidence(selectedHttpClientRequest.request?.headers)"></x-slot:value>
-        </x-newdebugbar::inspector-evidence>
-        <x-newdebugbar::inspector-evidence label="Body">
-            <x-slot:value x-text="formatHttpClientEvidence(selectedHttpClientRequest.request?.body)"></x-slot:value>
-        </x-newdebugbar::inspector-evidence>
-    </div>
+    <template x-if="selectedHttpClientRequest.request_has_headers || selectedHttpClientRequest.request_has_body">
+        <div class="ndb:mt-5 ndb:space-y-5">
+            <template x-if="selectedHttpClientRequest.request_has_headers">
+                <x-newdebugbar::inspector-evidence label="Headers">
+                    <x-slot:value x-text="formatHttpClientEvidence(selectedHttpClientRequest.request?.headers)"></x-slot:value>
+                </x-newdebugbar::inspector-evidence>
+            </template>
+            <template x-if="selectedHttpClientRequest.request_has_body">
+                <x-newdebugbar::inspector-evidence label="Body">
+                    <x-slot:value x-text="formatHttpClientEvidence(selectedHttpClientRequest.request?.body)"></x-slot:value>
+                </x-newdebugbar::inspector-evidence>
+            </template>
+        </div>
+    </template>
 </div>

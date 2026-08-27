@@ -1,14 +1,15 @@
 @props([
     'summary',
-    'itemCount',
+    'items',
 ])
 
 @php
-    $retainedCount = (int) ($summary['retained_count'] ?? $itemCount);
+    $retainedCount = count($items);
+    $totalCount = max($retainedCount, (int) ($summary['count'] ?? $retainedCount));
     $filters = [
         'all' => ['All', $retainedCount],
-        'failed' => ['Failed', (int) ($summary['failed_count'] ?? 0)],
-        'slow' => ['Slow', (int) ($summary['slow_count'] ?? 0)],
+        'failed' => ['Failed', count(array_filter($items, fn (array $item): bool => (bool) ($item['failed'] ?? false)))],
+        'slow' => ['Slow', count(array_filter($items, fn (array $item): bool => (bool) ($item['slow'] ?? false)))],
     ];
 @endphp
 
@@ -17,7 +18,7 @@
     class="ndb:min-w-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-200"
 >
     <span data-ndb-http-client-summary-count>
-        {{ number_format($retainedCount) }} {{ \Illuminate\Support\Str::plural('request', $retainedCount) }}
+        {{ number_format($totalCount) }} {{ \Illuminate\Support\Str::plural('request', $totalCount) }}
     </span>
     <span
         x-show.important="visibleHttpClientCount !== httpClientRequests.length"
@@ -28,13 +29,16 @@
     </span>
     <span
         data-ndb-http-client-summary-runtime
-        class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
+        class="ndb:mt-0.5 ndb:flex ndb:flex-wrap ndb:gap-x-2 ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
     >
-        {{ \NewDebugBar\Support\DurationFormatter::format($summary['duration_ms'] ?? 0) }} total
+        @if ($retainedCount < $totalCount)
+            <span data-ndb-http-client-summary-available>{{ number_format($retainedCount) }} available</span>
+        @endif
+        <span>{{ \NewDebugBar\Support\DurationFormatter::format($summary['duration_ms'] ?? 0) }} total</span>
     </span>
 </p>
 
-<x-newdebugbar::inspector-list-controls :show-search="$itemCount >= 5">
+<x-newdebugbar::inspector-list-controls :show-search="true">
     <x-slot:search>
         <x-newdebugbar::search-field
             label="Search outbound HTTP requests"

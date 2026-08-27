@@ -1,12 +1,29 @@
 {{-- Normalizes HTTP Client data, then delegates the workspace to focused view components. --}}
 @php
-    $httpItems = collect($section['payload']['items'] ?? [])
-        ->map(function (array $item): array {
-            $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
+    $hasEvidence = static function (mixed $value): bool {
+        if ($value === null || $value === '') {
+            return false;
+        }
 
-            $item['callsite_label'] = $callsite === null
-                ? 'Source unavailable'
-                : $callsite['file'].':'.$callsite['line'];
+        return ! is_array($value) || $value !== [];
+    };
+    $httpItems = collect($section['payload']['items'] ?? [])
+        ->map(function (array $item) use ($hasEvidence): array {
+            $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
+            $callsiteFile = trim((string) ($callsite['file'] ?? ''));
+            $callsiteLine = is_numeric($callsite['line'] ?? null) ? (int) $callsite['line'] : null;
+            $request = is_array($item['request'] ?? null) ? $item['request'] : [];
+            $response = is_array($item['response'] ?? null) ? $item['response'] : [];
+            $item['stack'] = array_values(is_array($item['stack'] ?? null) ? $item['stack'] : []);
+
+            $item['callsite_label'] = $callsiteFile === ''
+                ? null
+                : $callsiteFile.($callsiteLine === null ? '' : ':'.$callsiteLine);
+            $item['has_source'] = $item['callsite_label'] !== null || $item['stack'] !== [];
+            $item['request_has_headers'] = $hasEvidence($request['headers'] ?? null);
+            $item['request_has_body'] = $hasEvidence($request['body'] ?? null);
+            $item['response_has_headers'] = $hasEvidence($response['headers'] ?? null);
+            $item['response_has_body'] = $hasEvidence($response['body'] ?? null);
 
             return $item;
         })

@@ -254,7 +254,8 @@ it('keeps host styles and package styles isolated', function () {
                 const sourcePanel = document.querySelector('[data-ndb-http-client-source-facts]');
                 const facts = sourcePanel.querySelector('dl');
                 const source = document.querySelector('[data-ndb-http-client-detail-source]');
-                const fact = source.closest('[data-ndb-inspector-source-fact]');
+                const sourceGroup = source.closest('[data-ndb-http-client-primary-source]');
+                const sourceLink = source.closest('[data-ndb-inspector-source-link]');
                 const stack = document.querySelector('[data-ndb-http-client-detail-panel="source"] [data-ndb-inspector-stack]');
                 const functionCall = stack.querySelector('li code');
                 const stackPath = stack.querySelector('[data-ndb-inspector-source-link] > span');
@@ -265,8 +266,10 @@ it('keeps host styles and package styles isolated', function () {
                     && !getComputedStyle(source).fontFamily.includes('JetBrains Mono Variable')
                     && getComputedStyle(functionCall).fontFamily.includes('JetBrains Mono Variable')
                     && !getComputedStyle(stackPath).fontFamily.includes('JetBrains Mono Variable')
-                    && getComputedStyle(fact).backgroundColor !== 'rgb(255, 0, 0)'
-                    && Number.parseFloat(getComputedStyle(fact).paddingLeft) === 12
+                    && getComputedStyle(sourceGroup).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && Number.parseFloat(getComputedStyle(sourceGroup).paddingLeft) === 0
+                    && getComputedStyle(sourceLink).textDecorationLine.includes('underline')
+                    && sourceLink.querySelector('svg') === null
                     && getComputedStyle(stack).backgroundColor === 'rgba(0, 0, 0, 0)'
                     && getComputedStyle(stack).borderLeftWidth === '0px'
                     && Number.parseFloat(getComputedStyle(stack).paddingLeft) === 0;
