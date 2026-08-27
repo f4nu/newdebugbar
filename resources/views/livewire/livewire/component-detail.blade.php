@@ -19,7 +19,7 @@
                 data-ndb-livewire-view-activity
                 @click="inspectLivewireComponentActivity()"
                 ::disabled="! selectedLivewireComponent.latestActivityId"
-                class="ndb:disabled:cursor-default ndb:disabled:opacity-40"
+                class="ndb:justify-self-end ndb:disabled:cursor-default ndb:disabled:opacity-40"
             >
                 Latest activity
             </x-newdebugbar::inspector-action>

@@ -13,7 +13,12 @@
 <button
     type="button"
     data-ndb-model-group
+    data-ndb-model-index="{{ $index }}"
     data-ndb-model-short-name="{{ $shortName }}"
+    data-ndb-model-sort-name="{{ \Illuminate\Support\Str::lower($shortName) }}"
+    data-ndb-model-sort-retrieved="{{ $retrievalCount }}"
+    data-ndb-model-sort-writes="{{ $changeCount }}"
+    data-ndb-model-sort-reloads="{{ $repeatCount }}"
     data-ndb-model-search-value="{{ \Illuminate\Support\Str::lower($group['model'].' '.$connection.' '.$table) }}"
     wire:key="model-group-{{ $index }}"
     aria-controls="newdebugbar-model-detail"

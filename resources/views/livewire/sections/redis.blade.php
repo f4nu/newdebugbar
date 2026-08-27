@@ -24,6 +24,19 @@
         $keyCount = max(0, (int) ($item['key_count'] ?? count($keys)));
         $retainedCount = max(0, (int) ($item['key_retained'] ?? max(count($keys), count($hashes))));
         $droppedCount = max(0, (int) ($item['key_dropped'] ?? max(0, $keyCount - $retainedCount)));
+        $rawCallsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
+        $callsiteLine = is_numeric($rawCallsite['line'] ?? null)
+            && (int) $rawCallsite['line'] > 0
+                ? (int) $rawCallsite['line']
+                : null;
+        $callsite = $rawCallsite !== null
+            && is_string($rawCallsite['file'] ?? null)
+            && $rawCallsite['file'] !== ''
+                ? [
+                    'file' => $rawCallsite['file'],
+                    'line' => $callsiteLine,
+                ]
+                : null;
         $keyLabel = match (true) {
             $keys !== [] && $keyCount > 1 => $keys[0].' and '.number_format($keyCount - 1).' more',
             $keys !== [] => $keys[0],
@@ -51,6 +64,10 @@
             'key_label' => $keyLabel,
             'keys' => $keys,
             'key_hashes' => $hashes,
+            'callsite' => $callsite,
+            'source_label' => $callsite === null
+                ? null
+                : $callsite['file'].($callsite['line'] === null ? '' : ':'.$callsite['line']),
         ];
     })->all();
     $redisCount = count($redisItems);
@@ -231,6 +248,17 @@
                                     <x-newdebugbar::inspector-fact label="Phase"
                                         ><x-slot:value x-text="selectedRedisCommand.phase_label"></x-slot:value
                                     ></x-newdebugbar::inspector-fact>
+                                    <template x-if="selectedRedisCommand.callsite">
+                                        <x-newdebugbar::inspector-fact label="Source" class="ndb:sm:col-span-4">
+                                            <x-newdebugbar::inspector-source-link
+                                                ::title="'Copy ' + selectedRedisCommand.source_label"
+                                                ::aria-label="'Copy Redis source ' + selectedRedisCommand.source_label"
+                                                @click="copyText(selectedRedisCommand.source_label)"
+                                            >
+                                                <x-slot:value x-text="selectedRedisCommand.source_label"></x-slot:value>
+                                            </x-newdebugbar::inspector-source-link>
+                                        </x-newdebugbar::inspector-fact>
+                                    </template>
                                 </x-newdebugbar::inspector-facts>
 
                                 <section

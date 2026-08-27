@@ -464,6 +464,8 @@ export function createNewDebugBar(
     visibleQueryCount: summary.query_count ?? 0,
     modelGroupCount: 0,
     modelSearch: '',
+    modelSort: 'capture',
+    modelSortDirection: 'asc',
     visibleModelCount: 0,
     modelSelected: null,
     modelDetailOpen: false,
@@ -795,6 +797,10 @@ export function createNewDebugBar(
       return this.queueActivities.find((activity) => activity.execution === this.queueSelected) ?? null;
     },
 
+    get selectedQueueHasAttempts() {
+      return Array.isArray(this.selectedQueueActivity?.attempts) && this.selectedQueueActivity.attempts.length > 0;
+    },
+
     get selectedRedisCommand() {
       return this.redisCommands.find((command) => command.execution === this.redisSelected) ?? null;
     },
@@ -927,6 +933,8 @@ export function createNewDebugBar(
     },
 
     get livewireActivity() {
+      const currentProfileId = PROFILE_PATTERN.test(this.summary?.id ?? '') ? this.summary.id : null;
+      const isCurrentLivewireRequest = this.summary?.request_type === 'livewire' && currentProfileId !== null;
       const serverActivity = this.livewireServerActivity.map((item, index) => ({
         id: item.id ?? `server-livewire-${index + 1}`,
         sequence: index + 1,
@@ -942,7 +950,12 @@ export function createNewDebugBar(
         finishedAt: null,
         durationMs: item.duration_ms ?? null,
         initialRenderDurationMs: null,
-        profileIds: [],
+        profileIds: [
+          ...new Set([
+            ...(Array.isArray(item.profile_ids) ? item.profile_ids : []),
+            ...(isCurrentLivewireRequest ? [currentProfileId] : []),
+          ]),
+        ],
         actions: item.method
           ? [
               {
@@ -976,6 +989,7 @@ export function createNewDebugBar(
         effects: item.effect ? { [item.effect]: true } : {},
         phases: [],
         error: item.message ?? null,
+        callsite: item.callsite ?? null,
       }));
 
       if (!this.livewireTrace.ready) return serverActivity;
@@ -999,7 +1013,19 @@ export function createNewDebugBar(
       });
 
       const consumedServerIds = new Set();
+      const hasCurrentProfileActivity =
+        currentProfileId !== null &&
+        this.livewireTrace.activity.some((item) =>
+          (Array.isArray(item?.profileIds) ? item.profileIds : []).includes(currentProfileId),
+        );
       const matchingServerEvidence = (item) => {
+        if (
+          (isCurrentLivewireRequest || hasCurrentProfileActivity) &&
+          !(Array.isArray(item?.profileIds) ? item.profileIds : []).includes(currentProfileId)
+        ) {
+          return [];
+        }
+
         const actionNames = new Set((item.actions ?? []).map((action) => action.name));
         const changePaths = new Set((item.changes ?? []).map((change) => change.path));
         const eventNames = new Set([
@@ -1021,6 +1047,9 @@ export function createNewDebugBar(
         const exact = candidates.filter((serverItem) => {
           if (serverItem.kind === 'action') return actionNames.has(serverItem.actions?.[0]?.name);
           if (serverItem.kind === 'change') return changePaths.has(serverItem.changes?.[0]?.path);
+          if (serverItem.kind === 'failure') {
+            return ['failed', 'failed_validation'].includes(item.status);
+          }
           if (['event', 'event_received'].includes(serverItem.kind)) {
             return eventNames.has(serverItem.events?.[0]?.name);
           }
@@ -1048,9 +1077,11 @@ export function createNewDebugBar(
           .map(Number)
           .filter(Number.isFinite);
         const mount = evidence.find((serverItem) => serverItem.kind === 'mount') ?? null;
+        const callsite = evidence.find((serverItem) => serverItem.callsite)?.callsite ?? item.callsite ?? null;
 
         return {
           ...item,
+          callsite,
           requestAtMs: requestTimes.length > 0 ? Math.min(...requestTimes) : null,
           initialRenderDurationMs: item.kind === 'mount' && renderDurations.length > 0 ? renderDurations[0] : null,
           serverRenderDurationMs:
@@ -1117,6 +1148,7 @@ export function createNewDebugBar(
             item.status,
             item.componentTitle,
             item.componentName,
+            this.livewireActivitySourceLabel(item),
             ...this.livewireMeaningfulActions(item).map((action) => action.name),
             ...item.changes.map((change) => change.path),
             ...this.livewireActivityEvents(item).map((event) => event.name),
@@ -2171,6 +2203,8 @@ export function createNewDebugBar(
       this.visibleViewRenderCount = 0;
       this.modelGroupCount = 0;
       this.modelSearch = '';
+      this.modelSort = 'capture';
+      this.modelSortDirection = 'asc';
       this.visibleModelCount = 0;
       this.modelSelected = null;
       this.modelDetailOpen = false;
@@ -2438,6 +2472,24 @@ export function createNewDebugBar(
         });
 
       return events;
+    },
+
+    livewireActivityProfileIds(item) {
+      return [
+        ...new Set(
+          (Array.isArray(item?.profileIds) ? item.profileIds : []).filter((id) => PROFILE_PATTERN.test(id ?? '')),
+        ),
+      ];
+    },
+
+    livewireActivitySourceLabel(item) {
+      const callsite = item?.callsite;
+      const file = typeof callsite?.file === 'string' ? callsite.file.trim() : '';
+      if (file === '') return null;
+
+      const line = Number(callsite?.line);
+
+      return Number.isInteger(line) && line > 0 ? `${file}:${line}` : file;
     },
 
     livewireActivityStatusLabel(item) {
@@ -2795,6 +2847,8 @@ export function createNewDebugBar(
 
       this.modelGroupCount = Number.isInteger(normalized) && normalized > 0 ? normalized : 0;
       this.modelSearch = '';
+      this.modelSort = 'capture';
+      this.modelSortDirection = 'asc';
       this.visibleModelCount = this.modelGroupCount;
       this.modelSelected = null;
       this.modelDetailOpen = false;
@@ -2803,29 +2857,81 @@ export function createNewDebugBar(
     },
 
     applyModelView() {
-      const rows = [...(this.$refs?.modelList?.querySelectorAll?.('[data-ndb-model-group]') ?? [])];
+      const list = this.$refs?.modelList;
+      const rows = [...(list?.querySelectorAll?.('[data-ndb-model-group]') ?? [])];
       const search = this.modelSearch.toLowerCase().trim();
       let visible = 0;
 
-      rows.forEach((row) => {
-        const matches = search === '' || row.dataset.ndbModelSearchValue?.includes(search);
-        row.hidden = !matches;
+      rows
+        .sort((left, right) => this.compareModels(left, right))
+        .forEach((row) => {
+          const matches = search === '' || row.dataset.ndbModelSearchValue?.includes(search);
+          row.hidden = !matches;
 
-        if (matches) {
-          row.style.removeProperty('display');
-          visible++;
-        } else {
-          row.style.setProperty('display', 'none', 'important');
-        }
-      });
+          if (matches) {
+            row.style.removeProperty('display');
+            visible++;
+          } else {
+            row.style.setProperty('display', 'none', 'important');
+          }
+
+          list?.appendChild?.(row);
+        });
 
       this.visibleModelCount = visible;
 
-      if (Number.isInteger(this.modelSelected) && rows[this.modelSelected]?.hidden) {
+      const selectedRow = rows.find((row) => Number(row.dataset.ndbModelIndex) === this.modelSelected);
+
+      if (Number.isInteger(this.modelSelected) && selectedRow?.hidden) {
         this.modelSelected = null;
         this.modelDetailOpen = false;
         this.modelDetailTab = 'records';
       }
+    },
+
+    toggleModelSort(sort) {
+      if (!['model', 'retrieved', 'writes', 'reloads'].includes(sort)) return;
+
+      const firstDirection = sort === 'model' ? 'asc' : 'desc';
+
+      if (this.modelSort !== sort) {
+        this.modelSort = sort;
+        this.modelSortDirection = firstDirection;
+      } else if (this.modelSortDirection === firstDirection) {
+        this.modelSortDirection = firstDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.modelSort = 'capture';
+        this.modelSortDirection = 'asc';
+      }
+
+      this.applyModelView();
+    },
+
+    compareModels(left, right) {
+      const captureComparison = Number(left.dataset.ndbModelIndex ?? 0) - Number(right.dataset.ndbModelIndex ?? 0);
+
+      if (this.modelSort === 'capture') return captureComparison;
+
+      let comparison = 0;
+
+      if (this.modelSort === 'model') {
+        comparison = String(left.dataset.ndbModelSortName ?? '').localeCompare(
+          String(right.dataset.ndbModelSortName ?? ''),
+          undefined,
+          { numeric: true, sensitivity: 'base' },
+        );
+      } else {
+        const attribute = {
+          retrieved: 'ndbModelSortRetrieved',
+          writes: 'ndbModelSortWrites',
+          reloads: 'ndbModelSortReloads',
+        }[this.modelSort];
+        comparison = Number(left.dataset[attribute] ?? 0) - Number(right.dataset[attribute] ?? 0);
+      }
+
+      const directedComparison = this.modelSortDirection === 'asc' ? comparison : -comparison;
+
+      return directedComparison || captureComparison;
     },
 
     selectModelGroup(index) {
@@ -2874,7 +2980,9 @@ export function createNewDebugBar(
           behavior: 'instant',
         });
         const focus = () =>
-          this.$root?.querySelectorAll?.('[data-ndb-model-group]')?.[selected]?.focus?.({ preventScroll: true });
+          [...(this.$root?.querySelectorAll?.('[data-ndb-model-group]') ?? [])]
+            .find((row) => Number(row.dataset.ndbModelIndex) === selected)
+            ?.focus?.({ preventScroll: true });
 
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
@@ -2931,6 +3039,11 @@ export function createNewDebugBar(
 
     setQueueDetailTab(tab) {
       if (!['overview', 'attempts'].includes(tab)) return;
+      if (tab === 'attempts' && !this.selectedQueueHasAttempts) {
+        this.queueDetailTab = 'overview';
+
+        return;
+      }
 
       this.queueDetailTab = tab;
       this.resetQueueDetail(false);
@@ -2991,6 +3104,8 @@ export function createNewDebugBar(
         this.queueDetailTab = 'overview';
         if (firstVisible === null) this.queueDetailOpen = false;
       }
+
+      if (!this.selectedQueueHasAttempts) this.queueDetailTab = 'overview';
     },
 
     initializeRedis(commands) {
@@ -4361,8 +4476,12 @@ export function createNewDebugBar(
       const id = this.timelineSelected?.id;
       this.timelineDetailOpen = false;
       this.$nextTick?.(() => {
-        const items = this.$refs?.timelineList?.querySelectorAll?.('[data-ndb-timeline-item]') ?? [];
-        [...items].find((item) => item.dataset.ndbTimelineItem === id)?.focus?.({ preventScroll: true });
+        const focus = () => {
+          const items = this.$refs?.timelineList?.querySelectorAll?.('[data-ndb-timeline-item]') ?? [];
+          [...items].find((item) => item.dataset.ndbTimelineItem === id)?.focus?.({ preventScroll: true });
+        };
+
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
     },
 

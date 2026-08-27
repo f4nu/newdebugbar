@@ -16,12 +16,23 @@
         'forceDeleted' => 'Force deleted',
         default => \Illuminate\Support\Str::headline($event),
     };
-    $sourceTitle = static function (mixed $callsite): string {
-        if (! is_array($callsite)) {
-            return 'Source unavailable';
+    $sourceLocation = static function (mixed $callsite): ?string {
+        if (! is_array($callsite) || ! is_string($callsite['file'] ?? null) || $callsite['file'] === '') {
+            return null;
         }
 
-        $exact = $callsite['file'].':'.$callsite['line'];
+        $line = is_numeric($callsite['line'] ?? null) && (int) $callsite['line'] > 0
+            ? (int) $callsite['line']
+            : null;
+
+        return $callsite['file'].($line === null ? '' : ':'.$line);
+    };
+    $sourceTitle = static function (mixed $callsite) use ($sourceLocation): string {
+        $exact = $sourceLocation($callsite);
+
+        if ($exact === null) {
+            return 'Source unavailable';
+        }
 
         if (($callsite['kind'] ?? null) === 'compiled_view' && is_string($callsite['template_file'] ?? null)) {
             return 'Blade '.$callsite['template_file'].', compiled '.$exact;
@@ -30,7 +41,7 @@
         return $exact;
     };
     $sourceShortLabel = static function (mixed $callsite): string {
-        if (! is_array($callsite)) {
+        if (! is_array($callsite) || ! is_string($callsite['file'] ?? null) || $callsite['file'] === '') {
             return '—';
         }
 
@@ -38,7 +49,22 @@
             return basename(str_replace('\\', '/', $callsite['template_file']));
         }
 
-        return basename(str_replace('\\', '/', $callsite['file'])).':'.$callsite['line'];
+        $line = is_numeric($callsite['line'] ?? null) && (int) $callsite['line'] > 0
+            ? (int) $callsite['line']
+            : null;
+
+        return basename(str_replace('\\', '/', $callsite['file'])).($line === null ? '' : ':'.$line);
+    };
+    $sourceCopy = static function (mixed $callsite) use ($sourceLocation): ?string {
+        if (! is_array($callsite)) {
+            return null;
+        }
+
+        if (($callsite['kind'] ?? null) === 'compiled_view' && is_string($callsite['template_file'] ?? null)) {
+            return $callsite['template_file'];
+        }
+
+        return $sourceLocation($callsite);
     };
     $formatActivity = static function (int $retrievals, int $changes) use ($plural): string {
         $parts = [];
@@ -127,6 +153,7 @@
                                 @foreach ($group['records'] ?? [] as $record)
                                     @php
                                         $recordSource = $record['sources'][0]['callsite'] ?? null;
+                                        $recordSourceCopy = $sourceCopy($recordSource);
                                         $recordLoads = (int) ($record['loads'] ?? 0);
                                         $recordKey = $record['key'] ?? null;
                                     @endphp
@@ -149,13 +176,18 @@
                                             <span class="ndb:text-zinc-400 ndb:sm:hidden">Retrieved </span
                                             >{{ number_format($recordLoads) }}
                                         </span>
-                                        <span
-                                            class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                            title="{{ $sourceTitle($recordSource) }}"
-                                        >
-                                            <span class="ndb:sm:hidden">Source </span
-                                            >{{ $sourceShortLabel($recordSource) }}
-                                        </span>
+                                        @if ($recordSourceCopy !== null)
+                                            <x-newdebugbar::inspector-source-link
+                                                :copy="$recordSourceCopy"
+                                                :title="$sourceTitle($recordSource)"
+                                                class="ndb:justify-self-start ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                            >
+                                                <span class="ndb:sm:hidden">Source </span
+                                                >{{ $sourceShortLabel($recordSource) }}
+                                            </x-newdebugbar::inspector-source-link>
+                                        @else
+                                            <span class="ndb:text-[11px] ndb:text-zinc-400">—</span>
+                                        @endif
                                     </article>
                                 @endforeach
 
@@ -222,6 +254,7 @@
                                     @php
                                         $writeKey = $operation['key'] ?? null;
                                         $writeSource = $operation['callsite'] ?? null;
+                                        $writeSourceCopy = $sourceCopy($writeSource);
                                     @endphp
                                     <article
                                         data-ndb-model-write-operation
@@ -238,13 +271,18 @@
                                             <span class="ndb:font-sans ndb:text-zinc-400 ndb:sm:hidden">Record </span
                                             >{{ $writeKey === null || $writeKey === '' ? '—' : (string) $writeKey }}
                                         </span>
-                                        <span
-                                            class="ndb:min-w-0 ndb:truncate ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                            title="{{ $sourceTitle($writeSource) }}"
-                                        >
-                                            <span class="ndb:sm:hidden">Source </span
-                                            >{{ $sourceShortLabel($writeSource) }}
-                                        </span>
+                                        @if ($writeSourceCopy !== null)
+                                            <x-newdebugbar::inspector-source-link
+                                                :copy="$writeSourceCopy"
+                                                :title="$sourceTitle($writeSource)"
+                                                class="ndb:justify-self-start ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                            >
+                                                <span class="ndb:sm:hidden">Source </span
+                                                >{{ $sourceShortLabel($writeSource) }}
+                                            </x-newdebugbar::inspector-source-link>
+                                        @else
+                                            <span class="ndb:text-[11px] ndb:text-zinc-400">—</span>
+                                        @endif
                                     </article>
                                 @endforeach
                             </div>
@@ -291,7 +329,7 @@
                                 @foreach ($group['sources'] as $source)
                                     @php
                                         $callsite = $source['callsite'];
-                                        $sourcePath = $callsite['file'].':'.$callsite['line'];
+                                        $sourcePath = $sourceLocation($callsite);
                                         $isCompiledView = ($callsite['kind'] ?? null) === 'compiled_view';
                                         $templateFile = is_string($callsite['template_file'] ?? null) ? $callsite['template_file'] : null;
                                     @endphp
@@ -307,12 +345,13 @@
                                                 >
                                                     Blade template
                                                 </p>
-                                                <p
+                                                <x-newdebugbar::inspector-source-link
                                                     data-ndb-model-source-path="template"
-                                                    class="ndb:mt-0.5 ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300"
+                                                    :copy="$templateFile"
+                                                    class="ndb:mt-0.5 ndb:break-all ndb:text-xs"
                                                 >
                                                     {{ $templateFile }}
-                                                </p>
+                                                </x-newdebugbar::inspector-source-link>
                                                 <p class="ndb:mt-2 ndb:text-[11px] ndb:text-zinc-400">
                                                     Compiled location
                                                 </p>
@@ -320,15 +359,20 @@
                                                     data-ndb-model-source-path="compiled"
                                                     class="ndb:mt-0.5 ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
                                                 >
-                                                    {{ $sourcePath }}
+                                                    {{ $sourcePath ?? 'Source unavailable' }}
                                                 </p>
                                             @else
-                                                <p
-                                                    data-ndb-model-source-path="application"
-                                                    class="ndb:break-all ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300"
-                                                >
-                                                    {{ $sourcePath }}
-                                                </p>
+                                                @if ($sourcePath !== null)
+                                                    <x-newdebugbar::inspector-source-link
+                                                        data-ndb-model-source-path="application"
+                                                        :copy="$sourcePath"
+                                                        class="ndb:break-all ndb:text-xs"
+                                                    >
+                                                        {{ $sourcePath }}
+                                                    </x-newdebugbar::inspector-source-link>
+                                                @else
+                                                    <span class="ndb:text-[11px] ndb:text-zinc-400">Source unavailable</span>
+                                                @endif
                                             @endif
                                         </div>
                                         <div class="ndb:sm:text-right">

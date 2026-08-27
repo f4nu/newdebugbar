@@ -327,7 +327,19 @@
                             </x-newdebugbar::inspector-facts>
 
                             <x-newdebugbar::inspector-source-fact label="Source" class="ndb:mt-4">
-                                <x-slot:value x-text="selectedTimelineItem.source ?? 'Not captured for this activity.'"></x-slot:value>
+                                <x-slot:value>
+                                    <template x-if="selectedTimelineItem.source">
+                                        <x-newdebugbar::inspector-source-link
+                                            @click="copyText(selectedTimelineItem.source)"
+                                            ::title="selectedTimelineItem.source"
+                                        >
+                                            <x-slot:value x-text="selectedTimelineItem.source"></x-slot:value>
+                                        </x-newdebugbar::inspector-source-link>
+                                    </template>
+                                    <template x-if="! selectedTimelineItem.source">
+                                        <span>Not captured for this activity.</span>
+                                    </template>
+                                </x-slot:value>
                             </x-newdebugbar::inspector-source-fact>
                         </div>
                     </div>

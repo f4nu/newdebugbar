@@ -160,17 +160,38 @@ it('scans filters searches and inspects authorization evidence on desktop', func
             JS)
         ->click('[data-ndb-authorization-detail-tab="source"]')
         ->assertVisible('[data-ndb-authorization-detail-panel="source"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-authorization-detail-panel="source"]');
+                const links = [
+                    panel.querySelector('[data-ndb-authorization-copy-handler-source]'),
+                    panel.querySelector('[data-ndb-authorization-copy-callsite]'),
+                ];
+                const interfaceFont = getComputedStyle(document.querySelector('[data-ndb-authorization]')).fontFamily;
+
+                return links.every((link) => link !== null)
+                    && links.every((link) => getComputedStyle(link).fontFamily === interfaceFont)
+                    && links.every((link) => getComputedStyle(link).textDecorationLine.includes('underline'))
+                    && links.every((link) => link.querySelector('svg') === null);
+            })()
+            JS)
         ->click('[data-ndb-authorization-copy-evidence]')
+        ->click('[data-ndb-authorization-copy-handler-source]')
+        ->click('[data-ndb-authorization-copy-callsite]')
         ->wait(0.05)
         ->assertScript(<<<'JS'
             (() => {
-                const [evidence] = window.newdebugbarAuthorizationClipboard;
+                const [evidence, handlerSource, callsite] = window.newdebugbarAuthorizationClipboard;
                 const parsed = JSON.parse(evidence);
+                const handlerLink = document.querySelector('[data-ndb-authorization-copy-handler-source]');
+                const callsiteLink = document.querySelector('[data-ndb-authorization-copy-callsite]');
 
-                return window.newdebugbarAuthorizationClipboard.length === 1
+                return window.newdebugbarAuthorizationClipboard.length === 3
                     && parsed.ability === 'access-private-planning-notes'
                     && parsed.result === 'denied'
-                    && parsed.result_reason.code === 'guest_private_notes';
+                    && parsed.result_reason.code === 'guest_private_notes'
+                    && handlerSource === handlerLink.textContent.trim()
+                    && callsite === callsiteLink.textContent.trim();
             })()
             JS)
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')

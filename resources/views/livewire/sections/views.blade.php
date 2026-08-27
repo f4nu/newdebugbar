@@ -245,7 +245,19 @@
                                 class="ndb:space-y-4 ndb:border-l-0 ndb:bg-transparent ndb:p-4"
                             >
                                 <x-newdebugbar::inspector-source-fact label="Render source">
-                                    <x-slot:value x-text="selectedViewRender.source_label ?? 'Template source was not captured.'"></x-slot:value>
+                                    <x-slot:value>
+                                        <template x-if="selectedViewRender.source_label">
+                                            <x-newdebugbar::inspector-source-link
+                                                @click="copyText(selectedViewRender.source_label)"
+                                                ::title="selectedViewRender.source_label"
+                                            >
+                                                <x-slot:value x-text="selectedViewRender.source_label"></x-slot:value>
+                                            </x-newdebugbar::inspector-source-link>
+                                        </template>
+                                        <template x-if="! selectedViewRender.source_label">
+                                            <span>Template source was not captured.</span>
+                                        </template>
+                                    </x-slot:value>
                                 </x-newdebugbar::inspector-source-fact>
 
                                 <template x-if="selectedViewRender.composers.length > 0">
@@ -261,11 +273,15 @@
                                                         class="ndb:break-words ndb:text-xs ndb:font-semibold"
                                                         x-text="composer.name"
                                                     ></p>
-                                                    <p
-                                                        x-show.important="composer.source_label"
-                                                        class="ndb:mt-0.5 ndb:break-all ndb:text-[11px] ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                                        x-text="composer.source_label"
-                                                    ></p>
+                                                    <template x-if="composer.source_label">
+                                                        <x-newdebugbar::inspector-source-link
+                                                            @click="copyText(composer.source_label)"
+                                                            ::title="composer.source_label"
+                                                            class="ndb:mt-0.5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                                        >
+                                                            <x-slot:value x-text="composer.source_label"></x-slot:value>
+                                                        </x-newdebugbar::inspector-source-link>
+                                                    </template>
                                                 </li>
                                             </template>
                                         </ul>

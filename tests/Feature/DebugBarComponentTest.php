@@ -110,40 +110,60 @@ it('keeps captured overview diagnostics out of the inspector UI', function () {
         ->assertStatus(422);
 });
 
-it('removes legacy message sections from the inspector and timeline', function () {
+it('renders retained exception causes with a truthful current profile action', function (string $profileType, string $actionLabel) {
     $id = (string) Str::uuid();
+    $runtime = $profileType === 'http' ? 'full_page' : $profileType;
+
     app(ProfileStore::class)->put([
         'id' => $id,
+        'profile_type' => $profileType,
         'environment' => 'testing',
-        'metrics' => ['duration_ms' => 12, 'peak_memory_mb' => 8],
+        'metrics' => ['duration_ms' => 12.5, 'peak_memory_mb' => 8],
         'sections' => [
             'request' => [
-                'label' => 'Request',
-                'summary' => ['method' => 'GET', 'status' => 200],
-                'payload' => ['path' => '/legacy', 'method' => 'GET', 'status' => 200],
+                'label' => $profileType === 'http' ? 'Request' : 'Runtime',
+                'summary' => ['method' => $profileType === 'http' ? 'GET' : 'CLI', 'status' => 200],
+                'payload' => ['path' => '/exceptions', 'runtime_type' => $runtime],
             ],
-            'messages' => [
-                'label' => 'Messages',
+            'exceptions' => [
+                'label' => 'Exceptions',
                 'summary' => ['count' => 1],
                 'payload' => ['items' => [[
-                    'label' => 'Legacy developer message',
-                    'at_ms' => 5,
+                    'class' => RuntimeException::class,
+                    'message' => 'Top-level failure.',
+                    'file' => 'app/Actions/Run.php',
+                    'line' => 42,
+                    'frames' => ['application' => [], 'vendor' => []],
+                    'source' => null,
+                    'causes' => [[
+                        'class' => LogicException::class,
+                        'message' => 'Underlying failure.',
+                        'file' => 'app/Services/Dependency.php',
+                        'line' => 17,
+                        'frames' => ['application' => [], 'vendor' => []],
+                        'source' => null,
+                    ]],
+                    'chain_truncated' => true,
                 ]]],
             ],
         ],
     ]);
 
-    $presented = app(ProfilePresenter::class)->present(app(ProfileStore::class)->get($id));
-
-    expect($presented['sections'])->not->toHaveKey('messages')
-        ->and(array_column($presented['sections']['timeline']['payload']['items'], 'section'))
-        ->not->toContain('messages');
-
     Livewire::test(DebugBar::class, ['profileId' => $id])
-        ->assertSet('summary.sections', fn (array $sections): bool => collect($sections)->doesntContain('key', 'messages'))
-        ->call('loadSection', 'messages')
-        ->assertStatus(422);
-});
+        ->call('loadSection', 'exceptions')
+        ->assertSeeHtml('data-ndb-exception-context-action')
+        ->assertSeeHtml('data-ndb-exception-detail-tab="causes"')
+        ->assertSeeHtml('data-ndb-exception-cause="0"')
+        ->assertSee($actionLabel)
+        ->assertSee('Underlying failure.')
+        ->assertSee('More causes exist, but only the first five were retained.');
+})->with([
+    'HTTP request' => ['http', 'Open request'],
+    'queue worker' => ['queue', 'Open worker'],
+    'Artisan command' => ['artisan', 'Open command'],
+    'test run' => ['test', 'Open test run'],
+    'other runtime' => ['runtime', 'Open runtime'],
+]);
 
 it('summarizes warnings, slow queries, and duplicate sql', function () {
     $id = (string) Str::uuid();

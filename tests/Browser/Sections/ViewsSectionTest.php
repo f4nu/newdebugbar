@@ -45,7 +45,9 @@ it('keeps application views primary and lazily inspects one desktop render', fun
         ->assertSee('original-response')
         ->assertVisible('[data-ndb-view-render-select]')
         ->assertVisible('[data-ndb-view-detail-panel="overview"]')
-        ->assertSee('tests/Fixtures/views/original-response.blade.php:1')
+        ->assertSee('tests/Fixtures/views/original-response.blade.php')
+        ->assertDontSee('tests/Fixtures/views/original-response.blade.php:1')
+        ->assertVisible('[data-ndb-view-detail-panel="overview"] [data-ndb-inspector-source-link]')
         ->assertMissing('[data-ndb-view-detail-tab="source"]')
         ->assertMissing('[data-ndb-view-detail-panel="source"]')
         ->assertMissing('[data-ndb-view-composers]')
@@ -63,9 +65,31 @@ it('keeps application views primary and lazily inspects one desktop render', fun
                     && getComputedStyle(metadata).display === 'flex'
                     && metadata.querySelectorAll(':scope > div').length === 2
                     && select !== null
+                    && getComputedStyle(
+                        document.querySelector('[data-ndb-view-detail-panel="overview"] [data-ndb-inspector-source-link]'),
+                    ).fontFamily === getComputedStyle(header).fontFamily
                     && tabs.querySelector('[data-ndb-view-render-select]') === null
                     && header.scrollWidth <= header.clientWidth;
             })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                window.newdebugbarViewClipboard = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarViewClipboard.push(value),
+                    },
+                });
+
+                return true;
+            })()
+            JS)
+        ->click('[data-ndb-view-detail-panel="overview"] [data-ndb-inspector-source-link]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            JSON.stringify(window.newdebugbarViewClipboard)
+                === JSON.stringify(['tests/Fixtures/views/original-response.blade.php'])
             JS)
         ->click('[data-ndb-view-detail-tab="data"]')
         ->waitForText('First response')
@@ -84,7 +108,7 @@ it('keeps application views primary and lazily inspects one desktop render', fun
             JS)
         ->click('[data-ndb-view-detail-tab="overview"]')
         ->assertVisible('[data-ndb-view-detail-panel="overview"]')
-        ->assertSee('tests/Fixtures/views/original-response.blade.php:1')
+        ->assertSee('tests/Fixtures/views/original-response.blade.php')
         ->select('[data-ndb-view-filter]', 'framework')
         ->assertScript('document.querySelectorAll("[data-ndb-view-group]:not([hidden])").length', 0)
         ->assertSee('No views match this origin and search.')
@@ -133,7 +157,8 @@ it('uses a bounded mobile list drill-in with a working Views back action', funct
         ->assertVisible('[data-ndb-view-detail-panel="overview"]')
         ->assertMissing('[data-ndb-view-detail-tab="source"]')
         ->assertMissing('[data-ndb-view-composers]')
-        ->assertSee('tests/Fixtures/views/original-response.blade.php:1')
+        ->assertSee('tests/Fixtures/views/original-response.blade.php')
+        ->assertDontSee('tests/Fixtures/views/original-response.blade.php:1')
         ->assertScript(<<<'JS'
             (() => {
                 const panel = document.querySelector('[data-ndb-section-panel="views"]');

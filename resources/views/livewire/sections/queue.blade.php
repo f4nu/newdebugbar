@@ -282,7 +282,7 @@
                             <x-slot:aside>
                                 <span
                                     data-ndb-queue-detail-status
-                                    class="ndb:inline-flex ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
+                                    class="ndb:inline-flex ndb:justify-self-end ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
                                     :class="{
                                         'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300':
                                             selectedQueueActivity.status === 'failed',
@@ -318,15 +318,22 @@
                         </x-newdebugbar::inspector-detail-header>
 
                         <x-newdebugbar::inspector-detail-tabs label="Queue activity detail">
-                            @foreach (['overview' => 'Overview', 'attempts' => 'Attempts'] as $tab => $label)
+                            <x-newdebugbar::filter-tab
+                                variant="segmented"
+                                data-ndb-queue-detail-tab="overview"
+                                @click="setQueueDetailTab('overview')"
+                                ::aria-pressed="queueDetailTab === 'overview'"
+                                class="ndb:h-auto ndb:min-h-8"
+                            >Overview</x-newdebugbar::filter-tab>
+                            <template x-if="selectedQueueActivity.attempts.length > 0">
                                 <x-newdebugbar::filter-tab
                                     variant="segmented"
-                                    data-ndb-queue-detail-tab="{{ $tab }}"
-                                    @click="setQueueDetailTab('{{ $tab }}')"
-                                    ::aria-pressed="queueDetailTab === '{{ $tab }}'"
+                                    data-ndb-queue-detail-tab="attempts"
+                                    @click="setQueueDetailTab('attempts')"
+                                    ::aria-pressed="queueDetailTab === 'attempts'"
                                     class="ndb:h-auto ndb:min-h-8"
-                                >{{ $label }}</x-newdebugbar::filter-tab>
-                            @endforeach
+                                >Attempts</x-newdebugbar::filter-tab>
+                            </template>
                             <x-slot:aside>
                                 <x-newdebugbar::inspector-action
                                     icon="external-link"
@@ -427,9 +434,12 @@
                                     <p
                                         class="ndb:mt-1 ndb:text-[11px] ndb:leading-5 ndb:text-red-700/80 ndb:dark:text-red-300/80"
                                         x-text="
-                                            selectedQueueActivity.will_retry
+                                            selectedQueueActivity.will_retry &&
+                                            selectedQueueActivity.attempts.length > 0
                                                 ? 'Laravel can retry this job. Open Attempts to inspect the retained worker history.'
-                                                : 'Open the linked worker profile to inspect the failure in context.'
+                                                : selectedQueueActivity.will_retry
+                                                  ? 'Laravel can retry this job. No worker attempt has been retained yet.'
+                                                  : 'Open the linked worker profile to inspect the failure in context.'
                                         "
                                     ></p>
                                 </section>

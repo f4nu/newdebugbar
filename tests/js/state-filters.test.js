@@ -16,6 +16,7 @@ test('Models starts unselected and keeps a selection while opening and closing m
   let listScrollTop = 184;
   const modelRow = (index, search) => ({
     dataset: {
+      ndbModelIndex: String(index),
       ndbModelSearchValue: search,
     },
     hidden: false,
@@ -129,6 +130,88 @@ test('Models starts unselected and keeps a selection while opening and closing m
   assert.equal(state.modelSelected, null);
   state.selectModelGroup(0);
   assert.equal(state.modelDetailOpen, false);
+});
+
+test('Models sorts comparable headings without losing stable capture identity', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const appended = [];
+  const modelRow = (index, name, retrieved, writes, reloads) => ({
+    dataset: {
+      ndbModelIndex: String(index),
+      ndbModelSearchValue: name.toLowerCase(),
+      ndbModelSortName: name.toLowerCase(),
+      ndbModelSortRetrieved: String(retrieved),
+      ndbModelSortWrites: String(writes),
+      ndbModelSortReloads: String(reloads),
+    },
+    hidden: false,
+    style: {
+      removeProperty(property) {
+        if (property === 'display') this.display = '';
+      },
+      setProperty(property, value) {
+        if (property === 'display') this.display = value;
+      },
+    },
+  });
+  const rows = [
+    modelRow(0, 'Zebra', 5, 0, 1),
+    modelRow(1, 'Alpha', 5, 2, 0),
+    modelRow(2, 'Beta', 9, 2, 4),
+    modelRow(3, 'Alpha', 1, 0, 4),
+  ];
+
+  state.$refs = {
+    modelList: {
+      querySelectorAll: () => rows,
+      appendChild: (row) => appended.push(Number(row.dataset.ndbModelIndex)),
+    },
+  };
+  state.initializeModels(rows.length);
+  state.modelSelected = 2;
+
+  state.toggleModelSort('model');
+  assert.equal(state.modelSort, 'model');
+  assert.equal(state.modelSortDirection, 'asc');
+  assert.deepEqual(appended.splice(0), [1, 3, 2, 0]);
+  assert.equal(state.modelSelected, 2);
+
+  state.toggleModelSort('model');
+  assert.equal(state.modelSortDirection, 'desc');
+  assert.deepEqual(appended.splice(0), [0, 2, 1, 3]);
+
+  state.toggleModelSort('model');
+  assert.equal(state.modelSort, 'capture');
+  assert.equal(state.modelSortDirection, 'asc');
+  assert.deepEqual(appended.splice(0), [0, 1, 2, 3]);
+
+  state.toggleModelSort('retrieved');
+  assert.equal(state.modelSortDirection, 'desc');
+  assert.deepEqual(appended.splice(0), [2, 0, 1, 3]);
+  state.toggleModelSort('retrieved');
+  assert.deepEqual(appended.splice(0), [3, 0, 1, 2]);
+  state.toggleModelSort('retrieved');
+  assert.deepEqual(appended.splice(0), [0, 1, 2, 3]);
+
+  state.toggleModelSort('writes');
+  assert.deepEqual(appended.splice(0), [1, 2, 0, 3]);
+  state.toggleModelSort('reloads');
+  assert.deepEqual(appended.splice(0), [2, 3, 0, 1]);
+
+  state.toggleModelSort('missing');
+  assert.equal(state.modelSort, 'reloads');
+
+  state.modelSearch = 'alpha';
+  state.applyModelView();
+  assert.equal(state.visibleModelCount, 2);
+  assert.deepEqual(appended.splice(0), [2, 3, 0, 1]);
+  assert.equal(state.modelSelected, null);
+
+  state.modelSort = 'writes';
+  state.modelSortDirection = 'asc';
+  state.initializeModels(rows.length);
+  assert.equal(state.modelSort, 'capture');
+  assert.equal(state.modelSortDirection, 'asc');
 });
 
 test('Cache filters searches and keeps a visible operation selected', () => {
@@ -1296,10 +1379,11 @@ test('Views reports retryable lazy-data failures', async () => {
 });
 
 test('timeline controls filter sections and search labels', () => {
+  const browser = runtime();
   const state = createNewDebugBar({
     ...summary,
     sections: [...summary.sections, { key: 'timeline', label: 'Timeline' }, { key: 'events', label: 'Events' }],
-  }, runtime());
+  }, browser);
   let rowFocuses = 0;
   let detailFocuses = 0;
   const item = (id, section, search, key = false) => ({
@@ -1354,8 +1438,15 @@ test('timeline controls filter sections and search labels', () => {
   assert.equal(detailFocuses, 1);
   assert.equal(state.$refs.content.scrollTop, 0);
 
+  let restoreTimelineFocus;
+  browser.afterPaint = (callback) => {
+    restoreTimelineFocus = callback;
+  };
+
   state.closeTimelineDetail();
   assert.equal(state.timelineDetailOpen, false);
+  assert.equal(rowFocuses, 0);
+  restoreTimelineFocus();
   assert.equal(rowFocuses, 1);
 
   state.timelineSearch = 'MISSING';

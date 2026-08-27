@@ -29,6 +29,7 @@ it('keeps Timeline on shared inspector geometry with namespaced behavior hooks',
             '<x-newdebugbar::select-field',
             'data-ndb-timeline-page-sentinel',
             'observeTimelinePageEnd($el, $wire)',
+            'copyText(selectedTimelineItem.source)',
         )
         ->not->toContain(
             'data-section=',
@@ -59,6 +60,8 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
             '<x-newdebugbar::inspector-detail-header',
             '<x-newdebugbar::inspector-detail-tabs',
             '<x-newdebugbar::inspector-source-fact',
+            'copyText(selectedViewRender.source_label)',
+            'copyText(composer.source_label)',
             '<template x-if="selectedViewGroup">',
             '<template x-if="viewDetailTab === \'overview\'">',
             '<template x-if="viewDetailTab === \'data\'">',
@@ -341,6 +344,11 @@ it('composes Models as a shared split inspector with reusable explanations', fun
         ->toContain('frame="top"')
         ->toContain('<x-newdebugbar::inspector-list-panel')
         ->toContain('<x-newdebugbar::inspector-list-controls')
+        ->toContain('<x-newdebugbar::inspector-sort-heading')
+        ->toContain('data-ndb-model-sort-heading="model"')
+        ->toContain('data-ndb-model-sort-heading="retrieved"')
+        ->toContain('data-ndb-model-sort-heading="writes"')
+        ->toContain('data-ndb-model-sort-heading="reloads"')
         ->toContain('data-ndb-model-summary-count')
         ->toContain('<x-newdebugbar::inspector-detail-pane')
         ->toContain('<x-newdebugbar::model-group')
@@ -404,6 +412,8 @@ it('composes Livewire as one shared inspector workspace with focused details', f
     expect($activityDetail)
         ->toContain('data-ndb-livewire-detail-panel="overview"')
         ->toContain('data-ndb-livewire-detail-panel="trace"')
+        ->toContain('livewireActivitySourceLabel(selectedLivewireActivity)')
+        ->toContain("openRelatedProfile(profileId, 'request')")
         ->toContain('<x-newdebugbar::inspector-explanation');
 
     expect(file_get_contents($views.'/livewire/livewire/activity.blade.php'))
@@ -676,29 +686,42 @@ it('composes Events from the shared inspector workspace anatomy', function () {
         ->not->toContain('x-show.important="eventDetailTab ===');
 });
 
-it('composes Exceptions as a shared list-detail workspace', function () {
+it('adapts Exceptions between focused and list-detail workspaces', function () {
     $views = dirname(__DIR__, 2).'/resources/views';
     $section = file_get_contents($views.'/livewire/sections/exceptions.blade.php');
     $detail = file_get_contents($views.'/components/exception-detail.blade.php');
 
     expect($section)
+        ->toContain('@if (count($exceptions) === 1)')
+        ->toContain('data-ndb-exception-layout="focused"')
+        ->toContain('mode="stream"')
+        ->toContain('data-ndb-exception-focused-detail')
+        ->toContain('data-ndb-exception-layout="split"')
         ->toContain('<x-newdebugbar::inspector-workspace frame="top"')
         ->toContain('<x-newdebugbar::inspector-list-panel')
         ->toContain('<x-newdebugbar::inspector-list-controls')
         ->toContain('<x-newdebugbar::inspector-detail-pane')
+        ->toContain('<x-newdebugbar::inspector-detail-back')
         ->toContain('<x-newdebugbar::exception-list-item')
         ->toContain('<x-newdebugbar::exception-detail')
+        ->toContain("'queue' => 'Open worker'")
+        ->toContain(':profile-action-label="$profileActionLabel"')
         ->not->toContain('ndb:bg-red-50')
         ->not->toContain('name="warning"');
 
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-header')
         ->toContain('<x-newdebugbar::inspector-detail-tabs')
+        ->toContain('<x-newdebugbar::inspector-action')
         ->toContain('<x-newdebugbar::inspector-source-link')
         ->toContain('<x-newdebugbar::code-block')
         ->toContain('<x-newdebugbar::inspector-stack')
         ->toContain('<template x-if="exceptionDetailTab === \'source\'">')
-        ->toContain('<template x-if="exceptionDetailTab === \'stack\'">');
+        ->toContain('<template x-if="exceptionDetailTab === \'stack\'">')
+        ->toContain('<template x-if="exceptionDetailTab === \'causes\'">')
+        ->toContain('data-ndb-exception-context-action')
+        ->toContain('data-ndb-exception-cause')
+        ->not->toContain('handled');
 });
 
 it('composes Logs as a shared list-detail workspace', function () {

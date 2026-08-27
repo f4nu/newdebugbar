@@ -69,7 +69,34 @@ it('keeps the desktop waterfall useful inside the shared timeline workspace', fu
         ->click('[data-ndb-timeline-item="queries-0"]')
         ->assertVisible('[data-ndb-timeline-detail-content]')
         ->assertVisible('[data-ndb-timeline-open-section]')
+        ->assertVisible('[data-ndb-timeline-detail-content] [data-ndb-inspector-source-link]')
+        ->assertSeeIn(
+            '[data-ndb-timeline-detail-content] [data-ndb-inspector-source-link]',
+            'tests/Support/DefinesTestApplication.php',
+        )
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-detail-content]").length === 1')
+        ->assertScript(<<<'JS'
+            (() => {
+                const detail = document.querySelector('[data-ndb-timeline-detail-content]');
+                const source = detail.querySelector('[data-ndb-inspector-source-link]');
+
+                window.newdebugbarTimelineClipboard = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarTimelineClipboard.push(value),
+                    },
+                });
+
+                return getComputedStyle(source).fontFamily === getComputedStyle(detail).fontFamily;
+            })()
+            JS)
+        ->click('[data-ndb-timeline-detail-content] [data-ndb-inspector-source-link]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            window.newdebugbarTimelineClipboard.length === 1
+                && /^tests\/Support\/DefinesTestApplication\.php:\d+$/.test(window.newdebugbarTimelineClipboard[0])
+            JS)
         ->click('[data-ndb-inspector-focus-back]')
         ->assertVisible('[data-ndb-timeline-list]');
 
@@ -114,6 +141,8 @@ it('turns the timeline into a mobile chronological drill-in without horizontal o
         ->assertScript('document.querySelectorAll("[data-ndb-timeline-item]").length >= 100')
         ->click('[data-ndb-timeline-item="request-start"]')
         ->assertVisible('[data-ndb-timeline-detail-content]')
+        ->assertMissing('[data-ndb-timeline-detail-content] [data-ndb-inspector-source-link]')
+        ->assertSeeIn('[data-ndb-timeline-detail-content]', 'Not captured for this activity.')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-list]").closest("[data-ndb-inspector-focus-list]")).display === "none"')
         ->assertScript(<<<'JS'
             (() => {

@@ -555,7 +555,7 @@ final class SectionAnalyzer
         foreach ($items as $index => $item) {
             $item['render_order'] = $index + 1;
             $item['origin'] = $this->viewOrigin($item);
-            $item['source_label'] = $this->viewSourceLabel($item['source'] ?? null);
+            $item['source_label'] = $this->viewSourceLabel($item['source'] ?? null, includeLine: false);
             $item['source_kind'] = $this->viewSourceKind($item);
             $item['composers'] = array_values(array_map(function (mixed $composer): array {
                 $composer = is_array($composer) ? $composer : [];
@@ -682,13 +682,17 @@ final class SectionAnalyzer
         return $name;
     }
 
-    private function viewSourceLabel(mixed $source): ?string
+    private function viewSourceLabel(mixed $source, bool $includeLine = true): ?string
     {
         if (! is_array($source) || ! is_string($source['file'] ?? null) || $source['file'] === '') {
             return null;
         }
 
-        return $source['file'].':'.max(1, (int) ($source['line'] ?? 1));
+        $line = is_numeric($source['line'] ?? null) && (int) $source['line'] > 0
+            ? (int) $source['line']
+            : null;
+
+        return $includeLine && $line !== null ? $source['file'].':'.$line : $source['file'];
     }
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */

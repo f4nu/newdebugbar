@@ -147,7 +147,7 @@ function traceHarness(
 
 function stateHarness(trace = traceHarness()) {
   const browser = runtime();
-  const state = createNewDebugBar(livewireSummary, browser, [], 20, trace);
+  const state = createNewDebugBar({ ...livewireSummary }, browser, [], 20, trace);
   state.$root = { querySelectorAll: () => [], querySelector: () => null };
   state.$nextTick = (callback) => callback();
   state.init();
@@ -549,6 +549,123 @@ test('keeps every interaction in a bundled request separate', () => {
     ['request-child-2', 'request-child-1', 'request-action'],
   );
   assert.equal(state.livewireSelectedActivityId, 'request-child-2');
+});
+
+test('keeps related request and failure source evidence on the browser interaction', () => {
+  const profileId = livewireSummary.id;
+  const olderProfileId = '550e8400-e29b-41d4-a716-446655440001';
+  const trace = traceHarness({
+    ready: true,
+    components: browserComponents,
+    activity: [
+      {
+        ...activity[2],
+        id: 'older-failed-action',
+        componentId: 'root-1',
+        componentTitle: 'Control Panel',
+        title: 'Save ran',
+        status: 'failed_validation',
+        actions: [{ name: 'save' }],
+        profileIds: [olderProfileId],
+      },
+      {
+        ...activity[2],
+        id: 'failed-action',
+        componentId: 'root-1',
+        componentTitle: 'Control Panel',
+        title: 'Save ran',
+        status: 'failed_validation',
+        actions: [{ name: 'save' }],
+        profileIds: [profileId, profileId, 'not-a-profile'],
+      },
+    ],
+    dropped: { components: 0, activity: 0 },
+  });
+  const { state } = stateHarness(trace);
+  state.summary.request_type = 'livewire';
+
+  state.mergeLivewireServer({
+    components: [],
+    activity: [
+      {
+        id: 'server-action',
+        component_id: 'root-1',
+        component_title: 'Control Panel',
+        name: 'Save ran',
+        type: 'action',
+        method: 'save',
+      },
+      {
+        id: 'server-failure',
+        component_id: 'root-1',
+        component_title: 'Control Panel',
+        name: 'Control Panel failed validation',
+        type: 'failure',
+        status: 'failed_validation',
+        message: 'The email field is invalid.',
+        callsite: { file: 'app/Livewire/ControlPanel.php', line: 42 },
+      },
+    ],
+  });
+
+  const merged = state.livewireActivity.find(({ id }) => id === 'failed-action');
+  assert.deepEqual(merged.serverActivityIds, ['server-action', 'server-failure']);
+  assert.deepEqual(state.livewireActivityProfileIds(merged), [profileId]);
+  assert.equal(state.livewireActivitySourceLabel(merged), 'app/Livewire/ControlPanel.php:42');
+  assert.equal(state.livewireActivity.filter(({ kind }) => kind === 'failure').length, 0);
+  assert.equal(
+    state.livewireActivity.find(({ id }) => id === 'older-failed-action').serverActivityIds,
+    undefined,
+  );
+  state.livewireSearch = 'ControlPanel.php';
+  assert.deepEqual(state.filteredLivewireActivity.map(({ id }) => id), ['failed-action']);
+  assert.equal(state.livewireActivitySourceLabel({ callsite: null }), null);
+});
+
+test('keeps current request evidence standalone when its browser interaction was dropped', () => {
+  const olderProfileId = '550e8400-e29b-41d4-a716-446655440001';
+  const trace = traceHarness({
+    ready: true,
+    components: browserComponents,
+    activity: [
+      {
+        ...activity[2],
+        id: 'older-failed-action',
+        componentId: 'root-1',
+        componentTitle: 'Control Panel',
+        title: 'Save ran',
+        status: 'failed_validation',
+        actions: [{ name: 'save' }],
+        profileIds: [olderProfileId],
+      },
+    ],
+    dropped: { components: 0, activity: 1 },
+  });
+  const { state } = stateHarness(trace);
+  state.summary.request_type = 'livewire';
+  state.mergeLivewireServer({
+    components: [],
+    activity: [
+      {
+        id: 'current-server-failure',
+        component_id: 'root-1',
+        component_title: 'Control Panel',
+        name: 'Control Panel failed validation',
+        type: 'failure',
+        status: 'failed_validation',
+        message: 'The email field is invalid.',
+        callsite: { file: 'app/Livewire/ControlPanel.php', line: 42 },
+      },
+    ],
+  });
+
+  const older = state.livewireActivity.find(({ id }) => id === 'older-failed-action');
+  const current = state.livewireActivity.find(({ id }) => id === 'current-server-failure');
+
+  assert.equal(older.serverActivityIds, undefined);
+  assert.deepEqual(state.livewireActivityProfileIds(older), [olderProfileId]);
+  assert.deepEqual(state.livewireActivityProfileIds(current), [livewireSummary.id]);
+  assert.equal(state.livewireActivitySourceLabel(current), 'app/Livewire/ControlPanel.php:42');
 });
 
 test('explains activity, phases, component links, and property states in plain language', () => {

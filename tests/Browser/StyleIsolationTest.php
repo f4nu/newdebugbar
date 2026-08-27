@@ -411,6 +411,7 @@ it('keeps host styles and package styles isolated', function () {
                 const status = document.querySelector('[data-ndb-redis-detail-status]');
                 const body = document.querySelector('[data-ndb-redis-detail-body]');
                 const keyEvidence = document.querySelector('[data-ndb-redis-key-evidence]');
+                const sourceLink = body.querySelector('[data-ndb-inspector-source-link]');
                 const interfaceFont = getComputedStyle(root).fontFamily;
 
                 return getComputedStyle(root).borderLeftWidth === '0px'
@@ -429,7 +430,12 @@ it('keeps host styles and package styles isolated', function () {
                     && Number.parseFloat(getComputedStyle(status).fontSize) === 11
                     && getComputedStyle(status).backgroundColor !== 'rgb(255, 0, 0)'
                     && body !== null
-                    && keyEvidence !== null;
+                    && keyEvidence !== null
+                    && sourceLink.getBoundingClientRect().height < 91
+                    && getComputedStyle(sourceLink).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(sourceLink).color !== 'rgb(0, 128, 0)'
+                    && getComputedStyle(sourceLink).fontFamily === interfaceFont
+                    && getComputedStyle(sourceLink).textDecorationLine.includes('underline');
             })()
             JS)
         ->assertVisible('[data-ndb-redis-copy-keys]')
@@ -556,6 +562,23 @@ it('keeps host styles and package styles isolated', function () {
                 ];
             })()
             JS, [true, true, true, true, true, true, true])
+        ->click('[data-ndb-authorization-detail-tab="source"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const root = document.querySelector('[data-ndb-authorization]');
+                const links = [
+                    document.querySelector('[data-ndb-authorization-copy-handler-source]'),
+                    document.querySelector('[data-ndb-authorization-copy-callsite]'),
+                ];
+                const interfaceFont = getComputedStyle(root).fontFamily;
+
+                return links.every((link) => link !== null)
+                    && links.every((link) => link.getBoundingClientRect().height < 91)
+                    && links.every((link) => getComputedStyle(link).backgroundColor === 'rgba(0, 0, 0, 0)')
+                    && links.every((link) => getComputedStyle(link).color !== 'rgb(0, 128, 0)')
+                    && links.every((link) => getComputedStyle(link).fontFamily === interfaceFont);
+            })()
+            JS)
         ->click('[data-ndb-section="logs"]')
         ->assertScript(DebugBarBrowser::waitForDetailsScript())
         ->assertVisible('[data-ndb-section-panel="logs"]')
@@ -626,6 +649,62 @@ it('keeps host styles and package styles isolated', function () {
                 const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
 
                 if (failures.length > 0) throw new Error('Logs style isolation failed: ' + failures.join(', '));
+
+                return true;
+            })()
+            JS)
+        ->click('[data-ndb-section="exceptions"]')
+        ->assertScript(DebugBarBrowser::waitForDetailsScript())
+        ->assertVisible('[data-ndb-section-panel="exceptions"]')
+        ->assertVisible('[data-ndb-exception-context-action]')
+        ->click('[data-ndb-exception-detail-tab="causes"]')
+        ->assertVisible('[data-ndb-exception-cause="0"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const layout = document.querySelector('[data-ndb-exception-layout="focused"]');
+                const workspace = document.querySelector('[data-ndb-exception-focused-workspace]');
+                const focusedDetail = document.querySelector('[data-ndb-exception-focused-detail]');
+                const detail = document.querySelector('[data-ndb-exception-detail]');
+                const cause = document.querySelector('[data-ndb-exception-cause="0"]');
+                const causeClass = cause?.querySelector('code');
+                const causeMessage = cause?.querySelector('p:last-child');
+                const source = cause?.querySelector('[data-ndb-inspector-source-link]');
+                const action = document.querySelector('[data-ndb-exception-context-action]');
+                const tabs = [...document.querySelectorAll('[data-ndb-exception-detail-tab]')];
+
+                if (
+                    ! layout || ! workspace || ! focusedDetail || ! detail || ! cause
+                    || ! causeClass || ! causeMessage || ! source || ! action
+                ) return false;
+
+                const checks = {
+                    layoutDisplay: getComputedStyle(layout).display === 'flex',
+                    layoutBorder: getComputedStyle(layout).borderLeftWidth === '0px',
+                    layoutPadding: getComputedStyle(layout).paddingLeft === '0px',
+                    layoutBackground: getComputedStyle(layout).backgroundColor !== 'rgb(255, 0, 0)',
+                    workspaceDisplay: getComputedStyle(workspace).display === 'flex',
+                    workspaceOverflow: getComputedStyle(workspace).overflow === 'hidden',
+                    workspaceBorder: getComputedStyle(workspace).borderLeftWidth === '0px',
+                    workspacePadding: getComputedStyle(workspace).paddingLeft === '0px',
+                    focusedDetailPadding: getComputedStyle(focusedDetail).paddingLeft === '0px',
+                    focusedDetailBackground: getComputedStyle(focusedDetail).backgroundColor !== 'rgb(255, 0, 0)',
+                    causeBorder: getComputedStyle(cause).borderLeftWidth === '0px',
+                    causeBackground: getComputedStyle(cause).backgroundColor !== 'rgb(255, 0, 0)',
+                    causePadding: Number.parseFloat(getComputedStyle(cause).paddingLeft) === 0,
+                    classBackground: getComputedStyle(causeClass).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    classFont: getComputedStyle(causeClass).fontFamily.includes('JetBrains Mono'),
+                    messageColor: getComputedStyle(causeMessage).color !== 'rgb(0, 128, 0)',
+                    sourceHeight: source.getBoundingClientRect().height < 91,
+                    sourceBackground: getComputedStyle(source).backgroundColor === 'rgba(0, 0, 0, 0)',
+                    actionHeight: action.getBoundingClientRect().height < 91,
+                    actionBackground: getComputedStyle(action).backgroundColor !== 'rgb(255, 0, 255)',
+                    actionColor: getComputedStyle(action).color !== 'rgb(0, 128, 0)',
+                    tabCount: tabs.length === 3,
+                    tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Exceptions style isolation failed: ' + failures.join(', '));
 
                 return true;
             })()
@@ -738,6 +817,8 @@ it('keeps host styles and package styles isolated', function () {
                 const search = document.querySelector('[data-ndb-model-search]');
                 const searchIcon = search.nextElementSibling;
                 const row = document.querySelector('[data-ndb-model-group]');
+                const sortHeading = document.querySelector('[data-ndb-model-sort-heading="retrieved"]');
+                const sortIndicator = sortHeading.querySelector('[data-ndb-sort-indicator]');
 
                 return getComputedStyle(empty).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(empty).borderLeftWidth !== '20px'
@@ -747,6 +828,10 @@ it('keeps host styles and package styles isolated', function () {
                     && Number.parseFloat(getComputedStyle(search).paddingLeft) < 50
                     && searchIcon.getBoundingClientRect().left < search.getBoundingClientRect().left + search.getBoundingClientRect().width / 2
                     && getComputedStyle(row).display === 'grid'
+                    && sortHeading.getBoundingClientRect().height < 91
+                    && getComputedStyle(sortHeading).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(sortHeading).color !== 'rgb(0, 128, 0)'
+                    && sortIndicator.getBoundingClientRect().width < 64
                     && Math.abs(
                         prompt.getBoundingClientRect().left + prompt.getBoundingClientRect().width / 2
                         - pane.getBoundingClientRect().left - pane.getBoundingClientRect().width / 2
@@ -757,6 +842,8 @@ it('keeps host styles and package styles isolated', function () {
                     ) <= 1;
             })()
             JS)
+        ->click('[data-ndb-model-sort-heading="retrieved"]')
+        ->assertAttribute('[data-ndb-model-sort-heading="retrieved"]', 'aria-pressed', 'true')
         ->click('[data-ndb-model-group]:first-of-type')
         ->assertVisible('[data-ndb-model-detail]')
         ->assertVisible('[data-ndb-model-detail-panel="records"]')
@@ -916,6 +1003,91 @@ it('keeps host styles and package styles isolated', function () {
                 if (failures.length > 0) throw new Error('View detail isolation failed: ' + failures.join(', '));
 
                 return true;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+
+    $page = visit('/hostile-styles?exceptions=split')
+        ->resize(1440, 900)
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-section="exceptions"]')
+        ->assertScript(DebugBarBrowser::waitForDetailsScript())
+        ->assertVisible('[data-ndb-section-panel="exceptions"]')
+        ->assertAttribute('[data-ndb-exceptions]', 'data-ndb-exception-layout', 'split')
+        ->assertScript(<<<'JS'
+            (() => {
+                const layout = document.querySelector('[data-ndb-exception-layout="split"]');
+                const workspace = document.querySelector('[data-ndb-exception-workspace]');
+                const list = document.querySelector('[data-ndb-exception-list-panel]');
+                const detail = document.querySelector('[data-ndb-exception-split-detail]');
+
+                if (! layout || ! workspace || ! list || ! detail) return false;
+
+                const cleanSurface = (element) => getComputedStyle(element).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(element).borderLeftWidth === '0px'
+                    && getComputedStyle(element).paddingLeft === '0px';
+
+                const checks = {
+                    layoutSurface: cleanSurface(layout),
+                    workspaceSurface: cleanSurface(workspace),
+                    listSurface: cleanSurface(list),
+                    detailSurface: cleanSurface(detail),
+                    layoutDisplay: getComputedStyle(layout).display === 'flex',
+                    layoutOverflow: getComputedStyle(layout).overflow === 'hidden',
+                    workspaceDisplay: getComputedStyle(workspace).display === 'grid',
+                    workspaceOverflow: getComputedStyle(workspace).overflow === 'hidden',
+                    listDisplay: getComputedStyle(list).display === 'flex',
+                    detailDisplay: getComputedStyle(detail).display === 'flex',
+                    detailOverflow: ['auto', 'scroll'].includes(getComputedStyle(detail).overflowY),
+                    width: workspace.scrollWidth <= workspace.clientWidth + 1,
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Split Exceptions isolation failed: ' + failures.join(', '));
+
+                return true;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+
+    $page = visit('/hostile-styles?exceptions=split')
+        ->resize(390, 844)
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]')
+        ->click('[data-ndb-header-mobile-trigger="actions"]')
+        ->click('[data-ndb-header-mobile-action="sections"]')
+        ->click('[data-ndb-select-section="exceptions"]')
+        ->assertScript(DebugBarBrowser::waitForDetailsScript())
+        ->click('[data-ndb-exception-item="1"]')
+        ->assertVisible('[data-ndb-exception-detail-back]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const layout = document.querySelector('[data-ndb-exception-layout="split"]');
+                const workspace = document.querySelector('[data-ndb-exception-workspace]');
+                const list = document.querySelector('[data-ndb-exception-list-panel]');
+                const detail = document.querySelector('[data-ndb-exception-split-detail]');
+                const back = document.querySelector('[data-ndb-exception-detail-back]');
+
+                if (! layout || ! workspace || ! list || ! detail || ! back) return false;
+
+                const backBox = back.getBoundingClientRect();
+
+                return getComputedStyle(layout).display === 'flex'
+                    && getComputedStyle(layout).overflow === 'hidden'
+                    && getComputedStyle(workspace).display !== 'grid'
+                    && getComputedStyle(workspace).overflow === 'hidden'
+                    && getComputedStyle(list).display === 'none'
+                    && getComputedStyle(detail).display === 'flex'
+                    && getComputedStyle(detail).overflowY === 'visible'
+                    && getComputedStyle(detail).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(detail).borderLeftWidth === '0px'
+                    && getComputedStyle(detail).paddingLeft === '0px'
+                    && backBox.height < 50
+                    && backBox.width < 160
+                    && getComputedStyle(back).paddingLeft === '8px'
+                    && getComputedStyle(back).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(back).color !== 'rgb(0, 128, 0)'
+                    && detail.scrollWidth <= detail.clientWidth + 1;
             })()
             JS)
         ->assertNoJavaScriptErrors();

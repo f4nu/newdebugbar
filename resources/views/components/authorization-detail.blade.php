@@ -170,10 +170,36 @@
                             <x-slot:value x-text="selectedAuthorizationDecision.handler_name"></x-slot:value>
                         </x-newdebugbar::inspector-source-fact>
                         <x-newdebugbar::inspector-source-fact label="Handler source">
-                            <x-slot:value x-text="selectedAuthorizationDecision.handler_source_label ?? '—'"></x-slot:value>
+                            <x-slot:value>
+                                <template x-if="selectedAuthorizationDecision.handler_source_label">
+                                    <x-newdebugbar::inspector-source-link
+                                        data-ndb-authorization-copy-handler-source
+                                        @click="copyText(selectedAuthorizationDecision.handler_source_label)"
+                                        ::title="selectedAuthorizationDecision.handler_source_label"
+                                    >
+                                        <x-slot:value x-text="selectedAuthorizationDecision.handler_source_label"></x-slot:value>
+                                    </x-newdebugbar::inspector-source-link>
+                                </template>
+                                <template x-if="! selectedAuthorizationDecision.handler_source_label">
+                                    <span>—</span>
+                                </template>
+                            </x-slot:value>
                         </x-newdebugbar::inspector-source-fact>
                         <x-newdebugbar::inspector-source-fact label="Evaluation source">
-                            <x-slot:value x-text="selectedAuthorizationDecision.callsite_label ?? '—'"></x-slot:value>
+                            <x-slot:value>
+                                <template x-if="selectedAuthorizationDecision.callsite_label">
+                                    <x-newdebugbar::inspector-source-link
+                                        data-ndb-authorization-copy-callsite
+                                        @click="copyText(selectedAuthorizationDecision.callsite_label)"
+                                        ::title="selectedAuthorizationDecision.callsite_label"
+                                    >
+                                        <x-slot:value x-text="selectedAuthorizationDecision.callsite_label"></x-slot:value>
+                                    </x-newdebugbar::inspector-source-link>
+                                </template>
+                                <template x-if="! selectedAuthorizationDecision.callsite_label">
+                                    <span>—</span>
+                                </template>
+                            </x-slot:value>
                         </x-newdebugbar::inspector-source-fact>
                     </x-newdebugbar::inspector-source-panel>
 

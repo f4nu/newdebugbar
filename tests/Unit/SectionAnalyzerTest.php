@@ -93,7 +93,7 @@ it('puts application views first and preserves deeper render source evidence', f
         ->search->toContain('trips.show', 'tripcomposer@compose')
         ->and($application['items'][0])
         ->render_order->toBe(2)
-        ->source_label->toBe('resources/views/trips/show.blade.php:1')
+        ->source_label->toBe('resources/views/trips/show.blade.php')
         ->source_kind->toBe('template')
         ->data_key_count->toBe(2)
         ->composer_count->toBe(1)

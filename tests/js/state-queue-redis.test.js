@@ -98,7 +98,7 @@ test('Queue searches, filters, selects, and restores mobile list focus', () => {
   state.setQueueDetailTab('invalid');
   state.setQueueFilter('invalid');
   state.selectQueueActivity(99);
-  assert.equal(state.queueDetailTab, 'attempts');
+  assert.equal(state.queueDetailTab, 'overview');
   assert.equal(state.queueFilter, 'all');
   assert.equal(state.queueSelected, 2);
 
@@ -114,6 +114,56 @@ test('Queue searches, filters, selects, and restores mobile list focus', () => {
   state.initializeQueue('invalid');
   assert.deepEqual(state.queueActivities, []);
   assert.equal(state.queueSelected, null);
+});
+
+test('Queue exposes Attempts only for retained activity and resets stale tabs', () => {
+  const state = createNewDebugBar(summary, runtime());
+  const rows = [
+    row({ ndbQueueExecution: '1', ndbQueueGroup: 'completed' }, []),
+    row({ ndbQueueExecution: '2', ndbQueueGroup: 'failed' }, []),
+  ];
+  state.$refs = {
+    queueList: { children: rows },
+    queueDetail: { scrollTo() {}, focus() {} },
+    content: { scrollTo() {} },
+  };
+  state.$nextTick = (callback) => callback();
+
+  const linked = {
+    execution: 1,
+    status_group: 'completed',
+    job: 'SendReceipt',
+    attempts: [{ sequence: 1, profile_id: 'linked-worker' }],
+  };
+  const unlinked = {
+    execution: 2,
+    status_group: 'failed',
+    job: 'SyncInvoice',
+    attempts: [],
+  };
+
+  state.initializeQueue([linked, unlinked]);
+  assert.equal(state.selectedQueueHasAttempts, true);
+
+  state.setQueueDetailTab('attempts');
+  assert.equal(state.queueDetailTab, 'attempts');
+
+  state.selectQueueActivity(2);
+  assert.equal(state.selectedQueueHasAttempts, false);
+  assert.equal(state.queueDetailTab, 'overview');
+
+  state.setQueueDetailTab('attempts');
+  assert.equal(state.queueDetailTab, 'overview');
+
+  state.selectQueueActivity(1);
+  state.setQueueDetailTab('attempts');
+  state.setQueueFilter('failed');
+  assert.equal(state.queueSelected, 2);
+  assert.equal(state.queueDetailTab, 'overview');
+
+  state.initializeQueue([{ ...linked, attempts: [] }]);
+  assert.equal(state.selectedQueueHasAttempts, false);
+  assert.equal(state.queueDetailTab, 'overview');
 });
 
 test('Redis builds bounded search state and keeps failed filtering truthful', () => {

@@ -111,6 +111,70 @@ it('presents model activity as a persistent two column inspector', function () {
                 return true;
             })()
             JS)
+        ->assertScript(<<<'JS'
+            (() => {
+                const headings = [...document.querySelectorAll('[data-ndb-model-sort-heading]')];
+                const model = document.querySelector('[data-ndb-model-sort-heading="model"]');
+                const label = model.querySelector('span[aria-hidden="true"]:not([data-ndb-sort-indicator])');
+                model.dataset.ndbTestLabelLeft = String(label.getBoundingClientRect().left);
+
+                return headings.length === 4
+                    && headings.map((heading) => heading.querySelector('span[aria-hidden="true"]:not([data-ndb-sort-indicator])').textContent.trim()).join('|')
+                        === 'Model|Retrieved|Writes|Reloads'
+                    && headings.every((heading) => heading.getAttribute('aria-pressed') === 'false');
+            })()
+            JS)
+        ->click('[data-ndb-model-sort-heading="model"]')
+        ->assertAttribute('[data-ndb-model-sort-heading="model"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const heading = document.querySelector('[data-ndb-model-sort-heading="model"]');
+                const label = heading.querySelector('span[aria-hidden="true"]:not([data-ndb-sort-indicator])');
+                const names = [...document.querySelectorAll('[data-ndb-model-group]')]
+                    .map((row) => row.dataset.ndbModelShortName);
+
+                return Math.abs(label.getBoundingClientRect().left - Number(heading.dataset.ndbTestLabelLeft)) <= 1
+                    && names.every((name, index) => index === 0
+                        || names[index - 1].localeCompare(name, undefined, { numeric: true, sensitivity: 'base' }) <= 0);
+            })()
+            JS)
+        ->click('[data-ndb-model-sort-heading="model"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const names = [...document.querySelectorAll('[data-ndb-model-group]')]
+                    .map((row) => row.dataset.ndbModelShortName);
+
+                return names.every((name, index) => index === 0
+                    || names[index - 1].localeCompare(name, undefined, { numeric: true, sensitivity: 'base' }) >= 0);
+            })()
+            JS)
+        ->click('[data-ndb-model-sort-heading="model"]')
+        ->assertAttribute('[data-ndb-model-sort-heading="model"]', 'aria-pressed', 'false')
+        ->assertScript(<<<'JS'
+            JSON.stringify([...document.querySelectorAll('[data-ndb-model-group]')]
+                .map((row) => Number(row.dataset.ndbModelIndex))) === JSON.stringify([0, 1, 2, 3, 4])
+            JS)
+        ->click('[data-ndb-model-sort-heading="retrieved"]')
+        ->assertAttribute('[data-ndb-model-sort-heading="retrieved"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const values = [...document.querySelectorAll('[data-ndb-model-group]')]
+                    .map((row) => Number(row.dataset.ndbModelSortRetrieved));
+
+                return values.every((value, index) => index === 0 || values[index - 1] >= value);
+            })()
+            JS)
+        ->click('[data-ndb-model-sort-heading="retrieved"]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const values = [...document.querySelectorAll('[data-ndb-model-group]')]
+                    .map((row) => Number(row.dataset.ndbModelSortRetrieved));
+
+                return values.every((value, index) => index === 0 || values[index - 1] <= value);
+            })()
+            JS)
+        ->click('[data-ndb-model-sort-heading="retrieved"]')
+        ->assertAttribute('[data-ndb-model-sort-heading="retrieved"]', 'aria-pressed', 'false')
         ->fill('[data-ndb-model-search]', 'ProofVersion')
         ->assertScript('document.querySelectorAll("[data-ndb-model-group]:not([hidden])").length', 1)
         ->assertScript(<<<'JS'
@@ -186,11 +250,44 @@ it('presents model activity as a persistent two column inspector', function () {
         ->assertDontSee('Repeated identifiers reveal records')
         ->assertMissing('[data-ndb-model-extra-guidance]')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-model-record]").parentElement.parentElement).marginTop', '12px')
+        ->assertScript(<<<'JS'
+            (() => {
+                window.newdebugbarModelClipboard = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarModelClipboard.push(value),
+                    },
+                });
+
+                const link = document.querySelector('[data-ndb-model-record] [data-ndb-inspector-source-link]');
+                const interfaceFont = getComputedStyle(document.querySelector('[data-ndb-model-workspace]')).fontFamily;
+                window.newdebugbarModelRecordSource = link?.title;
+
+                return link !== null
+                    && getComputedStyle(link).fontFamily === interfaceFont
+                    && getComputedStyle(link).textDecorationLine.includes('underline')
+                    && link.querySelector('svg') === null;
+            })()
+            JS)
+        ->click('[data-ndb-model-record]:first-child [data-ndb-inspector-source-link]')
         ->click('[data-ndb-model-detail-tab="source"]')
         ->assertVisible('[data-ndb-model-detail-panel="source"]')
         ->assertScript('document.querySelectorAll("[data-ndb-model-detail-panel]").length', 1)
         ->assertMissing('[data-ndb-model-detail-panel="records"]')
         ->assertVisible('[data-ndb-model-source]:first-of-type')
+        ->click('[data-ndb-model-source-path="application"]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            (() => {
+                const sourceLink = document.querySelector('[data-ndb-model-source-path="application"]');
+                const [recordSource, applicationSource] = window.newdebugbarModelClipboard;
+
+                return window.newdebugbarModelClipboard.length === 2
+                    && recordSource === window.newdebugbarModelRecordSource
+                    && applicationSource === sourceLink.textContent.trim();
+            })()
+            JS)
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->assertVisible('[data-ndb-model-workspace]')
@@ -306,12 +403,23 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
         ->assertDontSeeIn('[data-ndb-model-write-table]', 'Time')
         ->assertScript(<<<'JS'
             (() => {
+                window.newdebugbarModelWriteClipboard = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarModelWriteClipboard.push(value),
+                    },
+                });
+
                 const header = document.querySelector('[data-ndb-model-header]');
                 const table = document.querySelector('[data-ndb-model-write-table]');
                 const heading = [...table.querySelector('div > div:first-child').children];
                 const tableGrid = heading[0].parentElement.parentElement;
                 const rows = [...table.querySelectorAll('[data-ndb-model-write-operation]')];
                 const cells = [...rows[0].children];
+                const source = cells[2].matches('[data-ndb-inspector-source-link]')
+                    ? cells[2]
+                    : cells[2].querySelector('[data-ndb-inspector-source-link]');
 
                 return ! header.textContent.includes('Writes')
                     && table.closest('[data-ndb-model-detail-panel="records"]') !== null
@@ -321,7 +429,19 @@ it('summarizes writes and shows completed operations without lifecycle noise', f
                     && cells.length === 3
                     && cells[0].innerText.trim() === 'Updated'
                     && cells[1].innerText.trim() === '4'
-                    && cells[2].innerText.trim() !== '—';
+                    && source !== null
+                    && getComputedStyle(source).textDecorationLine.includes('underline')
+                    && source.querySelector('svg') === null;
+            })()
+            JS)
+        ->click('[data-ndb-model-write-operation] [data-ndb-inspector-source-link]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            (() => {
+                const source = document.querySelector('[data-ndb-model-write-operation] [data-ndb-inspector-source-link]');
+
+                return window.newdebugbarModelWriteClipboard.length === 1
+                    && window.newdebugbarModelWriteClipboard[0] === source.title;
             })()
             JS)
         ->assertDontSee('Write evidence')
@@ -392,14 +512,34 @@ it('shows original Blade and compiled source paths in normal interface type', fu
         ->assertSee('storage/framework/views/')
         ->assertScript(<<<'JS'
             (() => {
+                window.newdebugbarModelCompiledClipboard = [];
+                Object.defineProperty(window.navigator, 'clipboard', {
+                    configurable: true,
+                    value: {
+                        writeText: async (value) => window.newdebugbarModelCompiledClipboard.push(value),
+                    },
+                });
+
                 const source = document.querySelector('[data-ndb-model-compiled-source]').closest('[data-ndb-model-source]');
                 const paths = [...source.querySelectorAll('[data-ndb-model-source-path]')];
+                const template = source.querySelector('[data-ndb-model-source-path="template"]');
+                const compiled = source.querySelector('[data-ndb-model-source-path="compiled"]');
 
                 return source.scrollWidth <= source.clientWidth + 1
                     && paths.length === 2
                     && paths.every((path) => !getComputedStyle(path).fontFamily.includes('JetBrains Mono'))
+                    && template.matches('[data-ndb-inspector-source-link]')
+                    && getComputedStyle(template).textDecorationLine.includes('underline')
+                    && compiled.matches('p')
+                    && ! compiled.matches('[data-ndb-inspector-source-link]')
                     && source.querySelector('[data-ndb-model-view-queries]') === null;
             })()
+            JS)
+        ->click('[data-ndb-model-source-path="template"]')
+        ->wait(0.05)
+        ->assertScript(<<<'JS'
+            window.newdebugbarModelCompiledClipboard.length === 1
+                && window.newdebugbarModelCompiledClipboard[0] === 'tests/Fixtures/views/model-compiled.blade.php'
             JS)
         ->assertNoJavaScriptErrors();
 });

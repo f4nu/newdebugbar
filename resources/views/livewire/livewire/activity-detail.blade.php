@@ -14,8 +14,9 @@
         </x-slot:title>
         <x-slot:aside>
             <span
+                data-ndb-livewire-activity-status
                 x-show.important="selectedLivewireActivity.status !== 'complete'"
-                class="ndb:inline-flex ndb:min-h-7 ndb:items-center ndb:rounded-md ndb:px-2 ndb:text-[11px] ndb:font-bold"
+                class="ndb:inline-flex ndb:min-h-7 ndb:items-center ndb:justify-self-end ndb:rounded-md ndb:px-2 ndb:text-[11px] ndb:font-bold"
                 :class="selectedLivewireActivity.status === 'failed' ||
                 selectedLivewireActivity.status === 'failed_validation'
                     ? 'ndb:bg-red-50 ndb:text-red-700 ndb:dark:bg-red-950/60 ndb:dark:text-red-300'
@@ -131,6 +132,57 @@
                 class="ndb:rounded-lg ndb:border ndb:border-red-200 ndb:bg-red-50/70 ndb:px-3 ndb:py-2.5 ndb:text-xs ndb:font-semibold ndb:text-red-800 ndb:dark:border-red-950 ndb:dark:bg-red-950/30 ndb:dark:text-red-200"
                 x-text="selectedLivewireActivity.error"
             ></div>
+
+            <div
+                x-show.important="
+                    livewireActivitySourceLabel(selectedLivewireActivity) ||
+                    livewireActivityProfileIds(selectedLivewireActivity).length > 0
+                "
+            >
+                <h4 class="ndb:mb-3 ndb:text-xs ndb:font-bold">Evidence</h4>
+                <x-newdebugbar::inspector-facts columns="2">
+                    <x-newdebugbar::inspector-fact
+                        label="Source"
+                        x-show.important="livewireActivitySourceLabel(selectedLivewireActivity)"
+                    >
+                        <x-slot:value>
+                            <x-newdebugbar::inspector-source-link
+                                ::title="livewireActivitySourceLabel(selectedLivewireActivity)"
+                                @click="copyText(livewireActivitySourceLabel(selectedLivewireActivity))"
+                            >
+                                <x-slot:value x-text="livewireActivitySourceLabel(selectedLivewireActivity)"></x-slot:value>
+                            </x-newdebugbar::inspector-source-link>
+                        </x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+
+                    <x-newdebugbar::inspector-fact
+                        label="Request"
+                        x-show.important="livewireActivityProfileIds(selectedLivewireActivity).length > 0"
+                    >
+                        <x-slot:value class="ndb:flex ndb:flex-wrap ndb:gap-1.5">
+                            <template
+                                x-for="(profileId, index) in livewireActivityProfileIds(selectedLivewireActivity)"
+                                :key="profileId"
+                            >
+                                <x-newdebugbar::inspector-action
+                                    icon="external-link"
+                                    @click="openRelatedProfile(profileId, 'request')"
+                                    ::aria-label="'Open related request ' + (index + 1)"
+                                    class="ndb:min-h-0 ndb:bg-transparent ndb:px-0"
+                                >
+                                    <span
+                                        x-text="
+                                            livewireActivityProfileIds(selectedLivewireActivity).length === 1
+                                                ? 'Open request'
+                                                : `Open request ${index + 1}`
+                                        "
+                                    ></span>
+                                </x-newdebugbar::inspector-action>
+                            </template>
+                        </x-slot:value>
+                    </x-newdebugbar::inspector-fact>
+                </x-newdebugbar::inspector-facts>
+            </div>
 
             <section x-show.important="selectedLivewireActivity.changes.length > 0">
                 <x-newdebugbar::inspector-explanation

@@ -208,11 +208,48 @@ it('keeps the property editor usable in a narrow dark inspector', function () {
     $page
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->click('[data-ndb-livewire-activity-list] button')
-        ->assertScript($assertMobileBackInset)
+        ->assertScript($assertMobileBackInset);
+
+    $page->script(<<<'JS'
+        (() => {
+            const state = Alpine.$data(document.getElementById('newdebugbar'));
+            state.livewireTrace = {
+                ...state.livewireTrace,
+                activity: state.livewireTrace.activity.map((item) => ({ ...item, status: 'failed' })),
+            };
+            state.livewireServerActivity = state.livewireServerActivity
+                .map((item) => ({ ...item, status: 'failed' }));
+        })()
+        JS);
+
+    $page
+        ->assertVisible('[data-ndb-livewire-activity-status]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const primary = document
+                    .querySelector('[data-ndb-livewire-activity-header] [data-ndb-inspector-detail-header-primary]')
+                    .getBoundingClientRect();
+                const status = document.querySelector('[data-ndb-livewire-activity-status]').getBoundingClientRect();
+
+                return status.width < primary.width
+                    && Math.abs(status.right - primary.right) <= 1;
+            })()
+            JS)
         ->click('[data-ndb-livewire-detail-back]')
         ->click('[data-ndb-livewire-tab="components"]')
         ->click('[data-ndb-livewire-component-select]')
         ->assertScript($assertMobileBackInset)
+        ->assertScript(<<<'JS'
+            (() => {
+                const primary = document
+                    .querySelector('[data-ndb-livewire-component-header] [data-ndb-inspector-detail-header-primary]')
+                    .getBoundingClientRect();
+                const action = document.querySelector('[data-ndb-livewire-view-activity]').getBoundingClientRect();
+
+                return action.width < primary.width
+                    && Math.abs(action.right - primary.right) <= 1;
+            })()
+            JS)
         ->click('[data-ndb-livewire-edit-key$=":count"]')
         ->assertVisible('[data-ndb-livewire-property-popover]')
         ->assertVisible('[data-ndb-livewire-edit-key$=":count"]');
@@ -516,18 +553,48 @@ it('centers segmented detail tabs and instantiates only the active evidence pane
 
     $page
         ->assertVisible('[data-ndb-livewire-detail-panel="overview"]')
-        ->assertMissing('[data-ndb-livewire-detail-panel="trace"]')
+        ->assertMissing('[data-ndb-livewire-detail-panel="trace"]');
+
+    $page->script(<<<'JS'
+        (() => {
+            const state = Alpine.$data(document.getElementById('newdebugbar'));
+            const selected = state.livewireSelectedActivityId;
+            state.livewireTrace = {
+                ...state.livewireTrace,
+                activity: state.livewireTrace.activity.map((item) =>
+                    item.id === selected
+                        ? {
+                            ...item,
+                            profileIds: [state.summary.id],
+                            callsite: { file: 'app/Livewire/HostCounter.php', line: 29 },
+                        }
+                        : item,
+                ),
+            };
+        })()
+        JS);
+
+    $page
+        ->assertVisible('[data-ndb-livewire-detail-panel="overview"] [data-ndb-inspector-source-link]')
+        ->assertSeeIn(
+            '[data-ndb-livewire-detail-panel="overview"] [data-ndb-inspector-source-link]',
+            'app/Livewire/HostCounter.php:29',
+        )
+        ->assertVisible('[data-ndb-livewire-detail-panel="overview"] [aria-label="Open related request 1"]')
         ->assertScript(<<<'JS'
             (() => {
                 const tabs = document.querySelector('[data-ndb-livewire-activity-detail] [data-ndb-filter-tabs-variant="segmented"]');
                 const detail = document.querySelector('[data-ndb-livewire-detail-pane]');
+                const source = document.querySelector('[data-ndb-livewire-detail-panel="overview"] [data-ndb-inspector-source-link]');
+                const title = document.querySelector('[data-ndb-livewire-activity-header] h3');
                 const tabsBox = tabs.getBoundingClientRect();
                 const detailBox = detail.getBoundingClientRect();
 
                 return Math.abs(
                     (tabsBox.left + tabsBox.width / 2)
                     - (detailBox.left + detailBox.width / 2),
-                ) <= 0.75;
+                ) <= 0.75
+                    && getComputedStyle(source).fontFamily === getComputedStyle(title).fontFamily;
             })()
             JS)
         ->click('[data-ndb-livewire-detail-tab="trace"]')

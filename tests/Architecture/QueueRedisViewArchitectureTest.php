@@ -14,6 +14,7 @@ it('composes Queue from the shared inspector workspace grammar', function () {
         ->toContain('<x-newdebugbar::inspector-detail-tabs')
         ->toContain('variant="segmented"')
         ->toContain('<template x-if="selectedQueueActivity">')
+        ->toContain('<template x-if="selectedQueueActivity.attempts.length > 0">')
         ->toContain('<template x-if="queueDetailTab === \'overview\'">')
         ->toContain("@include('newdebugbar::livewire.sections.queue.attempts')")
         ->toContain('data-ndb-queue-payload')
@@ -25,9 +26,10 @@ it('composes Queue from the shared inspector workspace grammar', function () {
         ->not->toContain('Slowest');
 
     expect($attempts)
-        ->toContain('<template x-if="queueDetailTab === \'attempts\'">')
+        ->toContain('<template x-if="queueDetailTab === \'attempts\' && selectedQueueActivity.attempts.length > 0">')
         ->toContain('data-ndb-queue-attempt')
-        ->toContain('<x-newdebugbar::inspector-action');
+        ->toContain('<x-newdebugbar::inspector-action')
+        ->not->toContain('No worker attempt has been linked yet.');
 });
 
 it('composes Redis from the shared inspector workspace grammar', function () {
@@ -48,6 +50,9 @@ it('composes Redis from the shared inspector workspace grammar', function () {
         ->toContain('data-ndb-redis-detail-body')
         ->toContain('data-ndb-redis-key-evidence')
         ->toContain('data-ndb-redis-copy-keys')
+        ->toContain('<template x-if="selectedRedisCommand.callsite">')
+        ->toContain('<x-newdebugbar::inspector-source-link')
+        ->toContain('copyText(selectedRedisCommand.source_label)')
         ->toContain('Why are these identifiers protected?')
         ->toContain('data-ndb-redis-payload')
         ->toContain('No key metadata was retained for this command.')

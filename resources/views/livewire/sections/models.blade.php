@@ -13,7 +13,7 @@
         <x-newdebugbar::inspector-workspace
             frame="top"
             data-ndb-model-workspace
-            class="ndb:border-l-0 ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white"
+            class="ndb:border-l-0 ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white ndb:lg:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.68fr)]"
         >
             <x-newdebugbar::inspector-list-panel detail-open="modelDetailOpen" list-ref="modelList">
                 <x-slot:controls>
@@ -56,13 +56,48 @@
                 >
                     <div
                         data-ndb-model-list-heading
-                        aria-hidden="true"
                         class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[minmax(7rem,1fr)_3.5rem_2.75rem_3.75rem] ndb:gap-2 ndb:border-l-0 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95 ndb:sm:grid"
                     >
-                        <span>Model</span>
-                        <span class="ndb:text-right">Retrieved</span>
-                        <span class="ndb:text-right">Writes</span>
-                        <span class="ndb:text-right" title="Loads after the first for identified records">Reloads</span>
+                        <span class="ndb:flex ndb:justify-start">
+                            <x-newdebugbar::inspector-sort-heading
+                                label="Model"
+                                active="modelSort === 'model'"
+                                direction="modelSortDirection"
+                                data-ndb-model-sort-heading="model"
+                                class="ndb:-ml-4"
+                                @click="toggleModelSort('model')"
+                            />
+                        </span>
+                        <span class="ndb:flex ndb:justify-end">
+                            <x-newdebugbar::inspector-sort-heading
+                                label="Retrieved"
+                                align="right"
+                                active="modelSort === 'retrieved'"
+                                direction="modelSortDirection"
+                                data-ndb-model-sort-heading="retrieved"
+                                @click="toggleModelSort('retrieved')"
+                            />
+                        </span>
+                        <span class="ndb:flex ndb:justify-end">
+                            <x-newdebugbar::inspector-sort-heading
+                                label="Writes"
+                                align="right"
+                                active="modelSort === 'writes'"
+                                direction="modelSortDirection"
+                                data-ndb-model-sort-heading="writes"
+                                @click="toggleModelSort('writes')"
+                            />
+                        </span>
+                        <span class="ndb:flex ndb:justify-end" title="Loads after the first for identified records">
+                            <x-newdebugbar::inspector-sort-heading
+                                label="Reloads"
+                                align="right"
+                                active="modelSort === 'reloads'"
+                                direction="modelSortDirection"
+                                data-ndb-model-sort-heading="reloads"
+                                @click="toggleModelSort('reloads')"
+                            />
+                        </span>
                     </div>
 
                     @foreach ($modelGroups as $index => $group)
