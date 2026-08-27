@@ -42,7 +42,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `icon` | Package-owned SVG at an explicit supported size. Prefer text when an icon would be ambiguous. |
 | `icon-button` | Accessible icon-only action. Always provide an accessible name. |
 | `inspector-action` | Compact labeled action beside the evidence it affects. |
-| `inspector-operation-badge` | Neutral equal-width HTTP method, cache-operation, or Redis-command badge. Use `wide` for longer operations and `outlined` in detail headers. |
+| `inspector-operation-badge` | Neutral equal-width HTTP method, cache-operation, or Redis-command badge. Use `compact` for short query classifications, `wide` for longer operations, and `outlined` in detail headers. |
 | `inspector-source-link` | Underlined application-source action with no ornamental icon, padding, or hover fill. Pass `copy` when activation should copy the displayed location; keep that interaction inside the shared component. |
 | `inspector-sort-heading` | Clickable heading for a meaningful sortable column in a table-like list. Pass explicit active and direction expressions, keep its fixed indicator slot, and make the parent own the sort cycle and deliberate default order. Do not pair it with a duplicate sort dropdown. |
 | `search-field` | Shared labeled search input with the icon fixed on the left and balanced inset spacing. Do not add a right-icon variant. |

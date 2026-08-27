@@ -247,7 +247,7 @@
                 <x-slot:list data-ndb-query-list>
                     <div
                         data-ndb-query-list-heading
-                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:grid ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95"
+                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:grid ndb:grid-cols-[3.5rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95"
                     >
                         <span>Type</span>
                         <span>Query</span>
@@ -296,14 +296,10 @@
                             :class="querySelected === {{ \Illuminate\Support\Js::from($record['key']) }}
                                 ? {{ \Illuminate\Support\Js::from($selectedClasses) }}
                                 : {{ \Illuminate\Support\Js::from($idleClasses) }}"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-3 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.5rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-3 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
                             <span class="ndb:flex ndb:min-w-0 ndb:items-center">
-                                <x-newdebugbar::inspector-operation-badge
-                                    wide
-                                    data-ndb-query-type-badge
-                                    class="ndb:w-19"
-                                >
+                                <x-newdebugbar::inspector-operation-badge compact data-ndb-query-type-badge>
                                     {{ $record['query_type'] }}
                                 </x-newdebugbar::inspector-operation-badge>
                                 @if ($record['slow'])

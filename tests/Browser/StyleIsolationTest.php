@@ -132,8 +132,9 @@ it('keeps host styles and package styles isolated', function () {
                     && getComputedStyle(row).borderLeftWidth === '0px'
                     && getComputedStyle(row).backgroundColor !== 'rgb(255, 0, 0)'
                     && row.getBoundingClientRect().height < 91
-                    && Math.round(typeBadge.getBoundingClientRect().width) === 76
-                    && typeBadge.getBoundingClientRect().height < 28
+                    && Math.abs(typeBadge.getBoundingClientRect().width - 56) <= 1
+                    && Math.abs(typeBadge.getBoundingClientRect().height - 18) <= 1
+                    && Number.parseFloat(getComputedStyle(typeBadge).fontSize) === 11
                     && getComputedStyle(typeBadge).backgroundColor !== 'rgb(255, 0, 0)'
                     && getComputedStyle(typeBadge).fontFamily === interfaceFont
                     && root.querySelector('[data-ndb-query-attention-badge]') === null

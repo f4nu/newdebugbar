@@ -15,6 +15,7 @@ it('presents repeated queries as one shared list detail record', function () {
                 const repeated = rows.filter((row) => row.dataset.ndbRepeated === 'true');
                 const typeBadge = repeated[0]?.querySelector('[data-ndb-query-type-badge]');
                 const query = repeated[0]?.querySelector('[data-ndb-query-list-sql]');
+                const queryHeading = root.querySelector('[data-ndb-query-list-heading] > :nth-child(2)');
                 const driver = repeated[0]?.querySelector('[data-ndb-query-list-driver]');
                 const duration = repeated[0]?.querySelector('[data-ndb-query-list-duration]');
                 const sql = root.querySelector('[data-ndb-query-sql][data-highlighted]');
@@ -29,11 +30,14 @@ it('presents repeated queries as one shared list detail record', function () {
                     && Number(repeated[0].dataset.ndbQueryExecutionCount) === 3
                     && repeated[0].getAttribute('aria-pressed') === 'true'
                     && typeBadge?.textContent.trim() === 'read'
+                    && Math.abs(typeBadge.getBoundingClientRect().width - 56) <= 1
+                    && Math.abs(typeBadge.getBoundingClientRect().height - 18) <= 1
                     && root.querySelector('[data-ndb-query-attention-badge]') === null
                     && getComputedStyle(repeated[0]).backgroundColor !== 'rgba(0, 0, 0, 0)'
                     && driver?.textContent.trim() === 'sqlite'
                     && driver.getBoundingClientRect().bottom <= duration.getBoundingClientRect().top + 1
-                    && query.getBoundingClientRect().left - typeBadge.getBoundingClientRect().right >= 11
+                    && Math.abs(query.getBoundingClientRect().left - queryHeading.getBoundingClientRect().left) <= 1
+                    && Math.abs(query.getBoundingClientRect().left - typeBadge.getBoundingClientRect().right - 12) <= 1
                     && sql?.querySelector('.hljs-keyword') !== null
                     && root.querySelectorAll('[data-ndb-query-detail-panel]').length === 1
                     && root.querySelector('[data-ndb-query-detail-panel="overview"]') !== null
