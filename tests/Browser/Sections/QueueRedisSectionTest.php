@@ -16,7 +16,7 @@ it('filters queue activity and instantiates only the active detail evidence', fu
         ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
         ->assertMissing('[data-ndb-queue-detail-tab="attempts"]')
         ->assertSee('ProfiledJob')
-        ->assertSee('What happened to this job?')
+        ->assertDontSee('What happened to this job?')
         ->assertScript(<<<'JS'
             (() => {
                 const detail = document.querySelector('[data-ndb-queue-detail]');
@@ -196,7 +196,7 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
         ->select('[data-ndb-redis-filter]', 'failed')
         ->assertScript('document.querySelectorAll("[data-ndb-redis-item]:not([hidden])").length', 1)
         ->assertSee('RuntimeException')
-        ->assertSee('What should I check after this failure?')
+        ->assertDontSee('What should I check after this failure?')
         ->assertScript('document.querySelector("[data-ndb-redis-failed=\\"true\\"]").textContent.includes("—")')
         ->assertNoJavaScriptErrors();
 });

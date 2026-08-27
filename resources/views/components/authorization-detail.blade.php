@@ -140,13 +140,6 @@
                             <x-slot:value x-text="selectedAuthorizationDecision.result_message"></x-slot:value>
                         </x-newdebugbar::inspector-definition-row>
                     </x-newdebugbar::inspector-definition-list>
-
-                    <section>
-                        <x-newdebugbar::inspector-explanation>
-                            <x-slot:heading>What should I inspect if this result looks wrong?</x-slot:heading>
-                            <x-slot:body x-text="selectedAuthorizationDecision.check_next"></x-slot:body>
-                        </x-newdebugbar::inspector-explanation>
-                    </section>
                 </div>
             </template>
 

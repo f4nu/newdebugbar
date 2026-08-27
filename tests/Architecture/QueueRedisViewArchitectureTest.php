@@ -22,6 +22,7 @@ it('composes Queue from the shared inspector workspace grammar', function () {
         ->not->toContain('<input')
         ->not->toContain('<select')
         ->not->toContain('queueSort')
+        ->not->toContain('What happened to this job?')
         ->not->toContain('Oldest')
         ->not->toContain('Slowest');
 
@@ -29,6 +30,7 @@ it('composes Queue from the shared inspector workspace grammar', function () {
         ->toContain('<template x-if="queueDetailTab === \'attempts\' && selectedQueueActivity.attempts.length > 0">')
         ->toContain('data-ndb-queue-attempt')
         ->toContain('<x-newdebugbar::inspector-action')
+        ->not->toContain('<x-newdebugbar::inspector-explanation')
         ->not->toContain('No worker attempt has been linked yet.');
 });
 
@@ -61,6 +63,7 @@ it('composes Redis from the shared inspector workspace grammar', function () {
         ->not->toContain('redisDetailTab')
         ->not->toContain('setRedisDetailTab')
         ->not->toContain('data-ndb-redis-detail-tab')
+        ->not->toContain('What should I check after this failure?')
         ->not->toContain('This list contains direct Redis commands.')
         ->not->toContain('redisSort')
         ->not->toContain('Succeeded')

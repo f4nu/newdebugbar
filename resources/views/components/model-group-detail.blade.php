@@ -400,9 +400,6 @@
                             class="ndb:mt-3 ndb:border-l-0 ndb:border-y ndb:border-zinc-200/90 ndb:bg-transparent ndb:px-0 ndb:py-3 ndb:text-xs ndb:text-zinc-950 ndb:dark:border-zinc-800 ndb:dark:text-white"
                         >
                             <p class="ndb:text-xs ndb:font-semibold">Source unavailable</p>
-                            <p class="ndb:mt-1 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                Use the model identity and nearby application activity to narrow the location.
-                            </p>
                         </div>
                     @endif
                 </section>

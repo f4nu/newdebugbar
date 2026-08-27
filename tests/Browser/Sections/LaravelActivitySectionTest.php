@@ -118,7 +118,7 @@ it('groups noisy Laravel events around application evidence', function () {
         ->assertSee('2 registrations')
         ->assertSee('1 extra registration')
         ->assertSee('Listener handling')
-        ->assertSee('What should I inspect if this event looks wrong?')
+        ->assertDontSee('What should I inspect if this event looks wrong?')
         ->assertMissing('private fixture value')
         ->assertScript(<<<'JS'
             (() => {

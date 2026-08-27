@@ -353,10 +353,6 @@
 
                         <template x-if="queueDetailTab === 'overview'">
                             <div data-ndb-queue-detail-panel="overview" class="ndb:space-y-4 ndb:p-4">
-                                <x-newdebugbar::inspector-explanation
-                                    title="What happened to this job?"
-                                    description="The current state is refreshed from bounded dispatch and worker evidence. If a waiting state lasts longer than expected, check that a worker is listening to this connection and queue."
-                                />
                                 <p
                                     class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
                                     x-text="selectedQueueActivity.status_description"

@@ -1,10 +1,6 @@
 <template x-if="queueDetailTab === 'attempts' && selectedQueueActivity.attempts.length > 0">
     <div data-ndb-queue-detail-panel="attempts" class="ndb:p-4">
-        <x-newdebugbar::inspector-explanation
-            title="What happened on each worker attempt?"
-            description="Each row is a retained worker outcome for this dispatched job. Open a linked profile when you need the request, exception, or timing evidence from that attempt."
-        />
-        <div class="ndb:mt-3 ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
+        <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
             <template x-for="attempt in selectedQueueActivity.attempts" :key="attempt.sequence">
                 <article
                     data-ndb-queue-attempt

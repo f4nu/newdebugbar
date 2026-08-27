@@ -713,7 +713,6 @@ trait DefinesTestApplication
                             [data-ndb-exception-context-action] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-exception-layout], [data-ndb-exception-workspace], [data-ndb-exception-focused-workspace], [data-ndb-exception-focused-detail], [data-ndb-exception-list-panel], [data-ndb-exception-split-detail] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); display: block; overflow: visible; padding: 50px; }
                             [data-ndb-exception-detail-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; padding: 50px; width: 91px; }
-                            [data-ndb-event-next-step] { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); }
                             [data-ndb-event-detail-tab] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-event-listener-row] { background: rgb(255, 0, 0); padding: 50px; }
                             [data-ndb-event-timeline] { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }

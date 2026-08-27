@@ -106,18 +106,18 @@ it('renders decisions for scanning and keeps structured evidence in the inspecto
         ->and($decoded[0]['argument_summary'])->toBe('Kyoto in autumn and 2 more')
         ->and($decoded[0]['handler_short_name'])->toBe('TripPolicy@reviseItinerary')
         ->and($decoded[0]['result_message'])->toBe('The planner owns this trip.')
-        ->and($decoded[0]['check_next'])->toBe('Confirm Mara Voss should receive this ability. If this result is unexpected, compare all 3 supplied arguments with TripPolicy@reviseItinerary.')
+        ->and($decoded[0])->not->toHaveKey('check_next')
         ->and($decoded[1]['actor_label'])->toBe('Guest')
         ->and($decoded[1]['arguments'])->toBe([])
         ->and($decoded[1]['argument_summary'])->toBe('—')
-        ->and($decoded[1]['check_next'])->toBe('Confirm guests should be denied this ability. If this result is unexpected, review the configured Gate callback.')
-        ->and($html)->toContain('What should I inspect if this result looks wrong?')
+        ->and($decoded[1])->not->toHaveKey('check_next')
+        ->and($html)->not->toContain('What should I inspect if this result looks wrong?')
         ->and($html)->not->toContain('Laravel allowed this ability')
         ->and($html)->not->toContain('No target or additional arguments were supplied.')
         ->and($html)->not->toContain('→');
 });
 
-it('keeps named callback guidance specific without inventing optional evidence', function () {
+it('keeps named callback evidence specific without inventing optional evidence', function () {
     [, $xpath] = authorizationSectionDocument([[
         'execution' => 9,
         'result' => 'allowed',
@@ -139,7 +139,7 @@ it('keeps named callback guidance specific without inventing optional evidence',
         ->result_message->toBeNull()
         ->result_code->toBeNull()
         ->result_status->toBeNull()
-        ->check_next->toBe('Confirm guests should receive this ability. If this result is unexpected, review PublicTripGate@view.');
+        ->not->toHaveKey('check_next');
 });
 
 it('renders a clear empty authorization state', function () {

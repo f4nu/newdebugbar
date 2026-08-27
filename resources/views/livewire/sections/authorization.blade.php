@@ -136,21 +136,6 @@
                 is_array($item['stack'] ?? null) ? $item['stack'] : [],
                 static fn (mixed $frame): bool => is_array($frame) && is_string($frame['file'] ?? null),
             ));
-            $actorGuidance = match (true) {
-                $actorType === null && $result === 'denied' => 'Confirm guests should be denied this ability.',
-                $actorType === null => 'Confirm guests should receive this ability.',
-                $result === 'denied' => 'Confirm '.$actorLabel.' should be denied this ability.',
-                default => 'Confirm '.$actorLabel.' should receive this ability.',
-            };
-            $handlerGuidance = $handlerKind === 'callback' && $handlerName === 'Gate callback'
-                ? 'the configured Gate callback'
-                : $handlerShortName;
-            $unexpectedGuidance = match ($argumentCount) {
-                0 => 'If this result is unexpected, review '.$handlerGuidance.'.',
-                1 => 'If this result is unexpected, compare the supplied target with '.$handlerGuidance.'.',
-                default => 'If this result is unexpected, compare all '.number_format($argumentCount).' supplied arguments with '.$handlerGuidance.'.',
-            };
-            $checkNext = $actorGuidance.' '.$unexpectedGuidance;
             $copyEvidence = json_encode([
                 'result' => $result,
                 'ability' => $ability,
@@ -192,7 +177,6 @@
                 'callsite_label' => $callsiteLabel,
                 'callsite_short_label' => $callsiteShortLabel,
                 'stack' => $stack,
-                'check_next' => $checkNext,
                 'copy_evidence' => $copyEvidence,
                 'search' => mb_strtolower(implode(' ', array_filter([
                     $ability,

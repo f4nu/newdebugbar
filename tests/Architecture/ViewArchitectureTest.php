@@ -363,6 +363,7 @@ it('composes Models as a shared split inspector with reusable explanations', fun
         ->toContain('data-ndb-model-detail-panel="source"')
         ->not->toContain('data-ndb-model-detail-panel="overview"')
         ->not->toContain('Write evidence')
+        ->not->toContain('Use the model identity and nearby application activity')
         ->not->toContain('related quer')
         ->not->toContain('navigateToQueriesAtSource');
 
@@ -427,7 +428,8 @@ it('composes Livewire as one shared inspector workspace with focused details', f
         ->toContain('data-ndb-livewire-detail-panel="source"')
         ->toContain('<x-newdebugbar::livewire-property-editor')
         ->toContain('<x-newdebugbar::inspector-source-fact')
-        ->toContain('<x-newdebugbar::inspector-evidence');
+        ->toContain('<x-newdebugbar::inspector-evidence')
+        ->not->toContain('Source and recent activity are still available');
 });
 
 it('composes Queries as a bounded shared list detail workspace', function () {
@@ -651,11 +653,11 @@ it('composes Authorization from the shared inspector workspace anatomy', functio
         ->toContain('<x-newdebugbar::inspector-detail-empty')
         ->toContain('<x-newdebugbar::inspector-detail-header')
         ->toContain('<x-newdebugbar::inspector-facts')
-        ->toContain('<x-newdebugbar::inspector-explanation')
         ->toContain('<x-newdebugbar::inspector-source-panel')
         ->toContain('<x-newdebugbar::inspector-source-fact')
         ->toContain('<template x-if="authorizationDetailTab === \'decision\'">')
         ->toContain('<template x-if="authorizationDetailTab === \'source\'">')
+        ->not->toContain('<x-newdebugbar::inspector-explanation')
         ->not->toContain('x-show.important="authorizationDetailTab ===');
 });
 
@@ -678,11 +680,11 @@ it('composes Events from the shared inspector workspace anatomy', function () {
         ->toContain('<x-newdebugbar::inspector-detail-pane')
         ->toContain('<x-newdebugbar::inspector-detail-empty')
         ->toContain('<x-newdebugbar::inspector-facts')
-        ->toContain('<x-newdebugbar::inspector-explanation')
         ->toContain('<x-newdebugbar::inspector-source-link')
         ->toContain('<template x-if="eventDetailTab === \'overview\'">')
         ->toContain('<template x-if="eventDetailTab === \'payload\'">')
         ->toContain('<template x-if="eventDetailTab === \'source\'">')
+        ->not->toContain('<x-newdebugbar::inspector-explanation')
         ->not->toContain('x-show.important="eventDetailTab ===');
 });
 

@@ -266,19 +266,15 @@
                                     x-show.important="selectedRedisCommand.failed"
                                     class="ndb:rounded-lg ndb:border ndb:border-red-200 ndb:bg-red-50/55 ndb:p-3 ndb:dark:border-red-950 ndb:dark:bg-red-950/20"
                                 >
-                                    <x-newdebugbar::inspector-explanation
-                                        title="What should I check after this failure?"
-                                        description="Find this exception in the application log for the failure message, then verify the selected Redis connection."
-                                    />
                                     <code
                                         data-ndb-language="php"
                                         x-show.important="selectedRedisCommand.exception_class"
-                                        class="ndb:mt-2 ndb:block ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
+                                        class="ndb:block ndb:break-all ndb:bg-transparent ndb:font-mono ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
                                         x-text="selectedRedisCommand.exception_class"
                                     ></code>
                                     <p
                                         x-show.important="! selectedRedisCommand.exception_class"
-                                        class="ndb:mt-2 ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
+                                        class="ndb:text-xs ndb:font-semibold ndb:text-red-700 ndb:dark:text-red-300"
                                     >
                                         Exception class was not retained.
                                     </p>

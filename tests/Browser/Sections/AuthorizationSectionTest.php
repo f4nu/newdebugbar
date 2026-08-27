@@ -95,15 +95,14 @@ it('scans filters searches and inspects authorization evidence on desktop', func
             (() => {
                 const ability = document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim();
                 const arguments = document.querySelector('[data-ndb-authorization-arguments-detail]').textContent;
-                const guidance = document.querySelector('[data-ndb-authorization-detail-panel="decision"] section:last-child').textContent;
 
                 return ability === 'revise-an-intentionally-long-kyoto-autumn-workspace-ability'
                     && arguments.includes('Target')
                     && arguments.includes('Argument 2')
-                    && arguments.includes('Argument 3')
-                    && guidance.includes('all 3 supplied arguments');
+                    && arguments.includes('Argument 3');
             })()
             JS)
+        ->assertDontSee('What should I inspect if this result looks wrong?')
         ->assertScript(<<<'JS'
             (() => {
                 const filter = document.querySelector('[data-ndb-authorization-filter-control]');

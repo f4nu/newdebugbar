@@ -187,10 +187,7 @@
                     data-ndb-livewire-property-empty
                     class="ndb:mt-3"
                 >
-                    <x-newdebugbar::empty-state
-                        label="No serialized public properties."
-                        description="Source and recent activity are still available for this component."
-                    />
+                    <x-newdebugbar::empty-state label="No serialized public properties." />
                 </div>
             </section>
         </div>

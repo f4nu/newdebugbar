@@ -167,25 +167,15 @@
                         </div>
                     </section>
 
-                    <section data-ndb-event-next-step class="ndb:mt-6 ndb:bg-transparent ndb:text-inherit">
-                        <x-newdebugbar::inspector-explanation>
-                            <x-slot:heading>What should I inspect if this event looks wrong?</x-slot:heading>
-                            <x-slot:body x-text="selectedEvent.next_step"></x-slot:body>
-                        </x-newdebugbar::inspector-explanation>
-                        <x-newdebugbar::inspector-action
-                            icon="external-link"
-                            data-ndb-event-related-section
-                            x-show.important="selectedEvent.related_section"
-                            @click="navigateToSection(selectedEvent.related_section.key)"
-                            class="ndb:mt-2"
-                        >
-                            <span
-                                x-text="
-                                    selectedEvent.related_section ? 'Open ' + selectedEvent.related_section.label : ''
-                                "
-                            ></span>
-                        </x-newdebugbar::inspector-action>
-                    </section>
+                    <x-newdebugbar::inspector-action
+                        icon="external-link"
+                        data-ndb-event-related-section
+                        x-show.important="selectedEvent.related_section"
+                        @click="navigateToSection(selectedEvent.related_section.key)"
+                        class="ndb:mt-6"
+                    >
+                        <span x-text="selectedEvent.related_section ? 'Open ' + selectedEvent.related_section.label : ''"></span>
+                    </x-newdebugbar::inspector-action>
 
                     <details
                         data-ndb-event-outcome-help

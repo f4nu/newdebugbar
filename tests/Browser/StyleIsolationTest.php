@@ -725,7 +725,6 @@ it('keeps host styles and package styles isolated', function () {
                 const metadataFacts = [...overview.querySelectorAll('[data-ndb-event-fact]')];
                 const metadataTerms = [...metadataGrid.querySelectorAll('dt, dd')];
                 const outcome = document.querySelector('[data-ndb-event-listener-outcome]');
-                const nextStep = document.querySelector('[data-ndb-event-next-step]');
                 const listenerRow = document.querySelector('[data-ndb-event-listener-row]');
                 const tabs = [...document.querySelectorAll('[data-ndb-event-detail-tab]')];
                 const tabIcons = [...document.querySelectorAll('[data-ndb-event-detail-tab-icon]')];
@@ -776,9 +775,6 @@ it('keeps host styles and package styles isolated', function () {
                     termSize: Number.parseFloat(getComputedStyle(metadataGrid.querySelector('dt')).fontSize) === 11,
                     outcomeSize: Number.parseFloat(getComputedStyle(outcome).fontSize) === 11,
                     outcomeBackground: getComputedStyle(outcome).backgroundColor === 'rgba(0, 0, 0, 0)',
-                    nextStepBackground: getComputedStyle(nextStep).backgroundColor === 'rgba(0, 0, 0, 0)',
-                    nextStepPadding: Number.parseFloat(getComputedStyle(nextStep).paddingTop) === 0,
-                    nextStepColor: getComputedStyle(nextStep).color !== 'rgb(0, 128, 0)',
                     listenerBackground: getComputedStyle(listenerRow).backgroundColor === 'rgba(0, 0, 0, 0)',
                     listenerPadding: Number.parseFloat(getComputedStyle(listenerRow).paddingLeft) === 0,
                     tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
