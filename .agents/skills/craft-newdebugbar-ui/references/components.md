@@ -44,6 +44,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-action` | Compact labeled action beside the evidence it affects. |
 | `inspector-operation-badge` | Neutral equal-width HTTP method, cache-operation, or Redis-command badge. Use `wide` for longer operations and `outlined` in detail headers. |
 | `inspector-source-link` | Underlined application-source action with no ornamental icon, padding, or hover fill. Pass `copy` when activation should copy the displayed location; keep that interaction inside the shared component. |
+| `inspector-sort-heading` | Clickable heading for a meaningful sortable column in a table-like list. Pass explicit active and direction expressions, keep its fixed indicator slot, and make the parent own the sort cycle and deliberate default order. Do not pair it with a duplicate sort dropdown. |
 | `search-field` | Shared labeled search input with the icon fixed on the left and balanced inset spacing. Do not add a right-icon variant. |
 | `select-field` | Native select with stable field geometry. Use for one list-filter dimension rather than a segmented strip. |
 
@@ -66,7 +67,7 @@ Similar section layouts do not justify a large component with many conditional p
 | `inspector-list-controls` | Optional list summary plus search and one or two trailing filters. Use `layout="compact"` inside a narrow split-pane list so search owns the first row and two filters share the second. Use the secondary filter only when two independent filters are necessary; do not rebuild either shared grid. |
 | `inspector-list-panel` | List controls, the list scroll owner, and the filtered empty state. |
 | `inspector-source-fact` | Source-like fact card. Set `code` only when the value itself is code, not merely a file location. This treatment is a merge candidate; do not create another source-fact variant. |
-| `inspector-source-panel` | Source facts followed by the bounded application stack. Use its optional `actions` slot for evidence-wide actions, and use it as the complete Source tab body instead of rebuilding panel padding or stack placement. |
+| `inspector-source-panel` | Source facts followed by the bounded application stack. Use its optional `title` when source evidence is merged into a broader view, its optional `actions` slot for evidence-wide actions, and the complete component instead of rebuilding panel padding or stack placement. |
 | `inspector-stack` | Bounded call stack. Pass retained frames, an accurate empty label, and a specific title when showing something other than the application stack. |
 | `inspector-workspace` | Shared split, focused, or stream workspace. Use `stream` for a single full-width scrollable list, `top` framing for edge-to-edge sections, and a namespaced `detailId` in focus mode. |
 | `popover-surface` | Shared elevated menu surface. Use `anchored` only with Alpine Anchor and choose direction and alignment deliberately. |

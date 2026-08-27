@@ -145,7 +145,7 @@ final class McpProfilePresenter
 
         if ($needle !== '') {
             $items = array_values(array_filter($items, function (array $query) use ($needle): bool {
-                $haystack = ($query['sql'] ?? '').' '.json_encode(
+                $haystack = ($query['sql'] ?? '').' '.($query['driver'] ?? '').' '.json_encode(
                     $query['bindings'] ?? array_column($query['executions'] ?? [], 'bindings'),
                     JSON_UNESCAPED_SLASHES,
                 );

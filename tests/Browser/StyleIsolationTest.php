@@ -95,29 +95,63 @@ it('keeps host styles and package styles isolated', function () {
             JS)
         ->click('[data-ndb-section="queries"]')
         ->assertVisible('[data-ndb-section-panel="queries"]')
+        ->click('[data-ndb-query-sort-heading="duration"]')
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-queries]');
                 const workspace = root.querySelector('[data-ndb-query-workspace]');
-                const row = root.querySelector('[data-ndb-query-item]');
+                const attentionBadge = root.querySelector('[data-ndb-query-attention-badge]');
+                const row = attentionBadge?.closest('[data-ndb-query-item]');
                 const detail = root.querySelector('[data-ndb-query-detail]');
-                const facts = root.querySelector('[data-ndb-query-detail-panel="query"] [data-ndb-inspector-fact]')?.closest('dl');
+                const facts = root.querySelector('[data-ndb-query-detail-panel="overview"] [data-ndb-inspector-fact]')?.closest('dl');
                 const code = root.querySelector('[data-ndb-query-sql][data-highlighted]');
                 const surface = code?.closest('pre');
                 const keyword = code?.querySelector('.hljs-keyword');
+                const typeBadge = row?.querySelector('[data-ndb-query-type-badge]');
+                const driver = row?.querySelector('[data-ndb-query-list-driver]');
+                const duration = row?.querySelector('[data-ndb-query-list-duration]');
+                const sortHeading = root.querySelector('[data-ndb-query-sort-heading]');
+                const sortIndicator = sortHeading?.querySelector('[data-ndb-sort-indicator]');
+                const interfaceFont = getComputedStyle(root).fontFamily;
                 const controls = [
                     root.querySelector('[data-ndb-query-filter]'),
-                    root.querySelector('[data-ndb-query-sort]'),
                     root.querySelector('[data-ndb-query-search]'),
                     root.querySelector('[data-ndb-query-execution-select]'),
                     ...root.querySelectorAll('[data-ndb-query-detail-tab]'),
                 ];
 
-                if (! workspace || ! row || ! detail || ! facts || ! code || ! surface || ! keyword) return false;
+                if (
+                    ! workspace || ! row || ! detail || ! facts || ! code || ! surface || ! keyword
+                    || ! typeBadge || ! attentionBadge || ! driver || ! duration || ! sortHeading || ! sortIndicator
+                ) return false;
+
+                const driverRect = driver.getBoundingClientRect();
+                const durationRect = duration.getBoundingClientRect();
+                const indicatorRect = sortIndicator.getBoundingClientRect();
 
                 return getComputedStyle(workspace).borderLeftWidth === '0px'
                     && getComputedStyle(row).borderLeftWidth === '0px'
                     && row.getBoundingClientRect().height < 91
+                    && Math.round(typeBadge.getBoundingClientRect().width) === 76
+                    && Math.round(attentionBadge.getBoundingClientRect().width) === 76
+                    && typeBadge.getBoundingClientRect().height < 28
+                    && attentionBadge.getBoundingClientRect().height < 28
+                    && getComputedStyle(typeBadge).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(attentionBadge).backgroundColor !== 'rgb(255, 0, 0)'
+                    && getComputedStyle(typeBadge).fontFamily === interfaceFont
+                    && getComputedStyle(attentionBadge).fontFamily === interfaceFont
+                    && getComputedStyle(driver).fontFamily === interfaceFont
+                    && Number.parseFloat(getComputedStyle(driver).fontSize) === 11
+                    && getComputedStyle(driver).backgroundColor !== 'rgb(255, 0, 0)'
+                    && driverRect.bottom <= durationRect.top + 1
+                    && Math.abs(driverRect.right - durationRect.right) <= 1
+                    && root.querySelector('[data-ndb-query-sort]') === null
+                    && sortHeading.getBoundingClientRect().height < 32
+                    && getComputedStyle(sortHeading).backgroundColor !== 'rgb(255, 0, 0)'
+                    && indicatorRect.width > 0
+                    && indicatorRect.height > 0
+                    && indicatorRect.width <= 16
+                    && indicatorRect.height <= 16
                     && getComputedStyle(detail).borderLeftWidth === '0px'
                     && getComputedStyle(facts).display === 'grid'
                     && [...facts.querySelectorAll('dl, dt, dd')]

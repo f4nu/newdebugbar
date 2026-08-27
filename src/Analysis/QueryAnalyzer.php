@@ -80,6 +80,7 @@ final class QueryAnalyzer
                 'fingerprint' => $fingerprint,
                 'sql' => $executions[0]['normalized_sql'],
                 'connection' => $executions[0]['connection'],
+                'driver' => $executions[0]['driver'] ?? 'unknown',
                 'query_type' => $executions[0]['query_type'],
                 'count' => count($executions),
                 'extra_executions' => count($executions) - 1,

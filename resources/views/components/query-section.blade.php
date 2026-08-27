@@ -20,6 +20,9 @@
         $line = is_numeric($callsite['line'] ?? null) ? (int) $callsite['line'] : null;
         $sourceAvailable = $file !== null && $line !== null;
         $queryType = (string) ($query['query_type'] ?? 'write');
+        $driver = is_string($query['driver'] ?? null) && $query['driver'] !== ''
+            ? $query['driver']
+            : 'unknown';
         $runnableAvailable = ($query['runnable_available'] ?? false)
             && is_string($query['runnable_sql'] ?? null)
             && $query['runnable_sql'] !== '';
@@ -35,6 +38,7 @@
             'stack' => $stack,
             'source_available' => $sourceAvailable,
             'source_label' => $sourceAvailable ? $file.':'.$line : 'Source unavailable',
+            'driver' => $driver,
             'query_type' => $queryType,
             'duration_ms' => round((float) ($query['duration_ms'] ?? 0), 2),
             'query_time_percent' => round((float) ($query['query_time_percent'] ?? 0), 1),
@@ -50,6 +54,7 @@
                 (string) ($query['sql'] ?? ''),
                 (string) ($query['normalized_sql'] ?? ''),
                 (string) ($query['connection'] ?? ''),
+                $driver,
                 $sourceAvailable ? $file.':'.$line : '',
                 json_encode($bindings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '',
             ])),
@@ -86,6 +91,7 @@
                 'execution' => (int) $first['execution'],
                 'sql' => $sql,
                 'connection' => (string) ($group['connection'] ?? $first['connection'] ?? 'default'),
+                'driver' => (string) ($group['driver'] ?? $first['driver'] ?? 'unknown'),
                 'query_type' => (string) ($group['query_type'] ?? $first['query_type'] ?? 'write'),
                 'duration_ms' => round((float) ($group['duration_ms'] ?? 0), 2),
                 'query_time_percent' => round((float) ($group['query_time_percent'] ?? 0), 1),
@@ -109,6 +115,7 @@
             'execution' => (int) $execution['execution'],
             'sql' => (string) ($execution['normalized_sql'] ?? $execution['sql']),
             'connection' => (string) ($execution['connection'] ?? 'default'),
+            'driver' => (string) ($execution['driver'] ?? 'unknown'),
             'query_type' => (string) ($execution['query_type'] ?? 'write'),
             'duration_ms' => (float) ($execution['duration_ms'] ?? 0),
             'query_time_percent' => (float) ($execution['query_time_percent'] ?? 0),
@@ -193,41 +200,38 @@
                                 @input.debounce.100ms="applyQueryView()"
                             />
                         </x-slot:search>
+                        <x-slot:filter>
+                            <x-newdebugbar::select-field
+                                label="Filter queries"
+                                data-ndb-query-filter
+                                x-model="queryFilter"
+                                @change="setQueryFilter($event.target.value)"
+                            >
+                                @foreach ($queryFilters as $filter => [$label, $count])
+                                    <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
+                                @endforeach
+                            </x-newdebugbar::select-field>
+                        </x-slot:filter>
                     </x-newdebugbar::inspector-list-controls>
-
-                    <div class="ndb:grid ndb:grid-cols-2 ndb:gap-2">
-                        <x-newdebugbar::select-field
-                            label="Filter queries"
-                            data-ndb-query-filter
-                            x-model="queryFilter"
-                            @change="setQueryFilter($event.target.value)"
-                        >
-                            @foreach ($queryFilters as $filter => [$label, $count])
-                                <option value="{{ $filter }}">{{ $label }} ({{ $count }})</option>
-                            @endforeach
-                        </x-newdebugbar::select-field>
-
-                        <x-newdebugbar::select-field
-                            label="Sort queries"
-                            data-ndb-query-sort
-                            x-model="querySort"
-                            @change="setQuerySort($event.target.value)"
-                        >
-                            <option value="execution">Execution order</option>
-                            <option value="duration">Slowest first</option>
-                        </x-newdebugbar::select-field>
-                    </div>
                 </x-slot:controls>
 
                 <x-slot:list data-ndb-query-list>
                     <div
-                        aria-hidden="true"
                         data-ndb-query-list-heading
-                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:hidden ndb:grid-cols-[3.5rem_minmax(0,1fr)_4.75rem] ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:sm:grid ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95"
+                        class="ndb:sticky ndb:top-0 ndb:z-10 ndb:grid ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-2 ndb:border-b ndb:border-zinc-200/90 ndb:bg-white/95 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400 ndb:backdrop-blur-sm ndb:dark:border-zinc-800 ndb:dark:bg-zinc-950/95"
                     >
-                        <span>Run</span>
+                        <span>Type</span>
                         <span>Query</span>
-                        <span class="ndb:text-right">Time</span>
+                        <span class="ndb:flex ndb:justify-end">
+                            <x-newdebugbar::inspector-sort-heading
+                                label="Time"
+                                align="right"
+                                active="querySort === 'duration'"
+                                direction="querySortDirection"
+                                data-ndb-query-sort-heading="duration"
+                                @click="toggleQuerySort('duration')"
+                            />
+                        </span>
                     </div>
 
                     @foreach ($queryRecords as $record)
@@ -244,53 +248,50 @@
                             data-ndb-repeated="{{ $record['repeated'] ? 'true' : 'false' }}"
                             data-ndb-search="{{ $record['search'] }}"
                             data-ndb-query-execution-count="{{ $record['count'] }}"
+                            aria-controls="newdebugbar-query-detail"
                             @if ($record['repeated']) data-ndb-query-group="{{ $record['key'] }}" @endif
                             @click="selectQueryRecord({{ \Illuminate\Support\Js::from($record['key']) }})"
                             :aria-pressed="querySelected === {{ \Illuminate\Support\Js::from($record['key']) }}"
                             :class="querySelected === {{ \Illuminate\Support\Js::from($record['key']) }}
                                 ? 'ndb:bg-indigo-50/90 ndb:ring-1 ndb:ring-inset ndb:ring-indigo-200 ndb:dark:bg-indigo-950/35 ndb:dark:ring-indigo-800/80'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[3.5rem_minmax(0,1fr)_4.75rem] ndb:gap-2 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] ndb:items-center ndb:gap-2 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
                         >
-                            <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:gap-0.5">
-                                <span class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    {{ $record['repeated'] ? number_format($record['count']).' runs' : '#'.number_format($record['execution']) }}
-                                </span>
-                                @if ($record['likely_n_plus_one'])
-                                    <span class="ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300">Likely N+1</span>
-                                @elseif ($record['repeated'])
-                                    <span class="ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300">Repeated</span>
-                                @elseif ($record['slow'])
-                                    <span class="ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:text-amber-700 ndb:dark:text-amber-300">Slow</span>
+                            <span class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:gap-1">
+                                <x-newdebugbar::inspector-operation-badge
+                                    wide
+                                    data-ndb-query-type-badge
+                                    class="ndb:w-19"
+                                >
+                                    {{ $record['query_type'] }}
+                                </x-newdebugbar::inspector-operation-badge>
+                                @if ($record['repeated'] || $record['slow'])
+                                    <span
+                                        data-ndb-query-attention-badge="{{ $record['repeated'] ? 'repeated' : 'slow' }}"
+                                        class="ndb:box-border ndb:flex ndb:h-auto ndb:w-19 ndb:shrink-0 ndb:items-center ndb:justify-center ndb:rounded-md ndb:bg-amber-50 ndb:px-2 ndb:py-0.5 ndb:[font-family:inherit] ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-[0.01em] ndb:text-amber-700 ndb:dark:bg-amber-950/45 ndb:dark:text-amber-300"
+                                    >{{ $record['repeated'] ? 'Repeated' : 'Slow' }}</span>
                                 @endif
                             </span>
 
-                            <span class="ndb:min-w-0">
-                                <code
-                                    data-ndb-query-list-sql
-                                    title="{{ $record['sql'] }}"
-                                    class="ndb:block ndb:max-h-10 ndb:overflow-hidden ndb:break-words ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-zinc-800 ndb:dark:text-zinc-200"
-                                >{{ $record['sql'] }}</code>
-                                <span class="ndb:mt-0.5 ndb:grid ndb:min-w-0 ndb:grid-cols-[3rem_minmax(0,1fr)] ndb:gap-2 ndb:text-[11px] ndb:leading-4 ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    <span class="ndb:truncate">{{ ucfirst($record['query_type']) }}</span>
-                                    <span
-                                        class="ndb:truncate"
-                                        title="{{ $record['connection'] }}"
-                                    >{{ $record['connection'] }}</span>
-                                </span>
-                            </span>
+                            <code
+                                data-ndb-query-list-sql
+                                title="{{ $record['sql'] }}"
+                                class="ndb:block ndb:max-h-10 ndb:min-w-0 ndb:overflow-hidden ndb:break-words ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-zinc-800 ndb:dark:text-zinc-200"
+                            >{{ $record['sql'] }}</code>
 
                             <span
                                 data-ndb-query-list-outcome
                                 class="ndb:flex ndb:min-w-0 ndb:flex-col ndb:items-end ndb:gap-0.5 ndb:text-right ndb:text-[11px] ndb:tabular-nums"
                             >
+                                <span
+                                    data-ndb-query-list-driver
+                                    title="{{ $record['driver'] }}"
+                                    class="ndb:h-auto ndb:max-w-full ndb:truncate ndb:bg-transparent ndb:[font-family:inherit] ndb:text-[11px] ndb:font-medium ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                                >{{ $record['driver'] }}</span>
                                 <strong
                                     data-ndb-query-list-duration
                                     class="ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"
                                 >{{ number_format((float) $record['duration_ms'], 2) }} ms</strong>
-                                <span class="ndb:text-zinc-500 ndb:dark:text-zinc-400">
-                                    {{ number_format((float) $record['query_time_percent'], 1) }}%
-                                </span>
                             </span>
                         </button>
                     @endforeach

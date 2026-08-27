@@ -252,6 +252,7 @@ final class EventRegistrar
                 'runnable_sql' => $runnableSql,
                 'duration_ms' => round((float) $event->time, 2),
                 'connection' => $event->connectionName,
+                'driver' => $event->connection->getDriverName(),
                 'type' => $event->readWriteType ?? null,
                 ...$location,
             ]);

@@ -430,10 +430,11 @@ export function createNewDebugBar(
     queryFilter: 'all',
     querySearch: '',
     querySort: 'execution',
+    querySortDirection: 'asc',
     querySelected: null,
     querySelectedExecution: null,
     queryDetailOpen: false,
-    queryDetailTab: 'query',
+    queryDetailTab: 'overview',
     queryDetailReturnFocus: null,
     queryExplain: null,
     queryExplainError: null,
@@ -2138,10 +2139,11 @@ export function createNewDebugBar(
       this.queryFilter = 'all';
       this.querySearch = '';
       this.querySort = 'execution';
+      this.querySortDirection = 'asc';
       this.querySelected = null;
       this.querySelectedExecution = null;
       this.queryDetailOpen = false;
-      this.queryDetailTab = 'query';
+      this.queryDetailTab = 'overview';
       this.queryDetailReturnFocus = null;
       this.queryExplain = null;
       this.queryExplainError = null;
@@ -3639,10 +3641,11 @@ export function createNewDebugBar(
       this.queryFilter = this.queryFocusFilter ? 'attention' : 'all';
       this.querySearch = '';
       this.querySort = 'execution';
+      this.querySortDirection = 'asc';
       this.querySelected = this.queryRecords[0]?.key ?? null;
       this.querySelectedExecution = this.queryRecords[0]?.executions?.[0]?.execution ?? null;
       this.queryDetailOpen = false;
-      this.queryDetailTab = 'query';
+      this.queryDetailTab = 'overview';
       this.queryDetailReturnFocus = null;
       this.syncQueryExplain();
       this.$nextTick?.(() => {
@@ -3659,10 +3662,19 @@ export function createNewDebugBar(
       this.applyQueryView();
     },
 
-    setQuerySort(sort) {
-      if (!['execution', 'duration'].includes(sort)) return;
+    toggleQuerySort(sort) {
+      if (sort !== 'duration') return;
 
-      this.querySort = sort;
+      if (this.querySort !== sort) {
+        this.querySort = sort;
+        this.querySortDirection = 'desc';
+      } else if (this.querySortDirection === 'desc') {
+        this.querySortDirection = 'asc';
+      } else {
+        this.querySort = 'execution';
+        this.querySortDirection = 'asc';
+      }
+
       this.applyQueryView();
     },
 
@@ -3673,7 +3685,7 @@ export function createNewDebugBar(
       this.querySelected = record.key;
       this.querySelectedExecution = record.executions?.[0]?.execution ?? null;
       this.queryDetailOpen = true;
-      this.queryDetailTab = 'query';
+      this.queryDetailTab = 'overview';
       this.queryDetailReturnFocus = browser.activeElement?.() ?? null;
       this.syncQueryExplain();
       this.$nextTick?.(() => {
@@ -3700,14 +3712,12 @@ export function createNewDebugBar(
       if (!this.selectedQueryRecord?.executions?.some((query) => query.execution === execution)) return;
 
       this.querySelectedExecution = execution;
-      if (this.queryDetailTab === 'source' && !this.selectedQueryHasSource) this.queryDetailTab = 'query';
       this.syncQueryExplain();
       this.$nextTick?.(() => browser.highlight?.());
     },
 
     setQueryDetailTab(tab) {
-      if (!['query', 'source', 'explain'].includes(tab)) return;
-      if (tab === 'source' && !this.selectedQueryHasSource) tab = 'query';
+      if (!['overview', 'explain'].includes(tab)) return;
 
       this.queryDetailTab = tab;
       this.$nextTick?.(() => {
@@ -3722,10 +3732,10 @@ export function createNewDebugBar(
       return this.runQueryExplain(wire);
     },
 
-    async runQueryExplain(wire, force = false) {
+    async runQueryExplain(wire) {
       if (typeof wire?.explainQuery !== 'function') return;
 
-      const execution = this.beginQueryExplain(force);
+      const execution = this.beginQueryExplain();
       if (execution === null) return;
 
       try {
@@ -3743,10 +3753,10 @@ export function createNewDebugBar(
       this.queryExplainScrollTop = null;
     },
 
-    beginQueryExplain(force = false) {
+    beginQueryExplain() {
       const query = this.selectedQuery;
       if (!query?.explain_available || query.explain_loading === true) return null;
-      if (!force && (query.explain != null || query.explain_error != null)) return null;
+      if (query.explain != null || query.explain_error != null) return null;
 
       this.queryDetailTab = 'explain';
       query.explain = null;
@@ -3863,7 +3873,7 @@ export function createNewDebugBar(
         this.querySelected = record?.key ?? null;
         this.querySelectedExecution = record?.executions?.[0]?.execution ?? null;
         if (record === null) this.queryDetailOpen = false;
-        this.queryDetailTab = 'query';
+        this.queryDetailTab = 'overview';
         this.queryDetailReturnFocus = null;
         this.syncQueryExplain();
       }
@@ -3871,10 +3881,11 @@ export function createNewDebugBar(
 
     compareQueries(left, right) {
       if (this.querySort === 'duration') {
-        return (
-          Number(right.dataset.ndbDuration ?? 0) - Number(left.dataset.ndbDuration ?? 0) ||
-          Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0)
-        );
+        const durationComparison =
+          Number(left.dataset.ndbDuration ?? 0) - Number(right.dataset.ndbDuration ?? 0);
+        const directedComparison = this.querySortDirection === 'asc' ? durationComparison : -durationComparison;
+
+        return directedComparison || Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
       }
 
       return Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);

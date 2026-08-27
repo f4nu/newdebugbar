@@ -880,6 +880,7 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   assert.equal(state.querySelected, 'group-users');
   assert.equal(state.querySelectedExecution, 1);
   assert.equal(state.queryDetailOpen, false);
+  assert.equal(state.queryDetailTab, 'overview');
   assert.equal(state.visibleQueryCount, 4);
 
   state.setQueryFilter('write');
@@ -899,25 +900,34 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   state.querySearch = '';
   state.setQueryFilter('all');
   appended.length = 0;
-  state.setQuerySort('duration');
+  state.toggleQuerySort('duration');
   assert.deepEqual(appended, [slowWrite, group, normalRead]);
+  assert.equal(state.querySort, 'duration');
+  assert.equal(state.querySortDirection, 'desc');
+  appended.length = 0;
+  state.toggleQuerySort('duration');
+  assert.deepEqual(appended, [normalRead, group, slowWrite]);
+  assert.equal(state.querySortDirection, 'asc');
+  appended.length = 0;
+  state.toggleQuerySort('duration');
+  assert.deepEqual(appended, [group, slowWrite, normalRead]);
+  assert.equal(state.querySort, 'execution');
+  assert.equal(state.querySortDirection, 'asc');
 
   state.selectQueryRecord('group-users');
   assert.equal(state.queryDetailOpen, true);
-  assert.equal(state.queryDetailTab, 'query');
+  assert.equal(state.queryDetailTab, 'overview');
   browser.viewportWidth = () => 390;
   state.selectQueryRecord('group-users');
   assert.equal(detailFocused, 1);
   state.setQueryDetailTab('bindings');
-  assert.equal(state.queryDetailTab, 'query');
-  state.setQueryDetailTab('source');
-  assert.equal(state.queryDetailTab, 'source');
+  assert.equal(state.queryDetailTab, 'overview');
   state.selectQueryExecution(2);
   assert.equal(state.querySelectedExecution, 2);
-  assert.equal(state.queryDetailTab, 'query');
+  assert.equal(state.queryDetailTab, 'overview');
   assert.equal(state.selectedQueryHasSource, false);
   state.setQueryDetailTab('source');
-  assert.equal(state.queryDetailTab, 'query');
+  assert.equal(state.queryDetailTab, 'overview');
 
   const explained = [];
   const wire = { explainQuery: async (execution) => explained.push(execution) };
@@ -942,12 +952,9 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   assert.equal(records[0].executions[1].explain.driver, 'sqlite');
   assert.equal(records[0].executions[1].explain_loading, false);
   assert.deepEqual(scrolls.at(-1), { top: 42, behavior: 'instant' });
-  state.setQueryDetailTab('query');
+  state.setQueryDetailTab('overview');
   await state.openQueryExplain(wire);
   assert.deepEqual(explained, [2]);
-  await state.runQueryExplain(wire, true);
-  assert.deepEqual(explained, [2, 2]);
-  assert.equal(state.queryExplainLoading, true);
 
   state.failQueryExplain();
   assert.equal(state.queryExplainLoading, false);
@@ -971,7 +978,7 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   state.selectQueryRecord('query-3');
   assert.equal(state.beginQueryExplain(), null);
   await state.openQueryExplain(wire);
-  assert.deepEqual(explained, [2, 2]);
+  assert.deepEqual(explained, [2]);
   state.selectQueryRecord('group-users');
   state.selectQueryExecution(2);
 
@@ -1000,15 +1007,15 @@ test('query workspace filters selects and keeps explain evidence scoped to the a
   );
 
   state.setQueryFilter('invalid');
-  state.setQuerySort('invalid');
+  state.toggleQuerySort('invalid');
   state.selectQueryRecord('missing');
   state.selectQueryExecution(999);
   state.setQueryDetailTab('missing');
   assert.equal(state.queryFilter, 'all');
-  assert.equal(state.querySort, 'duration');
+  assert.equal(state.querySort, 'execution');
   assert.equal(state.querySelected, 'group-users');
   assert.equal(state.querySelectedExecution, 1);
-  assert.equal(state.queryDetailTab, 'query');
+  assert.equal(state.queryDetailTab, 'overview');
 
   state.initializeQueries('invalid');
   assert.deepEqual(state.queryRecords, []);

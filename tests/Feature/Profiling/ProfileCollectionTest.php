@@ -82,6 +82,7 @@ it('captures a local web request and its Laravel activity', function () {
         ->sections->overview->payload->runtime->laravel->toBe(app()->version())
         ->sections->overview->payload->drivers->database->toBe(config('database.default'))
         ->sections->queries->summary->count->toBeGreaterThanOrEqual(1)
+        ->sections->queries->payload->items->{0}->driver->toBe('sqlite')
         ->sections->models->summary->count->toBeGreaterThanOrEqual(1)
         ->sections->cache->summary->hits->toBe(1)
         ->sections->cache->summary->misses->toBe(1)

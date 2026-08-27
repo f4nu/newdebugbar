@@ -86,7 +86,9 @@ Do not select the first item merely to fill space. When selection is not a delib
 
 - Put the search field first, with its search icon on the left and balanced inset spacing.
 - Put a compact filter dropdown on the right of search when the list needs one dimension of filtering.
-- Remove sorting controls that do not help answer a real debugging question.
+- Keep filtering in dropdowns. In a table-like list, put useful sorting on the comparable column heading instead of adding a separate sort dropdown.
+- Use the shared sortable heading, start with the most useful direction, then toggle the other direction and return to the section's deliberate default order. Keep a fixed indicator slot and change the active heading color so neither the label nor its column moves when the indicator appears or disappears.
+- Do not add sorting to a chronology or semantic sequence whose order already carries meaning.
 - Use a segmented control for a small, mutually exclusive set of detail views.
 - Center detail tabs in their container. Keep them left-aligned only when another control in the same row makes centered placement misleading, as in Mail.
 - Prefer explicit labels and stable widths. At a 390px viewport, an icon-only tab is acceptable only when the full set cannot fit, every icon has an accurate accessible label, and the meaning is familiar in context.
@@ -134,7 +136,7 @@ Do not explain Source, repeat a heading, or narrate ordinary table columns. A ne
 - Mail: the entire list item opens the message; detail tabs may remain left-aligned when sharing a control row. Do not capture or expose raw message headers without a concrete debugging use that is not already covered by the structured message facts or downloadable EML.
 - Notifications: show actual channel outcomes; do not add a redundant “needs attention” badge to the detail panel.
 - Models: no default selection; Records is the default selected-model tab; model list keeps a table header and a search field; drivers use the interface typeface; records, writes, and sources are separate useful views; do not duplicate table data in the header.
-- Queries: show the runnable SQL with retained binding values already inserted. Do not split a query and its bindings into separate tabs; explain only when capture limits leave placeholders unresolved. Keep Source and EXPLAIN separate because they answer different developer questions. Hide Source when no application source was retained. Opening EXPLAIN runs it automatically, reuses an existing result, and keeps an explicit retry after completion or failure.
+- Queries: show the runnable SQL with retained binding values already inserted. Do not split a query and its bindings into separate tabs; explain only when capture limits leave placeholders unresolved. Keep Source in Overview beneath the full query and omit it when no application source was retained. Opening EXPLAIN runs it automatically and reuses the first result or failure without adding a retry action. Keep the list filter dropdown, show the database driver as unlabeled secondary text above the runtime, and sort runtime through the shared Time heading rather than a sort dropdown.
 - Authorization: ability labels such as `view` and `update` use the interface typeface. Keep actual policy classes and callables in code type.
 - Exceptions: treat the exception class and message as one grouped identity. Keep the source action separate so the header has one clear reading axis.
 - Validation: keep failures in a full-width grouped view rather than drilling into one field at a time. On desktop use Field, Message, and Failed rules columns, giving Message the widest track; preserve that reading order when rows stack on mobile.

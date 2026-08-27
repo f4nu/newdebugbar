@@ -9,6 +9,7 @@ it('groups repeated queries by normalized sql and connection', function () {
             'bindings' => [1],
             'duration_ms' => 120,
             'connection' => 'primary',
+            'driver' => 'sqlite',
             'at_ms' => 140,
             'callsite' => ['file' => 'app/UserFinder.php', 'line' => 21],
         ],
@@ -17,6 +18,7 @@ it('groups repeated queries by normalized sql and connection', function () {
             'bindings' => [2],
             'duration_ms' => 20,
             'connection' => 'primary',
+            'driver' => 'sqlite',
             'at_ms' => 180,
             'callsite' => ['file' => 'app/UserFinder.php', 'line' => 21],
         ],
@@ -25,6 +27,7 @@ it('groups repeated queries by normalized sql and connection', function () {
             'bindings' => [3],
             'duration_ms' => 10,
             'connection' => 'primary',
+            'driver' => 'sqlite',
             'at_ms' => 210,
             'callsite' => ['file' => 'app/UserFinder.php', 'line' => 21],
         ],
@@ -33,6 +36,7 @@ it('groups repeated queries by normalized sql and connection', function () {
             'bindings' => [4],
             'duration_ms' => 5,
             'connection' => 'replica',
+            'driver' => 'pgsql',
             'at_ms' => 220,
         ],
         [
@@ -40,6 +44,7 @@ it('groups repeated queries by normalized sql and connection', function () {
             'bindings' => [],
             'duration_ms' => 5,
             'connection' => 'primary',
+            'driver' => 'sqlite',
             'type' => 'write',
             'at_ms' => 230,
         ],
@@ -56,6 +61,7 @@ it('groups repeated queries by normalized sql and connection', function () {
         'write_count' => 1,
     ])->and($analysis['items'][0])
         ->execution->toBe(1)
+        ->driver->toBe('sqlite')
         ->slow->toBeTrue()
         ->repeated_count->toBe(3)
         ->query_time_percent->toBe(75.0)
@@ -63,12 +69,15 @@ it('groups repeated queries by normalized sql and connection', function () {
         ->start_ms->toBe(20.0)
         ->and($analysis['repeated_groups'])->toHaveCount(1)
         ->and($analysis['repeated_groups'][0])
+        ->driver->toBe('sqlite')
         ->count->toBe(3)
         ->extra_executions->toBe(2)
         ->bindings_vary->toBeTrue()
         ->likely_n_plus_one->toBeTrue()
         ->shared_callsite->toBe(['file' => 'app/UserFinder.php', 'line' => 21])
-        ->executions->toHaveCount(3);
+        ->executions->toHaveCount(3)
+        ->and(array_column($analysis['repeated_groups'][0]['executions'], 'driver'))
+        ->toBe(['sqlite', 'sqlite', 'sqlite']);
 });
 
 it('does not claim n plus one without complete evidence', function (array $queries) {

@@ -8,12 +8,15 @@ it('presents repeated queries as one shared list detail record', function () {
         ->assertVisible('[data-ndb-query-workspace]')
         ->assertVisible('[data-ndb-query-list]')
         ->assertVisible('[data-ndb-query-detail]')
-        ->assertSee('Likely N+1')
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-queries]');
                 const rows = [...root.querySelectorAll('[data-ndb-query-item]')];
                 const repeated = rows.filter((row) => row.dataset.ndbRepeated === 'true');
+                const typeBadge = repeated[0]?.querySelector('[data-ndb-query-type-badge]');
+                const attentionBadge = repeated[0]?.querySelector('[data-ndb-query-attention-badge]');
+                const driver = repeated[0]?.querySelector('[data-ndb-query-list-driver]');
+                const duration = repeated[0]?.querySelector('[data-ndb-query-list-duration]');
                 const sql = root.querySelector('[data-ndb-query-sql][data-highlighted]');
                 const list = root.querySelector('[data-ndb-query-list]');
                 const detail = root.querySelector('[data-ndb-query-detail]');
@@ -25,9 +28,17 @@ it('presents repeated queries as one shared list detail record', function () {
                     && repeated.length === 1
                     && Number(repeated[0].dataset.ndbQueryExecutionCount) === 3
                     && repeated[0].getAttribute('aria-pressed') === 'true'
+                    && typeBadge?.textContent.trim() === 'read'
+                    && attentionBadge?.textContent.trim() === 'Repeated'
+                    && Math.abs(typeBadge.getBoundingClientRect().width - attentionBadge.getBoundingClientRect().width) <= 1
+                    && driver?.textContent.trim() === 'sqlite'
+                    && driver.getBoundingClientRect().bottom <= duration.getBoundingClientRect().top + 1
                     && sql?.querySelector('.hljs-keyword') !== null
                     && root.querySelectorAll('[data-ndb-query-detail-panel]').length === 1
-                    && root.querySelector('[data-ndb-query-detail-panel="query"]') !== null
+                    && root.querySelector('[data-ndb-query-detail-panel="overview"]') !== null
+                    && root.querySelector('[data-ndb-query-detail-panel="overview"] [data-ndb-inspector-source-panel]') !== null
+                    && root.querySelector('[data-ndb-query-detail-tab="source"]') === null
+                    && root.querySelector('[data-ndb-query-sort]') === null
                     && root.querySelector('[data-ndb-query-list-source]') === null
                     && detailHeader?.querySelector('dl') === null
                     && detailHeader?.getBoundingClientRect().height <= 54
@@ -35,6 +46,7 @@ it('presents repeated queries as one shared list detail record', function () {
                     && getComputedStyle(list).overflowY === 'auto'
                     && getComputedStyle(detail).overflowY === 'auto'
                     && searchIcon?.getBoundingClientRect().left < search.getBoundingClientRect().left + 32
+                    && ! root.textContent.includes('Why these executions are grouped')
                     && ! root.textContent.includes('•')
                     && ! root.textContent.includes('·');
             })()
@@ -51,24 +63,21 @@ it('presents repeated queries as one shared list detail record', function () {
                     && root.querySelector('[data-ndb-query-detail-tab="bindings"]') === null
                     && root.querySelector('[data-ndb-query-detail-panel="bindings"]') === null
                     && root.querySelectorAll('[data-ndb-query-detail-panel]').length === 1
-                    && root.querySelector('[data-ndb-query-detail-panel="query"]') !== null
-                    && root.querySelector('[data-ndb-query-detail-panel="source"]') === null;
+                    && root.querySelector('[data-ndb-query-detail-panel="overview"]') !== null
+                    && root.querySelector('[data-ndb-query-detail-panel="overview"] [data-ndb-inspector-source-panel]') !== null;
             })()
             JS)
-        ->click('[data-ndb-query-detail-tab="source"]')
-        ->assertAttribute('[data-ndb-query-detail-tab="source"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-query-detail-panel="source"]')
         ->assertSee('DefinesTestApplication.php')
         ->assertScript('document.querySelectorAll("[data-ndb-query-detail-panel]").length', 1)
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
         ->click('[data-ndb-toolbar="queries"]')
-        ->assertVisible('[data-ndb-query-detail-panel="source"]')
+        ->assertVisible('[data-ndb-query-detail-panel="overview"]')
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.querySelector('[data-ndb-queries]'));
 
                 return state.querySelectedExecution === 2
-                    && state.queryDetailTab === 'source'
+                    && state.queryDetailTab === 'overview'
                     && state.queryRecords[0].executions.length === 3;
             })()
             JS)
@@ -99,6 +108,8 @@ it('filters searches and sorts a varied query profile', function () {
                     && repeated.executions.every((query) => ! Object.hasOwn(query, 'bindings'))
                     && connections.has('testing')
                     && connections.has('query_replica')
+                    && rows.every((row) => row.querySelector('[data-ndb-query-type-badge]') !== null)
+                    && rows.every((row) => row.querySelector('[data-ndb-query-list-driver]')?.textContent.trim() === 'sqlite')
                     && state.queryRecords.some((record) => record.sql.length > 150);
             })()
             JS)
@@ -108,14 +119,53 @@ it('filters searches and sorts a varied query profile', function () {
             [...document.querySelectorAll('[data-ndb-query-item]:not([hidden])')]
                 .every((row) => row.dataset.ndbAttention === 'true')
             JS)
-        ->select('[data-ndb-query-sort]', 'duration')
-        ->assertValue('[data-ndb-query-sort]', 'duration')
+        ->assertScript(<<<'JS'
+            (() => {
+                const heading = document.querySelector('[data-ndb-query-sort-heading="duration"]');
+                const label = [...heading.children].find((child) => child.getAttribute('aria-hidden') === 'true' && ! child.matches('[data-ndb-sort-indicator]'));
+                window.__newdebugbarQueryTimeLabelLeft = label?.getBoundingClientRect().left;
+
+                return document.querySelector('[data-ndb-query-sort]') === null
+                    && heading?.getAttribute('aria-pressed') === 'false'
+                    && Number.isFinite(window.__newdebugbarQueryTimeLabelLeft);
+            })()
+            JS)
+        ->click('[data-ndb-query-sort-heading="duration"]')
+        ->assertAttribute('[data-ndb-query-sort-heading="duration"]', 'aria-pressed', 'true')
+        ->assertScript(<<<'JS'
+            (() => {
+                const visible = [...document.querySelectorAll('[data-ndb-query-item]:not([hidden])')];
+                const durations = visible.map((row) => Number(row.dataset.ndbDuration));
+                const heading = document.querySelector('[data-ndb-query-sort-heading="duration"]');
+                const indicator = heading.querySelector('[data-ndb-sort-indicator]');
+
+                return durations.every((duration, index) => index === 0 || durations[index - 1] >= duration)
+                    && getComputedStyle(heading).color !== getComputedStyle(heading.parentElement).color
+                    && indicator.getBoundingClientRect().width > 0;
+            })()
+            JS)
+        ->click('[data-ndb-query-sort-heading="duration"]')
         ->assertScript(<<<'JS'
             (() => {
                 const visible = [...document.querySelectorAll('[data-ndb-query-item]:not([hidden])')];
                 const durations = visible.map((row) => Number(row.dataset.ndbDuration));
 
-                return durations.every((duration, index) => index === 0 || durations[index - 1] >= duration);
+                return durations.every((duration, index) => index === 0 || durations[index - 1] <= duration);
+            })()
+            JS)
+        ->click('[data-ndb-query-sort-heading="duration"]')
+        ->assertAttribute('[data-ndb-query-sort-heading="duration"]', 'aria-pressed', 'false')
+        ->assertScript(<<<'JS'
+            (() => {
+                const heading = document.querySelector('[data-ndb-query-sort-heading="duration"]');
+                const label = [...heading.children].find((child) => child.getAttribute('aria-hidden') === 'true' && ! child.matches('[data-ndb-sort-indicator]'));
+                const indicatorIcon = heading.querySelector('[data-ndb-sort-indicator] svg');
+                const executions = [...document.querySelectorAll('[data-ndb-query-item]:not([hidden])')]
+                    .map((row) => Number(row.dataset.ndbExecution));
+
+                return Math.abs(label.getBoundingClientRect().left - window.__newdebugbarQueryTimeLabelLeft) <= 1
+                    && getComputedStyle(indicatorIcon).display === 'none'
+                    && executions.every((execution, index) => index === 0 || executions[index - 1] <= execution);
             })()
             JS)
         ->select('[data-ndb-query-filter]', 'write')
@@ -149,7 +199,7 @@ it('runs EXPLAIN for the selected repeated execution', function () {
         ->click('[data-ndb-query-detail-tab="explain"]')
         ->waitForText('EXPLAIN QUERY PLAN')
         ->assertVisible('[data-ndb-query-explain-result]')
-        ->assertVisible('[data-ndb-query-explain-action]')
+        ->assertMissing('[data-ndb-query-explain-action]')
         ->assertScript(<<<'JS'
             (() => {
                 const state = Alpine.$data(document.querySelector('[data-ndb-queries]'));
@@ -164,7 +214,7 @@ it('runs EXPLAIN for the selected repeated execution', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('keeps an EXPLAIN failure visible with a recovery path', function () {
+it('keeps an EXPLAIN failure visible', function () {
     visit('/profiled-queries-rich')
         ->resize(1200, 760)
         ->click('[data-ndb-toolbar="queries"]')
@@ -173,8 +223,8 @@ it('keeps an EXPLAIN failure visible with a recovery path', function () {
         ->click('[data-ndb-query-detail-tab="explain"]')
         ->waitForText('The database could not explain this query.')
         ->assertVisible('[data-ndb-query-explain-error]')
-        ->assertSee('copy the full query from Query')
-        ->assertSeeIn('[data-ndb-query-explain-action]', 'Run EXPLAIN again')
+        ->assertSee('copy the full query from Overview')
+        ->assertMissing('[data-ndb-query-explain-action]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -184,6 +234,8 @@ it('moves from the query list to one focused mobile detail', function () {
         ->click('[data-ndb-mobile-toolbar-metric-scope="toolbar"][data-ndb-mobile-toolbar-metric="queries"]')
         ->assertVisible('[data-ndb-query-search]')
         ->assertVisible('[data-ndb-query-list]')
+        ->assertVisible('[data-ndb-query-list-heading]')
+        ->assertVisible('[data-ndb-query-sort-heading="duration"]')
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.getElementById('newdebugbar');
@@ -198,9 +250,9 @@ it('moves from the query list to one focused mobile detail', function () {
         ->click('[data-ndb-query-item][data-ndb-repeated="true"]')
         ->assertVisible('[data-ndb-query-detail]')
         ->assertVisible('[data-ndb-query-detail-back]')
-        ->assertSeeIn('[data-ndb-query-detail-tab="query"]', 'Query')
+        ->assertSeeIn('[data-ndb-query-detail-tab="overview"]', 'Overview')
         ->assertMissing('[data-ndb-query-detail-tab="bindings"]')
-        ->assertSeeIn('[data-ndb-query-detail-tab="source"]', 'Source')
+        ->assertMissing('[data-ndb-query-detail-tab="source"]')
         ->assertSeeIn('[data-ndb-query-detail-tab="explain"]', 'EXPLAIN')
         ->assertScript(<<<'JS'
             (() => {
@@ -209,11 +261,10 @@ it('moves from the query list to one focused mobile detail', function () {
 
                 return detail.getBoundingClientRect().width <= 390
                     && getComputedStyle(list.parentElement).display === 'none'
+                    && document.querySelector('[data-ndb-query-detail-panel="overview"] [data-ndb-inspector-source-panel]') !== null
                     && document.querySelectorAll('[data-ndb-query-detail-panel]').length === 1;
             })()
             JS)
-        ->click('[data-ndb-query-detail-tab="source"]')
-        ->assertVisible('[data-ndb-query-detail-panel="source"]')
         ->click('[data-ndb-query-detail-back]')
         ->assertVisible('[data-ndb-query-list]')
         ->wait(0.1)

@@ -17,7 +17,7 @@ final class InspectDebugQueries extends DebugTool
 {
     private const DEFAULT_LIMIT = 5;
 
-    protected const DESCRIPTION = 'Inspect bounded query evidence using the same grouping and filters as the browser inspector.';
+    protected const DESCRIPTION = 'Inspect bounded query evidence, including each retained database driver, using the same grouping and filters as the browser inspector.';
 
     public function __construct(private readonly McpProfilePresenter $profiles) {}
 

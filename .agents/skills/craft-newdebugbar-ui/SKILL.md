@@ -62,6 +62,7 @@ Check [references/components.md](references/components.md) before creating a new
 
 - Pick a useful default tab and filter from the data model.
 - Do not make the developer configure a view before it becomes useful.
+- Keep filters in dropdowns. For a table-like list with a meaningful comparable column, use the shared sortable heading instead of a separate sort dropdown; reserve its indicator space so sorting never shifts the label.
 - Keep selection and loading changes from shifting nearby layout.
 - Give the view one vertical scroll owner.
 - Keep actions near the evidence they affect.

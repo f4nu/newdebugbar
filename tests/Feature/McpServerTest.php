@@ -75,7 +75,9 @@ it('registers one local read only server with five schema backed tools', functio
         ->and(app(GetDebugProfileData::class)->description())
         ->toContain('/sections/models/payload/model_groups', 'folded model operations', 'query correlation', 'guidance')
         ->and($serverDefaults['instructions'])
-        ->toContain('/sections/models/payload/model_groups', 'identifiers', 'changed attributes', 'related queries');
+        ->toContain('/sections/models/payload/model_groups', 'identifiers', 'changed attributes', 'related queries')
+        ->and(app(InspectDebugQueries::class)->description())
+        ->toContain('database driver');
 });
 
 it('correlates the exact response profile while unrelated profiles exist', function () {
@@ -90,6 +92,12 @@ it('correlates the exact response profile while unrelated profiles exist', funct
         'filter' => 'repeated',
         'limit' => 1,
     ])->assertOk());
+    $driverSearch = McpResponse::structuredContent(NewDebugBarServer::tool(InspectDebugQueries::class, [
+        'profile_id' => $first,
+        'filter' => 'repeated',
+        'search' => 'sqlite',
+        'limit' => 1,
+    ])->assertOk());
     $findings = McpResponse::structuredContent(NewDebugBarServer::tool(GetDebugFindings::class, [
         'profile_id' => $first,
     ])->assertOk());
@@ -101,6 +109,10 @@ it('correlates the exact response profile while unrelated profiles exist', funct
         ->data->summary->repeated_pattern_count->toBe(1)
         ->data->repeated_groups->toHaveCount(1)
         ->data->repeated_groups->{0}->count->toBe(3)
+        ->data->repeated_groups->{0}->driver->toBe('sqlite')
+        ->data->repeated_groups->{0}->executions->{0}->driver->toBe('sqlite')
+        ->and($driverSearch)
+        ->data->repeated_groups->toHaveCount(1)
         ->and(array_column($findings['data']['findings'], 'rule_id'))
         ->not->toContain('query.repeated', 'query.n_plus_one')
         ->and(count(File::files(config('newdebugbar.storage.path'))))->toBe($profileCount);

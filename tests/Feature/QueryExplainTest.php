@@ -16,6 +16,7 @@ it('offers runnable SQL and runs manual SQLite explain with the default bindings
     $query = $profile['sections']['queries']['payload']['items'][0];
 
     expect($query)
+        ->driver->toBe('sqlite')
         ->binding_policy->toBe('full')
         ->bindings_complete->toBeTrue()
         ->source_preserved->toBeTrue()
@@ -83,6 +84,7 @@ it('keeps repeated execution evidence in one bounded workspace record', function
         'runnable_sql' => 'select '.$binding.' as number',
         'duration_ms' => $binding,
         'connection' => 'testing',
+        'driver' => 'sqlite',
         'callsite' => ['file' => '/app/Queries/NumberQuery.php', 'line' => 14],
         'stack' => [['file' => '/app/Queries/NumberQuery.php', 'line' => 14, 'function' => 'loadNumbers']],
     ], [1, 2, 3]);
@@ -103,7 +105,9 @@ it('keeps repeated execution evidence in one bounded workspace record', function
         ->toHaveCount(1)
         ->and($records[0]['repeated'])->toBeTrue()
         ->and($records[0]['count'])->toBe(3)
+        ->and($records[0]['driver'])->toBe('sqlite')
         ->and($records[0]['executions'])->toHaveCount(3)
+        ->and(array_column($records[0]['executions'], 'driver'))->toBe(['sqlite', 'sqlite', 'sqlite'])
         ->and($records[0]['executions'][2])->not->toHaveKeys(['bindings', 'runnable_sql', 'bindings_complete'])
         ->and($records[0]['executions'][2])->not->toHaveKey('source_short_label')
         ->and($records[0]['executions'][2]['display_sql'])->toBe('select 3 as number')

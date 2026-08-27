@@ -688,7 +688,9 @@ trait DefinesTestApplication
                             [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-query-workspace], [data-ndb-query-item], [data-ndb-query-detail] { border-left: 20px solid rgb(255, 0, 0); }
-                            [data-ndb-query-filter], [data-ndb-query-sort], [data-ndb-query-search], [data-ndb-query-execution-select], [data-ndb-query-copy-sql], [data-ndb-query-copy-runnable], [data-ndb-query-detail-tab], [data-ndb-query-explain-action] { height: 91px; }
+                            [data-ndb-query-type-badge], [data-ndb-query-attention-badge], [data-ndb-query-list-driver] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-family: monospace; font-size: 42px; height: 91px; }
+                            [data-ndb-query-filter], [data-ndb-query-search], [data-ndb-query-execution-select], [data-ndb-query-copy-sql], [data-ndb-query-copy-runnable], [data-ndb-query-detail-tab], [data-ndb-query-sort-heading] { height: 91px; }
+                            [data-ndb-sort-indicator] { height: 64px; width: 64px; }
                             [data-notifications] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-log-entry], [data-ndb-log-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); padding: 24px; }
                             [data-ndb-log-level-select] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
