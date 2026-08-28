@@ -1,6 +1,6 @@
 @props([
     'code' => false,
-    'label',
+    'label' => null,
 ])
 
 <div
@@ -12,7 +12,13 @@
     }}
 >
     <div class="ndb:min-w-0 ndb:flex-1">
-        <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $label }}</dt>
+        @isset($term)
+            <dt {{ $term->attributes->class('ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400') }}>
+                {{ $term }}
+            </dt>
+        @else
+            <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $label }}</dt>
+        @endisset
         <dd class="ndb:mt-1 ndb:min-w-0">
             @isset($value)
                 @if ($code)

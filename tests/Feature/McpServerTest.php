@@ -515,6 +515,14 @@ it('exposes every recorded context section through the bounded section tool', fu
 
         expect($content['status'])->toBe('ok')
             ->and($content['data']['section'])->toBe($section);
+
+        if ($section === 'authorization') {
+            $decision = $content['data']['payload']['items'][0];
+
+            expect($decision)
+                ->toHaveKey('user')
+                ->not->toHaveKeys(['actor', 'user_type']);
+        }
     }
 
     $missing = app(McpProfilePresenter::class)->section($profileId, 'messages', 0, 50);

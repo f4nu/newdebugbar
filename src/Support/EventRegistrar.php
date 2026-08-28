@@ -191,8 +191,7 @@ final class EventRegistrar
                 'handler_kind' => $handler['kind'],
                 'handler_name' => $handler['name'],
                 'handler_source' => $handler['source'],
-                'actor' => $this->authorizationActor($event->user),
-                'user_type' => is_object($event->user) ? $event->user::class : null,
+                'user' => $this->authorizationUser($event->user),
                 'arguments' => array_values(array_map(
                     fn (mixed $argument, int $index): array => $this->authorizationArgument($argument, $index + 1),
                     $arguments,
@@ -1591,7 +1590,7 @@ final class EventRegistrar
     }
 
     /** @return array{type: class-string, identifier_name: string|null, identifier: scalar|null, name: string|null}|null */
-    private function authorizationActor(mixed $user): ?array
+    private function authorizationUser(mixed $user): ?array
     {
         if (! is_object($user)) {
             return null;

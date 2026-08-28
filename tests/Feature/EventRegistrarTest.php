@@ -35,7 +35,7 @@ it('preserves class-string authorization targets', function () {
         ]]);
 });
 
-it('captures actor identity and bounded model and value arguments', function () {
+it('captures user identity and bounded model and value arguments', function () {
     Route::middleware(ProfileRequest::class)->get('/profiled-argument-authorization', function () {
         Gate::define(
             'revise-profile',
@@ -59,7 +59,7 @@ it('captures actor identity and bounded model and value arguments', function () 
 
     expect($decision)
         ->result->toBe('allowed')
-        ->actor->toMatchArray([
+        ->user->toMatchArray([
             'type' => GenericUser::class,
             'identifier_name' => 'id',
             'identifier' => 'planner-7',
@@ -91,7 +91,8 @@ it('captures actor identity and bounded model and value arguments', function () 
                 'value' => 3,
             ],
         ])
-        ->stack->not->toBeEmpty();
+        ->stack->not->toBeEmpty()
+        ->and($decision)->not->toHaveKeys(['actor', 'user_type']);
 });
 
 it('identifies a named gate callback when its model also has a policy', function () {

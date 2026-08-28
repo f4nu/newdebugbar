@@ -184,7 +184,6 @@ it('uses one filter tab treatment across inspector sections', function () {
     }
 
     foreach ([
-        'components/authorization-detail.blade.php',
         'components/cache-detail-tabs.blade.php',
         'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',
@@ -655,10 +654,11 @@ it('composes Authorization from the shared inspector workspace anatomy', functio
         ->toContain('<x-newdebugbar::inspector-facts')
         ->toContain('<x-newdebugbar::inspector-source-panel')
         ->toContain('<x-newdebugbar::inspector-source-fact')
-        ->toContain('<template x-if="authorizationDetailTab === \'decision\'">')
-        ->toContain('<template x-if="authorizationDetailTab === \'source\'">')
+        ->toContain('data-ndb-authorization-detail-panel="combined"')
         ->not->toContain('<x-newdebugbar::inspector-explanation')
-        ->not->toContain('x-show.important="authorizationDetailTab ===');
+        ->not->toContain('<x-newdebugbar::inspector-detail-tabs')
+        ->not->toContain('<x-newdebugbar::filter-tab')
+        ->not->toContain('authorizationDetailTab');
 });
 
 it('composes Events from the shared inspector workspace anatomy', function () {
@@ -787,7 +787,6 @@ it('uses centered segmented controls across inspector detail panels', function (
     $views = dirname(__DIR__, 2).'/resources/views';
 
     foreach ([
-        'components/authorization-detail.blade.php',
         'components/cache-detail-tabs.blade.php',
         'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',

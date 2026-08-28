@@ -24,8 +24,9 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 const header = document.querySelector('[data-ndb-authorization-header]');
                 const detailAbility = document.querySelector('[data-ndb-authorization-detail-ability]');
                 const detailResult = document.querySelector('[data-ndb-authorization-detail-result]');
-                const firstTab = document.querySelector('[data-ndb-authorization-detail-tab]');
-                const detailTabGroup = firstTab.closest('[data-ndb-filter-tabs]');
+                const panel = document.querySelector('[data-ndb-authorization-detail-panel="combined"]');
+                const source = panel.querySelector('[data-ndb-inspector-source-panel]');
+                const handler = source.querySelector('code[data-ndb-language="php"]');
                 const interfaceFont = getComputedStyle(workspace).fontFamily;
 
                 return getComputedStyle(workspace).display === 'grid'
@@ -46,12 +47,13 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                         return gap >= 7 && gap <= 9;
                     })
                     && header.querySelector('[data-ndb-authorization-detail-result]') === null
-                    && detailResult.getBoundingClientRect().top > firstTab.getBoundingClientRect().bottom
-                    && detailTabGroup.dataset.ndbFilterTabsVariant === 'segmented'
-                    && Math.abs(
-                        detailTabGroup.getBoundingClientRect().left + detailTabGroup.getBoundingClientRect().width / 2
-                        - detail.getBoundingClientRect().left - detail.getBoundingClientRect().width / 2
-                    ) <= 1
+                    && header.querySelector('p') === null
+                    && detailResult.getBoundingClientRect().top > header.getBoundingClientRect().bottom
+                    && panel.querySelector('[data-ndb-authorization-metadata]') !== null
+                    && panel.querySelector('[data-ndb-authorization-arguments-detail]') !== null
+                    && source !== null
+                    && handler?.hasAttribute('data-highlighted')
+                    && document.querySelectorAll('[data-ndb-authorization-detail-tab]').length === 0
                     && document.querySelector('[data-ndb-authorization-item][aria-pressed="true"]') !== null;
             })()
             JS);
@@ -79,13 +81,13 @@ it('scans filters searches and inspects authorization evidence on desktop', func
         ->assertScript("document.querySelector('[data-ndb-authorization-detail-ability]').textContent.trim() === 'create-studio-job'")
         ->assertScript(<<<'JS'
             (() => {
-                const actor = document.querySelector('[data-ndb-authorization-actor-detail]').textContent;
+                const user = document.querySelector('[data-ndb-authorization-user-detail]').textContent;
                 const argumentList = document.querySelector('[data-ndb-authorization-arguments-detail]');
                 const arguments = argumentList.textContent;
                 const rows = [...argumentList.querySelectorAll(':scope > div')];
 
-                return actor.includes('Guest')
-                    && arguments.includes('Target')
+                return user.includes('Guest')
+                    && arguments.includes('Argument 1')
                     && arguments.includes('StudioJob')
                     && rows.every((row) => row.querySelector(':scope > dt') && row.querySelector(':scope > dd'));
             })()
@@ -97,7 +99,7 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 const arguments = document.querySelector('[data-ndb-authorization-arguments-detail]').textContent;
 
                 return ability === 'revise-an-intentionally-long-kyoto-autumn-workspace-ability'
-                    && arguments.includes('Target')
+                    && arguments.includes('Argument 1')
                     && arguments.includes('Argument 2')
                     && arguments.includes('Argument 3');
             })()
@@ -128,18 +130,20 @@ it('scans filters searches and inspects authorization evidence on desktop', func
         ->assertSee('Guests cannot open private planning notes.')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-authorization-detail-panel="decision"]');
-                const arguments = document.querySelector('[data-ndb-authorization-arguments-detail]').textContent;
-                const facts = [...document.querySelector('[data-ndb-authorization-metadata]').children];
-                const valueFor = (label) => facts.find((fact) => fact.querySelector('dt')?.textContent.trim() === label)
+                const panel = document.querySelector('[data-ndb-authorization-detail-panel="combined"]');
+                const response = panel.querySelector('[data-ndb-authorization-response]');
+                const rows = [...response.querySelectorAll(':scope dl > div')];
+                const valueFor = (label) => rows.find((row) => row.querySelector('dt')?.textContent.trim() === label)
                     ?.querySelector('dd')?.textContent.trim();
-                const httpStatus = facts.find((fact) => fact.querySelector('dt')?.textContent.trim() === 'HTTP status');
+                const arguments = panel.querySelector('[data-ndb-authorization-arguments-detail]');
+                const httpStatus = rows.find((row) => row.querySelector('dt')?.textContent.trim() === 'HTTP status');
 
-                return panel.querySelectorAll('button').length === 0
-                    && !arguments.includes('Arguments')
-                    && !arguments.includes('—')
-                    && valueFor('Response code') === 'guest_private_notes'
-                    && httpStatus.getClientRects().length === 0;
+                return response.getClientRects().length > 0
+                    && arguments.getClientRects().length === 0
+                    && valueFor('Message') === 'Guests cannot open private planning notes.'
+                    && valueFor('Code') === 'guest_private_notes'
+                    && httpStatus.getClientRects().length === 0
+                    && document.querySelectorAll('[data-ndb-authorization-detail-tab]').length === 0;
             })()
             JS)
         ->assertScript(<<<'JS'
@@ -157,40 +161,43 @@ it('scans filters searches and inspects authorization evidence on desktop', func
                 return state?.selectedAuthorizationDecision?.ability === 'access-private-planning-notes';
             })()
             JS)
-        ->click('[data-ndb-authorization-detail-tab="source"]')
-        ->assertVisible('[data-ndb-authorization-detail-panel="source"]')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-authorization-detail-panel="source"]');
-                const links = [
-                    panel.querySelector('[data-ndb-authorization-copy-handler-source]'),
-                    panel.querySelector('[data-ndb-authorization-copy-callsite]'),
-                ];
+                const panel = document.querySelector('[data-ndb-authorization-detail-panel="combined"]');
+                const source = panel.querySelector('[data-ndb-inspector-source-panel]');
+                const link = source.querySelector('[data-ndb-authorization-copy-handler-source]');
+                const stack = source.querySelector('[data-ndb-inspector-stack]');
+                const handler = source.querySelector('code[data-ndb-language="php"]');
                 const interfaceFont = getComputedStyle(document.querySelector('[data-ndb-authorization]')).fontFamily;
 
-                return links.every((link) => link !== null)
-                    && links.every((link) => getComputedStyle(link).fontFamily === interfaceFont)
-                    && links.every((link) => getComputedStyle(link).textDecorationLine.includes('underline'))
-                    && links.every((link) => link.querySelector('svg') === null);
+                return source !== null
+                    && link !== null
+                    && getComputedStyle(link).fontFamily === interfaceFont
+                    && getComputedStyle(link).textDecorationLine.includes('underline')
+                    && link.querySelector('svg') === null
+                    && handler.hasAttribute('data-highlighted')
+                    && stack.textContent.includes('DefinesTestApplication.php')
+                    && source.querySelector('[data-ndb-authorization-copy-callsite]') === null;
             })()
             JS)
         ->click('[data-ndb-authorization-copy-evidence]')
         ->click('[data-ndb-authorization-copy-handler-source]')
-        ->click('[data-ndb-authorization-copy-callsite]')
         ->wait(0.05)
         ->assertScript(<<<'JS'
             (() => {
-                const [evidence, handlerSource, callsite] = window.newdebugbarAuthorizationClipboard;
+                const [evidence, handlerSource] = window.newdebugbarAuthorizationClipboard;
                 const parsed = JSON.parse(evidence);
                 const handlerLink = document.querySelector('[data-ndb-authorization-copy-handler-source]');
-                const callsiteLink = document.querySelector('[data-ndb-authorization-copy-callsite]');
 
-                return window.newdebugbarAuthorizationClipboard.length === 3
+                return window.newdebugbarAuthorizationClipboard.length === 2
                     && parsed.ability === 'access-private-planning-notes'
                     && parsed.result === 'denied'
-                    && parsed.result_reason.code === 'guest_private_notes'
-                    && handlerSource === handlerLink.textContent.trim()
-                    && callsite === callsiteLink.textContent.trim();
+                    && parsed.authorization_response.code === 'guest_private_notes'
+                    && parsed.user === null
+                    && !Object.hasOwn(parsed, 'actor')
+                    && !Object.hasOwn(parsed, 'checked_from')
+                    && parsed.stack[0].file.includes('DefinesTestApplication.php')
+                    && handlerSource === handlerLink.textContent.trim();
             })()
             JS)
         ->click('[data-ndb-window-controls="expanded"] [data-ndb-window-action="shrink"]')
@@ -207,6 +214,30 @@ it('scans filters searches and inspects authorization evidence on desktop', func
         ->waitForText('6 decisions')
         ->assertValue('[data-ndb-authorization-filter-control]', 'all')
         ->assertValue('[data-ndb-authorization-search]', '')
+        ->assertNoJavaScriptErrors();
+});
+
+it('centers the decision count beside its filter', function () {
+    $page = visit('/profiled-context')
+        ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
+        ->click('[data-ndb-select-section="authorization"]')
+        ->waitForText('2 decisions');
+
+    DebugBarBrowser::waitForDetails($page);
+
+    $page
+        ->assertScript(<<<'JS'
+            (() => {
+                const summary = document.querySelector('[data-ndb-authorization-summary]');
+                const filter = document.querySelector('[data-ndb-authorization-filter-control]');
+                const summaryRect = summary.getBoundingClientRect();
+                const filterRect = filter.getBoundingClientRect();
+                const summaryCenter = summaryRect.top + summaryRect.height / 2;
+                const filterCenter = filterRect.top + filterRect.height / 2;
+
+                return Math.abs(summaryCenter - filterCenter) <= 1;
+            })()
+            JS)
         ->assertNoJavaScriptErrors();
 });
 
@@ -261,8 +292,8 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                 const workspace = document.querySelector('[data-ndb-authorization-workspace]');
                 const list = workspace.firstElementChild;
                 const back = document.querySelector('[data-ndb-authorization-detail-back]');
-                const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
-                const detailTabGroup = tabs[0].closest('[data-ndb-filter-tabs]');
+                const panel = document.querySelector('[data-ndb-authorization-detail-panel="combined"]');
+                const source = panel.querySelector('[data-ndb-inspector-source-panel]');
                 const contentRect = content.getBoundingClientRect();
                 const backRect = back.getBoundingClientRect();
 
@@ -278,16 +309,12 @@ it('drills into authorization evidence on 390 pixel mobile in dark mode', functi
                     && backRect.top >= contentRect.top
                     && backRect.bottom <= contentRect.bottom
                     && back.textContent.trim() === 'Decisions'
-                    && tabs.length === 2
-                    && tabs.every((tab) => tab.matches('[data-ndb-filter-tab]'))
-                    && tabs.every((tab) => tab.dataset.ndbFilterTabVariant === 'segmented')
-                    && detailTabGroup.dataset.ndbFilterTabsVariant === 'segmented'
-                    && tabs.every((tab) => tab.textContent.trim().length > 0)
+                    && document.querySelectorAll('[data-ndb-authorization-detail-tab]').length === 0
+                    && source.getClientRects().length > 0
+                    && source.getBoundingClientRect().top > document.querySelector('[data-ndb-authorization-metadata]').getBoundingClientRect().bottom
                     && content.scrollWidth <= content.clientWidth + 1;
             })()
             JS)
-        ->click('[data-ndb-authorization-detail-tab="source"]')
-        ->assertVisible('[data-ndb-authorization-detail-panel="source"]')
         ->click('[data-ndb-authorization-detail-back]')
         ->assertScript(<<<'JS'
             (() => {

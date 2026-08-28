@@ -22,7 +22,7 @@ final class DebugBar extends Component
 
     /** @var array<string, string> */
     private const SECTION_DESCRIPTIONS = [
-        'authorization' => 'See what Laravel allowed or denied, for whom and what, then inspect the handler and source.',
+        'authorization' => 'See what Laravel allowed or denied, for which user and arguments, then inspect the policy or Gate and source.',
         'cache' => 'Review cache reads, writes, deletes, stores, results, timing, and source.',
         'events' => 'See which events Laravel dispatched, where they came from, and how they were handled.',
         'exceptions' => 'Inspect reported exceptions, application frames, and the code path that failed.',

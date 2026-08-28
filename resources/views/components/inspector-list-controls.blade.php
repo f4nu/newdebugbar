@@ -28,7 +28,7 @@
 >
     @isset($leading)
         <div @class([
-            'ndb:min-w-0',
+            'ndb:min-w-0 ndb:self-center',
             'ndb:col-span-2' => $showSearch && $hasFilter && ($isCompact || ! $hasSecondaryFilter),
             'ndb:sm:col-span-3' => $showSearch && $hasSecondaryFilter && ! $isCompact,
         ])>

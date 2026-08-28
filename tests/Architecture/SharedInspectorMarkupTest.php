@@ -31,6 +31,19 @@ it('supports static and Alpine-driven definition terms through one shared row', 
         ->toContain('<x-newdebugbar::inspector-definition-row label="Type"');
 });
 
+it('supports Alpine-driven labels through the shared source fact', function () {
+    $views = dirname(__DIR__, 2).'/resources/views';
+    $component = file_get_contents($views.'/components/inspector-source-fact.blade.php');
+    $authorization = file_get_contents($views.'/components/authorization-detail.blade.php');
+
+    expect($component)
+        ->toContain("'label' => null")
+        ->toContain('@isset($term)')
+        ->toContain('$term->attributes->class')
+        ->and($authorization)
+        ->toContain('<x-slot:term x-text="selectedAuthorizationDecision.handler_label"');
+});
+
 it('keeps protected Redis identifiers in the interface typeface', function () {
     $redis = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/sections/redis.blade.php');
 

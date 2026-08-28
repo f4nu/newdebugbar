@@ -549,7 +549,9 @@ it('keeps host styles and package styles isolated', function () {
                 const detail = document.querySelector('[data-ndb-authorization-detail]');
                 const metadata = document.querySelector('[data-ndb-authorization-metadata]');
                 const metadataTerms = [...metadata.querySelectorAll('dl, dt, dd')];
-                const tabs = [...document.querySelectorAll('[data-ndb-authorization-detail-tab]')];
+                const panel = document.querySelector('[data-ndb-authorization-detail-panel="combined"]');
+                const user = document.querySelector('[data-ndb-authorization-user-detail]');
+                const arguments = document.querySelector('[data-ndb-authorization-arguments]');
 
                 return [
                     getComputedStyle(detail).borderLeftWidth === '0px',
@@ -557,26 +559,26 @@ it('keeps host styles and package styles isolated', function () {
                     metadataTerms.every((term) => getComputedStyle(term).backgroundColor !== 'rgb(255, 0, 0)'),
                     metadataTerms.every((term) => getComputedStyle(term).color !== 'rgb(0, 128, 0)'),
                     metadataTerms.every((term) => Number.parseFloat(getComputedStyle(term).fontSize) < 42),
-                    tabs.length === 2,
-                    tabs.every((tab) => tab.getBoundingClientRect().height < 91),
+                    document.querySelectorAll('[data-ndb-authorization-detail-tab]').length === 0,
+                    getComputedStyle(panel).paddingLeft === '0px',
+                    getComputedStyle(user).backgroundColor !== 'rgb(255, 0, 0)',
+                    getComputedStyle(arguments).backgroundColor !== 'rgb(255, 0, 0)',
                 ];
             })()
-            JS, [true, true, true, true, true, true, true])
-        ->click('[data-ndb-authorization-detail-tab="source"]')
+            JS, [true, true, true, true, true, true, true, true, true])
         ->assertScript(<<<'JS'
             (() => {
                 const root = document.querySelector('[data-ndb-authorization]');
-                const links = [
-                    document.querySelector('[data-ndb-authorization-copy-handler-source]'),
-                    document.querySelector('[data-ndb-authorization-copy-callsite]'),
-                ];
+                const link = document.querySelector('[data-ndb-authorization-copy-handler-source]');
+                const source = document.querySelector('[data-ndb-inspector-source-panel]');
                 const interfaceFont = getComputedStyle(root).fontFamily;
 
-                return links.every((link) => link !== null)
-                    && links.every((link) => link.getBoundingClientRect().height < 91)
-                    && links.every((link) => getComputedStyle(link).backgroundColor === 'rgba(0, 0, 0, 0)')
-                    && links.every((link) => getComputedStyle(link).color !== 'rgb(0, 128, 0)')
-                    && links.every((link) => getComputedStyle(link).fontFamily === interfaceFont);
+                return link !== null
+                    && link.getBoundingClientRect().height < 91
+                    && getComputedStyle(link).backgroundColor === 'rgba(0, 0, 0, 0)'
+                    && getComputedStyle(link).color !== 'rgb(0, 128, 0)'
+                    && getComputedStyle(link).fontFamily === interfaceFont
+                    && source.querySelector('[data-ndb-authorization-copy-callsite]') === null;
             })()
             JS)
         ->click('[data-ndb-section="logs"]')

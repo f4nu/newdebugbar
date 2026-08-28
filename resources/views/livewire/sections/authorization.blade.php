@@ -11,22 +11,43 @@
                 ? $item['ability']
                 : 'Ability unavailable';
             $result = ($item['result'] ?? null) === 'allowed' ? 'allowed' : 'denied';
-            $rawActor = is_array($item['actor'] ?? null) ? $item['actor'] : [];
-            $actorType = is_string($rawActor['type'] ?? null) && $rawActor['type'] !== ''
-                ? $rawActor['type']
-                : (is_string($item['user_type'] ?? null) && $item['user_type'] !== '' ? $item['user_type'] : null);
-            $actorName = is_string($rawActor['name'] ?? null) && $rawActor['name'] !== ''
-                ? $rawActor['name']
+            $rawUser = is_array($item['user'] ?? null) ? $item['user'] : [];
+            $userType = is_string($rawUser['type'] ?? null) && $rawUser['type'] !== ''
+                ? $rawUser['type']
                 : null;
-            $actorIdentifierName = is_string($rawActor['identifier_name'] ?? null) && $rawActor['identifier_name'] !== ''
-                ? $rawActor['identifier_name']
+            $userName = is_string($rawUser['name'] ?? null) && $rawUser['name'] !== ''
+                ? $rawUser['name']
                 : null;
-            $actorIdentifier = is_scalar($rawActor['identifier'] ?? null) ? $rawActor['identifier'] : null;
-            $actorLabel = match (true) {
-                $actorType === null => 'Guest',
-                $actorName !== null => $actorName,
-                $actorIdentifier !== null => $shortType($actorType).' '.(string) $actorIdentifier,
-                default => $shortType($actorType),
+            $userIdentifierName = is_string($rawUser['identifier_name'] ?? null) && $rawUser['identifier_name'] !== ''
+                ? $rawUser['identifier_name']
+                : null;
+            $userIdentifier = is_scalar($rawUser['identifier'] ?? null) ? $rawUser['identifier'] : null;
+            $userLabel = match (true) {
+                $userType === null => 'Guest',
+                $userName !== null => $userName,
+                $userIdentifier !== null => $shortType($userType).' '.(string) $userIdentifier,
+                default => $shortType($userType),
+            };
+            $legacyHandler = is_string($item['handler'] ?? null) && $item['handler'] !== ''
+                ? $item['handler']
+                : 'callback';
+            $handlerKind = in_array($item['handler_kind'] ?? null, ['policy', 'callback'], true)
+                ? $item['handler_kind']
+                : ($legacyHandler === 'callback' ? 'callback' : 'policy');
+            $handlerName = is_string($item['handler_name'] ?? null) && $item['handler_name'] !== ''
+                ? $item['handler_name']
+                : ($legacyHandler === 'callback' ? 'Gate callback' : $legacyHandler);
+            $handlerSource = is_array($item['handler_source'] ?? null) ? $item['handler_source'] : null;
+            $handlerSourceLabel = $handlerSource === null
+                ? null
+                : ($handlerSource['file'] ?? 'Unknown source').':'.($handlerSource['line'] ?? '?');
+            $handlerAvailable = $handlerKind === 'policy'
+                || $handlerSource !== null
+                || $handlerName !== 'Gate callback';
+            $handlerLabel = match (true) {
+                ! $handlerAvailable => 'Authorization logic',
+                $handlerKind === 'policy' => 'Matched policy method',
+                default => 'Matched Gate callback',
             };
             $rawArguments = array_values(array_filter(
                 is_array($item['arguments'] ?? null) ? $item['arguments'] : [],
@@ -50,7 +71,7 @@
             }
 
             $arguments = collect($rawArguments)
-                ->map(function (array $argument, int $argumentIndex) use ($shortType): array {
+                ->map(function (array $argument, int $argumentIndex) use ($handlerKind, $shortType): array {
                     $position = max(1, (int) ($argument['position'] ?? ($argumentIndex + 1)));
                     $type = is_string($argument['type'] ?? null) && $argument['type'] !== ''
                         ? $argument['type']
@@ -88,10 +109,13 @@
 
                     return [
                         'position' => $position,
-                        'role_label' => $position === 1 ? 'Target' : 'Argument '.$position,
+                        'role_label' => match (true) {
+                            $handlerKind === 'policy' && $position === 1 => 'Resource',
+                            $handlerKind === 'policy' => 'Additional context '.($position - 1),
+                            default => 'Argument '.$position,
+                        },
                         'kind' => $kind,
                         'type' => $type,
-                        'type_short' => $shortType($type),
                         'label' => $label,
                         'identity_label' => $identityLabel,
                     ];
@@ -104,29 +128,10 @@
                 $argumentCount === 1 => $arguments[0]['label'],
                 default => $arguments[0]['label'].' and '.($argumentCount - 1).' more',
             };
-            $legacyHandler = is_string($item['handler'] ?? null) && $item['handler'] !== ''
-                ? $item['handler']
-                : 'callback';
-            $handlerKind = in_array($item['handler_kind'] ?? null, ['policy', 'callback'], true)
-                ? $item['handler_kind']
-                : ($legacyHandler === 'callback' ? 'callback' : 'policy');
-            $handlerName = is_string($item['handler_name'] ?? null) && $item['handler_name'] !== ''
-                ? $item['handler_name']
-                : ($legacyHandler === 'callback' ? 'Gate callback' : $legacyHandler);
-            $handlerShortName = str_contains($handlerName, '@')
-                ? $shortType(\Illuminate\Support\Str::before($handlerName, '@')).'@'.\Illuminate\Support\Str::after($handlerName, '@')
-                : $shortType($handlerName);
-            $handlerSource = is_array($item['handler_source'] ?? null) ? $item['handler_source'] : null;
-            $handlerSourceLabel = $handlerSource === null
-                ? null
-                : ($handlerSource['file'] ?? 'Unknown source').':'.($handlerSource['line'] ?? '?');
             $callsite = is_array($item['callsite'] ?? null) ? $item['callsite'] : null;
             $callsiteLabel = $callsite === null
                 ? null
                 : ($callsite['copy'] ?? (($callsite['file'] ?? 'Unknown source').':'.($callsite['line'] ?? '?')));
-            $callsiteShortLabel = $callsite === null
-                ? '—'
-                : basename(str_replace('\\', '/', (string) ($callsite['file'] ?? $callsiteLabel))).':'.($callsite['line'] ?? '?');
             $resultMessage = is_string($item['result_message'] ?? null) && $item['result_message'] !== ''
                 ? $item['result_message']
                 : null;
@@ -136,24 +141,37 @@
                 is_array($item['stack'] ?? null) ? $item['stack'] : [],
                 static fn (mixed $frame): bool => is_array($frame) && is_string($frame['file'] ?? null),
             ));
-            $copyEvidence = json_encode([
+            $firstFrame = $stack[0] ?? null;
+            $callsiteDuplicatesStack = $callsite !== null
+                && is_array($firstFrame)
+                && ($callsite['file'] ?? null) === ($firstFrame['file'] ?? null)
+                && ($callsite['line'] ?? null) === ($firstFrame['line'] ?? null);
+            $copyEvidenceData = [
                 'result' => $result,
                 'ability' => $ability,
-                'actor' => $item['actor'] ?? ['type' => $actorType],
+                'user' => $item['user'] ?? null,
                 'arguments' => $item['arguments'] ?? $item['argument_types'] ?? [],
-                'configured_handler' => [
+                'authorization_logic' => [
                     'kind' => $handlerKind,
                     'name' => $handlerName,
                     'source' => $handlerSource,
                 ],
-                'result_reason' => [
+                'authorization_response' => [
                     'message' => $resultMessage,
                     'code' => $resultCode,
                     'status' => $resultStatus,
                 ],
-                'evaluation_source' => $callsite,
                 'stack' => $stack,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '{}';
+            ];
+
+            if ($callsite !== null && ! $callsiteDuplicatesStack) {
+                $copyEvidenceData['checked_from'] = $callsite;
+            }
+
+            $copyEvidence = json_encode(
+                $copyEvidenceData,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+            ) ?: '{}';
 
             return [
                 'execution' => (int) ($item['execution'] ?? ($index + 1)),
@@ -163,26 +181,25 @@
                 'result_message' => $resultMessage,
                 'result_code' => $resultCode,
                 'result_status' => $resultStatus,
-                'actor_label' => $actorLabel,
-                'actor_type' => $actorType,
-                'actor_name' => $actorName,
-                'actor_identifier_name' => $actorIdentifierName,
-                'actor_identifier' => $actorIdentifier,
+                'user_label' => $userLabel,
+                'user_type' => $userType,
+                'user_identifier_name' => $userIdentifierName,
+                'user_identifier' => $userIdentifier,
                 'arguments' => $arguments,
                 'argument_summary' => $argumentSummary,
                 'handler_kind' => $handlerKind,
+                'handler_label' => $handlerLabel,
+                'handler_available' => $handlerAvailable,
                 'handler_name' => $handlerName,
-                'handler_short_name' => $handlerShortName,
                 'handler_source_label' => $handlerSourceLabel,
                 'callsite_label' => $callsiteLabel,
-                'callsite_short_label' => $callsiteShortLabel,
                 'stack' => $stack,
                 'copy_evidence' => $copyEvidence,
                 'search' => mb_strtolower(implode(' ', array_filter([
                     $ability,
                     $result,
-                    $actorLabel,
-                    $actorType,
+                    $userLabel,
+                    $userType,
                     $argumentSummary,
                     $handlerName,
                     $handlerSourceLabel,
@@ -240,7 +257,7 @@
                         <x-slot:search>
                             <x-newdebugbar::search-field
                                 label="Search authorization decisions"
-                                placeholder="Search ability, actor, or target"
+                                placeholder="Search ability, user, or arguments"
                                 data-ndb-authorization-search
                                 x-model="authorizationSearch"
                                 @input.debounce.100ms="applyAuthorizationView()"
@@ -295,12 +312,12 @@
                                 >{{ $decision['result_label'] }}</span>
                             </span>
                             <span class="ndb:col-span-2 ndb:grid ndb:min-w-0 ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:gap-x-2 ndb:gap-y-1 ndb:text-[11px] ndb:leading-4">
-                                <span class="ndb:font-semibold ndb:text-zinc-400">Actor</span>
-                                <span data-ndb-authorization-actor class="ndb:min-w-0">
-                                    <span class="ndb:block ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $decision['actor_label'] }}</span>
+                                <span class="ndb:font-semibold ndb:text-zinc-400">User</span>
+                                <span data-ndb-authorization-user class="ndb:min-w-0 ndb:bg-transparent ndb:p-0">
+                                    <span class="ndb:block ndb:min-w-0 ndb:truncate ndb:font-semibold ndb:text-zinc-600 ndb:dark:text-zinc-300">{{ $decision['user_label'] }}</span>
                                 </span>
                                 <span class="ndb:font-semibold ndb:text-zinc-400">Arguments</span>
-                                <span data-ndb-authorization-target class="ndb:min-w-0">
+                                <span data-ndb-authorization-arguments class="ndb:min-w-0 ndb:bg-transparent ndb:p-0">
                                     <span class="ndb:block ndb:min-w-0 ndb:truncate ndb:text-zinc-500 ndb:dark:text-zinc-400">{{ $decision['argument_summary'] }}</span>
                                 </span>
                             </span>

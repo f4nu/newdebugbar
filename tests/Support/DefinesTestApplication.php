@@ -437,7 +437,7 @@ trait DefinesTestApplication
             $planner = new User;
             $planner->setRawAttributes([
                 'id' => 7,
-                'name' => 'Mara Voss with an intentionally long diagnostic actor name',
+                'name' => 'Mara Voss with an intentionally long diagnostic user name',
             ], true);
 
             Gate::policy(ProfiledModel::class, ProfiledAuthorizationPolicy::class);
@@ -696,6 +696,7 @@ trait DefinesTestApplication
                             [data-ndb-authorization-item] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); height: 91px; }
                             [data-ndb-authorization-result-label], [data-ndb-authorization-detail-result] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             [data-ndb-authorization-detail] { border-left: 20px solid rgb(255, 0, 0); }
+                            [data-ndb-authorization-user], [data-ndb-authorization-arguments], [data-ndb-authorization-user-detail], [data-ndb-authorization-response], [data-ndb-authorization-detail-panel] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
                             [data-ndb-query-workspace], [data-ndb-query-item], [data-ndb-query-detail] { border-left: 20px solid rgb(255, 0, 0); }
                             [data-ndb-query-type-badge], [data-ndb-query-list-driver] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-family: monospace; font-size: 42px; height: 91px; }
                             [data-ndb-query-item][data-ndb-repeated="true"], [data-ndb-query-item][data-ndb-slow="true"] { background: rgb(255, 0, 0); }

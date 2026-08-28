@@ -476,7 +476,6 @@ export function createNewDebugBar(
     authorizationSearch: '',
     authorizationSelected: null,
     authorizationDetailOpen: false,
-    authorizationDetailTab: 'decision',
     visibleAuthorizationCount: summary.section_counts?.authorization ?? 0,
     timelineFilter: 'key',
     timelineSearch: '',
@@ -2215,7 +2214,6 @@ export function createNewDebugBar(
       this.authorizationSearch = '';
       this.authorizationSelected = null;
       this.authorizationDetailOpen = false;
-      this.authorizationDetailTab = 'decision';
       this.visibleAuthorizationCount = 0;
       this.timelineFilter = 'key';
       this.timelineSearch = '';
@@ -4262,16 +4260,11 @@ export function createNewDebugBar(
       });
     },
 
-    setAuthorizationDetailTab(tab) {
-      if (!['decision', 'source'].includes(tab)) return;
-
-      this.authorizationDetailTab = tab;
-      this.$nextTick?.(() => this.$refs?.authorizationDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
-    },
-
     resetAuthorizationDetail() {
-      this.authorizationDetailTab = 'decision';
-      this.$nextTick?.(() => this.$refs?.authorizationDetail?.scrollTo?.({ top: 0, behavior: 'instant' }));
+      this.$nextTick?.(() => {
+        this.$refs?.authorizationDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        browser.highlight?.();
+      });
     },
 
     applyAuthorizationView() {

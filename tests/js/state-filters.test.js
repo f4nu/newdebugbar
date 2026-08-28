@@ -1215,12 +1215,8 @@ test('authorization controls filter search selection detail and section navigati
   state.selectAuthorizationDecision(2);
   assert.equal(state.authorizationSelected, 2);
   assert.equal(state.authorizationDetailOpen, true);
-  assert.equal(state.authorizationDetailTab, 'decision');
   assert.equal(state.$refs.content.scrollTop, 0);
   assert.deepEqual(detailFocusOptions, { preventScroll: true });
-
-  state.setAuthorizationDetailTab('source');
-  assert.equal(state.authorizationDetailTab, 'source');
   assert.equal(detailScrolled > 0, true);
   state.closeAuthorizationDetail();
   assert.equal(state.authorizationDetailOpen, false);
