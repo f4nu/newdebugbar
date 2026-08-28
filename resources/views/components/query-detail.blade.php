@@ -17,22 +17,15 @@
         <div data-ndb-query-active-detail class="ndb:flex ndb:flex-col">
             <x-newdebugbar::inspector-detail-header data-ndb-query-detail-header>
                 <x-slot:title>
-                    <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-2">
-                        <h3
-                            data-ndb-query-detail-title
-                            class="ndb:text-sm ndb:font-bold ndb:leading-5"
-                            x-text="
-                                selectedQueryRecord.repeated
-                                    ? 'Repeated query pattern'
-                                    : `Query #${selectedQuery.execution}`
-                            "
-                        ></h3>
-                        <span
-                            x-show.important="selectedQueryRecord.repeated"
-                            class="ndb:shrink-0 ndb:text-[11px] ndb:font-semibold ndb:tabular-nums ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                            x-text="selectedQueryRecord.count + ' runs'"
-                        ></span>
-                    </div>
+                    <h3
+                        data-ndb-query-detail-title
+                        class="ndb:min-w-0 ndb:text-sm ndb:font-bold ndb:leading-5"
+                        x-text="
+                            selectedQueryRecord.repeated
+                                ? 'Repeated query pattern'
+                                : `Query #${selectedQuery.execution}`
+                        "
+                    ></h3>
                 </x-slot:title>
             </x-newdebugbar::inspector-detail-header>
 
@@ -62,9 +55,10 @@
                     <div class="ndb:space-y-4 ndb:p-4">
                         <template x-if="selectedQueryRecord.repeated">
                             <div class="ndb:max-w-sm">
-                                <p class="ndb:mb-1.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400">
-                                    Repeated runs
-                                </p>
+                                <p
+                                    class="ndb:mb-1.5 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-zinc-400"
+                                    x-text="`Repeated runs (${selectedQueryRecord.count})`"
+                                ></p>
                                 <x-newdebugbar::select-field
                                     label="Choose a repeated run"
                                     data-ndb-query-execution-select

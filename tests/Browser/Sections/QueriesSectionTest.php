@@ -22,6 +22,8 @@ it('presents repeated queries as one shared list detail record', function () {
                 const list = root.querySelector('[data-ndb-query-list]');
                 const detail = root.querySelector('[data-ndb-query-detail]');
                 const detailHeader = root.querySelector('[data-ndb-query-detail-header]');
+                const executionSelect = root.querySelector('[data-ndb-query-execution-select]');
+                const repeatedRunsLabel = executionSelect?.parentElement?.previousElementSibling;
                 const search = root.querySelector('[data-ndb-query-search]');
                 const searchIcon = search?.parentElement.querySelector('svg');
 
@@ -46,13 +48,14 @@ it('presents repeated queries as one shared list detail record', function () {
                     && root.querySelector('[data-ndb-query-sort]') === null
                     && root.querySelector('[data-ndb-query-list-source]') === null
                     && detailHeader?.querySelector('dl') === null
+                    && detailHeader?.textContent.trim() === 'Repeated query pattern'
                     && detailHeader?.getBoundingClientRect().height <= 54
                     && root.querySelector('details') === null
                     && getComputedStyle(list).overflowY === 'auto'
                     && getComputedStyle(detail).overflowY === 'auto'
                     && searchIcon?.getBoundingClientRect().left < search.getBoundingClientRect().left + 32
-                    && root.querySelector('[data-ndb-query-execution-select]')?.previousElementSibling?.textContent.trim() === 'Choose a repeated run'
-                    && root.textContent.includes('Repeated runs')
+                    && executionSelect?.previousElementSibling?.textContent.trim() === 'Choose a repeated run'
+                    && repeatedRunsLabel?.textContent.trim() === 'Repeated runs (3)'
                     && ! root.textContent.includes('Why these executions are grouped')
                     && ! root.textContent.includes('•')
                     && ! root.textContent.includes('·');
