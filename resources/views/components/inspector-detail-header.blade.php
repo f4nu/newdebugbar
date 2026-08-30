@@ -2,7 +2,7 @@
 
 @php
     $primaryClasses = match ($layout) {
-        'grid' => 'ndb:grid ndb:grid-cols-1 ndb:items-start ndb:gap-3 ndb:sm:grid-cols-[minmax(0,1fr)_auto]',
+        'grid' => 'ndb:grid ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-start ndb:gap-x-3 ndb:gap-y-2',
         'wrap' => 'ndb:flex ndb:min-w-0 ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3',
         default => throw new \InvalidArgumentException("Unknown inspector detail header layout [{$layout}]."),
     };

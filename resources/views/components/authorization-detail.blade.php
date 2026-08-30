@@ -38,7 +38,7 @@
             </x-newdebugbar::inspector-detail-header>
 
             <div data-ndb-authorization-detail-panel="combined" class="ndb:p-0">
-                <div class="ndb:space-y-5 ndb:p-4">
+                <div class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-5 ndb:sm:p-4">
                     <x-newdebugbar::inspector-facts columns="2" :bordered="false" data-ndb-authorization-metadata>
                         <x-newdebugbar::inspector-fact label="Result">
                             <x-slot:value
@@ -200,7 +200,7 @@
                     </template>
                 </x-newdebugbar::inspector-source-panel>
 
-                <p class="ndb:px-4 ndb:pb-4 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400">
+                <p class="ndb:px-3 ndb:pb-3 ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:sm:px-4 ndb:sm:pb-4 ndb:dark:text-zinc-400">
                     Gate before or after hooks can change the final result and are not identified here.
                 </p>
             </div>

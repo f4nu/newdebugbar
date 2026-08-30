@@ -17,7 +17,7 @@
     };
 @endphp
 
-<div {{ $attributes->class('ndb:grid ndb:gap-1 ndb:py-3 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4') }}>
+<div {{ $attributes->class('ndb:grid ndb:gap-1 ndb:py-2.5 ndb:first:pt-0 ndb:sm:grid-cols-[8rem_minmax(0,1fr)] ndb:sm:gap-4 ndb:sm:py-3') }}>
     @isset($term)
         <dt {{ $term->attributes->class("ndb:text-xs ndb:font-bold {$termClasses}") }}>{{ $term }}</dt>
     @else

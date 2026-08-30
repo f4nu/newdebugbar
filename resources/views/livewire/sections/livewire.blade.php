@@ -18,7 +18,7 @@
     <div
         x-show.important="(livewireTrace.dropped?.components ?? 0) + (livewireTrace.dropped?.activity ?? 0) > 0"
         role="status"
-        class="ndb:mb-4 ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
+        class="ndb:mb-3 ndb:rounded-lg ndb:border ndb:border-amber-200 ndb:bg-amber-50/60 ndb:px-3 ndb:py-2 ndb:text-xs ndb:font-semibold ndb:text-amber-800 ndb:sm:mb-4 ndb:dark:border-amber-950 ndb:dark:bg-amber-950/25 ndb:dark:text-amber-300"
     >
         Capture limit reached.
         <span x-text="livewireTrace.dropped.activity"></span> activity records and

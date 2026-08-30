@@ -7,7 +7,7 @@
 
 <div {{
     $attributes->class([
-        'ndb:rounded-2xl ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:px-6 ndb:py-10 ndb:text-center ndb:dark:border-zinc-700',
+        'ndb:rounded-2xl ndb:border ndb:border-dashed ndb:border-zinc-300 ndb:px-3 ndb:py-6 ndb:text-center ndb:sm:px-6 ndb:sm:py-10 ndb:dark:border-zinc-700',
         'ndb:lg:my-auto ndb:lg:w-full ndb:lg:max-w-lg ndb:lg:self-center' => $centered,
     ])
 }}>

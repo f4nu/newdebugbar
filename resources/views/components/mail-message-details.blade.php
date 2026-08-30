@@ -1,5 +1,5 @@
 <template x-if="mailDetailTab === 'message'">
-    <div data-ndb-mail-detail-panel="message" class="ndb:p-4">
+    <div data-ndb-mail-detail-panel="message" class="ndb:p-3 ndb:sm:p-4">
         <dl class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
             <template
                 x-for="
@@ -26,7 +26,7 @@
 
         <section
             x-show="selectedMailMessage.attachments.length > 0"
-            class="ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
+            class="ndb:mt-4 ndb:border-t ndb:border-zinc-200/90 ndb:pt-3 ndb:sm:mt-5 ndb:sm:pt-4 ndb:dark:border-zinc-800"
         >
             <h4 class="ndb:text-xs ndb:font-bold">Attachments</h4>
             <div class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
@@ -85,7 +85,7 @@
             </p>
         </section>
 
-        <section class="ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800">
+        <section class="ndb:mt-4 ndb:border-t ndb:border-zinc-200/90 ndb:pt-3 ndb:sm:mt-5 ndb:sm:pt-4 ndb:dark:border-zinc-800">
             <h4 class="ndb:text-xs ndb:font-bold">Delivery details</h4>
             <dl class="ndb:mt-2 ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
                 <template
@@ -124,7 +124,7 @@
                 selectedMailMessage.attachment_bodies_omitted > 0 ||
                 selectedMailMessage.attachment_metadata_omitted > 0
             "
-            class="ndb:mt-4 ndb:rounded-lg ndb:bg-amber-50 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-amber-700 ndb:dark:bg-amber-950/35 ndb:dark:text-amber-300"
+            class="ndb:mt-3 ndb:rounded-lg ndb:bg-amber-50 ndb:px-3 ndb:py-2 ndb:text-[11px] ndb:font-semibold ndb:leading-5 ndb:text-amber-700 ndb:sm:mt-4 ndb:dark:bg-amber-950/35 ndb:dark:text-amber-300"
         >
             Some message data was bounded to keep this profile responsive.
         </p>

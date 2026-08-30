@@ -13,14 +13,14 @@
 @endphp
 
 <article data-ndb-validation-item="{{ $index }}" wire:key="validation-{{ $index }}" class="ndb:min-w-0">
-    <header class="ndb:flex ndb:flex-wrap ndb:items-start ndb:gap-3 ndb:p-4">
+    <header class="ndb:flex ndb:flex-col ndb:items-start ndb:gap-2 ndb:p-3 ndb:sm:flex-row ndb:sm:gap-3 ndb:sm:p-4">
         <div class="ndb:min-w-0 ndb:flex-1">
             <h3 class="ndb:text-sm ndb:font-bold">{{ $failureLabel }}</h3>
             <p class="ndb:mt-0.5 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
                 {{ $fromPreviousRequest ? 'Carried from the previous request.' : ($item['exception_message'] ?? 'Laravel rejected the submitted data.') }}
             </p>
         </div>
-        <div class="ndb:flex ndb:max-w-full ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:dark:text-zinc-400">
+        <div class="ndb:flex ndb:w-full ndb:max-w-full ndb:flex-wrap ndb:gap-x-3 ndb:gap-y-1 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:sm:w-auto ndb:dark:text-zinc-400">
             @if ($fromPreviousRequest)
                 <span class="ndb:text-amber-700 ndb:dark:text-amber-300">Previous request</span>
             @endif
@@ -35,7 +35,7 @@
     </header>
 
     @if ($callsite !== null)
-        <div class="ndb:border-t ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800">
+        <div class="ndb:border-t ndb:border-zinc-200/90 ndb:px-3 ndb:py-2.5 ndb:sm:px-4 ndb:dark:border-zinc-800">
             <x-newdebugbar::inspector-source-link
                 data-ndb-validation-callsite="{{ $index }}"
                 :copy="$callsite['file'].':'.$callsite['line']"
@@ -71,7 +71,7 @@
                 <div
                     role="row"
                     data-ndb-validation-field-row="{{ $field }}"
-                    class="ndb:grid ndb:min-w-0 ndb:gap-3 ndb:px-4 ndb:py-3 ndb:sm:grid-cols-[minmax(8rem,0.8fr)_minmax(14rem,2fr)_minmax(9rem,1fr)] ndb:sm:gap-4"
+                    class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:px-3 ndb:py-3 ndb:sm:grid-cols-[minmax(8rem,0.8fr)_minmax(14rem,2fr)_minmax(9rem,1fr)] ndb:sm:gap-4 ndb:sm:px-4"
                 >
                     <div role="cell" data-ndb-validation-field="{{ $field }}" class="ndb:min-w-0">
                         <span
@@ -126,7 +126,7 @@
         <x-newdebugbar::inspector-explanation
             title="Why rules and source may be missing"
             :description="$sessionExplanation"
-            class="ndb:border-t ndb:border-zinc-200/90 ndb:px-4 ndb:py-3 ndb:dark:border-zinc-800"
+            class="ndb:border-t ndb:border-zinc-200/90 ndb:px-3 ndb:py-3 ndb:sm:px-4 ndb:dark:border-zinc-800"
         />
     @endif
 </article>

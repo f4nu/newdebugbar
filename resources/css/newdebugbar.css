@@ -59,8 +59,23 @@
     color: #f4f4f5;
 }
 
-#newdebugbar :where(h1, h2, h3, p, pre, dl, dd, dt) {
+#newdebugbar :where(h1, h2, h3, h4, h5, h6, p, pre, dl, dd, dt, ul, ol, menu) {
     margin: 0;
+}
+
+#newdebugbar :where(ul, ol, menu) {
+    list-style: none;
+    padding: 0;
+}
+
+#newdebugbar :where(details, summary) {
+    margin: 0;
+}
+
+#newdebugbar details {
+    background: transparent;
+    border: 0;
+    padding: 0;
 }
 
 #newdebugbar :where(dl, dd, dt) {
@@ -127,9 +142,15 @@
     line-height: 1.65;
     margin: 0;
     overflow-x: auto;
-    padding: 0.875rem 1rem;
+    padding: 0.75rem;
     tab-size: 2;
     white-space: pre;
+}
+
+@media (min-width: 640px) {
+    #newdebugbar .ndb-code {
+        padding: 0.875rem 1rem;
+    }
 }
 
 #newdebugbar .ndb-code code {

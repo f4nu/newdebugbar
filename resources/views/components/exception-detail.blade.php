@@ -91,14 +91,14 @@
     </template>
 
     <template x-if="exceptionDetailTab === 'stack'">
-        <section data-ndb-exception-detail-panel="stack" class="ndb:p-4">
+        <section data-ndb-exception-detail-panel="stack" class="ndb:p-3 ndb:sm:p-4">
             <x-newdebugbar::inspector-stack
                 :frames="\Illuminate\Support\Js::from($applicationFrames)"
                 empty-label="No application frames were captured."
                 class="ndb:mt-0"
             />
 
-            <details class="ndb:group ndb:mt-5 ndb:border-t ndb:border-zinc-200/90 ndb:pt-3 ndb:dark:border-zinc-800">
+            <details class="ndb:group ndb:mt-4 ndb:border-t ndb:border-zinc-200/90 ndb:pt-3 ndb:sm:mt-5 ndb:dark:border-zinc-800">
                 <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:justify-between ndb:gap-3 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500">
                     <span>Vendor stack</span>
                     <span class="ndb:text-[11px] ndb:font-medium ndb:tabular-nums ndb:text-zinc-400">
@@ -117,7 +117,7 @@
 
     @if ($causes !== [])
         <template x-if="exceptionDetailTab === 'causes'">
-            <section data-ndb-exception-detail-panel="causes" class="ndb:p-4">
+            <section data-ndb-exception-detail-panel="causes" class="ndb:p-3 ndb:sm:p-4">
                 <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
                     @foreach ($causes as $causeIndex => $cause)
                         <article
@@ -148,7 +148,7 @@
                 </div>
 
                 @if ($exception['chain_truncated'] ?? false)
-                    <p class="ndb:mt-4 ndb:text-[11px] ndb:font-semibold ndb:text-amber-700 ndb:dark:text-amber-300">
+                    <p class="ndb:mt-3 ndb:text-[11px] ndb:font-semibold ndb:text-amber-700 ndb:sm:mt-4 ndb:dark:text-amber-300">
                         More causes exist, but only the first five were retained.
                     </p>
                 @endif

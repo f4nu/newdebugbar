@@ -1,7 +1,7 @@
-<div data-ndb-http-client-detail-panel="request" class="ndb:p-4">
+<div data-ndb-http-client-detail-panel="request" class="ndb:p-3 ndb:sm:p-4">
     <div
         :class="selectedHttpClientRequest.request_has_headers || selectedHttpClientRequest.request_has_body
-            ? 'ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800'
+            ? 'ndb:border-b ndb:border-zinc-200/90 ndb:pb-3 ndb:sm:pb-4 ndb:dark:border-zinc-800'
             : ''"
         class="ndb:flex ndb:flex-col ndb:items-stretch ndb:justify-between ndb:gap-3 ndb:sm:flex-row ndb:sm:items-end"
     >
@@ -41,7 +41,7 @@
     </div>
 
     <template x-if="selectedHttpClientRequest.request_has_headers || selectedHttpClientRequest.request_has_body">
-        <div class="ndb:mt-5 ndb:space-y-5">
+        <div class="ndb:mt-3 ndb:space-y-3 ndb:sm:mt-5 ndb:sm:space-y-5">
             <template x-if="selectedHttpClientRequest.request_has_headers">
                 <x-newdebugbar::inspector-evidence label="Headers">
                     <x-slot:value x-text="formatHttpClientEvidence(selectedHttpClientRequest.request?.headers)"></x-slot:value>

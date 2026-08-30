@@ -674,12 +674,14 @@ trait DefinesTestApplication
                             button { background: rgb(255, 0, 0); border-radius: 0; color: rgb(0, 128, 0); height: 91px; }
                             button svg { width: 64px; height: 64px; }
                             a { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; text-decoration: underline 8px; }
-                            details { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); padding: 24px; }
+                            h1, h2, h3, h4, h5, h6, p { margin: 31px; }
+                            ul, ol, menu { list-style: square inside; margin: 31px; padding: 29px; }
+                            details { background: rgb(255, 0, 0); border-left: 13px solid rgb(255, 0, 0); margin: 27px; padding: 24px; }
                             dl, dt, dd { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; }
                             input[type="search"], select { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             pre, code { background: rgb(243, 243, 243); color: rgb(0, 0, 0); }
                             iframe { width: 17px; height: 19px; border: 9px solid rgb(255, 0, 0); }
-                            summary { color: rgb(255, 0, 0); font-size: 42px; }
+                            summary { color: rgb(255, 0, 0); font-size: 42px; margin: 23px; }
                             [data-cache], [data-cache-item], [data-cache-result], [data-cache-filter], [data-cache-search], [data-cache-search-text] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-http-client], [data-http-client-item], [data-method], [data-host], [data-status], [data-duration], [data-source] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-http-client-list-heading], [data-ndb-http-client-sort-heading] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; }

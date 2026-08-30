@@ -52,7 +52,7 @@
 
             <template x-if="queryDetailTab === 'overview'">
                 <section data-ndb-query-detail-panel="overview">
-                    <div class="ndb:space-y-4 ndb:p-4">
+                    <div class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-4 ndb:sm:p-4">
                         <template x-if="selectedQueryRecord.repeated">
                             <div class="ndb:max-w-sm">
                                 <p
@@ -166,7 +166,10 @@
             </template>
 
             <template x-if="queryDetailTab === 'explain'">
-                <section data-ndb-query-detail-panel="explain" class="ndb:space-y-4 ndb:p-4">
+                <section
+                    data-ndb-query-detail-panel="explain"
+                    class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-4 ndb:sm:p-4"
+                >
                     <p
                         x-show.important="! selectedQuery.explain_available"
                         class="ndb:text-xs ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
@@ -184,7 +187,7 @@
                     </p>
 
                     <template x-if="queryExplain !== null">
-                        <div data-ndb-query-explain-result class="ndb:space-y-4">
+                        <div data-ndb-query-explain-result class="ndb:space-y-3 ndb:sm:space-y-4">
                             <x-newdebugbar::inspector-facts :columns="2" :bordered="false">
                                 <x-newdebugbar::inspector-fact label="Mode">
                                     <x-slot:value

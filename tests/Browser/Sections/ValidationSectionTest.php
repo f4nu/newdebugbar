@@ -104,17 +104,22 @@ it('shows Livewire validation messages rules and source on desktop and mobile', 
         ->assertVisible('[data-ndb-validation-messages="email"]')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-section-panel="validation"]');
+                const stage = document.querySelector('[data-ndb-section-stage]').getBoundingClientRect();
+                const workspace = document.querySelector('[data-ndb-validation-workspace]');
+                const workspaceBox = workspace.getBoundingClientRect();
                 const item = document.querySelector('[data-ndb-validation-item="0"]');
                 const table = item.querySelector('[data-ndb-validation-table]');
                 const header = table.querySelector('[data-ndb-validation-table-header]');
                 const row = table.querySelector('[data-ndb-validation-field-row="email"]');
                 const cells = [...row.children];
                 const labels = [...row.querySelectorAll('[data-ndb-validation-mobile-label]')];
+                const near = (actual, expected) => Math.abs(actual - expected) <= 1;
 
                 return item.scrollWidth <= item.clientWidth
                     && table.scrollWidth <= table.clientWidth + 1
-                    && panel.scrollWidth <= panel.clientWidth
+                    && near(workspaceBox.left, stage.left)
+                    && near(workspaceBox.right, stage.right)
+                    && workspace.scrollWidth <= workspace.clientWidth
                     && getComputedStyle(header).display === 'none'
                     && cells.length === 3
                     && cells[0].getBoundingClientRect().top < cells[1].getBoundingClientRect().top

@@ -53,7 +53,7 @@
     </x-newdebugbar::inspector-detail-tabs>
 
     <template x-if="livewireDetailTab === 'overview'">
-        <div data-ndb-livewire-detail-panel="overview" class="ndb:space-y-5 ndb:p-4">
+        <div data-ndb-livewire-detail-panel="overview" class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-5 ndb:sm:p-4">
             <div x-show.important="selectedLivewireActivity.kind === 'mount'" data-ndb-livewire-mount-facts>
                 <x-newdebugbar::inspector-facts columns="2">
                     <x-newdebugbar::inspector-fact label="Component">
@@ -296,13 +296,13 @@
     </template>
 
     <template x-if="livewireDetailTab === 'trace' && selectedLivewireActivity.phases.length > 0">
-        <div data-ndb-livewire-detail-panel="trace" class="ndb:p-4">
+        <div data-ndb-livewire-detail-panel="trace" class="ndb:p-3 ndb:sm:p-4">
             <x-newdebugbar::inspector-explanation
                 title="Where did this update spend time?"
                 description="Request steps cover the server round trip. Browser steps cover state sync and page rendering. If the update feels slow, inspect the largest gap between two steps."
             />
 
-            <div class="ndb:mt-4 ndb:space-y-5">
+            <div class="ndb:mt-3 ndb:space-y-3 ndb:sm:mt-4 ndb:sm:space-y-5">
                 <template x-for="group in livewireActivityPhaseGroups(selectedLivewireActivity)" :key="group.name">
                     <section>
                         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
@@ -314,7 +314,7 @@
                         </div>
                         <ol class="ndb:m-0 ndb:list-none ndb:divide-y ndb:divide-zinc-200/90 ndb:p-0 ndb:dark:divide-zinc-800">
                             <template x-for="(phase, index) in group.phases" :key="`${phase.name}-${index}`">
-                                <li class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-baseline ndb:gap-3 ndb:py-3">
+                                <li class="ndb:grid ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-baseline ndb:gap-3 ndb:py-2.5 ndb:sm:py-3">
                                     <span class="ndb:min-w-0">
                                         <span
                                             class="ndb:block ndb:text-xs ndb:font-semibold"

@@ -36,7 +36,7 @@
     :class="logDetailSequence === {{ $firstSequence }}
         ? 'ndb:bg-indigo-50/90 ndb:dark:bg-indigo-950/35'
         : 'ndb:bg-transparent ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-    class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:items-baseline ndb:gap-x-2.5 ndb:border-0 ndb:px-3 ndb:py-3 ndb:text-left ndb:text-xs ndb:text-zinc-900 ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-100"
+    class="ndb:grid ndb:h-auto ndb:w-full ndb:grid-cols-[4.75rem_minmax(0,1fr)] ndb:items-baseline ndb:gap-x-2.5 ndb:border-0 ndb:px-3 ndb:py-2.5 ndb:text-left ndb:text-xs ndb:text-zinc-900 ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:py-3 ndb:dark:text-zinc-100"
 >
     <span
         data-ndb-log-severity

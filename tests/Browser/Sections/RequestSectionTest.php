@@ -103,6 +103,7 @@ it('uses the mobile request width for evidence instead of nested side gaps', fun
             (() => {
                 const panel = document.querySelector('[data-ndb-section-panel="request"]');
                 const loaded = document.querySelector('[data-ndb-loaded-section="request"]');
+                const description = document.querySelector('[data-ndb-section-description]');
                 const summary = document.querySelector('[data-ndb-request-summary]');
                 const method = summary.querySelector('span');
                 const path = summary.querySelector('.ndb\\:truncate');
@@ -112,23 +113,32 @@ it('uses the mobile request width for evidence instead of nested side gaps', fun
                 const firstStep = timeline.querySelector('[data-ndb-request-step]');
                 const details = document.querySelector('[data-ndb-request-details]');
                 const panelBox = panel.getBoundingClientRect();
+                const descriptionBox = description.getBoundingClientRect();
                 const summaryBox = summary.getBoundingClientRect();
                 const methodBox = method.getBoundingClientRect();
                 const pathBox = path.getBoundingClientRect();
                 const statusBox = status.getBoundingClientRect();
                 const completionBox = completion.getBoundingClientRect();
+                const timelineBox = timeline.getBoundingClientRect();
                 const near = (actual, expected) => Math.abs(actual - expected) <= 1;
+                const headerGap = summaryBox.top - descriptionBox.bottom;
+                const textGap = completionBox.top - pathBox.bottom;
 
                 return getComputedStyle(loaded).paddingLeft === '12px'
                     && getComputedStyle(summary).display === 'grid'
+                    && headerGap >= 8
+                    && headerGap <= 16
                     && near(summaryBox.left, panelBox.left)
                     && near(summaryBox.right, panelBox.right)
                     && near(firstStep.getBoundingClientRect().left, panelBox.left)
                     && near(details.getBoundingClientRect().left, panelBox.left)
                     && near(details.getBoundingClientRect().right, panelBox.right)
-                    && near(methodBox.top + methodBox.height / 2, pathBox.top + pathBox.height / 2)
-                    && near(statusBox.top + statusBox.height / 2, pathBox.top + pathBox.height / 2)
-                    && completionBox.top >= pathBox.bottom
+                    && near(pathBox.left, completionBox.left)
+                    && textGap >= 0
+                    && textGap <= 4
+                    && near(methodBox.top + methodBox.height / 2, statusBox.top + statusBox.height / 2)
+                    && timelineBox.top - summaryBox.bottom >= 8
+                    && timelineBox.top - summaryBox.bottom <= 16
                     && panel.scrollWidth <= panel.clientWidth + 1;
             })()
             JS)

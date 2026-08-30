@@ -48,7 +48,7 @@
     </x-newdebugbar::inspector-detail-tabs>
 
     <template x-if="livewireDetailTab === 'properties'">
-        <div data-ndb-livewire-detail-panel="properties" class="ndb:space-y-5 ndb:p-4">
+        <div data-ndb-livewire-detail-panel="properties" class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-5 ndb:sm:p-4">
             <x-newdebugbar::inspector-facts columns="4">
                 <x-newdebugbar::inspector-fact label="State">
                     <x-slot:value
@@ -194,7 +194,7 @@
     </template>
 
     <template x-if="livewireDetailTab === 'source'">
-        <div data-ndb-livewire-detail-panel="source" class="ndb:space-y-4 ndb:p-4">
+        <div data-ndb-livewire-detail-panel="source" class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-4 ndb:sm:p-4">
             <dl class="ndb:grid ndb:grid-cols-1 ndb:gap-2 ndb:sm:grid-cols-2">
                 <x-newdebugbar::inspector-source-fact label="Implementation">
                     <x-slot:value

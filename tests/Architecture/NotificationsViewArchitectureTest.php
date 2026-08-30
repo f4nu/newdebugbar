@@ -34,7 +34,7 @@ it('composes Notifications from the canonical inspector grammar', function () {
 
     expect($header)
         ->toContain('<x-newdebugbar::inspector-detail-header')
-        ->toContain('<x-newdebugbar::inspector-facts columns="4"')
+        ->toContain('<x-newdebugbar::inspector-facts', 'columns="4"')
         ->toContain('data-ndb-notification-facts')
         ->toContain('data-ndb-notification-destination')
         ->toContain('label="Channels"')

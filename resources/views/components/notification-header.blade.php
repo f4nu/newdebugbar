@@ -79,7 +79,11 @@
     </x-newdebugbar::inspector-detail-header>
 
     <div data-ndb-notification-metadata>
-        <x-newdebugbar::inspector-facts columns="4" data-ndb-notification-facts class="ndb:px-4 ndb:pb-4">
+        <x-newdebugbar::inspector-facts
+            columns="4"
+            data-ndb-notification-facts
+            class="ndb:px-3 ndb:pb-3 ndb:sm:px-4 ndb:sm:pb-4"
+        >
             <x-newdebugbar::inspector-fact label="Channels" data-ndb-notification-fact>
                 <x-slot:value
                     class="ndb:truncate ndb:text-[11px] ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200"

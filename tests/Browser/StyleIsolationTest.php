@@ -86,6 +86,52 @@ it('keeps host styles and package styles isolated', function () {
         ->assertVisible('[data-ndb-section-panel="request"]')
         ->assertScript(<<<'JS'
             (() => {
+                const trace = document.querySelector('[data-ndb-request-trace]');
+                const heading = trace?.querySelector('h3');
+                const timeline = trace?.querySelector('[data-ndb-request-timeline]');
+                const details = document.querySelector('[data-ndb-request-details]');
+                const summary = details?.querySelector(':scope > summary');
+
+                if (! heading || ! timeline || ! details || ! summary) return false;
+
+                const headingStyle = getComputedStyle(heading);
+                const timelineStyle = getComputedStyle(timeline);
+                const detailsStyle = getComputedStyle(details);
+                const summaryStyle = getComputedStyle(summary);
+                const horizontalInset = window.innerWidth >= 640 ? '24px' : '0px';
+                const checks = {
+                    headingMargins: [
+                        headingStyle.marginTop,
+                        headingStyle.marginRight,
+                        headingStyle.marginBottom,
+                        headingStyle.marginLeft,
+                    ].every((value) => value === '0px'),
+                    listHorizontalMargins: timelineStyle.marginLeft === '0px'
+                        && timelineStyle.marginRight === '0px',
+                    listPadding: timelineStyle.paddingLeft === horizontalInset
+                        && timelineStyle.paddingRight === horizontalInset,
+                    listMarker: timelineStyle.listStyleType === 'none',
+                    detailsSurface: detailsStyle.backgroundColor !== 'rgb(255, 0, 0)'
+                        && detailsStyle.borderLeftWidth === '1px'
+                        && detailsStyle.paddingLeft === '0px',
+                    detailsHorizontalMargins: detailsStyle.marginLeft === horizontalInset
+                        && detailsStyle.marginRight === horizontalInset,
+                    summaryMargins: [
+                        summaryStyle.marginTop,
+                        summaryStyle.marginRight,
+                        summaryStyle.marginBottom,
+                        summaryStyle.marginLeft,
+                    ].every((value) => value === '0px'),
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Element reset isolation failed: ' + failures.join(', '));
+
+                return true;
+            })()
+            JS)
+        ->assertScript(<<<'JS'
+            (() => {
                 const code = Array.from(document.querySelectorAll('[data-ndb-section-panel="request"] code'));
 
                 return code.length >= 1 && code.every((element) => {
@@ -1064,27 +1110,44 @@ it('keeps host styles and package styles isolated', function () {
                 const list = document.querySelector('[data-ndb-exception-list-panel]');
                 const detail = document.querySelector('[data-ndb-exception-split-detail]');
                 const back = document.querySelector('[data-ndb-exception-detail-back]');
+                const loadedSection = document.querySelector('[data-ndb-loaded-section="exceptions"]');
+                const stage = document.querySelector('[data-ndb-section-stage]');
 
-                if (! layout || ! workspace || ! list || ! detail || ! back) return false;
+                if (! layout || ! workspace || ! list || ! detail || ! back || ! loadedSection || ! stage) return false;
 
                 const backBox = back.getBoundingClientRect();
+                const workspaceBox = workspace.getBoundingClientRect();
+                const loadedSectionBox = loadedSection.getBoundingClientRect();
+                const stageBox = stage.getBoundingClientRect();
 
-                return getComputedStyle(layout).display === 'flex'
-                    && getComputedStyle(layout).overflow === 'hidden'
-                    && getComputedStyle(workspace).display !== 'grid'
-                    && getComputedStyle(workspace).overflow === 'hidden'
-                    && getComputedStyle(list).display === 'none'
-                    && getComputedStyle(detail).display === 'flex'
-                    && getComputedStyle(detail).overflowY === 'visible'
-                    && getComputedStyle(detail).backgroundColor !== 'rgb(255, 0, 0)'
-                    && getComputedStyle(detail).borderLeftWidth === '0px'
-                    && getComputedStyle(detail).paddingLeft === '0px'
-                    && backBox.height < 50
-                    && backBox.width < 160
-                    && getComputedStyle(back).paddingLeft === '8px'
-                    && getComputedStyle(back).backgroundColor === 'rgba(0, 0, 0, 0)'
-                    && getComputedStyle(back).color !== 'rgb(0, 128, 0)'
-                    && detail.scrollWidth <= detail.clientWidth + 1;
+                const checks = {
+                    layoutDisplay: getComputedStyle(layout).display === 'flex',
+                    layoutOverflow: getComputedStyle(layout).overflow === 'hidden',
+                    workspaceDisplay: getComputedStyle(workspace).display !== 'grid',
+                    workspaceOverflow: getComputedStyle(workspace).overflow === 'hidden',
+                    listHidden: getComputedStyle(list).display === 'none',
+                    detailDisplay: getComputedStyle(detail).display === 'flex',
+                    detailOverflow: getComputedStyle(detail).overflowY === 'visible',
+                    detailSurface: getComputedStyle(detail).backgroundColor !== 'rgb(255, 0, 0)'
+                        && getComputedStyle(detail).borderLeftWidth === '0px'
+                        && getComputedStyle(detail).paddingLeft === '0px',
+                    backSize: backBox.height < 50 && backBox.width < 160,
+                    backPadding: getComputedStyle(back).paddingLeft === '12px',
+                    backSurface: getComputedStyle(back).backgroundColor === 'rgba(0, 0, 0, 0)'
+                        && getComputedStyle(back).color !== 'rgb(0, 128, 0)',
+                    workspaceMargins: getComputedStyle(workspace).marginLeft === '-12px'
+                        && getComputedStyle(workspace).marginRight === '-12px',
+                    loadedSectionAlignment: Math.abs(workspaceBox.left - loadedSectionBox.left) <= 1
+                        && Math.abs(workspaceBox.right - loadedSectionBox.right) <= 1,
+                    stageAlignment: Math.abs(workspaceBox.left - stageBox.left) <= 1
+                        && Math.abs(workspaceBox.right - stageBox.right) <= 1,
+                    noOverflow: detail.scrollWidth <= detail.clientWidth + 1,
+                };
+                const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);
+
+                if (failures.length > 0) throw new Error('Mobile workspace isolation failed: ' + failures.join(', '));
+
+                return true;
             })()
             JS)
         ->assertNoJavaScriptErrors();

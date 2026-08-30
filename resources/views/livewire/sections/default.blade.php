@@ -16,8 +16,11 @@
 
             <x-slot:body class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
                 @foreach ($items as $index => $item)
-                    <details wire:key="{{ $sectionKey }}-{{ $index }}" class="ndb:group">
-                        <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
+                    <details
+                        wire:key="{{ $sectionKey }}-{{ $index }}"
+                        class="ndb:group ndb:m-0 ndb:bg-transparent ndb:p-0"
+                    >
+                        <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3 ndb:py-3 ndb:text-xs ndb:font-semibold ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:sm:px-4">
                             <span class="ndb:text-[11px] ndb:font-bold ndb:tabular-nums ndb:text-zinc-400">{{ $index + 1 }}</span>
                             <span class="ndb:min-w-0 ndb:flex-1 ndb:truncate">
                                 {{ $item['model'] ?? $item['name'] ?? $item['event'] ?? $item['level'] ?? $item['operation'] ?? $section['label'] }}

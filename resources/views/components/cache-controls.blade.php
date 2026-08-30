@@ -38,7 +38,7 @@
     }
 @endphp
 
-<div data-ndb-cache-summary class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-4">
+<div data-ndb-cache-summary class="ndb:flex ndb:items-start ndb:justify-between ndb:gap-3 ndb:sm:gap-4">
     <div class="ndb:min-w-0">
         <p class="ndb:text-xs ndb:font-bold ndb:text-zinc-700 ndb:dark:text-zinc-200">
             {{ number_format($count) }} {{ \Illuminate\Support\Str::plural('operation', $count) }}

@@ -19,7 +19,7 @@
     };
 @endphp
 
-<div {{ $attributes->class("ndb:border-b ndb:border-zinc-200/90 ndb:px-4 ndb:py-2.5 ndb:dark:border-zinc-800 {$containerClasses}") }}>
+<div {{ $attributes->class("ndb:border-b ndb:border-zinc-200/90 ndb:px-3 ndb:py-2.5 ndb:sm:px-4 ndb:dark:border-zinc-800 {$containerClasses}") }}>
     <x-newdebugbar::filter-tabs :label="$label" variant="segmented" class="ndb:min-w-0 {{ $tabsClasses }}">
         {{ $slot }}
     </x-newdebugbar::filter-tabs>

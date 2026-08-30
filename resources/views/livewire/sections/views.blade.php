@@ -115,7 +115,7 @@
                             :class="viewSelected === {{ \Illuminate\Support\Js::from($group['id']) }}
                                 ? 'ndb:bg-indigo-50/65 ndb:dark:bg-indigo-950/20'
                                 : 'ndb:hover:bg-zinc-50/80 ndb:dark:hover:bg-zinc-900/60'"
-                            class="ndb:grid ndb:h-auto ndb:w-full ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:border-l-0 ndb:bg-transparent ndb:px-3 ndb:py-3 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500"
+                            class="ndb:grid ndb:h-auto ndb:w-full ndb:min-w-0 ndb:grid-cols-[minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:border-l-0 ndb:bg-transparent ndb:px-3 ndb:py-2.5 ndb:text-left ndb:transition-colors ndb:focus-visible:relative ndb:focus-visible:z-10 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:sm:py-3"
                         >
                             <span
                                 data-ndb-view-list-name
@@ -194,7 +194,10 @@
                                 </template>
                             </x-slot:aside>
 
-                            <x-slot:metadata data-ndb-view-detail-metadata class="ndb:gap-x-6 ndb:gap-y-2">
+                            <x-slot:metadata
+                                data-ndb-view-detail-metadata
+                                class="ndb:gap-x-3 ndb:gap-y-2 ndb:sm:gap-x-6"
+                            >
                                 <div class="ndb:min-w-0">
                                     <dt class="ndb:text-zinc-400">Origin</dt>
                                     <dd

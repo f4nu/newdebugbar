@@ -54,7 +54,7 @@
             :bordered="false"
             columns="4"
             data-ndb-mail-facts
-            class="ndb:w-full ndb:gap-x-4 ndb:p-0"
+            class="ndb:w-full ndb:gap-x-3 ndb:p-0 ndb:sm:gap-x-4"
         >
             <x-newdebugbar::inspector-fact label="Attachments" data-ndb-mail-fact>
                 <x-slot:value>

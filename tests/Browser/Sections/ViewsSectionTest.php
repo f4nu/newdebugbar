@@ -135,15 +135,18 @@ it('uses a bounded mobile list drill-in with a working Views back action', funct
         ->assertValue('[data-ndb-view-filter]', 'application')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-section-panel="views"]');
+                const stage = document.querySelector('[data-ndb-section-stage]').getBoundingClientRect();
                 const workspace = document.querySelector('[data-ndb-view-workspace]');
+                const workspaceBox = workspace.getBoundingClientRect();
                 const [list, detail] = workspace.children;
                 const rows = [...document.querySelectorAll('[data-ndb-view-group]:not([hidden])')];
                 const summary = document.querySelector('[data-ndb-view-summary]');
                 const primary = summary.querySelector('strong').getBoundingClientRect();
                 const secondary = summary.querySelector(':scope > span').getBoundingClientRect();
+                const near = (actual, expected) => Math.abs(actual - expected) <= 1;
 
-                return panel.scrollWidth <= panel.clientWidth
+                return near(workspaceBox.left, stage.left)
+                    && near(workspaceBox.right, stage.right)
                     && workspace.scrollWidth <= workspace.clientWidth
                     && getComputedStyle(workspace).display !== 'grid'
                     && getComputedStyle(list).display === 'flex'
@@ -163,15 +166,19 @@ it('uses a bounded mobile list drill-in with a working Views back action', funct
         ->assertDontSee('tests/Fixtures/views/original-response.blade.php:1')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-section-panel="views"]');
+                const stage = document.querySelector('[data-ndb-section-stage]').getBoundingClientRect();
                 const workspace = document.querySelector('[data-ndb-view-workspace]');
+                const workspaceBox = workspace.getBoundingClientRect();
                 const [list, detail] = workspace.children;
                 const content = document.querySelector('[data-ndb-view-detail-content]');
+                const near = (actual, expected) => Math.abs(actual - expected) <= 1;
 
                 return getComputedStyle(list).display === 'none'
                     && getComputedStyle(detail).display === 'flex'
                     && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
-                    && panel.scrollWidth <= panel.clientWidth
+                    && near(workspaceBox.left, stage.left)
+                    && near(workspaceBox.right, stage.right)
+                    && workspace.scrollWidth <= workspace.clientWidth
                     && detail.scrollWidth <= detail.clientWidth
                     && getComputedStyle(content).paddingLeft === '12px'
                     && getComputedStyle(content).paddingRight === '12px';

@@ -125,12 +125,17 @@ it('turns the timeline into a mobile chronological drill-in without horizontal o
         ->assertMissing('[data-ndb-timeline-load-more]')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-section-panel="timeline"]');
+                const stage = document.querySelector('[data-ndb-section-stage]').getBoundingClientRect();
+                const workspace = document.querySelector('[data-ndb-timeline-workspace]');
+                const workspaceBox = workspace.getBoundingClientRect();
                 const row = document.querySelector('[data-ndb-timeline-item]:not([hidden])');
                 const track = row.querySelector('[data-ndb-timeline-track]');
+                const near = (actual, expected) => Math.abs(actual - expected) <= 1;
 
                 return getComputedStyle(track).display === 'none'
-                    && panel.scrollWidth <= panel.clientWidth
+                    && near(workspaceBox.left, stage.left)
+                    && near(workspaceBox.right, stage.right)
+                    && workspace.scrollWidth <= workspace.clientWidth
                     && row.scrollWidth <= row.clientWidth;
             })()
             JS);
@@ -146,10 +151,15 @@ it('turns the timeline into a mobile chronological drill-in without horizontal o
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-timeline-list]").closest("[data-ndb-inspector-focus-list]")).display === "none"')
         ->assertScript(<<<'JS'
             (() => {
-                const panel = document.querySelector('[data-ndb-section-panel="timeline"]');
+                const stage = document.querySelector('[data-ndb-section-stage]').getBoundingClientRect();
+                const workspace = document.querySelector('[data-ndb-timeline-workspace]');
+                const workspaceBox = workspace.getBoundingClientRect();
                 const detail = document.querySelector('[data-ndb-inspector-focus-detail]');
+                const near = (actual, expected) => Math.abs(actual - expected) <= 1;
 
-                return panel.scrollWidth <= panel.clientWidth
+                return near(workspaceBox.left, stage.left)
+                    && near(workspaceBox.right, stage.right)
+                    && workspace.scrollWidth <= workspace.clientWidth
                     && detail.scrollWidth <= detail.clientWidth
                     && document.querySelectorAll('[data-ndb-timeline-detail-content]').length === 1;
             })()

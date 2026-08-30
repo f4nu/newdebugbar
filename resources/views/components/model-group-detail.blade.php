@@ -98,7 +98,7 @@
             </h3>
         </x-slot:title>
         <x-slot:aside></x-slot:aside>
-        <x-slot:metadata class="ndb:gap-x-8 ndb:gap-y-2">
+        <x-slot:metadata class="ndb:gap-x-3 ndb:gap-y-2 ndb:sm:gap-x-8">
             <div class="ndb:min-w-0">
                 <dt class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-400">Connection</dt>
                 <dd class="ndb:text-[11px] ndb:font-semibold ndb:text-zinc-700 ndb:dark:text-zinc-300">
@@ -126,7 +126,7 @@
         @endforeach
     </x-newdebugbar::inspector-detail-tabs>
 
-    <div class="ndb:p-4">
+    <div class="ndb:p-3 ndb:sm:p-4">
         <template x-if="modelDetailTab === 'records'">
             <div
                 data-ndb-model-detail-panel="records"
@@ -234,7 +234,7 @@
                         data-ndb-model-write-table
                         @class([
                             'ndb:border-l-0 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:text-zinc-950 ndb:dark:text-white',
-                            'ndb:mt-5' => $retrievalCount > 0,
+                            'ndb:mt-3 ndb:sm:mt-5' => $retrievalCount > 0,
                         ])
                     >
                         <x-newdebugbar::inspector-explanation

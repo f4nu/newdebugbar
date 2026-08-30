@@ -1,4 +1,4 @@
-<div data-ndb-http-client-detail-panel="response" class="ndb:p-4">
+<div data-ndb-http-client-detail-panel="response" class="ndb:p-3 ndb:sm:p-4">
     <x-newdebugbar::inspector-facts
         :bordered="false"
         columns="4"
@@ -6,7 +6,7 @@
         ::class="selectedHttpClientRequest.response_has_headers
             || selectedHttpClientRequest.response_has_body
             || ! selectedHttpClientRequest.response
-                ? 'ndb:border-b ndb:border-zinc-200/90 ndb:pb-4 ndb:dark:border-zinc-800'
+                ? 'ndb:border-b ndb:border-zinc-200/90 ndb:pb-3 ndb:sm:pb-4 ndb:dark:border-zinc-800'
                 : ''"
     >
         <x-newdebugbar::inspector-fact label="Status">
@@ -53,7 +53,7 @@
     </x-newdebugbar::inspector-facts>
 
     <template x-if="selectedHttpClientRequest.response_has_headers || selectedHttpClientRequest.response_has_body">
-        <div class="ndb:mt-5 ndb:space-y-5">
+        <div class="ndb:mt-3 ndb:space-y-3 ndb:sm:mt-5 ndb:sm:space-y-5">
             <template x-if="selectedHttpClientRequest.response_has_headers">
                 <x-newdebugbar::inspector-evidence label="Headers">
                     <x-slot:value x-text="formatHttpClientEvidence(selectedHttpClientRequest.response?.headers)"></x-slot:value>

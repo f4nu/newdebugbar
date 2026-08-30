@@ -198,6 +198,7 @@ it('uses a list-detail workspace for multiple exceptions with mobile drill in', 
                 if (! primary || ! copy || ! type || ! source) return false;
 
                 const copyBox = copy.getBoundingClientRect();
+                const typeBox = type.getBoundingClientRect();
                 const sourceBox = source.getBoundingClientRect();
 
                 return getComputedStyle(list).display === 'none'
@@ -205,8 +206,9 @@ it('uses a list-detail workspace for multiple exceptions with mobile drill in', 
                     && getComputedStyle(detail).overflowY === 'visible'
                     && detail.scrollWidth <= detail.clientWidth + 1
                     && ['auto', 'scroll'].includes(getComputedStyle(content).overflowY)
-                    && getComputedStyle(primary).gridTemplateColumns.split(' ').length === 1
-                    && sourceBox.top >= copyBox.bottom
+                    && getComputedStyle(primary).gridTemplateColumns.split(' ').length === 2
+                    && sourceBox.left >= copyBox.right
+                    && Math.abs(sourceBox.top - typeBox.top) <= 2
                     && type.scrollWidth <= type.clientWidth + 1
                     && document.activeElement === detail;
             })()

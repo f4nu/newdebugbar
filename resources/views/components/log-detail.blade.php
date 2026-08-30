@@ -63,7 +63,7 @@
     </x-newdebugbar::inspector-detail-header>
 
     <div data-ndb-log-detail-groups class="ndb:divide-y ndb:divide-zinc-200/90 ndb:dark:divide-zinc-800">
-        <section data-ndb-log-detail-group="summary" class="ndb:p-4">
+        <section data-ndb-log-detail-group="summary" class="ndb:p-3 ndb:sm:p-4">
             <x-newdebugbar::inspector-facts columns="4" :bordered="false">
                 <x-newdebugbar::inspector-fact label="Severity">
                     <x-slot:value class="ndb:text-xs ndb:font-bold {{ $severityClasses }}">
@@ -97,7 +97,7 @@
             <section
                 data-ndb-log-detail-group="related-exception"
                 data-ndb-log-related-exception
-                class="ndb:bg-transparent ndb:p-4"
+                class="ndb:bg-transparent ndb:p-3 ndb:sm:p-4"
                 aria-label="Related exception"
             >
                 <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:justify-between ndb:gap-3">
@@ -132,7 +132,7 @@
                 data-ndb-log-detail-group="context"
                 data-ndb-log-context
                 aria-label="Log context"
-                class="ndb:bg-transparent ndb:p-4"
+                class="ndb:bg-transparent ndb:p-3 ndb:sm:p-4"
             >
                 <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Context</h4>
                 <x-newdebugbar::inspector-definition-list class="ndb:mt-2">
@@ -159,7 +159,7 @@
                 data-ndb-log-detail-group="occurrences"
                 data-ndb-log-occurrences
                 aria-label="Repeated log occurrences"
-                class="ndb:p-4"
+                class="ndb:p-3 ndb:sm:p-4"
             >
                 <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3 ndb:border-b ndb:border-zinc-200/90 ndb:pb-2 ndb:dark:border-zinc-800">
                     <h4 class="ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Occurrences</h4>
@@ -181,12 +181,12 @@
         @endif
 
         <section data-ndb-log-detail-group="source" data-ndb-log-source class="ndb:bg-transparent ndb:p-0">
-            <h4 class="ndb:px-4 ndb:pt-4 ndb:text-xs ndb:font-bold ndb:text-zinc-800 ndb:dark:text-zinc-100">Source</h4>
             <x-newdebugbar::inspector-source-panel
                 :frames="\Illuminate\Support\Js::from($stack)"
                 columns="1"
                 empty-label="No application stack was captured for this log entry."
-                class="ndb:bg-transparent ndb:pt-2"
+                title="Source"
+                class="ndb:bg-transparent"
             >
                 <x-newdebugbar::inspector-source-fact label="Application call site">
                     <x-slot:value>

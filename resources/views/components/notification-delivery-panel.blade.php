@@ -1,4 +1,4 @@
-<div data-ndb-notification-detail-panel="delivery" class="ndb:p-4">
+<div data-ndb-notification-detail-panel="delivery" class="ndb:py-3 ndb:sm:p-4">
     <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
         <template x-for="delivery in selectedNotification.deliveries" :key="delivery.channel">
             <article

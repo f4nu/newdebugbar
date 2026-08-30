@@ -9,7 +9,7 @@
     >
         <section
             data-ndb-section-panel="{{ $sectionKey }}"
-            class="ndb:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0"
+            class="ndb:space-y-3 ndb:sm:space-y-4 ndb:lg:flex ndb:lg:h-full ndb:lg:min-h-0 ndb:lg:flex-col ndb:lg:gap-4 ndb:lg:space-y-0"
         >
             @php($collectionDropped = (int) ($section['summary']['dropped_count'] ?? 0))
             @php($collectionRetained = (int) ($section['summary']['retained_count'] ?? count($section['payload']['items'] ?? [])))

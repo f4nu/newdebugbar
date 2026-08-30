@@ -59,7 +59,7 @@
             </x-newdebugbar::inspector-detail-tabs>
 
             <template x-if="eventDetailTab === 'overview'">
-                <div data-ndb-event-detail-panel="overview" class="ndb:p-4">
+                <div data-ndb-event-detail-panel="overview" class="ndb:p-3 ndb:sm:p-4">
                     <x-newdebugbar::inspector-facts columns="4" data-ndb-event-facts>
                         <x-newdebugbar::inspector-fact label="Origin" data-ndb-event-fact>
                             <x-slot:value
@@ -97,7 +97,7 @@
                         </x-newdebugbar::inspector-fact>
                     </x-newdebugbar::inspector-facts>
 
-                    <section data-ndb-event-listeners class="ndb:mt-6">
+                    <section data-ndb-event-listeners class="ndb:mt-4 ndb:sm:mt-6">
                         <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3">
                             <h4 class="ndb:text-xs ndb:font-bold">Listener handling</h4>
                             <span
@@ -172,7 +172,7 @@
                         data-ndb-event-related-section
                         x-show.important="selectedEvent.related_section"
                         @click="navigateToSection(selectedEvent.related_section.key)"
-                        class="ndb:mt-6"
+                        class="ndb:mt-4 ndb:sm:mt-6"
                     >
                         <span x-text="selectedEvent.related_section ? 'Open ' + selectedEvent.related_section.label : ''"></span>
                     </x-newdebugbar::inspector-action>
@@ -180,7 +180,7 @@
                     <details
                         data-ndb-event-outcome-help
                         x-show.important="selectedEvent.listeners.length > 0"
-                        class="ndb:group ndb:mt-4 ndb:border-0 ndb:bg-transparent ndb:p-0"
+                        class="ndb:group ndb:mt-3 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:mt-4"
                     >
                         <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-1.5 ndb:bg-transparent ndb:p-0 ndb:text-[11px] ndb:font-semibold ndb:text-zinc-500 ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500 ndb:dark:text-zinc-400">
                             How listener outcomes are recorded
@@ -200,7 +200,7 @@
             </template>
 
             <template x-if="eventDetailTab === 'payload'">
-                <div data-ndb-event-detail-panel="payload" class="ndb:p-4">
+                <div data-ndb-event-detail-panel="payload" class="ndb:p-3 ndb:sm:p-4">
                     <h4 class="ndb:text-xs ndb:font-bold">Payload shape</h4>
 
                     <template x-if="selectedEvent.payload_shape.length === 0">
@@ -256,7 +256,7 @@
             </template>
 
             <template x-if="eventDetailTab === 'source'">
-                <div data-ndb-event-detail-panel="source" class="ndb:p-4">
+                <div data-ndb-event-detail-panel="source" class="ndb:p-3 ndb:sm:p-4">
                     <section data-ndb-event-dispatch-sources>
                         <div class="ndb:flex ndb:items-baseline ndb:justify-between ndb:gap-3">
                             <h4 class="ndb:text-xs ndb:font-bold">Dispatch locations</h4>
@@ -317,7 +317,7 @@
                     <details
                         data-ndb-event-timeline
                         x-show.important="selectedEvent.occurrence_count > 1"
-                        class="ndb:group ndb:mt-6 ndb:border-0 ndb:bg-transparent ndb:p-0"
+                        class="ndb:group ndb:mt-4 ndb:border-0 ndb:bg-transparent ndb:p-0 ndb:sm:mt-6"
                     >
                         <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:justify-between ndb:gap-3 ndb:bg-transparent ndb:p-0 ndb:text-xs ndb:font-bold ndb:focus-visible:outline-2 ndb:focus-visible:outline-indigo-500">
                             <span>Dispatch timeline</span>

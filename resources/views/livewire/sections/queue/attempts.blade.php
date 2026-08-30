@@ -9,7 +9,7 @@
             <template x-for="attempt in selectedQueueActivity.attempts" :key="attempt.sequence">
                 <article
                     data-ndb-queue-attempt
-                    class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:py-3 ndb:sm:grid-cols-[5rem_6rem_minmax(0,1fr)_auto] ndb:sm:items-center"
+                    class="ndb:grid ndb:min-w-0 ndb:gap-2 ndb:py-2.5 ndb:sm:grid-cols-[5rem_6rem_minmax(0,1fr)_auto] ndb:sm:items-center ndb:sm:py-3"
                 >
                     <span
                         class="ndb:text-xs ndb:font-bold ndb:tabular-nums"

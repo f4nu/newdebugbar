@@ -1,4 +1,4 @@
-<div data-ndb-notification-detail-panel="payload" class="ndb:space-y-5 ndb:p-4">
+<div data-ndb-notification-detail-panel="payload" class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-5 ndb:sm:p-4">
     <x-newdebugbar::inspector-evidence label="Application payload" language="json">
         <x-slot:aside>
             <span
@@ -10,7 +10,7 @@
         <x-slot:value x-text="formatNotificationEvidence(selectedNotification.notification_data)"></x-slot:value>
     </x-newdebugbar::inspector-evidence>
 
-    <section class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800">
+    <section class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-3 ndb:sm:pt-4 ndb:dark:border-zinc-800">
         <div class="ndb:flex ndb:items-center ndb:justify-between ndb:gap-3">
             <h4 class="ndb:text-xs ndb:font-bold">Channel evidence</h4>
             <span
@@ -107,7 +107,7 @@
         label="Anonymous routes"
         language="json"
         x-show="Object.keys(selectedNotification.routes).length > 0"
-        class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-4 ndb:dark:border-zinc-800"
+        class="ndb:border-t ndb:border-zinc-200/90 ndb:pt-3 ndb:sm:pt-4 ndb:dark:border-zinc-800"
     >
         <x-slot:value x-text="formatNotificationEvidence(selectedNotification.routes)"></x-slot:value>
     </x-newdebugbar::inspector-evidence>

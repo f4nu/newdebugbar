@@ -1,9 +1,9 @@
 <template x-if="! selectedHttpClientRequest.response">
-    <div class="ndb:mt-5">
+    <div class="ndb:mt-3 ndb:sm:mt-5">
         <p class="ndb:text-xs ndb:font-semibold">No HTTP response was received.</p>
         <x-newdebugbar::inspector-definition-list
             x-show.important="selectedHttpClientRequest.exception_class || selectedHttpClientRequest.exception_message"
-            class="ndb:mt-4"
+            class="ndb:mt-3 ndb:sm:mt-4"
         >
             <x-newdebugbar::inspector-definition-row
                 label="Exception"

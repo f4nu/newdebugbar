@@ -192,16 +192,23 @@ it('keeps the property editor usable in a narrow dark inspector', function () {
             const back = document.querySelector('[data-ndb-livewire-detail-back]');
             const detail = back.parentElement;
             const detailBox = detail.getBoundingClientRect();
+            const backBox = back.getBoundingClientRect();
             const backStyle = getComputedStyle(back);
             const iconBox = back.querySelector('svg').getBoundingClientRect();
             const headerContentBox = detail.querySelector('article > header > div').getBoundingClientRect();
+            const near = (actual, expected, tolerance = 1) => Math.abs(actual - expected) <= tolerance;
 
-            return Math.abs(parseFloat(backStyle.marginTop) - 8) <= 0.5
-                && Math.abs(parseFloat(backStyle.marginLeft) - 8) <= 0.5
-                && Math.abs(parseFloat(backStyle.paddingTop) - 8) <= 0.5
-                && Math.abs(parseFloat(backStyle.paddingLeft) - 8) <= 0.5
-                && Math.abs(iconBox.left - headerContentBox.left) <= 1
-                && Math.abs(iconBox.top - (detailBox.top + 16)) <= 2;
+            return backStyle.marginTop === '0px'
+                && backStyle.marginRight === '0px'
+                && backStyle.marginBottom === '0px'
+                && backStyle.marginLeft === '0px'
+                && backStyle.paddingTop === '8px'
+                && backStyle.paddingLeft === '12px'
+                && backBox.height >= 44
+                && near(backBox.top, detailBox.top)
+                && near(backBox.left, detailBox.left)
+                && near(iconBox.left, headerContentBox.left)
+                && near(iconBox.top + iconBox.height / 2, backBox.top + backBox.height / 2);
         })()
         JS;
 

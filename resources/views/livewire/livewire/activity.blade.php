@@ -1,4 +1,4 @@
-<ol data-ndb-livewire-activity-list aria-label="Livewire activity timeline" class="ndb:m-0 ndb:list-none ndb:p-2">
+<ol data-ndb-livewire-activity-list aria-label="Livewire activity timeline" class="ndb:m-0 ndb:list-none ndb:p-0">
     <template x-for="(item, index) in filteredLivewireActivity" :key="item.id">
         <li
             data-ndb-livewire-activity-timeline-item
