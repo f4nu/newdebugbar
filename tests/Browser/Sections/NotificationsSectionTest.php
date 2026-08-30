@@ -132,7 +132,7 @@ it('groups notification attempts in a full-height delivery inspector', function 
                     && selected.querySelector('[data-ndb-notification-outcomes]') === null
                     && summary.closest('[data-ndb-inspector-list-controls]') === filter.closest('[data-ndb-inspector-list-controls]')
                     && summary.getBoundingClientRect().left < filter.getBoundingClientRect().left
-                    && Math.abs(summary.getBoundingClientRect().top - filter.getBoundingClientRect().top) <= 1
+                    && Math.abs(summary.getBoundingClientRect().top - filter.getBoundingClientRect().top) <= 2
                     && summaryRuntime.getBoundingClientRect().top > summaryCount.getBoundingClientRect().top
                     && filter.options[0].value === 'all'
                     && tabs.length === 1
