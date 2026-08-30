@@ -19,23 +19,22 @@ it('mounts only the active HTTP Client detail evidence', function () {
         ->not->toContain('x-show.important="httpClientDetailTab');
 });
 
-it('mounts only the active Cache detail evidence', function () {
+it('merges Cache overview and source evidence without raw collector output', function () {
     $views = dirname(__DIR__, 2).'/resources/views/components';
     $detail = file_get_contents($views.'/cache-detail.blade.php');
     $overview = file_get_contents($views.'/cache-overview-panel.blade.php');
-    $raw = file_get_contents($views.'/cache-raw-panel.blade.php');
 
     expect($detail)
-        ->toContain('<template x-if="cacheDetailTab === \'overview\'">')
-        ->toContain('<template x-if="cacheDetailTab === \'raw\'">')
-        ->toContain('<template x-if="cacheDetailTab === \'source\'">')
-        ->and(substr_count($detail, '<template x-if="cacheDetailTab ==='))->toBe(3)
-        ->and($detail)
-        ->not->toContain('x-show.important="cacheDetailTab')
+        ->toContain('<x-newdebugbar::cache-overview-panel')
+        ->not->toContain('cacheDetailTab')
+        ->not->toContain('cache-detail-tabs')
+        ->not->toContain('cache-raw-panel')
         ->and($overview)
-        ->not->toContain('x-show.important="cacheDetailTab')
-        ->and($raw)
-        ->not->toContain('x-show.important="cacheDetailTab');
+        ->toContain('data-ndb-cache-detail-content')
+        ->toContain('<x-newdebugbar::inspector-source-panel')
+        ->toContain('<x-newdebugbar::inspector-source-fact')
+        ->and(file_exists($views.'/cache-detail-tabs.blade.php'))->toBeFalse()
+        ->and(file_exists($views.'/cache-raw-panel.blade.php'))->toBeFalse();
 });
 
 it('mounts only the active Models detail evidence', function () {

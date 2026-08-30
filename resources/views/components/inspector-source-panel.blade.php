@@ -13,7 +13,7 @@
     };
 @endphp
 
-<section data-ndb-inspector-source-panel {{ $attributes->class('ndb:p-4') }}>
+<section data-ndb-inspector-source-panel {{ $attributes->class('ndb:p-3 ndb:sm:p-4') }}>
     @if ($title !== null || isset($actions))
         <div @class([
             'ndb:mb-3 ndb:flex ndb:items-center ndb:gap-3',

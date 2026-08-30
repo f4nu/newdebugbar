@@ -30,16 +30,4 @@
             x-text="selectedCacheOperation.driver_label"
         ></x-slot:value>
     </x-newdebugbar::inspector-fact>
-    <x-newdebugbar::inspector-fact
-        label="Source"
-        x-show.important="selectedCacheOperation.source_label !== 'Source unavailable'"
-        class="ndb:col-span-2 ndb:sm:col-span-4"
-    >
-        <x-newdebugbar::inspector-source-link
-            ::title="selectedCacheOperation.source_label"
-            @click="setCacheDetailTab('source')"
-        >
-            <x-slot:value x-text="selectedCacheOperation.source_short_label"></x-slot:value>
-        </x-newdebugbar::inspector-source-link>
-    </x-newdebugbar::inspector-fact>
 </x-newdebugbar::inspector-facts>

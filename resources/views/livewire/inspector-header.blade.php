@@ -1,11 +1,7 @@
 {{-- Renders responsive request facts and inspector window controls. --}}
 <header class="ndb:relative ndb:z-40 ndb:shrink-0 ndb:overflow-visible ndb:border-b ndb:border-zinc-200/80 ndb:bg-white ndb:p-1.5 ndb:dark:border-zinc-800/80 ndb:dark:bg-zinc-950">
     <div data-ndb-header-mobile-toolbar class="ndb:flex ndb:min-w-0 ndb:items-stretch ndb:gap-1 ndb:sm:hidden">
-        <x-newdebugbar::request-switcher
-            scope="header-mobile"
-            direction="below"
-            class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-[9.5rem] ndb:min-[420px]:w-40"
-        />
+        <x-newdebugbar::request-switcher scope="header-mobile" direction="below" class="ndb:min-w-0 ndb:flex-1" />
 
         <x-newdebugbar::mobile-request-metrics scope="header" data-ndb-header-mobile-control="metrics" />
 
@@ -214,7 +210,7 @@
                     class="ndb:size-9 ndb:rounded-xl"
                     aria-label="Open command palette"
                 />
-                <x-newdebugbar::theme-toggle data-ndb-inspector-action="theme" />
+                <x-newdebugbar::theme-toggle scope="header" direction="below" data-ndb-inspector-action="theme" />
             </div>
             <x-newdebugbar::window-controls data-ndb-window-controls="expanded" />
         </div>

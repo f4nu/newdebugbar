@@ -723,8 +723,8 @@ trait DefinesTestApplication
                             [data-ndb-model-search-value] { display: none; }
                             [data-ndb-model-detail-tab], [data-ndb-model-detail-back], [data-ndb-inspector-focus-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); height: 91px; }
                             [data-ndb-inspector-focus-list], [data-ndb-inspector-focus-detail] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); padding: 50px; }
-                            [data-ndb-view-workspace], [data-ndb-view-list-panel], [data-ndb-view-group], [data-ndb-view-detail-pane], [data-ndb-view-detail], [data-ndb-view-detail-panel] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
-                            [data-ndb-view-search], [data-ndb-view-filter], [data-ndb-view-detail-tab], [data-ndb-view-detail-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
+                            [data-ndb-view-workspace], [data-ndb-view-list-panel], [data-ndb-view-group], [data-ndb-view-detail-pane], [data-ndb-view-detail], [data-ndb-view-detail-content], [data-ndb-view-data-panel] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
+                            [data-ndb-view-search], [data-ndb-view-filter], [data-ndb-view-detail-back] { background: rgb(255, 0, 255); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }
                             [data-ndb-view-list-name], [data-ndb-view-detail-name] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); font-family: monospace; font-size: 42px; }
                             [data-ndb-inspector-source-link] { background: rgb(255, 0, 0); color: rgb(0, 128, 0); height: 91px; padding: 50px; }
                             [data-ndb-inspector-source-fact], [data-ndb-inspector-stack] { background: rgb(255, 0, 0); border-left: 20px solid rgb(255, 0, 0); color: rgb(0, 128, 0); font-size: 42px; padding: 50px; }

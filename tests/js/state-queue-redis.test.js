@@ -67,7 +67,6 @@ test('Queue searches, filters, selects, and restores mobile list focus', () => {
   assert.equal(state.queueFilter, 'all');
   assert.equal(state.queueSelected, 1);
   assert.equal(state.queueDetailOpen, false);
-  assert.equal(state.queueDetailTab, 'overview');
   assert.equal(state.visibleQueueCount, 3);
   assert.equal(state.selectedQueueActivity.execution, 1);
 
@@ -94,11 +93,8 @@ test('Queue searches, filters, selects, and restores mobile list focus', () => {
   assert.equal(contentScrolls.length, 1);
   assert.deepEqual(focused[0], ['detail', { preventScroll: true }]);
 
-  state.setQueueDetailTab('attempts');
-  state.setQueueDetailTab('invalid');
   state.setQueueFilter('invalid');
   state.selectQueueActivity(99);
-  assert.equal(state.queueDetailTab, 'overview');
   assert.equal(state.queueFilter, 'all');
   assert.equal(state.queueSelected, 2);
 
@@ -116,7 +112,7 @@ test('Queue searches, filters, selects, and restores mobile list focus', () => {
   assert.equal(state.queueSelected, null);
 });
 
-test('Queue exposes Attempts only for retained activity and resets stale tabs', () => {
+test('Queue preserves retained attempts while filtering and changing the selection', () => {
   const state = createNewDebugBar(summary, runtime());
   const rows = [
     row({ ndbQueueExecution: '1', ndbQueueGroup: 'completed' }, []),
@@ -143,27 +139,17 @@ test('Queue exposes Attempts only for retained activity and resets stale tabs', 
   };
 
   state.initializeQueue([linked, unlinked]);
-  assert.equal(state.selectedQueueHasAttempts, true);
-
-  state.setQueueDetailTab('attempts');
-  assert.equal(state.queueDetailTab, 'attempts');
+  assert.equal(state.selectedQueueActivity.attempts.length, 1);
 
   state.selectQueueActivity(2);
-  assert.equal(state.selectedQueueHasAttempts, false);
-  assert.equal(state.queueDetailTab, 'overview');
-
-  state.setQueueDetailTab('attempts');
-  assert.equal(state.queueDetailTab, 'overview');
+  assert.deepEqual(state.selectedQueueActivity.attempts, []);
 
   state.selectQueueActivity(1);
-  state.setQueueDetailTab('attempts');
   state.setQueueFilter('failed');
   assert.equal(state.queueSelected, 2);
-  assert.equal(state.queueDetailTab, 'overview');
 
   state.initializeQueue([{ ...linked, attempts: [] }]);
-  assert.equal(state.selectedQueueHasAttempts, false);
-  assert.equal(state.queueDetailTab, 'overview');
+  assert.deepEqual(state.selectedQueueActivity.attempts, []);
 });
 
 test('Redis builds bounded search state and keeps failed filtering truthful', () => {

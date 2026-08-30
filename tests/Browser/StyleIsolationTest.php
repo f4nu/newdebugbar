@@ -176,7 +176,7 @@ it('keeps host styles and package styles isolated', function () {
                 const search = document.querySelector('[data-ndb-cache-search]');
                 const detail = document.querySelector('[data-ndb-cache-detail]');
                 const summaryPrimary = document.querySelector('[data-ndb-cache-summary] p');
-                const sourceLink = document.querySelector('[data-ndb-cache-metadata] [data-ndb-inspector-source-link]');
+                const sourceLink = document.querySelector('[data-ndb-cache-source] [data-ndb-inspector-source-link]');
 
                 return [
                     root.getAttribute('data-cache'),
@@ -979,7 +979,8 @@ it('keeps host styles and package styles isolated', function () {
             (() => {
                 const detail = document.querySelector('[data-ndb-view-detail]');
                 const name = document.querySelector('[data-ndb-view-detail-name]');
-                const tabs = [...document.querySelectorAll('[data-ndb-view-detail-tab]')];
+                const content = document.querySelector('[data-ndb-view-detail-content]');
+                const data = document.querySelector('[data-ndb-view-data-panel]');
                 const back = document.querySelector('[data-ndb-view-detail-back]');
 
                 const checks = {
@@ -989,11 +990,9 @@ it('keeps host styles and package styles isolated', function () {
                     nameSize: Number.parseFloat(getComputedStyle(name).fontSize) === 14,
                     nameFont: !getComputedStyle(name).fontFamily.includes('monospace'),
                     nameColor: getComputedStyle(name).color !== 'rgb(0, 128, 0)',
-                    tabCount: tabs.length === 2,
-                    tabHeight: tabs.every((tab) => tab.getBoundingClientRect().height < 91),
-                    tabBackground: tabs.every(
-                        (tab) => getComputedStyle(tab).backgroundColor !== 'rgb(255, 0, 255)',
-                    ),
+                    contentBackground: getComputedStyle(content).backgroundColor !== 'rgb(255, 0, 0)',
+                    contentPadding: Number.parseFloat(getComputedStyle(content).paddingLeft) < 50,
+                    dataBorder: getComputedStyle(data).borderLeftWidth !== '20px',
                     backHeight: back.getBoundingClientRect().height < 91,
                 };
                 const failures = Object.entries(checks).filter(([, passed]) => ! passed).map(([name]) => name);

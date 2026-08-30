@@ -44,12 +44,12 @@ it('keeps application views primary and lazily inspects one desktop render', fun
         ->assertVisible('[data-ndb-view-detail]')
         ->assertSee('original-response')
         ->assertVisible('[data-ndb-view-render-select]')
-        ->assertVisible('[data-ndb-view-detail-panel="overview"]')
+        ->assertVisible('[data-ndb-view-detail-content]')
+        ->assertVisible('[data-ndb-view-data-panel]')
         ->assertSee('tests/Fixtures/views/original-response.blade.php')
         ->assertDontSee('tests/Fixtures/views/original-response.blade.php:1')
-        ->assertVisible('[data-ndb-view-detail-panel="overview"] [data-ndb-inspector-source-link]')
-        ->assertMissing('[data-ndb-view-detail-tab="source"]')
-        ->assertMissing('[data-ndb-view-detail-panel="source"]')
+        ->assertVisible('[data-ndb-view-detail-content] [data-ndb-inspector-source-link]')
+        ->assertMissing('[data-ndb-view-detail-tab]')
         ->assertMissing('[data-ndb-view-composers]')
         ->assertMissing('[data-ndb-view-composer-count]')
         ->assertScript('document.querySelectorAll("[data-ndb-view-detail]").length === 1')
@@ -59,16 +59,15 @@ it('keeps application views primary and lazily inspects one desktop render', fun
                 const primary = header.querySelector('[data-ndb-inspector-detail-header-primary]');
                 const metadata = header.querySelector('[data-ndb-view-detail-metadata]');
                 const select = header.querySelector('[data-ndb-view-render-select]');
-                const tabs = document.querySelector('[data-ndb-view-detail-tab="overview"]').closest('[data-ndb-filter-tabs]').parentElement;
 
                 return getComputedStyle(primary).display === 'flex'
                     && getComputedStyle(metadata).display === 'flex'
                     && metadata.querySelectorAll(':scope > div').length === 2
                     && select !== null
                     && getComputedStyle(
-                        document.querySelector('[data-ndb-view-detail-panel="overview"] [data-ndb-inspector-source-link]'),
+                        document.querySelector('[data-ndb-view-detail-content] [data-ndb-inspector-source-link]'),
                     ).fontFamily === getComputedStyle(header).fontFamily
-                    && tabs.querySelector('[data-ndb-view-render-select]') === null
+                    && document.querySelector('[data-ndb-view-detail-tab]') === null
                     && header.scrollWidth <= header.clientWidth;
             })()
             JS)
@@ -85,13 +84,12 @@ it('keeps application views primary and lazily inspects one desktop render', fun
                 return true;
             })()
             JS)
-        ->click('[data-ndb-view-detail-panel="overview"] [data-ndb-inspector-source-link]')
+        ->click('[data-ndb-view-detail-content] [data-ndb-inspector-source-link]')
         ->wait(0.05)
         ->assertScript(<<<'JS'
             JSON.stringify(window.newdebugbarViewClipboard)
                 === JSON.stringify(['tests/Fixtures/views/original-response.blade.php'])
             JS)
-        ->click('[data-ndb-view-detail-tab="data"]')
         ->waitForText('First response')
         ->assertVisible('[data-ndb-view-data]')
         ->select('[data-ndb-view-render-select]', '3')
@@ -106,8 +104,7 @@ it('keeps application views primary and lazily inspects one desktop render', fun
                     && code.querySelector('.hljs-string') !== null;
             })()
             JS)
-        ->click('[data-ndb-view-detail-tab="overview"]')
-        ->assertVisible('[data-ndb-view-detail-panel="overview"]')
+        ->assertVisible('[data-ndb-view-detail-content]')
         ->assertSee('tests/Fixtures/views/original-response.blade.php')
         ->select('[data-ndb-view-filter]', 'framework')
         ->assertScript('document.querySelectorAll("[data-ndb-view-group]:not([hidden])").length', 0)
@@ -142,20 +139,25 @@ it('uses a bounded mobile list drill-in with a working Views back action', funct
                 const workspace = document.querySelector('[data-ndb-view-workspace]');
                 const [list, detail] = workspace.children;
                 const rows = [...document.querySelectorAll('[data-ndb-view-group]:not([hidden])')];
+                const summary = document.querySelector('[data-ndb-view-summary]');
+                const primary = summary.querySelector('strong').getBoundingClientRect();
+                const secondary = summary.querySelector(':scope > span').getBoundingClientRect();
 
                 return panel.scrollWidth <= panel.clientWidth
                     && workspace.scrollWidth <= workspace.clientWidth
                     && getComputedStyle(workspace).display !== 'grid'
                     && getComputedStyle(list).display === 'flex'
                     && getComputedStyle(detail).display === 'none'
-                    && rows.every((row) => row.scrollWidth <= row.clientWidth);
+                    && rows.every((row) => row.scrollWidth <= row.clientWidth)
+                    && secondary.top >= primary.bottom;
             })()
             JS)
         ->click('[data-ndb-view-group="view-2"]')
         ->assertVisible('[data-ndb-view-detail]')
         ->assertVisible('[data-ndb-view-detail-back]')
-        ->assertVisible('[data-ndb-view-detail-panel="overview"]')
-        ->assertMissing('[data-ndb-view-detail-tab="source"]')
+        ->assertVisible('[data-ndb-view-detail-content]')
+        ->assertVisible('[data-ndb-view-data-panel]')
+        ->assertMissing('[data-ndb-view-detail-tab]')
         ->assertMissing('[data-ndb-view-composers]')
         ->assertSee('tests/Fixtures/views/original-response.blade.php')
         ->assertDontSee('tests/Fixtures/views/original-response.blade.php:1')
@@ -164,12 +166,15 @@ it('uses a bounded mobile list drill-in with a working Views back action', funct
                 const panel = document.querySelector('[data-ndb-section-panel="views"]');
                 const workspace = document.querySelector('[data-ndb-view-workspace]');
                 const [list, detail] = workspace.children;
+                const content = document.querySelector('[data-ndb-view-detail-content]');
 
                 return getComputedStyle(list).display === 'none'
                     && getComputedStyle(detail).display === 'flex'
                     && detail.getBoundingClientRect().width >= workspace.getBoundingClientRect().width - 2
                     && panel.scrollWidth <= panel.clientWidth
-                    && detail.scrollWidth <= detail.clientWidth;
+                    && detail.scrollWidth <= detail.clientWidth
+                    && getComputedStyle(content).paddingLeft === '12px'
+                    && getComputedStyle(content).paddingRight === '12px';
             })()
             JS)
         ->click('[data-ndb-view-detail-back]')

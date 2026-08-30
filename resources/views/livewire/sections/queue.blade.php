@@ -1,4 +1,3 @@
-{{-- Presents queue dispatches and worker outcomes in the shared inspector workspace. --}}
 @php
     $statusLabels = [
         'queued' => 'Queued',
@@ -280,23 +279,38 @@
                                 ></h3>
                             </x-slot:title>
                             <x-slot:aside>
-                                <span
-                                    data-ndb-queue-detail-status
-                                    class="ndb:inline-flex ndb:justify-self-end ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
-                                    :class="{
-                                        'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300':
-                                            selectedQueueActivity.status === 'failed',
-                                        'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300':
-                                            ['delayed', 'waiting'].includes(selectedQueueActivity.status),
-                                        'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300':
-                                            selectedQueueActivity.status === 'processing',
-                                        'ndb:bg-sky-100 ndb:text-sky-700 ndb:dark:bg-sky-950 ndb:dark:text-sky-300':
-                                            selectedQueueActivity.status === 'queued',
-                                        'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300':
-                                            ['sent', 'completed'].includes(selectedQueueActivity.status),
-                                    }"
-                                    x-text="selectedQueueActivity.status_label"
-                                ></span>
+                                <div class="ndb:flex ndb:flex-wrap ndb:items-center ndb:gap-2">
+                                    <span
+                                        data-ndb-queue-detail-status
+                                        class="ndb:inline-flex ndb:justify-self-end ndb:rounded-md ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold"
+                                        :class="{
+                                            'ndb:bg-red-100 ndb:text-red-700 ndb:dark:bg-red-950 ndb:dark:text-red-300':
+                                                selectedQueueActivity.status === 'failed',
+                                            'ndb:bg-amber-100 ndb:text-amber-700 ndb:dark:bg-amber-950 ndb:dark:text-amber-300':
+                                                ['delayed', 'waiting'].includes(selectedQueueActivity.status),
+                                            'ndb:bg-indigo-100 ndb:text-indigo-700 ndb:dark:bg-indigo-950 ndb:dark:text-indigo-300':
+                                                selectedQueueActivity.status === 'processing',
+                                            'ndb:bg-sky-100 ndb:text-sky-700 ndb:dark:bg-sky-950 ndb:dark:text-sky-300':
+                                                selectedQueueActivity.status === 'queued',
+                                            'ndb:bg-emerald-100 ndb:text-emerald-700 ndb:dark:bg-emerald-950 ndb:dark:text-emerald-300':
+                                                ['sent', 'completed'].includes(selectedQueueActivity.status),
+                                        }"
+                                        x-text="selectedQueueActivity.status_label"
+                                    ></span>
+                                    <x-newdebugbar::inspector-action
+                                        icon="external-link"
+                                        data-ndb-queue-profile-link
+                                        x-show.important="selectedQueueActivity.related_profile_id"
+                                        @click="
+                                            openRelatedProfile(
+                                                selectedQueueActivity.related_profile_id,
+                                                selectedQueueActivity.related_section,
+                                            )
+                                        "
+                                        class="ndb:h-8 ndb:min-h-0 ndb:bg-transparent ndb:px-2"
+                                        ><span x-text="selectedQueueActivity.related_label"></span
+                                    ></x-newdebugbar::inspector-action>
+                                </div>
                             </x-slot:aside>
                             <x-slot:metadata>
                                 <div>
@@ -317,146 +331,107 @@
                             </x-slot:metadata>
                         </x-newdebugbar::inspector-detail-header>
 
-                        <x-newdebugbar::inspector-detail-tabs label="Queue activity detail">
-                            <x-newdebugbar::filter-tab
-                                variant="segmented"
-                                data-ndb-queue-detail-tab="overview"
-                                @click="setQueueDetailTab('overview')"
-                                ::aria-pressed="queueDetailTab === 'overview'"
-                                class="ndb:h-auto ndb:min-h-8"
-                            >Overview</x-newdebugbar::filter-tab>
-                            <template x-if="selectedQueueActivity.attempts.length > 0">
-                                <x-newdebugbar::filter-tab
-                                    variant="segmented"
-                                    data-ndb-queue-detail-tab="attempts"
-                                    @click="setQueueDetailTab('attempts')"
-                                    ::aria-pressed="queueDetailTab === 'attempts'"
-                                    class="ndb:h-auto ndb:min-h-8"
-                                >Attempts</x-newdebugbar::filter-tab>
-                            </template>
-                            <x-slot:aside>
-                                <x-newdebugbar::inspector-action
-                                    icon="external-link"
-                                    data-ndb-queue-profile-link
-                                    x-show.important="selectedQueueActivity.related_profile_id"
-                                    @click="
-                                        openRelatedProfile(
-                                            selectedQueueActivity.related_profile_id,
-                                            selectedQueueActivity.related_section,
-                                        )
-                                    "
-                                    class="ndb:h-9 ndb:min-h-0 ndb:bg-transparent"
-                                    ><span x-text="selectedQueueActivity.related_label"></span
-                                ></x-newdebugbar::inspector-action>
-                            </x-slot:aside>
-                        </x-newdebugbar::inspector-detail-tabs>
+                        <div data-ndb-queue-detail-content class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-4 ndb:sm:p-4">
+                            <p
+                                class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
+                                x-text="selectedQueueActivity.status_description"
+                            ></p>
 
-                        <template x-if="queueDetailTab === 'overview'">
-                            <div data-ndb-queue-detail-panel="overview" class="ndb:space-y-4 ndb:p-4">
-                                <p
-                                    class="ndb:text-xs ndb:leading-5 ndb:text-zinc-600 ndb:dark:text-zinc-300"
-                                    x-text="selectedQueueActivity.status_description"
-                                ></p>
+                            <x-newdebugbar::inspector-facts columns="4" data-ndb-queue-facts>
+                                <x-newdebugbar::inspector-fact label="Job ID"
+                                    ><x-slot:value x-text="selectedQueueActivity.job_id ?? '—'"></x-slot:value
+                                ></x-newdebugbar::inspector-fact>
+                                <x-newdebugbar::inspector-fact label="Duration"
+                                    ><x-slot:value
+                                        class="ndb:tabular-nums"
+                                        x-text="selectedQueueActivity.duration_label"
+                                    ></x-slot:value
+                                ></x-newdebugbar::inspector-fact>
+                                <x-newdebugbar::inspector-fact label="Delay"
+                                    ><x-slot:value
+                                        class="ndb:tabular-nums"
+                                        x-text="selectedQueueActivity.delay_label"
+                                    ></x-slot:value
+                                ></x-newdebugbar::inspector-fact>
+                                <x-newdebugbar::inspector-fact label="Attempt"
+                                    ><x-slot:value
+                                        class="ndb:tabular-nums"
+                                        x-text="selectedQueueActivity.attempt ?? '—'"
+                                    ></x-slot:value
+                                ></x-newdebugbar::inspector-fact>
+                            </x-newdebugbar::inspector-facts>
 
-                                <x-newdebugbar::inspector-facts columns="4" data-ndb-queue-facts>
-                                    <x-newdebugbar::inspector-fact label="Job ID"
-                                        ><x-slot:value x-text="selectedQueueActivity.job_id ?? '—'"></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Duration"
+                            <dl
+                                data-ndb-queue-communication
+                                x-show.important="selectedQueueActivity.communication_type"
+                                class="ndb:divide-y ndb:divide-zinc-200/90 ndb:bg-transparent ndb:dark:divide-zinc-800"
+                            >
+                                <x-newdebugbar::inspector-definition-row label="Type"
+                                    ><x-slot:value x-text="selectedQueueActivity.communication_label"></x-slot:value
+                                ></x-newdebugbar::inspector-definition-row>
+                                <template x-if="selectedQueueActivity.display_channels.length">
+                                    <x-newdebugbar::inspector-definition-row label="Channels"
                                         ><x-slot:value
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedQueueActivity.duration_label"
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Delay"
-                                        ><x-slot:value
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedQueueActivity.delay_label"
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                    <x-newdebugbar::inspector-fact label="Attempt"
-                                        ><x-slot:value
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedQueueActivity.attempt ?? '—'"
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-fact>
-                                </x-newdebugbar::inspector-facts>
-
-                                <dl
-                                    data-ndb-queue-communication
-                                    x-show.important="selectedQueueActivity.communication_type"
-                                    class="ndb:divide-y ndb:divide-zinc-200/90 ndb:bg-transparent ndb:dark:divide-zinc-800"
-                                >
-                                    <x-newdebugbar::inspector-definition-row label="Type"
-                                        ><x-slot:value x-text="selectedQueueActivity.communication_label"></x-slot:value
-                                    ></x-newdebugbar::inspector-definition-row>
-                                    <template x-if="selectedQueueActivity.display_channels.length">
-                                        <x-newdebugbar::inspector-definition-row label="Channels"
-                                            ><x-slot:value
-                                                x-text="selectedQueueActivity.display_channels.join(', ')"
-                                            ></x-slot:value
-                                        ></x-newdebugbar::inspector-definition-row>
-                                    </template>
-                                    <x-newdebugbar::inspector-definition-row label="Targets"
-                                        ><x-slot:value
-                                            x-text="
-                                                selectedQueueActivity.recipient_count ||
-                                                selectedQueueActivity.notifiable_count ||
-                                                '—'
-                                            "
+                                            x-text="selectedQueueActivity.display_channels.join(', ')"
                                         ></x-slot:value
                                     ></x-newdebugbar::inspector-definition-row>
-                                    <x-newdebugbar::inspector-definition-row label="Source"
-                                        ><x-slot:value
-                                            class="ndb:break-all ndb:font-mono"
-                                            x-text="
-                                                selectedQueueActivity.communication_class ?? selectedQueueActivity.job
-                                            "
-                                        ></x-slot:value
-                                    ></x-newdebugbar::inspector-definition-row>
-                                </dl>
-
-                                <section
-                                    x-show.important="selectedQueueActivity.exception_class"
-                                    class="ndb:rounded-lg ndb:border ndb:border-red-200 ndb:bg-red-50/55 ndb:p-3 ndb:dark:border-red-950 ndb:dark:bg-red-950/20"
-                                >
-                                    <p class="ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">
-                                        Worker exception
-                                    </p>
-                                    <p
-                                        class="ndb:mt-1 ndb:break-all ndb:font-mono ndb:text-xs ndb:text-red-700 ndb:dark:text-red-300"
-                                        x-text="selectedQueueActivity.exception_class"
-                                    ></p>
-                                    <p
-                                        class="ndb:mt-1 ndb:text-[11px] ndb:leading-5 ndb:text-red-700/80 ndb:dark:text-red-300/80"
+                                </template>
+                                <x-newdebugbar::inspector-definition-row label="Targets"
+                                    ><x-slot:value
                                         x-text="
-                                            selectedQueueActivity.will_retry &&
-                                            selectedQueueActivity.attempts.length > 0
-                                                ? 'Laravel can retry this job. Open Attempts to inspect the retained worker history.'
-                                                : selectedQueueActivity.will_retry
-                                                  ? 'Laravel can retry this job. No worker attempt has been retained yet.'
-                                                  : 'Open the linked worker profile to inspect the failure in context.'
+                                            selectedQueueActivity.recipient_count ||
+                                            selectedQueueActivity.notifiable_count ||
+                                            '—'
                                         "
-                                    ></p>
-                                </section>
+                                    ></x-slot:value
+                                ></x-newdebugbar::inspector-definition-row>
+                                <x-newdebugbar::inspector-definition-row label="Source"
+                                    ><x-slot:value
+                                        class="ndb:break-all ndb:font-mono"
+                                        x-text="selectedQueueActivity.communication_class ?? selectedQueueActivity.job"
+                                    ></x-slot:value
+                                ></x-newdebugbar::inspector-definition-row>
+                            </dl>
 
-                                <p
-                                    data-ndb-queue-after-response
-                                    x-show.important="selectedQueueActivity.lifecycle === 'after_response'"
-                                    class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
-                                >
-                                    This job ran after Laravel sent the response<span
-                                        x-show.important="selectedQueueActivity.after_response_label"
-                                    >
-                                        at
-                                        <span
-                                            class="ndb:tabular-nums"
-                                            x-text="selectedQueueActivity.after_response_label"
-                                        ></span></span
-                                    >, so its time is not part of the response time.
+                            <section
+                                x-show.important="selectedQueueActivity.exception_class"
+                                class="ndb:rounded-lg ndb:border ndb:border-red-200 ndb:bg-red-50/55 ndb:p-3 ndb:dark:border-red-950 ndb:dark:bg-red-950/20"
+                            >
+                                <p class="ndb:text-xs ndb:font-bold ndb:text-red-700 ndb:dark:text-red-300">
+                                    Worker exception
                                 </p>
-                            </div>
-                        </template>
+                                <p
+                                    class="ndb:mt-1 ndb:break-all ndb:font-mono ndb:text-xs ndb:text-red-700 ndb:dark:text-red-300"
+                                    x-text="selectedQueueActivity.exception_class"
+                                ></p>
+                                <p
+                                    class="ndb:mt-1 ndb:text-[11px] ndb:leading-5 ndb:text-red-700/80 ndb:dark:text-red-300/80"
+                                    x-text="
+                                        selectedQueueActivity.will_retry && selectedQueueActivity.attempts.length > 0
+                                            ? 'Laravel can retry this job. Check the retained worker attempts below.'
+                                            : selectedQueueActivity.will_retry
+                                              ? 'Laravel can retry this job. No worker attempt has been retained yet.'
+                                              : 'Open the linked worker profile to inspect the failure in context.'
+                                    "
+                                ></p>
+                            </section>
+
+                            <p
+                                data-ndb-queue-after-response
+                                x-show.important="selectedQueueActivity.lifecycle === 'after_response'"
+                                class="ndb:text-[11px] ndb:leading-5 ndb:text-zinc-500 ndb:dark:text-zinc-400"
+                            >
+                                This job ran after Laravel sent the response<span
+                                    x-show.important="selectedQueueActivity.after_response_label"
+                                >
+                                    at
+                                    <span
+                                        class="ndb:tabular-nums"
+                                        x-text="selectedQueueActivity.after_response_label"
+                                    ></span></span
+                                >, so its time is not part of the response time.
+                            </p>
+                        </div>
 
                         @include('newdebugbar::livewire.sections.queue.attempts')
                     </div>

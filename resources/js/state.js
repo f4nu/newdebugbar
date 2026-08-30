@@ -329,6 +329,8 @@ export function createNewDebugBar(
     mobileSectionsReturnFocus: null,
     mobileToolbarMenu: null,
     mobileToolbarReturnFocus: null,
+    themeMenuScope: null,
+    themeMenuReturnFocus: null,
     requestPickerScope: null,
     requestPickerReturnFocus: null,
     requestPickerArrowLeft: 0,
@@ -388,7 +390,6 @@ export function createNewDebugBar(
     cacheSearch: '',
     cacheSelected: null,
     cacheDetailOpen: false,
-    cacheDetailTab: 'overview',
     visibleCacheCount: summary.section_counts?.cache ?? 0,
     httpClientRequests: [],
     httpClientFilter: 'all',
@@ -424,7 +425,6 @@ export function createNewDebugBar(
     queueSearch: '',
     queueSelected: null,
     queueDetailOpen: false,
-    queueDetailTab: 'overview',
     visibleQueueCount: summary.section_counts?.queue ?? 0,
     redisCommands: [],
     redisFilter: 'all',
@@ -452,7 +452,6 @@ export function createNewDebugBar(
     viewSearch: '',
     viewSelected: null,
     viewDetailOpen: false,
-    viewDetailTab: 'overview',
     viewRenderOrder: null,
     viewData: null,
     viewDataLoaded: false,
@@ -796,18 +795,12 @@ export function createNewDebugBar(
       return this.queueActivities.find((activity) => activity.execution === this.queueSelected) ?? null;
     },
 
-    get selectedQueueHasAttempts() {
-      return Array.isArray(this.selectedQueueActivity?.attempts) && this.selectedQueueActivity.attempts.length > 0;
-    },
-
     get selectedRedisCommand() {
       return this.redisCommands.find((command) => command.execution === this.redisSelected) ?? null;
     },
 
     get selectedAuthorizationDecision() {
-      return (
-        this.authorizationDecisions.find((decision) => decision.execution === this.authorizationSelected) ?? null
-      );
+      return this.authorizationDecisions.find((decision) => decision.execution === this.authorizationSelected) ?? null;
     },
 
     get selectedViewGroup() {
@@ -1537,6 +1530,7 @@ export function createNewDebugBar(
       if (!this.toolbarDragging) {
         this.toolbarDragging = true;
         this.closeRequestPicker(false);
+        this.closeThemeMenu(false);
         this.mobileToolbarMenu = null;
         this.mobileToolbarReturnFocus = null;
         this.$root?.querySelector?.('[data-ndb-toolbar-shell]')?.setPointerCapture?.(event.pointerId);
@@ -1767,6 +1761,7 @@ export function createNewDebugBar(
 
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.closeThemeMenu(false);
       this.closeRequestPicker(false);
       this.mobileSectionsOpen = false;
       this.mobileSectionsReturnFocus = null;
@@ -1874,6 +1869,7 @@ export function createNewDebugBar(
       this.mobileSectionsReturnFocus = null;
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.closeThemeMenu(false);
       this.closeRequestPicker(false);
       this.syncHostLock();
       this.$nextTick?.(() => {
@@ -1895,6 +1891,8 @@ export function createNewDebugBar(
       this.mobileSectionsReturnFocus = null;
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.themeMenuScope = null;
+      this.themeMenuReturnFocus = null;
       this.requestPickerScope = null;
       this.requestPickerReturnFocus = null;
       this.paletteOpen = false;
@@ -2000,27 +1998,22 @@ export function createNewDebugBar(
       const backgroundChanged =
         nextSummary.background_pending !== this.summary.background_pending ||
         nextSummary.background_activity_count !== this.summary.background_activity_count ||
-        JSON.stringify(nextSummary.related_profile_ids ?? []) !== JSON.stringify(this.summary.related_profile_ids ?? []);
+        JSON.stringify(nextSummary.related_profile_ids ?? []) !==
+          JSON.stringify(this.summary.related_profile_ids ?? []);
       const relatedChanged = (Array.isArray(relatedProfiles) ? relatedProfiles : []).some((profile) => {
         const existing = this.recentProfiles.find((recent) => recent.id === profile?.id);
 
         return !existing || JSON.stringify({ ...existing, ...profile }) !== JSON.stringify(existing);
       });
       const sectionNeedsRefresh =
-        ['timeline', 'queue', 'mail', 'notifications'].includes(this.selected) &&
-        (backgroundChanged || relatedChanged);
+        ['timeline', 'queue', 'mail', 'notifications'].includes(this.selected) && (backgroundChanged || relatedChanged);
 
       this.summary = nextSummary;
       this.rememberProfile(this.summary);
       (Array.isArray(relatedProfiles) ? relatedProfiles : []).forEach((profile) => this.receiveProfile(profile));
       this.activityRefreshPending = false;
 
-      if (
-        sectionNeedsRefresh &&
-        this.inspectorOpen &&
-        this.loadedSection === this.selected &&
-        !this.sectionLoading
-      ) {
+      if (sectionNeedsRefresh && this.inspectorOpen && this.loadedSection === this.selected && !this.sectionLoading) {
         this.requestSection(this.selected, true);
       }
 
@@ -2131,7 +2124,6 @@ export function createNewDebugBar(
       this.cacheSearch = '';
       this.cacheSelected = null;
       this.cacheDetailOpen = false;
-      this.cacheDetailTab = 'overview';
       this.visibleCacheCount = 0;
       this.httpClientRequests = [];
       this.httpClientFilter = 'all';
@@ -2166,7 +2158,6 @@ export function createNewDebugBar(
       this.queueSearch = '';
       this.queueSelected = null;
       this.queueDetailOpen = false;
-      this.queueDetailTab = 'overview';
       this.visibleQueueCount = 0;
       this.redisCommands = [];
       this.redisFilter = 'all';
@@ -2195,7 +2186,6 @@ export function createNewDebugBar(
       this.viewSearch = '';
       this.viewSelected = null;
       this.viewDetailOpen = false;
-      this.viewDetailTab = 'overview';
       this.viewRenderOrder = null;
       this.resetViewData();
       this.visibleViewCount = 0;
@@ -2346,10 +2336,7 @@ export function createNewDebugBar(
       const newParentIds = parentIds.filter((id) => !this.livewireKnownComponentParents.includes(id));
 
       this.livewireCollapsedComponents = [
-        ...new Set([
-          ...this.livewireCollapsedComponents.filter((id) => parentIds.includes(id)),
-          ...newParentIds,
-        ]),
+        ...new Set([...this.livewireCollapsedComponents.filter((id) => parentIds.includes(id)), ...newParentIds]),
       ];
       this.livewireKnownComponentParents = parentIds;
     },
@@ -3015,7 +3002,6 @@ export function createNewDebugBar(
       this.queueSearch = '';
       this.queueSelected = this.queueActivities[0]?.execution ?? null;
       this.queueDetailOpen = false;
-      this.queueDetailTab = 'overview';
       this.$nextTick?.(() => this.applyQueueView());
     },
 
@@ -3031,20 +3017,7 @@ export function createNewDebugBar(
 
       this.queueSelected = execution;
       this.queueDetailOpen = true;
-      this.queueDetailTab = 'overview';
       this.resetQueueDetail(true);
-    },
-
-    setQueueDetailTab(tab) {
-      if (!['overview', 'attempts'].includes(tab)) return;
-      if (tab === 'attempts' && !this.selectedQueueHasAttempts) {
-        this.queueDetailTab = 'overview';
-
-        return;
-      }
-
-      this.queueDetailTab = tab;
-      this.resetQueueDetail(false);
     },
 
     closeQueueDetail() {
@@ -3099,11 +3072,8 @@ export function createNewDebugBar(
 
       if (!selectedVisible) {
         this.queueSelected = firstVisible;
-        this.queueDetailTab = 'overview';
         if (firstVisible === null) this.queueDetailOpen = false;
       }
-
-      if (!this.selectedQueueHasAttempts) this.queueDetailTab = 'overview';
     },
 
     initializeRedis(commands) {
@@ -3206,7 +3176,6 @@ export function createNewDebugBar(
       this.cacheFilter = 'all';
       this.cacheSearch = '';
       this.cacheDetailOpen = false;
-      this.cacheDetailTab = 'overview';
       this.cacheSelected = this.cacheOperations[0]?.execution ?? null;
 
       if (this.cacheOperations.length === 0) {
@@ -3230,14 +3199,6 @@ export function createNewDebugBar(
 
       this.cacheSelected = execution;
       this.cacheDetailOpen = true;
-      this.cacheDetailTab = 'overview';
-      this.resetCacheDetailScroll();
-    },
-
-    setCacheDetailTab(tab) {
-      if (!['overview', 'raw', 'source'].includes(tab)) return;
-
-      this.cacheDetailTab = tab;
       this.resetCacheDetailScroll();
     },
 
@@ -3284,12 +3245,7 @@ export function createNewDebugBar(
 
       if (!selectedVisible) {
         this.cacheSelected = firstVisible;
-        this.cacheDetailTab = 'overview';
       }
-    },
-
-    formatCachePayload(value) {
-      return JSON.stringify(value ?? {}, null, 2);
     },
 
     initializeHttpClient(requests) {
@@ -3364,9 +3320,7 @@ export function createNewDebugBar(
             this.httpClientFilter === 'all' ||
             (this.httpClientFilter === 'failed' && item.dataset.ndbFailed === 'true') ||
             (this.httpClientFilter === 'slow' && item.dataset.ndbSlow === 'true');
-          const matches =
-            matchesFilter &&
-            (search === '' || item.dataset.ndbSearch?.includes(search));
+          const matches = matchesFilter && (search === '' || item.dataset.ndbSearch?.includes(search));
           item.hidden = !matches;
           if (matches) {
             item.style.removeProperty('display');
@@ -3393,8 +3347,7 @@ export function createNewDebugBar(
     },
 
     compareHttpClientRequests(left, right) {
-      const executionComparison =
-        Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
+      const executionComparison = Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
       let comparison = 0;
 
       if (this.httpClientSort === 'duration') {
@@ -3870,7 +3823,8 @@ export function createNewDebugBar(
       this.queryDetailOpen = false;
       this.queryDetailReturnFocus = null;
       this.$nextTick?.(() => {
-        const focus = () => (returnFocus?.isConnected === false ? selectedRow : returnFocus ?? selectedRow)?.focus?.();
+        const focus = () =>
+          (returnFocus?.isConnected === false ? selectedRow : (returnFocus ?? selectedRow))?.focus?.();
         browser.afterPaint ? browser.afterPaint(focus) : focus();
       });
     },
@@ -3959,7 +3913,10 @@ export function createNewDebugBar(
       this.queryExplainLoading = false;
       this.$nextTick?.(() => {
         if (this.queryExplainScrollTop !== null) {
-          this.$refs?.queryDetail?.scrollTo?.({ top: this.queryExplainScrollTop, behavior: 'instant' });
+          this.$refs?.queryDetail?.scrollTo?.({
+            top: this.queryExplainScrollTop,
+            behavior: 'instant',
+          });
         }
         browser.highlight?.();
       });
@@ -4048,8 +4005,7 @@ export function createNewDebugBar(
 
     compareQueries(left, right) {
       if (this.querySort === 'duration') {
-        const durationComparison =
-          Number(left.dataset.ndbDuration ?? 0) - Number(right.dataset.ndbDuration ?? 0);
+        const durationComparison = Number(left.dataset.ndbDuration ?? 0) - Number(right.dataset.ndbDuration ?? 0);
         const directedComparison = this.querySortDirection === 'asc' ? durationComparison : -durationComparison;
 
         return directedComparison || Number(left.dataset.ndbExecution ?? 0) - Number(right.dataset.ndbExecution ?? 0);
@@ -4083,7 +4039,6 @@ export function createNewDebugBar(
       this.viewSearch = '';
       this.viewSelected = null;
       this.viewDetailOpen = false;
-      this.viewDetailTab = 'overview';
       this.viewRenderOrder = null;
       this.resetViewData();
       this.$nextTick?.(() => this.applyViewFilters());
@@ -4144,7 +4099,6 @@ export function createNewDebugBar(
 
       this.viewSelected = id;
       this.viewDetailOpen = true;
-      this.viewDetailTab = 'overview';
       this.viewRenderOrder = group.items?.[0]?.render_order ?? null;
       this.resetViewData();
       this.$nextTick?.(() => {
@@ -4160,12 +4114,6 @@ export function createNewDebugBar(
         const groups = this.$refs?.viewGroups?.querySelectorAll?.('[data-ndb-view-group]') ?? [];
         [...groups].find((group) => group.dataset.ndbViewGroup === id)?.focus?.({ preventScroll: true });
       });
-    },
-
-    setViewDetailTab(tab) {
-      if (!['overview', 'data'].includes(tab)) return;
-
-      this.viewDetailTab = tab;
     },
 
     selectViewRender(renderOrder) {
@@ -4262,7 +4210,10 @@ export function createNewDebugBar(
 
     resetAuthorizationDetail() {
       this.$nextTick?.(() => {
-        this.$refs?.authorizationDetail?.scrollTo?.({ top: 0, behavior: 'instant' });
+        this.$refs?.authorizationDetail?.scrollTo?.({
+          top: 0,
+          behavior: 'instant',
+        });
         browser.highlight?.();
       });
     },
@@ -4290,8 +4241,7 @@ export function createNewDebugBar(
 
       [...list.children].forEach((item) => {
         const matches =
-          (this.authorizationFilter === 'all' ||
-            item.dataset.ndbAuthorizationResult === this.authorizationFilter) &&
+          (this.authorizationFilter === 'all' || item.dataset.ndbAuthorizationResult === this.authorizationFilter) &&
           (search === '' || item.dataset.ndbAuthorizationSearchValue?.includes(search));
         item.hidden = !matches;
         if (matches) {
@@ -4536,22 +4486,21 @@ export function createNewDebugBar(
       let selectedVisible = false;
 
       [...(list?.children ?? [])].forEach((item) => {
-          const matches =
-            (this.eventSource === 'all' || item.dataset.ndbEventSourceValue === this.eventSource) &&
-            (search === '' || item.dataset.ndbEventSearchValue?.includes(search));
-          item.hidden = !matches;
+        const matches =
+          (this.eventSource === 'all' || item.dataset.ndbEventSourceValue === this.eventSource) &&
+          (search === '' || item.dataset.ndbEventSearchValue?.includes(search));
+        item.hidden = !matches;
 
-          if (matches) {
-            item.style.removeProperty('display');
-            const id = Number(item.dataset.ndbEventId);
-            firstVisible ??= id;
-            selectedVisible ||= id === this.eventSelected;
-            visibleEvents += Number(item.dataset.ndbEventOccurrenceCount ?? 0);
-            visibleGroups++;
-          } else {
-            item.style.setProperty('display', 'none', 'important');
-          }
-
+        if (matches) {
+          item.style.removeProperty('display');
+          const id = Number(item.dataset.ndbEventId);
+          firstVisible ??= id;
+          selectedVisible ||= id === this.eventSelected;
+          visibleEvents += Number(item.dataset.ndbEventOccurrenceCount ?? 0);
+          visibleGroups++;
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
       });
 
       this.visibleEventCount = visibleEvents;
@@ -4596,9 +4545,7 @@ export function createNewDebugBar(
       const sequence = this.logDetailSequence;
       this.logDetailOpen = false;
       this.$nextTick?.(() => {
-        this.$root
-          ?.querySelector?.(`[data-ndb-log-entry][data-ndb-log-first-sequence="${sequence}"]`)
-          ?.focus?.();
+        this.$root?.querySelector?.(`[data-ndb-log-entry][data-ndb-log-first-sequence="${sequence}"]`)?.focus?.();
       });
     },
 
@@ -4774,6 +4721,69 @@ export function createNewDebugBar(
       this.persist();
     },
 
+    toggleThemeMenu(scope, returnFocus = null) {
+      if (this.themeMenuScope === scope) {
+        this.closeThemeMenu();
+
+        return;
+      }
+
+      this.openThemeMenu(scope, returnFocus);
+    },
+
+    openThemeMenu(scope, returnFocus = null) {
+      const compactMenu = scope === 'toolbar';
+      const inspectorMenu = scope === 'header';
+
+      if (
+        !this.barVisible ||
+        (!compactMenu && !inspectorMenu) ||
+        (compactMenu && this.inspectorOpen) ||
+        (inspectorMenu && !this.inspectorOpen)
+      )
+        return;
+
+      this.mobileToolbarMenu = null;
+      this.mobileToolbarReturnFocus = null;
+      this.closeRequestPicker(false);
+      this.themeMenuReturnFocus = returnFocus ?? browser.activeElement?.();
+      this.themeMenuScope = scope;
+      this.$nextTick?.(() => {
+        const focus = () => {
+          const menu = this.$root?.querySelector?.(`[data-ndb-theme-menu="${scope}"]`);
+          const options = [...(menu?.querySelectorAll?.('[data-ndb-theme-option]') ?? [])];
+          (options.find((option) => option.dataset.ndbThemeOption === this.theme) ?? options[0])?.focus?.();
+        };
+        browser.afterPaint ? browser.afterPaint(focus) : focus();
+      });
+    },
+
+    closeThemeMenu(restoreFocus = true) {
+      if (this.themeMenuScope === null) return;
+
+      const returnFocus = this.themeMenuReturnFocus;
+      this.themeMenuScope = null;
+      this.themeMenuReturnFocus = null;
+
+      if (restoreFocus)
+        this.$nextTick?.(() => {
+          const focus = () => returnFocus?.focus?.();
+          browser.afterPaint ? browser.afterPaint(focus) : focus();
+        });
+    },
+
+    moveThemeMenu(direction, menu) {
+      const options = [...(menu?.querySelectorAll?.('[data-ndb-theme-option]') ?? [])];
+      if (options.length === 0) return;
+
+      const active = options.indexOf(browser.activeElement?.());
+      const selected = options.findIndex((option) => option.dataset.ndbThemeOption === this.theme);
+      const current = active >= 0 ? active : Math.max(0, selected);
+      const next = (current + direction + options.length) % options.length;
+
+      options[next]?.focus?.();
+    },
+
     applyTheme() {
       this.resolvedTheme =
         this.theme === 'system'
@@ -4808,6 +4818,7 @@ export function createNewDebugBar(
 
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
+      this.closeThemeMenu(false);
       this.requestPickerReturnFocus = returnFocus ?? browser.activeElement?.();
       this.syncRequestPickerArrow(scope, this.requestPickerReturnFocus);
       this.requestPickerScope = scope;
@@ -4931,6 +4942,7 @@ export function createNewDebugBar(
 
       this.mobileToolbarMenu = menu;
       this.closeRequestPicker(false);
+      this.closeThemeMenu(false);
       this.mobileToolbarReturnFocus = returnFocus ?? browser.activeElement?.();
       this.$nextTick?.(() => {
         const focus = () =>
@@ -4964,13 +4976,17 @@ export function createNewDebugBar(
 
       this.paletteReturnFocus = this.requestPickerScope
         ? this.requestPickerReturnFocus
-        : this.mobileToolbarMenu
-          ? this.mobileToolbarReturnFocus
-          : this.mobileSectionsOpen
-            ? this.mobileSectionsReturnFocus
-            : browser.activeElement?.();
+        : this.themeMenuScope
+          ? this.themeMenuReturnFocus
+          : this.mobileToolbarMenu
+            ? this.mobileToolbarReturnFocus
+            : this.mobileSectionsOpen
+              ? this.mobileSectionsReturnFocus
+              : browser.activeElement?.();
       this.requestPickerScope = null;
       this.requestPickerReturnFocus = null;
+      this.themeMenuScope = null;
+      this.themeMenuReturnFocus = null;
       this.mobileToolbarMenu = null;
       this.mobileToolbarReturnFocus = null;
       this.mobileSectionsOpen = false;
@@ -5054,6 +5070,7 @@ export function createNewDebugBar(
 
       if (event.key === 'Escape') {
         if (this.paletteOpen) this.closePalette();
+        else if (this.themeMenuScope) this.closeThemeMenu();
         else if (this.requestPickerScope) this.closeRequestPicker();
         else if (this.mobileToolbarMenu) this.closeMobileToolbarMenu();
         else if (this.mobileSectionsOpen) this.closeMobileSections();

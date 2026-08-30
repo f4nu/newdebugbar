@@ -8,7 +8,7 @@
     };
 @endphp
 
-<header {{ $attributes->class('ndb:border-b ndb:border-zinc-200/90 ndb:p-4 ndb:dark:border-zinc-800') }}>
+<header {{ $attributes->class('ndb:border-b ndb:border-zinc-200/90 ndb:p-3 ndb:sm:p-4 ndb:dark:border-zinc-800') }}>
     <div data-ndb-inspector-detail-header-primary class="{{ $primaryClasses }}">
         {{ $title }}
         @isset($aside)

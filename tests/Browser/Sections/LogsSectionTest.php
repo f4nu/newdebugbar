@@ -234,7 +234,7 @@ it('adapts the log list and details into a mobile drill in flow', function () {
     $page
         ->assertAttribute('[data-ndb-log-entry][data-ndb-log-level="notice"]', 'aria-pressed', 'true')
         ->click('[data-ndb-header-mobile-trigger="actions"]')
-        ->click('[data-ndb-header-mobile-action="theme"]')
+        ->click('[data-ndb-header-mobile-action="theme"] [data-ndb-mobile-theme-option="dark"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->fill('[data-ndb-log-search]', 'no-record-can-match-this-search')
         ->assertCount('[data-ndb-log-entry]:not([hidden])', 0)

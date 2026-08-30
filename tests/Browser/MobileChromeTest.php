@@ -16,11 +16,16 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
                 const peak = metrics.querySelector('[data-ndb-mobile-toolbar-metric="memory"]');
                 const values = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]'));
                 const labels = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric-label]'));
+                const request = document.querySelector('[data-ndb-toolbar="request"]');
+                const actions = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
+                const widths = metricItems.map((item) => Math.round(item.getBoundingClientRect().width));
 
                 return toolbar.scrollWidth <= toolbar.clientWidth
                     && metrics.getAttribute('role') === 'group'
                     && metrics.getAttribute('aria-label') === 'Request metrics'
                     && getComputedStyle(metrics).gridTemplateColumns.split(' ').length === 3
+                    && new Set(widths).size === 1
+                    && request.getBoundingClientRect().width > actions.getBoundingClientRect().width
                     && metricItems.length === 3
                     && metricItems.every((item) => item.getBoundingClientRect().height >= 44)
                     && metricItems.every((item) => item.querySelector('svg') === null)
@@ -49,7 +54,7 @@ it('makes mobile metrics direct actions and preserves drag pinning', function ()
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
         ->assertVisible('[data-ndb-mobile-toolbar-action="theme"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
-        ->click('[data-ndb-mobile-toolbar-action="theme"]')
+        ->click('[data-ndb-mobile-toolbar-action="theme"] [data-ndb-mobile-theme-option="dark"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->assertScript('getComputedStyle(document.querySelector("[data-ndb-mobile-toolbar-menu=\"actions\"]")).display === "none"')
         ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
@@ -134,12 +139,14 @@ it('stays compact below sm and returns to the full toolbar at sm', function () {
                     const values = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]'));
                     const labels = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric-label]'));
                     const actions = document.querySelector('[data-ndb-mobile-toolbar-trigger="actions"]');
+                    const widths = buttons.map((button) => Math.round(button.getBoundingClientRect().width));
 
                     return toolbar.scrollWidth <= toolbar.clientWidth + 1
                         && request.scrollWidth <= request.clientWidth + 1
                         && values.every((value) => value.scrollWidth <= value.clientWidth + 1)
                         && labels.every((label) => label.scrollWidth <= label.clientWidth + 1)
                         && metrics.getBoundingClientRect().width <= 384
+                        && new Set(widths).size === 1
                         && buttons.length === 3
                         && buttons.every((button) => button.getBoundingClientRect().height >= 44)
                         && buttons.every((button) => button.querySelector('svg') === null)
@@ -259,7 +266,7 @@ it('uses the compact inspector header only below sm', function () {
                 const surface = menu.querySelector('[data-ndb-mobile-toolbar-popover-surface]');
                 const items = menu.querySelector('[data-ndb-mobile-toolbar-popover-items]');
                 const arrow = menu.querySelector('[data-ndb-mobile-toolbar-popover-arrow="header-actions"]');
-                const visibleItems = Array.from(menu.querySelectorAll('[role="menuitem"]'))
+                    const visibleItems = Array.from(menu.querySelectorAll('[role="menuitem"], [role="menuitemradio"]'))
                     .filter((item) => item.getClientRects().length > 0);
                 const triggerBox = trigger.getBoundingClientRect();
                 const surfaceBox = surface.getBoundingClientRect();
@@ -278,7 +285,7 @@ it('uses the compact inspector header only below sm', function () {
                     && arrow.querySelectorAll('path').length === 2
                     && parseFloat(getComputedStyle(items).rowGap) > 0
                     && visibleItems.every((item) => parseFloat(getComputedStyle(item).borderTopWidth) === 0)
-                    && visibleItems.length === 5
+                    && visibleItems.length === 7
                     && visibleItems.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === visibleItems[0];
             })()
@@ -322,16 +329,16 @@ it('keeps the main interactions usable on a phone viewport', function () {
                 const actionStyles = getComputedStyle(actions);
                 const metricButtons = Array.from(metrics.querySelectorAll('[data-ndb-mobile-toolbar-metric]'));
 
-                return requestBox.width <= 130
-                    && requestBox.width < toolbarBox.width * 0.36
-                    && metricsBox.width > 120
+                return requestBox.width >= 100
+                    && requestBox.width < toolbarBox.width * 0.42
+                    && metricsBox.width === 132
                     && metricButtons.length === 3
                     && metricButtons.every((button) => button.getBoundingClientRect().height >= 44)
                     && metrics.querySelectorAll('svg').length === 0
                     && metrics.querySelectorAll('[data-ndb-mobile-toolbar-summary]').length === 3
-                    && metrics.textContent.includes('Queries')
+                    && metrics.textContent.includes('QRY')
                     && metrics.textContent.includes('Time')
-                    && metrics.textContent.includes('Peak')
+                    && metrics.textContent.includes('MB')
                     && /(?:<1|\d+(?:\.\d+)?) (?:µs|ms|s)/.test(metrics.textContent)
                     && actionsBox.width >= 44
                     && actionsBox.height >= 44
@@ -353,16 +360,17 @@ it('keeps the main interactions usable on a phone viewport', function () {
         ->assertAttribute('[data-ndb-mobile-toolbar-trigger="actions"]', 'aria-expanded', 'true')
         ->assertVisible('[data-ndb-mobile-toolbar-menu="actions"]')
         ->assertScript(<<<'JS'
-            (() => {
-                const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="actions"]');
-                const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+                (() => {
+                    const menu = document.querySelector('[data-ndb-mobile-toolbar-menu="actions"]');
+                    const items = Array.from(menu.querySelectorAll('[role="menuitem"], [role="menuitemradio"]'));
 
-                return menu.querySelector('h1, h2, h3, [role="heading"]') === null
-                    && !menu.textContent.includes('Debug bar')
-                    && items.length === 4
-                    && menu.querySelector('[data-ndb-mobile-toolbar-action="placement"]') === null
-                    && menu.querySelector('[data-ndb-mobile-toolbar-action="inspector"]').textContent.trim() === 'Open'
-                    && items.every((item) => item.getBoundingClientRect().height >= 44)
+                    return menu.querySelector('h1, h2, h3, [role="heading"]') === null
+                        && !menu.textContent.includes('Debug bar')
+                        && items.length === 6
+                        && menu.querySelector('[data-ndb-mobile-toolbar-action="placement"]') === null
+                        && menu.querySelector('[data-ndb-mobile-toolbar-action="inspector"]').textContent.trim() === 'Open'
+                        && menu.querySelectorAll('[data-ndb-mobile-theme-option]').length === 3
+                        && items.every((item) => item.getBoundingClientRect().height >= 44)
                     && document.activeElement === items[0];
             })()
             JS)

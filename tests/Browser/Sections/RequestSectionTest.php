@@ -90,3 +90,47 @@ it('shows an aligned request trace and switches request detail groups', function
         ->assertVisible('[data-ndb-request-detail-panel="session"]')
         ->assertNoJavaScriptErrors();
 });
+
+it('uses the mobile request width for evidence instead of nested side gaps', function () {
+    $page = visit('/profiled')
+        ->resize(402, 874)
+        ->click('[data-ndb-mobile-toolbar-trigger="actions"]')
+        ->click('[data-ndb-mobile-toolbar-action="inspector"]');
+
+    $page
+        ->assertVisible('[data-ndb-request-trace]')
+        ->assertScript(<<<'JS'
+            (() => {
+                const panel = document.querySelector('[data-ndb-section-panel="request"]');
+                const loaded = document.querySelector('[data-ndb-loaded-section="request"]');
+                const summary = document.querySelector('[data-ndb-request-summary]');
+                const method = summary.querySelector('span');
+                const path = summary.querySelector('.ndb\\:truncate');
+                const status = summary.querySelector('[data-ndb-request-status]');
+                const completion = summary.querySelector('[data-ndb-request-completion]');
+                const timeline = document.querySelector('[data-ndb-request-timeline]');
+                const firstStep = timeline.querySelector('[data-ndb-request-step]');
+                const details = document.querySelector('[data-ndb-request-details]');
+                const panelBox = panel.getBoundingClientRect();
+                const summaryBox = summary.getBoundingClientRect();
+                const methodBox = method.getBoundingClientRect();
+                const pathBox = path.getBoundingClientRect();
+                const statusBox = status.getBoundingClientRect();
+                const completionBox = completion.getBoundingClientRect();
+                const near = (actual, expected) => Math.abs(actual - expected) <= 1;
+
+                return getComputedStyle(loaded).paddingLeft === '12px'
+                    && getComputedStyle(summary).display === 'grid'
+                    && near(summaryBox.left, panelBox.left)
+                    && near(summaryBox.right, panelBox.right)
+                    && near(firstStep.getBoundingClientRect().left, panelBox.left)
+                    && near(details.getBoundingClientRect().left, panelBox.left)
+                    && near(details.getBoundingClientRect().right, panelBox.right)
+                    && near(methodBox.top + methodBox.height / 2, pathBox.top + pathBox.height / 2)
+                    && near(statusBox.top + statusBox.height / 2, pathBox.top + pathBox.height / 2)
+                    && completionBox.top >= pathBox.bottom
+                    && panel.scrollWidth <= panel.clientWidth + 1;
+            })()
+            JS)
+        ->assertNoJavaScriptErrors();
+});

@@ -282,21 +282,13 @@ test('Cache filters searches and keeps a visible operation selected', () => {
   state.selectCacheOperation(3);
   assert.equal(state.cacheSelected, 3);
   assert.equal(state.cacheDetailOpen, true);
-  assert.equal(state.cacheDetailTab, 'overview');
   assert.equal(detailResets, 1);
   assert.equal(contentResets, 1);
 
-  state.setCacheDetailTab('source');
-  assert.equal(detailResets, 2);
-  assert.equal(contentResets, 2);
-  state.setCacheDetailTab('raw');
-  state.setCacheDetailTab('invalid');
   state.setCacheFilter('invalid');
   state.selectCacheOperation(99);
-  assert.equal(state.cacheDetailTab, 'raw');
   assert.equal(state.cacheFilter, 'all');
   assert.equal(state.cacheSelected, 3);
-  assert.equal(state.formatCachePayload({ key: 'trip:alpha' }), '{\n  "key": "trip:alpha"\n}');
 
   state.initializeCache('invalid');
   assert.deepEqual(state.cacheOperations, []);
@@ -1308,15 +1300,8 @@ test('Views defaults to application records and lazily loads only the selected r
   assert.equal(state.viewDetailOpen, true);
   assert.equal(state.selectedViewGroup.name, 'trips.show');
   assert.equal(state.selectedViewRender.render_order, 1);
-  assert.equal(state.viewDetailTab, 'overview');
   assert.equal(detailFocuses, 1);
   assert.equal(state.$refs.content.scrollTop, 0);
-
-  state.setViewDetailTab('source');
-  assert.equal(state.viewDetailTab, 'overview');
-  state.setViewDetailTab('data');
-  assert.equal(state.viewDetailTab, 'data');
-  state.setViewDetailTab('overview');
 
   const wire = {
     loadViewData: async (renderOrder) => {

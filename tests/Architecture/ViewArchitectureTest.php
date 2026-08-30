@@ -44,7 +44,7 @@ it('keeps Timeline on shared inspector geometry with namespaced behavior hooks',
         );
 });
 
-it('keeps Views on one shared workspace and one active lazy detail', function () {
+it('keeps Views on one shared workspace with merged lazy detail evidence', function () {
     $root = dirname(__DIR__, 2);
     $views = file_get_contents($root.'/resources/views/livewire/sections/views.blade.php');
     $state = file_get_contents($root.'/resources/js/state.js');
@@ -58,24 +58,23 @@ it('keeps Views on one shared workspace and one active lazy detail', function ()
             '<x-newdebugbar::select-field',
             '<x-newdebugbar::inspector-detail-pane',
             '<x-newdebugbar::inspector-detail-header',
-            '<x-newdebugbar::inspector-detail-tabs',
             '<x-newdebugbar::inspector-source-fact',
             'copyText(selectedViewRender.source_label)',
             'copyText(composer.source_label)',
             '<template x-if="selectedViewGroup">',
-            '<template x-if="viewDetailTab === \'overview\'">',
-            '<template x-if="viewDetailTab === \'data\'">',
             '<template x-if="selectedViewRender.composers.length > 0">',
+            'data-ndb-view-detail-content',
+            'data-ndb-view-data-panel',
+            'loadSelectedViewData($wire)',
         )
         ->not->toContain(
             '<details',
             '<x-newdebugbar::popover-surface',
-            '<template x-if="viewDetailTab === \'source\'">',
-            'data-ndb-view-detail-tab="source"',
+            'viewDetailTab',
+            'data-ndb-view-detail-tab',
             'No view composers were captured for this render.',
             'data-ndb-view-sort',
             'newDebugBar.viewData',
-            'x-show.important="viewDetailTab ===',
         )
         ->and($state)
         ->not->toContain(
@@ -166,10 +165,18 @@ it('uses one popover surface for toolbar and inspector menus', function () {
         'components/mobile-toolbar-popover.blade.php',
         'components/request-switcher.blade.php',
         'components/mail-actions.blade.php',
+        'components/theme-toggle.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::popover-surface');
     }
+
+    expect(file_get_contents($views.'/components/theme-toggle.blade.php'))
+        ->toContain("'system' => ['System', 'monitor']")
+        ->toContain("'light' => ['Light', 'sun']")
+        ->toContain("'dark' => ['Dark', 'moon']")
+        ->toContain('data-ndb-theme-option="{{ $theme }}"')
+        ->toContain('role="menuitemradio"');
 });
 
 it('uses one filter tab treatment across inspector sections', function () {
@@ -184,7 +191,6 @@ it('uses one filter tab treatment across inspector sections', function () {
     }
 
     foreach ([
-        'components/cache-detail-tabs.blade.php',
         'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',
         'components/query-detail.blade.php',
@@ -282,7 +288,6 @@ it('composes the Cache workspace from the shared inspector components', function
     $header = file_get_contents($views.'/components/cache-header.blade.php');
     $listItem = file_get_contents($views.'/components/cache-list-item.blade.php');
     $overview = file_get_contents($views.'/components/cache-overview-panel.blade.php');
-    $raw = file_get_contents($views.'/components/cache-raw-panel.blade.php');
 
     expect($section)
         ->toContain('<x-newdebugbar::cache-workspace')
@@ -301,9 +306,11 @@ it('composes the Cache workspace from the shared inspector components', function
     expect($detail)
         ->toContain('<x-newdebugbar::inspector-detail-pane')
         ->toContain('<x-newdebugbar::cache-header')
-        ->toContain('<x-newdebugbar::cache-detail-tabs')
         ->toContain('<x-newdebugbar::cache-overview-panel')
-        ->toContain('<x-newdebugbar::cache-raw-panel')
+        ->not->toContain('cache-detail-tabs')
+        ->not->toContain('cache-raw-panel');
+
+    expect($overview)
         ->toContain('<x-newdebugbar::inspector-source-panel')
         ->toContain('<x-newdebugbar::inspector-source-fact');
 
@@ -328,8 +335,6 @@ it('composes the Cache workspace from the shared inspector components', function
         ->toContain('<x-newdebugbar::inspector-definition-list')
         ->not->toContain('What happened')
         ->not->toContain('Check next');
-
-    expect($raw)->toContain('<x-newdebugbar::inspector-evidence');
 });
 
 it('composes Models as a shared split inspector with reusable explanations', function () {
@@ -502,7 +507,6 @@ it('uses one calm source presentation across inspector sections', function () {
     $views = $resources.'/views';
 
     foreach ([
-        'components/cache-overview-facts.blade.php',
         'components/mail-header.blade.php',
         'components/notification-header.blade.php',
     ] as $view) {
@@ -511,7 +515,7 @@ it('uses one calm source presentation across inspector sections', function () {
     }
 
     foreach ([
-        'components/cache-detail.blade.php',
+        'components/cache-overview-panel.blade.php',
         'components/mail-message-details.blade.php',
         'components/notification-detail.blade.php',
         'components/query-detail.blade.php',
@@ -787,7 +791,6 @@ it('uses centered segmented controls across inspector detail panels', function (
     $views = dirname(__DIR__, 2).'/resources/views';
 
     foreach ([
-        'components/cache-detail-tabs.blade.php',
         'components/event-detail.blade.php',
         'components/http-client-detail-tabs.blade.php',
         'livewire/livewire/activity-detail.blade.php',
@@ -795,7 +798,6 @@ it('uses centered segmented controls across inspector detail panels', function (
         'components/model-group-detail.blade.php',
         'components/notification-detail.blade.php',
         'components/query-detail.blade.php',
-        'livewire/sections/views.blade.php',
     ] as $view) {
         expect(file_get_contents($views.'/'.$view))
             ->toContain('<x-newdebugbar::inspector-detail-tabs')

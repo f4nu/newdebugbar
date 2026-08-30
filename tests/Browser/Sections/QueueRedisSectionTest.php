@@ -2,7 +2,7 @@
 
 use NewDebugBar\Tests\Support\DebugBarBrowser;
 
-it('filters queue activity and instantiates only the active detail evidence', function () {
+it('filters queue activity and keeps its overview inline', function () {
     $page = visit('/profiled-queue')
         ->resize(1440, 900)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
@@ -13,8 +13,9 @@ it('filters queue activity and instantiates only the active detail evidence', fu
     $page
         ->assertValue('[data-ndb-queue-filter]', 'all')
         ->assertAttribute('[data-ndb-queue-item="1"]', 'aria-pressed', 'true')
-        ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertMissing('[data-ndb-queue-detail-tab="attempts"]')
+        ->assertMissing('[data-ndb-queue-detail-tab]')
+        ->assertVisible('[data-ndb-queue-detail-content]')
+        ->assertMissing('[data-ndb-queue-attempts]')
         ->assertSee('ProfiledJob')
         ->assertDontSee('What happened to this job?')
         ->assertScript(<<<'JS'
@@ -29,49 +30,44 @@ it('filters queue activity and instantiates only the active detail evidence', fu
             })()
             JS)
         ->assertScript('document.querySelectorAll("[data-ndb-queue-item]:not([hidden])").length', 3)
-        ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-panel]").length', 1)
         ->select('[data-ndb-queue-filter]', 'failed')
         ->assertScript('document.querySelectorAll("[data-ndb-queue-item]:not([hidden])").length', 1)
         ->assertAttribute('[data-ndb-queue-item="3"]', 'aria-pressed', 'true')
-        ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertMissing('[data-ndb-queue-detail-tab="attempts"]')
+        ->assertMissing('[data-ndb-queue-attempts]')
         ->assertSee('RuntimeException')
         ->assertScript(<<<'JS'
             (() => {
                 const detail = document.querySelector('[data-ndb-queue-detail]');
-                const exceptionClass = [...document.querySelectorAll('[data-ndb-queue-detail-panel="overview"] p')]
+                const exceptionClass = [...document.querySelectorAll('[data-ndb-queue-detail-content] p')]
                     .find((paragraph) => paragraph.textContent.trim() === 'RuntimeException');
 
                 return getComputedStyle(exceptionClass).fontFamily !== getComputedStyle(detail).fontFamily;
             })()
             JS)
-        ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-panel]").length', 1)
+        ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-tab]").length', 0)
         ->assertScript('document.querySelector("[data-ndb-queue-sort]") === null')
         ->assertNoJavaScriptErrors();
 });
 
-it('shows retained attempts and resets to Overview when filtering selects an unlinked job', function () {
+it('shows retained attempts inline and removes them when filtering selects an unlinked job', function () {
     $page = visit('/profiled-queue-attempts')
         ->resize(1440, 900)
         ->click('[data-ndb-window-controls="compact"] [data-ndb-window-action="expand"]')
         ->click('[data-ndb-select-section="queue"]');
 
-    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-queue-detail-tab="attempts"]');
+    DebugBarBrowser::waitForVisibleElement($page, '[data-ndb-queue-attempts]');
 
     $page
         ->assertAttribute('[data-ndb-queue-item="1"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-queue-detail-tab="attempts"]')
-        ->click('[data-ndb-queue-detail-tab="attempts"]')
-        ->assertAttribute('[data-ndb-queue-detail-tab="attempts"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-queue-detail-panel="attempts"]')
+        ->assertMissing('[data-ndb-queue-detail-tab]')
+        ->assertVisible('[data-ndb-queue-detail-content]')
+        ->assertVisible('[data-ndb-queue-attempts]')
         ->assertCount('[data-ndb-queue-attempt]', 1)
         ->assertSee('Open worker')
         ->select('[data-ndb-queue-filter]', 'failed')
         ->assertAttribute('[data-ndb-queue-item="2"]', 'aria-pressed', 'true')
-        ->assertMissing('[data-ndb-queue-detail-tab="attempts"]')
-        ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-queue-detail-panel="overview"]')
-        ->assertScript('document.querySelectorAll("[data-ndb-queue-detail-panel]").length', 1)
+        ->assertMissing('[data-ndb-queue-attempts]')
+        ->assertVisible('[data-ndb-queue-detail-content]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -100,9 +96,8 @@ it('uses a focused Queue detail with Back on mobile dark mode', function () {
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->click('[data-ndb-queue-item="1"]')
         ->assertVisible('[data-ndb-queue-back]')
-        ->assertVisible('[data-ndb-queue-detail-tab="attempts"]')
-        ->click('[data-ndb-queue-detail-tab="attempts"]')
-        ->assertVisible('[data-ndb-queue-detail-panel="attempts"]')
+        ->assertVisible('[data-ndb-queue-attempts]')
+        ->assertMissing('[data-ndb-queue-detail-tab]')
         ->assertScript(<<<'JS'
             (() => {
                 const workspace = document.querySelector('[data-ndb-queue-workspace]');
@@ -114,7 +109,6 @@ it('uses a focused Queue detail with Back on mobile dark mode', function () {
                 return getComputedStyle(list).display === 'none'
                     && getComputedStyle(detail).display === 'flex'
                     && status.width < primary.width
-                    && Math.abs(status.right - primary.right) <= 1
                     && detail.scrollWidth <= detail.clientWidth + 1
                     && dialog.scrollWidth <= dialog.clientWidth + 1;
             })()
@@ -122,9 +116,8 @@ it('uses a focused Queue detail with Back on mobile dark mode', function () {
         ->click('[data-ndb-queue-back]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-queue-item=\\"1\\"]")')
         ->click('[data-ndb-queue-item="2"]')
-        ->assertMissing('[data-ndb-queue-detail-tab="attempts"]')
-        ->assertAttribute('[data-ndb-queue-detail-tab="overview"]', 'aria-pressed', 'true')
-        ->assertVisible('[data-ndb-queue-detail-panel="overview"]')
+        ->assertMissing('[data-ndb-queue-attempts]')
+        ->assertVisible('[data-ndb-queue-detail-content]')
         ->click('[data-ndb-queue-back]')
         ->assertScript('document.activeElement === document.querySelector("[data-ndb-queue-item=\\"2\\"]")')
         ->assertNoJavaScriptErrors();
@@ -161,6 +154,8 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
                 const operation = header.querySelector('[data-ndb-redis-command]').getBoundingClientRect();
                 const key = header.querySelector('[data-ndb-redis-key-label]').getBoundingClientRect();
                 const source = document.querySelector('[data-ndb-redis-detail-body] [data-ndb-inspector-source-link]');
+                const facts = document.querySelector('[data-ndb-redis-facts]');
+                const keys = document.querySelector('[data-ndb-redis-key-evidence]');
                 const interfaceFont = getComputedStyle(workspace).fontFamily;
 
                 window.newdebugbarRedisClipboardWrites = [];
@@ -182,6 +177,8 @@ it('shows Redis command and bounded key evidence without primary hashes', functi
                     && source.tagName === 'BUTTON'
                     && getComputedStyle(source).textDecorationLine.includes('underline')
                     && getComputedStyle(source).fontFamily === interfaceFont
+                    && getComputedStyle(facts).borderBottomWidth === '0px'
+                    && getComputedStyle(keys).borderTopWidth === '1px'
                     && Math.abs((operation.top + operation.height / 2) - (key.top + key.height / 2)) <= 1
                     && header.scrollWidth <= header.clientWidth;
             })()
@@ -256,11 +253,16 @@ it('uses a focused Redis detail with Back on mobile light mode', function () {
                 const [list, detail] = workspace.children;
                 const dialog = document.querySelector('[role="dialog"][aria-label="Request inspector"]');
                 const header = document.querySelector('[data-ndb-redis-detail-header]');
+                const facts = document.querySelector('[data-ndb-redis-facts]');
+                const keys = document.querySelector('[data-ndb-redis-key-evidence]');
 
                 return getComputedStyle(list).display === 'none'
                     && getComputedStyle(detail).display === 'flex'
                     && detail.scrollWidth <= detail.clientWidth + 1
                     && header.scrollWidth <= header.clientWidth + 1
+                    && getComputedStyle(facts).borderBottomWidth === '0px'
+                    && getComputedStyle(keys).paddingLeft === '12px'
+                    && getComputedStyle(keys).paddingRight === '12px'
                     && dialog.scrollWidth <= dialog.clientWidth + 1;
             })()
             JS)

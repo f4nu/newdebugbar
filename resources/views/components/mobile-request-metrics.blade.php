@@ -32,7 +32,7 @@
     data-ndb-mobile-request-metrics="{{ $scope }}"
     role="group"
     aria-label="Request metrics"
-    {{ $attributes->class('ndb:mx-auto ndb:grid ndb:w-full ndb:max-w-sm ndb:min-w-0 ndb:flex-1 ndb:grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] ndb:items-stretch ndb:min-[420px]:grid-cols-3') }}
+    {{ $attributes->class('ndb:grid ndb:w-[7.5rem] ndb:flex-none ndb:grid-cols-3 ndb:items-stretch ndb:min-[360px]:w-[8.25rem]') }}
 >
     @foreach ($metrics as $metric)
         @if ($metric['section'])
@@ -53,14 +53,13 @@
         @endif
         <span
             data-ndb-mobile-toolbar-summary="{{ $metric['key'] }}"
-            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums"
+            class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-bold ndb:leading-4 ndb:tabular-nums {{ $metric['key'] === 'duration' ? 'ndb:tracking-[-0.04em] ndb:max-[359px]:tracking-[-0.1em]' : '' }}"
             x-text="{{ $metric['value'] }}"
         ></span>
         <span
             data-ndb-mobile-toolbar-metric-label="{{ $metric['key'] }}"
             class="ndb:block ndb:max-w-full ndb:truncate ndb:text-[11px] ndb:font-semibold ndb:leading-[14px] ndb:uppercase ndb:tracking-normal ndb:text-zinc-400"
-            ><span class="ndb:min-[420px]:hidden">{{ $metric['shortLabel'] }}</span
-            ><span class="ndb:hidden ndb:min-[420px]:inline">{{ $metric['label'] }}</span></span>
+        >{{ $metric['shortLabel'] }}</span>
         @if ($metric['section'])
         </button>
         @else

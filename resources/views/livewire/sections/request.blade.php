@@ -70,9 +70,9 @@
     <div data-ndb-request-trace class="ndb:-mt-2">
         <div
             data-ndb-request-summary
-            class="ndb:mx-4 ndb:flex ndb:flex-col ndb:gap-3 ndb:border-y ndb:border-zinc-200/90 ndb:bg-white/55 ndb:py-3 ndb:sm:mx-6 ndb:sm:flex-row ndb:sm:items-center ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
+            class="ndb:grid ndb:grid-cols-[auto_minmax(0,1fr)_auto] ndb:items-center ndb:gap-x-3 ndb:gap-y-1.5 ndb:border-y ndb:border-zinc-200/90 ndb:bg-white/55 ndb:py-2.5 ndb:sm:mx-6 ndb:sm:flex ndb:sm:gap-3 ndb:sm:py-3 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/35"
         >
-            <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:gap-3">
+            <div class="ndb:contents ndb:sm:flex ndb:sm:min-w-0 ndb:sm:items-center ndb:sm:gap-3">
                 <span class="ndb:shrink-0 ndb:rounded-md ndb:bg-emerald-50 ndb:px-2 ndb:py-1 ndb:text-[11px] ndb:font-bold ndb:uppercase ndb:tracking-wide ndb:text-emerald-700 ndb:ring-1 ndb:ring-inset ndb:ring-emerald-200 ndb:dark:bg-emerald-950/60 ndb:dark:text-emerald-300 ndb:dark:ring-emerald-900">
                     {{ $requestPayload['method'] ?? 'HTTP' }}
                 </span>
@@ -86,14 +86,24 @@
                 {{ $requestStatus ?: '—' }}
             </span>
             <span class="ndb:hidden ndb:h-5 ndb:w-px ndb:shrink-0 ndb:bg-zinc-200 ndb:sm:block ndb:dark:bg-zinc-800"></span>
-            <p data-ndb-request-completion class="ndb:min-w-0 ndb:text-xs ndb:text-zinc-500 ndb:dark:text-zinc-400">
+            <p
+                data-ndb-request-completion
+                class="ndb:col-span-2 ndb:col-start-2 ndb:min-w-0 ndb:text-xs ndb:text-zinc-500 ndb:sm:col-auto ndb:dark:text-zinc-400"
+            >
                 Completed in
                 <span class="ndb:whitespace-nowrap ndb:tabular-nums">{{ $requestDuration }}</span>
             </p>
         </div>
 
-        <ol data-ndb-request-timeline class="ndb:mt-5 ndb:list-none ndb:px-4 ndb:sm:px-6" aria-label="Request trace">
-            <li data-ndb-request-step="received" class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-4">
+        <ol
+            data-ndb-request-timeline
+            class="ndb:mt-4 ndb:list-none ndb:p-0 ndb:sm:mt-5 ndb:sm:px-6"
+            aria-label="Request trace"
+        >
+            <li
+                data-ndb-request-step="received"
+                class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-3 ndb:sm:gap-x-4"
+            >
                 <div aria-hidden="true" class="ndb:relative ndb:flex ndb:justify-center ndb:pt-0.5">
                     <span
                         data-ndb-request-line
@@ -106,7 +116,7 @@
                 </div>
                 <div class="ndb:pb-6">
                     <h3 class="ndb:text-sm ndb:font-bold ndb:leading-5">Received</h3>
-                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
+                    <dl class="ndb:mt-2.5 ndb:grid ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-2.5 ndb:sm:mt-3 ndb:sm:grid-cols-4 ndb:sm:gap-x-5 ndb:sm:gap-y-3">
                         @foreach ([
                             ['URL', ($requestPayload['url'] ?? null) ?: '—'],
                             ['Host', $requestHost],
@@ -126,7 +136,10 @@
                 </div>
             </li>
 
-            <li data-ndb-request-step="matched" class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-4">
+            <li
+                data-ndb-request-step="matched"
+                class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-3 ndb:sm:gap-x-4"
+            >
                 <div aria-hidden="true" class="ndb:relative ndb:flex ndb:justify-center ndb:pt-0.5">
                     <span
                         data-ndb-request-line
@@ -139,7 +152,7 @@
                 </div>
                 <div class="ndb:pb-6">
                     <h3 class="ndb:text-sm ndb:font-bold ndb:leading-5">Matched</h3>
-                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
+                    <dl class="ndb:mt-2.5 ndb:grid ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-2.5 ndb:sm:mt-3 ndb:sm:grid-cols-4 ndb:sm:gap-x-5 ndb:sm:gap-y-3">
                         <div class="ndb:min-w-0">
                             <dt class="ndb:text-[11px] ndb:font-semibold ndb:uppercase ndb:tracking-wider ndb:text-zinc-400">
                                 Route
@@ -184,7 +197,10 @@
                 </div>
             </li>
 
-            <li data-ndb-request-step="responded" class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-4">
+            <li
+                data-ndb-request-step="responded"
+                class="ndb:grid ndb:grid-cols-[18px_minmax(0,1fr)] ndb:gap-x-3 ndb:sm:gap-x-4"
+            >
                 <div aria-hidden="true" class="ndb:relative ndb:flex ndb:justify-center ndb:pt-0.5">
                     <span
                         data-ndb-request-dot
@@ -193,7 +209,7 @@
                 </div>
                 <div>
                     <h3 class="ndb:text-sm ndb:font-bold ndb:leading-5">Responded</h3>
-                    <dl class="ndb:mt-3 ndb:grid ndb:grid-cols-2 ndb:gap-x-5 ndb:gap-y-3 ndb:sm:grid-cols-4">
+                    <dl class="ndb:mt-2.5 ndb:grid ndb:grid-cols-2 ndb:gap-x-4 ndb:gap-y-2.5 ndb:sm:mt-3 ndb:sm:grid-cols-4 ndb:sm:gap-x-5 ndb:sm:gap-y-3">
                         @foreach ([
                             ['Status', $requestStatus ?: '—'],
                             ['Response size', $formatRequestBytes((int) ($requestPayload['response_size_bytes'] ?? 0))],
@@ -217,9 +233,9 @@
 
     <details
         data-ndb-request-details
-        class="ndb:group ndb:mx-4 ndb:mt-8 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:sm:mx-6 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
+        class="ndb:group ndb:mt-5 ndb:overflow-hidden ndb:rounded-xl ndb:border ndb:border-zinc-200/90 ndb:bg-white/45 ndb:sm:mx-6 ndb:sm:mt-8 ndb:dark:border-zinc-800 ndb:dark:bg-zinc-900/25"
     >
-        <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-4 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500">
+        <summary class="ndb:flex ndb:cursor-pointer ndb:list-none ndb:items-center ndb:gap-3 ndb:px-3 ndb:py-3 ndb:focus-visible:outline-2 ndb:focus-visible:outline-inset ndb:focus-visible:outline-indigo-500 ndb:sm:px-4">
             <span class="ndb:min-w-0 ndb:flex-1">
                 <span class="ndb:block ndb:text-xs ndb:font-bold">Request details</span>
                 <span class="ndb:mt-0.5 ndb:block ndb:text-[11px] ndb:text-zinc-400">Headers, input, query parameters, and session shape</span>
@@ -252,7 +268,7 @@
                 @endforeach
             </div>
 
-            <div class="ndb:min-w-0 ndb:p-4">
+            <div class="ndb:min-w-0 ndb:p-3 ndb:sm:p-4">
                 @foreach ($requestDetailGroups as $requestDetailKey => $requestDetailGroup)
                     <div
                         data-ndb-request-detail-panel="{{ $requestDetailKey }}"

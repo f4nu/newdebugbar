@@ -42,7 +42,7 @@
     >
         <x-newdebugbar::request-switcher
             scope="toolbar"
-            class="ndb:w-32 ndb:flex-none ndb:min-[360px]:w-[9.5rem] ndb:min-[420px]:w-40 ndb:sm:w-[9.5rem] ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[18.5rem]"
+            class="ndb:min-w-0 ndb:flex-1 ndb:sm:w-[9.5rem] ndb:sm:flex-none ndb:md:w-[11.5rem] ndb:lg:w-auto ndb:lg:max-w-[18.5rem]"
         />
 
         <x-newdebugbar::mobile-request-metrics
@@ -210,7 +210,7 @@
                     aria-label="Open command palette"
                     title="Command palette (Command or Control + Shift + P)"
                 />
-                <x-newdebugbar::theme-toggle :dark-surface="true" data-ndb-toolbar-action="theme" />
+                <x-newdebugbar::theme-toggle scope="toolbar" :dark-surface="true" data-ndb-toolbar-action="theme" />
             </div>
             <x-newdebugbar::window-controls data-ndb-window-controls="compact" :dark-surface="true" />
         </div>

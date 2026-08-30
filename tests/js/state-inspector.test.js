@@ -242,6 +242,83 @@ test('mobile toolbar menus manage focus and hand off to overlays', () => {
   assert.equal(shrinkFocused, 1);
 });
 
+test('theme menus expose explicit choices and manage layered focus', () => {
+  let active = null;
+  let openerFocused = 0;
+  let paletteFocused = 0;
+  const opener = { focus() { active = opener; openerFocused++; } };
+  const option = (theme) => ({
+    dataset: { ndbThemeOption: theme },
+    focus() { active = this; },
+  });
+  const options = [option('system'), option('light'), option('dark')];
+  const menu = { querySelectorAll: () => options };
+  const emptyMenu = { querySelectorAll: () => [] };
+  const paletteSearch = { focus() { active = paletteSearch; paletteFocused++; } };
+  const browser = runtime();
+  browser.activeElement = () => active;
+  const state = createNewDebugBar(summary, browser);
+  state.$refs = { paletteSearch };
+  state.$root = {
+    querySelector: (selector) => selector.includes('data-ndb-theme-menu') ? menu : null,
+  };
+  state.$nextTick = (callback) => callback();
+
+  state.openThemeMenu('unknown', opener);
+  assert.equal(state.themeMenuScope, null);
+
+  state.inspectorOpen = true;
+  state.openThemeMenu('toolbar', opener);
+  assert.equal(state.themeMenuScope, null);
+  state.openThemeMenu('header', opener);
+  assert.equal(state.themeMenuScope, 'header');
+  assert.equal(active, options[0]);
+  state.closeThemeMenu(false);
+
+  state.inspectorOpen = false;
+  state.openThemeMenu('header', opener);
+  assert.equal(state.themeMenuScope, null);
+  state.barVisible = false;
+  state.openThemeMenu('toolbar', opener);
+  assert.equal(state.themeMenuScope, null);
+  state.barVisible = true;
+
+  active = opener;
+  state.toggleThemeMenu('toolbar', opener);
+  assert.equal(state.themeMenuScope, 'toolbar');
+  assert.equal(active, options[0]);
+
+  state.moveThemeMenu(1, menu);
+  assert.equal(active, options[1]);
+  state.moveThemeMenu(-1, menu);
+  assert.equal(active, options[0]);
+
+  state.theme = 'dark';
+  active = null;
+  state.moveThemeMenu(1, menu);
+  assert.equal(active, options[0]);
+  state.moveThemeMenu(1, emptyMenu);
+
+  state.toggleThemeMenu('toolbar', opener);
+  assert.equal(state.themeMenuScope, null);
+  assert.equal(openerFocused, 1);
+
+  state.openThemeMenu('toolbar', opener);
+  state.handleShortcut({ metaKey: false, ctrlKey: false, shiftKey: false, key: 'Escape', preventDefault() {} });
+  assert.equal(state.themeMenuScope, null);
+  assert.equal(openerFocused, 2);
+
+  state.openThemeMenu('toolbar', opener);
+  state.openPalette();
+  assert.equal(state.themeMenuScope, null);
+  assert.equal(state.paletteReturnFocus, opener);
+  assert.equal(paletteFocused, 1);
+  state.closePalette();
+  assert.equal(openerFocused, 3);
+
+  state.closeThemeMenu();
+});
+
 test('modal focus wraps at both edges', () => {
   let active = null;
   let prevented = 0;

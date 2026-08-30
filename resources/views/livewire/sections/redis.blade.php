@@ -228,8 +228,8 @@
                         </x-newdebugbar::inspector-detail-header>
 
                         <div data-ndb-redis-detail-body class="ndb:flex ndb:flex-col">
-                            <div class="ndb:space-y-4 ndb:p-4">
-                                <x-newdebugbar::inspector-facts columns="4" data-ndb-redis-facts>
+                            <div class="ndb:space-y-3 ndb:p-3 ndb:sm:space-y-4 ndb:sm:p-4">
+                                <x-newdebugbar::inspector-facts columns="4" :bordered="false" data-ndb-redis-facts>
                                     <x-newdebugbar::inspector-fact label="Connection"
                                         ><x-slot:value x-text="selectedRedisCommand.connection"></x-slot:value
                                     ></x-newdebugbar::inspector-fact>
@@ -295,7 +295,7 @@
                             <section
                                 data-ndb-redis-key-evidence
                                 aria-labelledby="newdebugbar-redis-keys-heading"
-                                class="ndb:space-y-4 ndb:border-t ndb:border-zinc-200 ndb:p-4 ndb:dark:border-zinc-800"
+                                class="ndb:space-y-3 ndb:border-t ndb:border-zinc-200 ndb:p-3 ndb:sm:space-y-4 ndb:sm:p-4 ndb:dark:border-zinc-800"
                             >
                                 <div class="ndb:flex ndb:min-w-0 ndb:items-center ndb:justify-between ndb:gap-3">
                                     <h4

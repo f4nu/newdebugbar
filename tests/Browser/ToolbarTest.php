@@ -10,8 +10,13 @@ it('opens every actionable compact toolbar destination and leaves display facts 
         ->assertVisible('[data-ndb-toolbar-action="theme"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
         ->click('[data-ndb-toolbar-action="theme"]')
+        ->assertVisible('[data-ndb-theme-menu="toolbar"]')
+        ->assertAttribute('[data-ndb-theme-menu="toolbar"] [data-ndb-theme-option="system"]', 'aria-checked', 'true')
+        ->click('[data-ndb-theme-menu="toolbar"] [data-ndb-theme-option="dark"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'dark')
         ->click('[data-ndb-toolbar-action="theme"]')
+        ->assertAttribute('[data-ndb-theme-menu="toolbar"] [data-ndb-theme-option="dark"]', 'aria-checked', 'true')
+        ->click('[data-ndb-theme-menu="toolbar"] [data-ndb-theme-option="light"]')
         ->assertAttribute('#newdebugbar', 'data-ndb-theme', 'light')
         ->assertScript(<<<'JS'
             (() => {
@@ -90,10 +95,11 @@ it('opens every actionable compact toolbar destination and leaves display facts 
                         const favorite = section.querySelector('[data-ndb-toggle-favorite]');
                         const count = section.querySelector('.ndb-section-count');
                         const theme = document.querySelector('[data-ndb-inspector-action="theme"]');
+                        const themeIcon = theme.querySelector('span:not([style*="display: none"]) svg');
 
                         return Math.abs(center(favorite) - center(favorite.querySelector('svg'))) <= 0.5
                             && Math.abs(center(favorite) - center(count)) <= 0.5
-                            && Math.abs(center(theme) - center(theme.querySelector('svg'))) <= 0.5;
+                            && Math.abs(center(theme) - center(themeIcon)) <= 0.5;
                     })()
                     JS)
                 ->assertScript('/^\\d+(?:\\.\\d{2})? (?:B|KB|MB)$/.test(document.querySelector("[data-ndb-header-response-size]").textContent.trim())');

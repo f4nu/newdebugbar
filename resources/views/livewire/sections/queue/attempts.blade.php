@@ -1,5 +1,10 @@
-<template x-if="queueDetailTab === 'attempts' && selectedQueueActivity.attempts.length > 0">
-    <div data-ndb-queue-detail-panel="attempts" class="ndb:p-4">
+<template x-if="selectedQueueActivity.attempts.length > 0">
+    <section
+        data-ndb-queue-attempts
+        aria-labelledby="newdebugbar-queue-attempts-heading"
+        class="ndb:border-t ndb:border-zinc-200/90 ndb:p-3 ndb:sm:p-4 ndb:dark:border-zinc-800"
+    >
+        <h4 id="newdebugbar-queue-attempts-heading" class="ndb:mb-3 ndb:text-xs ndb:font-bold">Attempts</h4>
         <div class="ndb:divide-y ndb:divide-zinc-200/90 ndb:border-y ndb:border-zinc-200/90 ndb:dark:divide-zinc-800 ndb:dark:border-zinc-800">
             <template x-for="attempt in selectedQueueActivity.attempts" :key="attempt.sequence">
                 <article
@@ -24,5 +29,5 @@
                 </article>
             </template>
         </div>
-    </div>
+    </section>
 </template>

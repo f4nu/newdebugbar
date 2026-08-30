@@ -423,7 +423,7 @@ it('keeps view data out of section html until its exact render asks', function (
     $component = Livewire::test(DebugBar::class, ['profileId' => $profileId])
         ->call('loadSection', 'views')
         ->assertSet('profile.sections.views.payload.groups.0.items.0', fn (array $view): bool => ! array_key_exists('data', $view))
-        ->assertSeeHtml('data-ndb-view-detail-tab="data"')
+        ->assertSeeHtml('data-ndb-view-data-panel')
         ->assertSeeHtml('data-ndb-view-data-loading')
         ->assertDontSee('view-data-value');
 
